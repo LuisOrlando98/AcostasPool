@@ -1,0 +1,5 @@
+ALTER TABLE "User"
+ALTER COLUMN "locale" SET DEFAULT 'EN';
+
+ALTER TABLE "Customer"
+ALTER COLUMN "idiomaPreferencia" SET DEFAULT 'EN';

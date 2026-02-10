@@ -1,0 +1,1339 @@
+{
+  "app": {
+    "name": "AcostasPool",
+    "tagline": "Sistema de Administracion",
+    "platform": "Plataforma",
+    "footer": "Premium Operations - V1"
+  },
+  "common": {
+    "actions": {
+      "close": "Cerrar",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "create": "Crear",
+      "update": "Actualizar",
+      "delete": "Eliminar",
+      "view": "Ver",
+      "edit": "Editar",
+      "send": "Enviar",
+      "search": "Buscar"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Desactivado"
+    },
+    "labels": {
+      "email": "Email",
+      "phone": "Telefono",
+      "phoneSecondary": "Telefono secundario",
+      "notes": "Notas",
+      "language": "Idioma",
+      "firstName": "Nombre",
+      "lastName": "Apellidos",
+      "notAvailable": "No definido",
+      "yes": "Si",
+      "no": "No"
+    },
+    "navigation": {
+      "menu": "Menu",
+      "quick": "Navegacion rapida"
+    },
+    "environment": {
+      "local": "Entorno local"
+    },
+    "language": {
+      "en": "Ingles",
+      "es": "Espanol"
+    }
+  }
+  ,
+  "landing": {
+    "tagline": "Plataforma de Operaciones",
+    "nav": {
+      "services": "Servicios",
+      "process": "Proceso",
+      "team": "Equipo",
+      "contact": "Contacto"
+    },
+    "cta": {
+      "signIn": "Iniciar sesion",
+      "clientPortal": "Portal del cliente",
+      "kicker": "Listos para crecer",
+      "title": "Moderniza tu operacion de piscinas",
+      "subtitle": "Centraliza equipos, rutas y facturacion con una plataforma hecha para escalar.",
+      "primary": "Agenda una demo",
+      "emailLabel": "Email",
+      "phoneLabel": "Telefono",
+      "hoursLabel": "Horario",
+      "hoursValue": "Lun-Sab · 8:00 AM - 6:00 PM"
+    },
+    "hero": {
+      "kicker": "Operacion premium para piscinas",
+      "title": "Controla cada ruta con claridad, confianza y evidencia.",
+    "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
+      "primaryCta": "Abrir panel admin",
+      "secondaryCta": "Explorar portal cliente",
+      "badge1": "Rutas optimizadas",
+      "badge2": "Evidencia fotografica",
+      "badge3": "Facturas instantaneas"
+    },
+    "stats": {
+      "title": "Operacion en vivo",
+      "subtitle": "Todo visible en un solo tablero",
+      "live": "En vivo",
+      "note": "Los numeros son de muestra para presentacion.",
+      "routes": "Rutas activas",
+      "jobs": "Trabajos programados",
+      "customers": "Clientes atendidos",
+      "invoices": "Facturas enviadas"
+    },
+    "services": {
+      "kicker": "Lo que ofrecemos",
+      "title": "Todo lo que tu negocio necesita",
+      "subtitle": "Disenado para duenos, tecnicos y clientes con coordinacion en tiempo real.",
+      "operations": {
+        "title": "Control de rutas y agenda",
+        "desc": "Planifica rutas semanales, monitorea estados y ajusta cargas en segundos."
+      },
+      "quality": {
+        "title": "Calidad verificada",
+        "desc": "Registra evidencia, checklists y notas en cada visita."
+      },
+      "billing": {
+        "title": "Facturacion inteligente",
+      "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
+      },
+      "clients": {
+        "title": "Experiencia del cliente",
+        "desc": "Portal con agenda, fotos y facturas siempre disponibles."
+      }
+    },
+    "process": {
+      "kicker": "Como trabajamos",
+      "title": "De la solicitud al pago",
+      "subtitle": "Un flujo simple que alinea oficina y campo.",
+      "step1": {
+        "title": "Planificar y asignar",
+        "desc": "Asigna tecnicos, optimiza rutas y confirma visitas."
+      },
+      "step2": {
+        "title": "Servicio y evidencia",
+        "desc": "El tecnico registra resultados, fotos y notas."
+      },
+      "step3": {
+        "title": "Factura y seguimiento",
+        "desc": "Envio automatico y comunicacion clara con el cliente."
+      }
+    },
+    "team": {
+      "kicker": "Nuestro equipo",
+      "title": "Personas detras del compromiso",
+      "subtitle": "Operadores con experiencia enfocados en servicio consistente y transparente.",
+      "value1": "Tecnicos certificados",
+      "value2": "Reportes claros",
+      "value3": "Respuesta rapida",
+      "value4": "Operacion centrada en el cliente",
+      "note": "Combinamos experiencia de campo con sistemas modernos para resultados medibles."
+    }
+  }
+  ,
+  "nav": {
+    "admin": {
+      "dashboard": "Dashboard",
+      "calendar": "Calendario",
+      "technicians": "Tecnicos",
+      "customers": "Clientes",
+      "invoices": "Facturas",
+      "reports": "Reportes",
+      "settings": "Ajustes",
+      "routes": "Rutas y trabajos"
+    },
+    "tech": {
+      "route": "Mi ruta",
+      "history": "Historial",
+      "profile": "Perfil"
+    },
+    "client": {
+      "home": "Inicio",
+      "request": "Solicitar servicio",
+      "invoices": "Facturas",
+      "profile": "Perfil"
+    },
+    "account": "Mi cuenta"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "tech": "Tecnico",
+    "client": "Cliente"
+  },
+  "userMenu": {
+    "notifications": "Notificaciones",
+    "recent": "Notificaciones recientes",
+    "empty": "Sin notificaciones nuevas.",
+    "system": "Notificacion del sistema",
+    "fallbackUser": "Usuario",
+    "role": "Rol",
+    "account": "Mi cuenta",
+    "updates": "Actualizaciones",
+    "signOut": "Cerrar sesion",
+    "signingOut": "Cerrando..."
+  },
+  "updates": {
+    "title": "Actualizaciones",
+    "subtitle": "Un registro vivo de cada cambio que publicamos.",
+    "empty": "Aun no hay actualizaciones."
+  },
+  "notifications": {
+    "clear": "Limpiar",
+    "read": "Leido",
+    "unread": "Nuevo",
+    "none": "No hay preferencias de notificacion disponibles.",
+    "requested": "Solicitado",
+    "jobCompleted": "Trabajo completado",
+    "customerRequest": "Nueva solicitud",
+    "serviceScheduled": "Servicio programado",
+    "serviceRescheduled": "Servicio reprogramado",
+    "routeUpdated": "Ruta actualizada",
+    "invoiceSent": "Factura enviada",
+    "group": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "week": "Esta semana",
+      "older": "Anteriores"
+    },
+    "types": {
+      "JOB_COMPLETED": "Trabajo completado",
+      "CUSTOMER_REQUEST": "Nueva solicitud",
+      "SERVICE_SCHEDULED": "Servicio programado",
+      "SERVICE_RESCHEDULED": "Servicio reprogramado",
+      "ROUTE_UPDATED": "Ruta actualizada",
+      "INVOICE_SENT": "Factura enviada"
+    }
+  },
+  "account": {
+    "title": "Mi cuenta",
+    "subtitle": "Gestiona tu perfil, idioma y seguridad.",
+    "notifications": {
+      "title": "Notificaciones",
+      "subtitle": "Elige las actualizaciones que quieres recibir."
+    },
+    "profile": {
+      "title": "Perfil",
+      "name": "Nombre completo"
+    },
+    "photo": {
+      "title": "Foto de perfil"
+    },
+    "credentials": {
+      "title": "Credenciales",
+      "subtitle": "Genera un link temporal para cambiar tu contrasena."
+    },
+    "resetLink": {
+      "submit": "Generar link de cambio",
+      "loading": "Generando...",
+      "copy": "Copiar link",
+      "error": "No se pudo generar el link."
+    },
+    "avatar": {
+      "alt": "Avatar",
+      "empty": "Sin foto",
+      "submit": "Actualizar foto",
+      "loading": "Subiendo...",
+      "success": "Imagen actualizada.",
+      "errors": {
+        "file": "Selecciona una imagen.",
+        "upload": "No se pudo subir."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesion",
+      "subtitle": "Accede a la plataforma para continuar.",
+      "kicker": "Acceso seguro",
+      "headline": "Gestión de servicios",
+      "headlineAccent": "para piscinas",
+      "lede": "Una plataforma moderna para coordinar servicios, agendas y experiencia del cliente en tus operaciones.",
+      "metrics": {
+        "quality": {
+          "kicker": "Calidad",
+          "title": "Calidad del agua",
+          "desc": "Evidencia y control diario."
+        },
+        "routes": {
+          "kicker": "Rutas",
+          "title": "Planificación",
+          "desc": "Operaciones optimizadas."
+        },
+        "security": {
+          "kicker": "Seguro",
+          "title": "Datos internos",
+          "desc": "Control y trazabilidad."
+        }
+      },
+      "publicLink": "Volver al sitio público",
+      "cardSubtitle": "Inicia sesión para continuar.",
+      "keepSignedIn": "Mantener sesión",
+      "forgot": "Olvidé mi contraseña",
+      "emailPlaceholder": "tu@email.com",
+      "password": "Contrasena",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Iniciar sesion",
+      "loading": "Ingresando...",
+      "error": "No se pudo iniciar sesion."
+    },
+    "reset": {
+      "title": "Restablecer contrasena",
+      "subtitle": "Ingresa el token y tu nueva contrasena.",
+      "token": "Token",
+      "tokenPlaceholder": "Token",
+      "newPassword": "Nueva contrasena",
+      "confirmPassword": "Confirmar contrasena",
+      "submit": "Cambiar contrasena",
+      "loading": "Guardando...",
+      "success": "Contrasena actualizada. Ya puedes iniciar sesion.",
+      "errors": {
+        "token": "Token requerido.",
+        "length": "La contrasena debe tener al menos 6 caracteres.",
+        "mismatch": "Las contrasenas no coinciden.",
+        "generic": "No se pudo cambiar la contrasena."
+      }
+    },
+    "complete": {
+      "title": "Completa tu perfil",
+      "subtitle": "Confirma tus datos y crea tu contrasena de acceso.",
+      "loading": "Cargando perfil...",
+      "password": "Contrasena",
+      "passwordConfirm": "Confirmar contrasena",
+      "submit": "Completar perfil",
+      "loadingSubmit": "Guardando...",
+      "success": "Perfil completado. Ya puedes iniciar sesion.",
+      "notFound": "No se encontro el perfil.",
+      "errors": {
+        "token": "Token requerido.",
+        "load": "No se pudo cargar el perfil.",
+        "length": "La contrasena debe tener al menos 6 caracteres.",
+        "mismatch": "Las contrasenas no coinciden.",
+        "required": "Nombre, apellidos y telefono son obligatorios.",
+        "submit": "No se pudo completar el perfil."
+      }
+    },
+    "unauthorized": {
+      "kicker": "Acceso restringido",
+      "title": "No tienes permisos",
+      "subtitle": "Tu cuenta no tiene acceso a esta seccion. Contacta al administrador para permisos.",
+      "backToLogin": "Volver al login"
+    }
+  },
+  "address": {
+    "sectionTitle": "Direccion principal",
+    "sectionSubtitle": "Autocompleta ciudad, estado y codigo postal.",
+    "line1": "Direccion linea 1",
+    "line2": "Direccion linea 2",
+    "city": "Ciudad",
+    "country": "Pais",
+    "countryValue": "EEUU",
+    "state": "Estado / Provincia",
+    "postal": "Codigo postal",
+    "placeholders": {
+      "line1": "Calle, numero",
+      "line2": "Apartamento, suite, piso",
+      "city": "Ciudad",
+      "state": "Estado",
+      "postal": "ZIP"
+    },
+    "autocomplete": {
+      "enabled": "Autocompletado habilitado solo para Estados Unidos.",
+      "missingKey": "Configura NEXT_PUBLIC_GOOGLE_MAPS_API_KEY para autocompletado."
+    }
+  },
+  "jobs": {
+    "status": {
+      "scheduled": "Programado",
+      "pending": "Pendiente",
+      "onTheWay": "En camino",
+      "inProgress": "En progreso",
+      "completed": "Completado"
+    },
+    "type": {
+      "onDemand": "On-demand",
+      "routine": "Rutina"
+    },
+    "priority": {
+      "urgent": "Urgente",
+      "normal": "Normal"
+    },
+    "service": {
+      "weeklyCleaning": "Limpieza semanal",
+      "filterCheck": "Revision de filtro",
+      "chemBalance": "Balance quimico",
+      "equipmentCheck": "Revision de equipo"
+    },
+    "detail": {
+      "title": "Detalle del trabajo",
+      "subtitle": "Detalle del trabajo",
+      "notFound": "Trabajo no encontrado",
+      "invalidId": "ID invalido.",
+      "notFoundMessage": "No se encontro el trabajo solicitado.",
+      "backToRoutes": "Volver a rutas",
+      "infoTitle": "Informacion del trabajo",
+      "fields": {
+        "tech": "Tecnico",
+        "jobType": "Tipo de trabajo",
+        "serviceType": "Tipo de servicio",
+        "serviceTier": "Paquete",
+        "priority": "Prioridad",
+        "duration": "Duracion estimada",
+        "plan": "Plan",
+        "evidence": "Evidencias",
+        "internalNotes": "Notas internas",
+        "customerNotes": "Nota al cliente"
+      },
+      "serviceTierFallback": "Standard",
+      "noTech": "Sin tecnico",
+      "durationValue": "{{minutes}} min",
+      "durationEmpty": "No definida",
+      "planManual": "Manual",
+      "evidenceCount": "{{count}} fotos",
+      "assignTech": "Asignar tecnico",
+      "actions": {
+        "saveAssignment": "Guardar asignacion",
+        "updateStatus": "Actualizar estado"
+      },
+      "statusTitle": "Estado",
+      "checklist": "Checklist",
+      "noChecklist": "No hay checklist asociado.",
+      "checklistItem": "Elemento",
+      "evidenceTitle": "Evidencias",
+      "noEvidence": "No hay evidencias disponibles.",
+      "evidenceAlt": "Evidencia",
+      "noAccess": "No tienes acceso a este trabajo.",
+      "serviceTitle": "Servicio"
+    }
+  },
+  "plans": {
+    "frequency": {
+      "weekly": "Semanal",
+      "biweekly": "Bisemanal",
+      "monthly": "Mensual"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Panel de administracion",
+      "subtitle": "Control total de rutas, trabajos y facturas.",
+      "stats": {
+        "jobsToday": "Trabajos hoy",
+        "inRoute": "En ruta",
+        "pending": "Pendientes",
+        "pendingToday": "Pendientes hoy",
+        "completed": "Completados",
+        "withEvidence": "Con evidencia",
+        "customers": "Clientes",
+        "activeBase": "Base activa"
+      },
+      "todayRoute": {
+        "title": "Ruta de hoy",
+        "count": "{{count}} trabajos",
+        "empty": "No hay trabajos programados hoy."
+      },
+      "alerts": {
+        "title": "Alertas criticas",
+        "onDemandToday": "Solicitudes on-demand hoy: {{count}}",
+        "pending": "Pendientes por completar: {{count}}"
+      },
+      "recentInvoices": {
+        "title": "Facturas recientes",
+        "empty": "No hay facturas recientes."
+      }
+    },
+    "routes": {
+      "title": "Rutas y calendario",
+      "subtitle": "Planificacion diaria y control operativo.",
+      "errors": {
+        "needCustomers": "Necesitas clientes para asignar trabajos.",
+        "selectCustomerProperty": "Selecciona cliente y propiedad para cada trabajo.",
+        "createFailed": "No se pudieron crear los trabajos.",
+        "saveFailed": "No se pudieron guardar los cambios.",
+        "saveJobFailed": "No se pudieron guardar los cambios del trabajo."
+      },
+      "filters": {
+        "statusAll": "Estado: Todos",
+        "priorityAll": "Prioridad: Todas",
+        "techAll": "Tecnico: Todos",
+        "search": "Buscar cliente, direccion, tecnico...",
+        "rangeWeek": "Semana",
+        "rangeMonth": "Mes",
+        "rangeCustom": "Personalizado"
+      },
+      "table": {
+        "customer": "Cliente",
+        "property": "Propiedad",
+        "dateTime": "Fecha / Hora",
+        "service": "Servicio",
+        "status": "Estado",
+        "priority": "Prioridad",
+        "technician": "Tecnico",
+        "actions": "Acciones"
+      },
+      "sections": {
+        "scheduledJobs": "Trabajos programados",
+        "schedule": "Programacion",
+        "propertyAccess": "Propiedad y acceso",
+        "jobDetail": "Detalle de trabajo"
+      },
+      "actions": {
+        "creating": "Creando...",
+        "saveJobs": "Guardar trabajos",
+        "saving": "Guardando...",
+        "saveChanges": "Guardar cambios",
+        "assignJobs": "Asignar trabajos",
+        "addJob": "Agregar otro trabajo",
+        "assignTechnician": "Asignar tecnico"
+      },
+      "labels": {
+        "technicianFallback": "Tecnico",
+        "customer": "Cliente",
+        "property": "Propiedad",
+        "address": "Direccion",
+        "time": "Hora",
+        "date": "Fecha",
+        "status": "Estado",
+        "optional": "Opcional",
+        "updateInfo": "Actualizar datos",
+        "accessNotes": "Notas de acceso",
+        "noContact": "Sin contacto",
+        "noProperties": "Sin propiedades",
+        "noEmail": "Sin email",
+        "noPhone": "Sin telefono",
+        "withSpa": "Con spa",
+        "withoutSpa": "Sin spa",
+        "unassigned": "Sin asignar",
+        "access": "Accesos",
+        "free": "Libre",
+        "manualOrder": "Orden manual",
+        "jobsCount": "{{count}} trabajos",
+        "scheduledTime": "Hora programada",
+        "propertyFallback": "Propiedad",
+        "saveHint": "Guarda para aplicar los cambios del trabajo.",
+        "rangeCount": "{{range}} | {{count}} trabajos",
+        "noJobsInRange": "No hay trabajos para el rango seleccionado.",
+        "urgent": "Urgentes",
+        "densityNormal": "Normal",
+        "densityCompact": "Compacto",
+        "durationMinutes": "Duracion estimada (min)",
+        "poolType": "Tipo de piscina",
+        "sanitizerSystem": "Sistema",
+        "poolVolume": "Volumen (gal)",
+        "filterType": "Tipo de filtro",
+        "waterType": "Agua",
+        "order": "Orden",
+        "jobNumber": "Trabajo #{{count}}",
+        "completedNoEvidence": "Trabajo completado sin evidencia."
+      }
+    },
+    "technicians": {
+      "title": "Tecnicos",
+      "subtitle": "Gestion y seguimiento de tecnicos.",
+      "newTech": {
+        "kicker": "Nuevo tecnico",
+        "title": "Perfil tecnico",
+        "fields": {
+          "fullName": "Nombre completo",
+          "password": "Contrasena",
+          "calendarColor": "Color en calendario",
+          "notes": "Notas internas"
+        },
+        "actions": {
+          "create": "Crear tecnico"
+        }
+      },
+      "overview": {
+        "cards": {
+          "technicians": "Tecnicos",
+          "total": "Total registrados",
+          "active": "Activos",
+          "activeHint": "Disponibles",
+          "pending": "Pendientes",
+          "pendingHint": "En ruta",
+          "completed": "Completados",
+          "completedHint": "Con evidencia"
+        },
+        "title": "Equipo tecnico",
+        "results": "{{count}} tecnicos visibles",
+        "placeholders": {
+          "search": "Buscar tecnico, email, telefono..."
+        },
+        "filters": {
+          "all": "Todos",
+          "inactive": "Inactivos"
+        },
+        "sort": {
+          "pending": "Orden: Pendientes",
+          "completed": "Orden: Completados",
+          "name": "Orden: Nombre"
+        },
+        "actions": {
+          "new": "Nuevo tecnico",
+          "viewRoute": "Ver ruta",
+          "viewProfile": "Perfil"
+        },
+        "empty": "No hay tecnicos para los filtros seleccionados.",
+        "activity": {
+          "none": "Sin actividad"
+        },
+        "table": {
+          "technician": "Tecnico",
+          "status": "Estado",
+          "todayRoute": "Ruta hoy",
+          "pending": "Pendientes",
+          "completed": "Completados",
+          "lastActivity": "Ultima actividad",
+          "actions": "Acciones",
+          "todayCount": "{{count}} trabajos",
+          "noRoute": "Sin ruta"
+        }
+      },
+      "detail": {
+        "notFoundTitle": "Tecnico no encontrado",
+        "notFoundSubtitle": "ID invalido.",
+        "notFoundMessage": "No se encontro el tecnico solicitado.",
+        "title": "Tecnico: {{name}}",
+        "subtitle": "Historial completo de trabajos.",
+        "roleLabel": "Tecnico",
+        "noPhone": "Sin telefono",
+        "status": {
+          "inactive": "Inactivo"
+        },
+        "actions": {
+          "back": "Volver a tecnicos",
+          "viewRoute": "Ver ruta",
+          "assignJob": "Asignar trabajo"
+        },
+        "activity": {
+          "none": "Sin actividad"
+        },
+        "stats": {
+          "today": "Hoy",
+          "todayHint": "Trabajos programados",
+          "pending": "Pendientes",
+          "pendingHint": "En ruta",
+          "completed": "Completados",
+          "completedHint": "Con evidencia",
+          "lastActivity": "Ultima actividad",
+          "lastActivityHint": "Actualizacion reciente"
+        },
+        "profile": {
+          "title": "Perfil y ajustes",
+          "subtitle": "Configuracion rapida del tecnico.",
+          "total": "Total: {{count}}",
+          "fields": {
+            "phone": "Telefono actualizado",
+            "status": "Estado",
+            "color": "Color",
+            "calendar": "Calendario",
+            "notes": "Notas internas"
+          },
+          "actions": {
+            "save": "Guardar cambios"
+          }
+        },
+        "jobs": {
+          "upcomingTitle": "Proximos trabajos",
+          "upcomingSubtitle": "Vista rapida del calendario del tecnico.",
+          "completedTitle": "Historial completado",
+          "completedSubtitle": "Trabajos recientes con evidencia.",
+          "results": "{{count}} resultados",
+          "emptyDay": "Libre",
+          "noEvidence": "Sin evidencia",
+          "evidenceCount": "{{count}} fotos",
+          "filters": {
+            "search": "Buscar cliente, propiedad...",
+            "status": "Estado",
+            "priority": "Prioridad",
+            "service": "Servicio",
+            "evidence": "Evidencia",
+            "withEvidence": "Con evidencia",
+            "withoutEvidence": "Sin evidencia",
+            "date": "Fecha",
+            "quickRange": "Rango rapido",
+            "all": "Todo",
+            "next7": "Proximos 7 dias",
+            "next14": "Proximos 14 dias",
+            "next30": "1 mes",
+            "custom": "Personalizado",
+            "from": "Desde",
+            "to": "Hasta",
+            "apply": "Aplicar",
+            "clear": "Limpiar",
+            "sortUpcoming": "Mas proximos",
+            "sortOldest": "Mas antiguos",
+            "sortFarthest": "Mas lejanos",
+            "sortRecent": "Mas recientes"
+          },
+          "table": {
+            "date": "Fecha",
+            "customer": "Cliente",
+            "address": "Direccion",
+            "service": "Servicio",
+            "priority": "Prioridad",
+            "status": "Estado",
+            "evidence": "Evidencia",
+            "action": "Accion",
+            "viewJob": "Ver trabajo",
+            "empty": "No hay trabajos para mostrar."
+          }
+        }
+      }
+    },
+    "customers": {
+      "title": "Clientes",
+      "subtitle": "Perfiles completos, propiedades e historial.",
+      "types": {
+        "residential": "Residencial",
+        "commercial": "Comercial"
+      },
+      "overview": {
+        "cards": {
+          "customers": "Clientes",
+          "total": "Total registrados",
+          "active": "Activos",
+          "activeHint": "En servicio",
+          "inactive": "Desactivados",
+          "inactiveHint": "Sin agenda",
+          "properties": "Propiedades",
+          "propertiesHint": "Registradas"
+        },
+        "title": "Base de clientes",
+        "results": "{{count}} resultados visibles.",
+        "page": "Pagina {{page}} de {{total}}",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "actions": {
+          "new": "Nuevo cliente",
+          "viewProfile": "Ver perfil"
+        },
+        "placeholders": {
+          "search": "Nombre o email"
+        },
+        "filters": {
+          "status": "Estado"
+        },
+        "sort": {
+          "name": "Orden: Nombre",
+          "jobs": "Orden: Trabajos",
+          "properties": "Orden: Propiedades"
+        },
+        "table": {
+          "customer": "Cliente",
+          "status": "Estado",
+          "properties": "Propiedades",
+          "jobs": "Trabajos",
+          "invoices": "Facturas",
+          "action": "Accion"
+        },
+        "empty": "No hay clientes para mostrar."
+      },
+      "new": {
+        "kicker": "Nuevo cliente",
+        "title": "Perfil del cliente",
+        "sections": {
+          "personal": {
+            "title": "Datos personales",
+            "subtitle": "Informacion basica del cliente y contacto."
+          },
+          "account": {
+            "title": "Cuenta",
+            "subtitle": "Estado y clasificacion del cliente."
+          }
+        },
+        "fields": {
+          "status": "Estado de cuenta",
+          "type": "Tipo de cliente",
+          "sendInvite": "Enviar email para completar perfil y crear contrasena."
+        },
+        "placeholders": {
+          "firstName": "Nombre",
+          "lastName": "Apellidos",
+          "email": "cliente@email.com",
+          "phone": "+1 000-000-0000",
+          "notes": "Notas internas del cliente"
+        },
+        "actions": {
+          "create": "Crear cliente",
+          "creating": "Creando..."
+        }
+      },
+      "detail": {
+        "notFoundTitle": "Cliente no encontrado",
+        "notFoundSubtitle": "ID invalido.",
+        "notFoundMessage": "No se encontro el cliente solicitado.",
+        "title": "Cliente: {{name}}",
+        "subtitle": "Perfil completo, propiedades y trabajos.",
+        "kicker": "Cliente",
+        "actions": {
+          "back": "Volver a clientes",
+          "addProperty": "Agregar propiedad",
+          "scheduleJob": "Programar trabajo",
+          "newPlan": "Nuevo plan",
+          "sendInvite": "Enviar invitacion",
+          "saveChanges": "Guardar cambios",
+          "saveProperty": "Guardar propiedad",
+          "createJob": "Crear trabajo",
+          "createPlan": "Crear plan recurrente",
+          "saving": "Guardando...",
+          "pause": "Pausar",
+          "activate": "Activar"
+        },
+        "cards": {
+          "properties": "Propiedades",
+          "propertiesHint": "Registradas",
+          "jobs": "Trabajos",
+          "jobsHint": "Historico",
+          "plans": "Planes",
+          "plansHint": "Recurrentes",
+          "invoices": "Facturas",
+          "invoicesHint": "Emitidos"
+        },
+        "sections": {
+          "profileTitle": "Informacion del cliente",
+          "profileSubtitle": "Datos principales y direccion.",
+          "propertiesTitle": "Propiedades",
+          "propertiesSubtitle": "Datos completos de cada piscina.",
+          "plansTitle": "Planes recurrentes",
+          "plansSubtitle": "Planes semanales, bisemanales o mensuales.",
+          "jobsTitle": "Trabajos"
+        },
+        "labels": {
+          "total": "{{count}} total"
+        },
+        "properties": {
+          "empty": "No hay propiedades registradas.",
+          "nameFallback": "Propiedad",
+          "poolFallback": "Piscina",
+          "systemFallback": "Sistema",
+          "volumeFallback": "Volumen N/A",
+          "modalKicker": "Nueva propiedad",
+          "modalTitle": "Datos de la piscina",
+          "modalSubtitle": "Registra direccion, sistema y accesos.",
+          "fields": {
+            "name": "Nombre de la propiedad",
+            "sanitizerType": "Sistema (sal/cloro)",
+            "spa": "Spa",
+            "accessInfo": "Accesos / mascotas",
+            "locationNotes": "Notas de ubicacion"
+          },
+          "placeholders": {
+            "name": "Nombre de la propiedad",
+            "nameExample": "Ej: Casa principal",
+            "address": "Calle, numero, ciudad",
+            "poolType": "Tipo de piscina",
+            "waterType": "Cristalina, turbia...",
+            "volume": "Volumen",
+            "filterType": "Tipo de filtro",
+            "sanitizerType": "Sistema (sal/cloro)",
+            "accessInfo": "Accesos / mascotas / instrucciones",
+            "locationNotes": "Notas de ubicacion"
+          },
+          "options": {
+            "select": "Selecciona",
+            "concrete": "Concreto",
+            "fiberglass": "Fibra",
+            "vinyl": "Vinilo",
+            "altMaterial": "Material alternativo",
+            "salt": "Sal",
+            "chlorine": "Cloro",
+            "other": "Otro"
+          },
+          "spaNo": "Spa: No",
+          "spaYes": "Spa: Si"
+        },
+        "plans": {
+          "empty": "No hay planes recurrentes activos.",
+          "nextRun": "Proximo:",
+          "paused": "Pausado",
+          "modalKicker": "Nuevo plan",
+          "modalTitle": "Plan recurrente",
+          "modalSubtitle": "Genera trabajos automaticos con checklist por tipo de servicio.",
+          "fields": {
+            "name": "Nombre del plan",
+            "frequency": "Frecuencia",
+            "nextDate": "Proxima fecha",
+            "notes": "Notas del plan"
+          },
+          "placeholders": {
+            "name": "Plan semanal principal"
+          }
+        },
+        "jobs": {
+          "empty": "No hay trabajos registrados.",
+          "modalKicker": "Nuevo trabajo",
+          "modalTitle": "Programar trabajo",
+          "modalSubtitle": "Configura fecha, tecnico y checklist."
+        }
+      },
+      "jobs": {
+        "title": "Programacion de trabajos",
+        "subtitle": "Agenda completa con filtros premium.",
+        "results": "{{count}} resultados",
+        "actions": {
+          "schedule": "Programar trabajo",
+          "view": "Ver trabajo"
+        },
+        "placeholders": {
+          "search": "Propiedad, direccion o tecnico"
+        },
+        "filters": {
+          "status": "Estado",
+          "priority": "Prioridad",
+          "service": "Servicio",
+          "technician": "Tecnico",
+          "evidence": "Evidencia",
+          "withEvidence": "Con evidencia",
+          "withoutEvidence": "Sin evidencia",
+          "from": "Desde",
+          "to": "Hasta",
+          "upcoming": "Mas proximos",
+          "recent": "Mas recientes"
+        },
+        "table": {
+          "date": "Fecha",
+          "property": "Propiedad",
+          "address": "Direccion",
+          "service": "Servicio",
+          "technician": "Tecnico",
+          "status": "Estado",
+          "priority": "Prioridad",
+          "evidence": "Evidencia",
+          "action": "Accion"
+        },
+        "empty": "No hay trabajos que coincidan con los filtros.",
+        "propertyFallback": "Propiedad",
+        "noTech": "Sin tecnico",
+        "evidenceCount": "{{count}} fotos",
+        "noEvidence": "Sin evidencia"
+      },
+      "plans": {
+        "title": "Planes recurrentes",
+        "subtitle": "Controla frecuencias, proximas fechas y tecnicos.",
+        "results": "{{count}} planes",
+        "actions": {
+          "new": "Nuevo plan",
+          "createJob": "Crear",
+          "pause": "Pausar",
+          "activate": "Activar"
+        },
+        "placeholders": {
+          "search": "Plan, propiedad o tecnico"
+        },
+        "filters": {
+          "status": "Estado",
+          "frequency": "Frecuencia",
+          "service": "Servicio",
+          "technician": "Tecnico"
+        },
+        "table": {
+          "plan": "Plan",
+          "property": "Propiedad",
+          "frequency": "Frecuencia",
+          "next": "Proximo",
+          "technician": "Tecnico",
+          "priority": "Prioridad",
+          "status": "Estado",
+          "actions": "Acciones"
+        },
+        "empty": "No hay planes que coincidan con los filtros.",
+        "noTech": "Sin tecnico",
+        "status": {
+          "paused": "Pausado"
+        }
+      }
+    },
+    "invoices": {
+      "title": "Facturas",
+      "subtitle": "Facturacion, envio y estados de pago.",
+      "theme": {
+        "standard": "Normal",
+        "special": "Especial",
+        "estimate": "Estimado"
+      },
+      "status": {
+        "draft": "Borrador",
+        "sent": "Enviada",
+        "paid": "Pagada",
+        "overdue": "Vencida"
+      },
+      "list": {
+        "title": "Facturas",
+        "count": "{{count}} facturas registradas.",
+        "showing": "Mostrando {{count}} de {{total}} facturas.",
+        "total": "{{count}} total",
+        "empty": "No hay facturas aun.",
+        "noTech": "Sin tecnico",
+        "theme": "Tema",
+        "job": "Trabajo",
+        "tech": "Tecnico",
+        "noJob": "Sin trabajo asociado",
+        "viewPdf": "Ver PDF",
+        "page": "Pagina {{page}} de {{total}}",
+        "prev": "Anterior",
+        "next": "Siguiente"
+      },
+      "actions": {
+        "new": "Nueva invoice"
+      },
+      "new": {
+        "kicker": "Nueva invoice",
+        "title": "Detalle de facturacion",
+        "fields": {
+          "customer": "Cliente",
+          "job": "Trabajo (opcional)",
+          "noJob": "Sin asociar",
+          "theme": "Tema",
+          "description": "Descripcion",
+          "subtotal": "Subtotal",
+          "tax": "Impuestos"
+        },
+        "placeholders": {
+          "description": "Servicio mensual"
+        },
+        "actions": {
+          "create": "Crear invoice"
+        }
+      },
+      "send": {
+        "submit": "Enviar",
+        "loading": "Enviando...",
+        "success": "Enviada.",
+        "error": "No se pudo enviar."
+      }
+    },
+    "reports": {
+      "title": "Reportes",
+      "subtitle": "Rendimiento operativo, productividad del equipo y facturacion.",
+      "filters": {
+        "range": "Rango",
+        "range7": "7 dias",
+        "range30": "30 dias",
+        "range90": "90 dias",
+        "allTechs": "Todos los tecnicos",
+        "allStatuses": "Todos los estados",
+        "allTypes": "Todos los tipos",
+        "allServices": "Todos los servicios",
+        "allPriorities": "Todas las prioridades",
+        "apply": "Aplicar",
+        "reset": "Restablecer"
+      },
+      "cards": {
+        "totalJobs": "Total de trabajos",
+        "completed": "completados",
+        "completionRate": "Tasa de finalizacion",
+        "pending": "pendientes",
+        "onDemand": "Trabajos on-demand",
+        "requests": "solicitudes",
+        "evidenceRate": "Cobertura de evidencia",
+        "withEvidence": "con evidencia",
+        "avgDelay": "Retraso promedio",
+        "avgDelayHelper": "Minutos desde agenda hasta completado",
+        "reschedules": "Reprogramaciones",
+        "reschedulesHelper": "Cambios de agenda en el rango"
+      },
+      "technicians": {
+        "title": "Rendimiento por tecnico",
+        "empty": "No hay datos de tecnicos.",
+        "completed": "completados",
+        "pending": "pendientes",
+        "unassigned": "Sin asignar",
+        "unknown": "Desconocido"
+      },
+      "services": {
+        "title": "Mix de servicios",
+        "empty": "Sin servicios en este rango."
+      },
+      "priorities": {
+        "title": "Mix de prioridades",
+        "empty": "Sin prioridades en este rango."
+      },
+      "invoices": {
+        "title": "Resumen de facturacion",
+        "empty": "Sin facturas en este rango."
+      },
+      "customers": {
+        "title": "Clientes principales",
+        "empty": "Sin actividad de clientes."
+      },
+      "exports": {
+        "jobs": "Exportar trabajos CSV",
+        "invoices": "Exportar facturas CSV"
+      },
+      "emails": {
+        "title": "Emails enviados",
+        "count": "Mostrando {{count}} de {{total}} registros en el rango.",
+        "empty": "No hay emails registrados.",
+        "recipientFallback": "Destinatario",
+        "page": "Pagina {{page}} de {{total}}",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "fields": {
+          "role": "Rol",
+          "job": "Trabajo",
+          "digest": "Digest",
+          "content": "Contenido"
+        },
+        "noJob": "Sin trabajo asociado"
+      }
+    },
+    "settings": {
+      "title": "Ajustes",
+      "subtitle": "Configuracion general del sistema.",
+      "business": {
+        "title": "Informacion del negocio",
+        "placeholders": {
+          "name": "Nombre comercial",
+          "phone": "Telefono",
+          "address": "Direccion",
+          "supportEmail": "Email de soporte",
+          "timezone": "Zona horaria"
+        }
+      },
+      "billing": {
+        "title": "Facturacion",
+        "placeholders": {
+          "prefix": "Prefijo invoice (INV-)",
+          "tax": "Impuesto por defecto (%)",
+          "notes": "Notas legales en facturas"
+        }
+      },
+      "tiers": {
+        "title": "Paquetes de servicio",
+        "subtitle": "Administra los paquetes y sus checklist.",
+        "helper": "{{count}} paquetes activos",
+        "loading": "Cargando paquetes de servicio...",
+        "empty": "No hay paquetes configurados.",
+        "labels": {
+          "checklist": "Checklist"
+        },
+        "placeholders": {
+          "name": "Nombre del paquete",
+          "checklist": "Un item por linea"
+        },
+        "defaults": {
+          "name": "Nuevo paquete"
+        },
+        "status": {
+          "active": "Activo",
+          "inactive": "Inactivo"
+        },
+        "actions": {
+          "add": "Agregar paquete",
+          "saving": "Guardando...",
+          "deactivate": "Desactivar"
+        },
+        "errors": {
+          "load": "No se pudieron cargar los paquetes.",
+          "save": "No se pudo guardar el paquete.",
+          "delete": "No se pudo desactivar el paquete.",
+          "name": "El nombre del paquete es obligatorio."
+        }
+      },
+      "smtp": {
+        "title": "Email (SMTP)",
+        "placeholders": {
+          "user": "Usuario SMTP",
+          "password": "Password SMTP"
+        },
+        "actions": {
+          "save": "Guardar configuracion"
+        }
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "subtitle": "Configura eventos que disparan correos automaticos.",
+        "completedJob": "Trabajo completado",
+        "invoiceSent": "Factura enviada",
+        "newCustomer": "Nuevo cliente registrado"
+      }
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "subtitle": "Historial de envios y reglas automaticas."
+    },
+    "placeholder": {
+      "kicker": "En construccion",
+      "body": "Este modulo se esta disenando con enfoque premium para la operacion del negocio. Proximamente tendras aqui los flujos completos."
+    }
+  },
+  "client": {
+    "home": {
+      "title": "Portal del cliente",
+      "subtitle": "Evidencias y facturacion en un solo lugar.",
+      "subtitleEmpty": "Tu perfil aun no esta configurado.",
+      "noProfile": "Contacta al administrador para activar tu perfil.",
+      "stats": {
+        "nextService": "Proximo servicio",
+        "notScheduled": "No programado",
+        "openInvoices": "Facturas abiertas",
+        "latestInvoice": "Ultima: {{number}}",
+        "totalServices": "Servicios totales",
+        "history": "Historial completo"
+      },
+      "request": {
+        "title": "Solicitar servicio rapido",
+        "subtitle": "Emergencias o visitas adicionales fuera del plan.",
+        "action": "Crear solicitud"
+      },
+      "recent": {
+        "title": "Historial reciente",
+        "evidence": "Evidencias: {{count}}",
+        "empty": "No hay servicios aun."
+      }
+    },
+    "request": {
+      "title": "Solicitud de servicio rapido",
+      "subtitle": "Crea una visita adicional fuera del plan.",
+      "formTitle": "Detalle de la solicitud",
+      "formSubtitle": "Esta solicitud se creara como trabajo on-demand.",
+      "responseTime": "Respuesta en menos de 24h",
+      "fields": {
+        "property": "Propiedad",
+        "noProperty": "Sin propiedades registradas",
+        "reason": "Motivo",
+        "preferredDate": "Fecha preferida",
+        "preferredTime": "Horario sugerido",
+        "description": "Descripcion"
+      },
+      "placeholders": {
+        "description": "Explica el problema o el servicio requerido."
+      },
+      "notice": "Se notificara al administrador una vez enviada la solicitud.",
+      "submit": "Enviar solicitud",
+      "loading": "Enviando...",
+      "errors": {
+        "property": "Selecciona una propiedad.",
+        "submit": "No se pudo enviar la solicitud."
+      },
+      "success": "Solicitud enviada correctamente.",
+      "reasons": {
+        "emergency": "Emergencia / Bomba",
+        "quickCleaning": "Limpieza rapida",
+        "chemBalance": "Balance quimico urgente",
+        "general": "Revision general"
+      }
+    },
+    "profile": {
+      "title": "Perfil del cliente",
+      "subtitle": "Datos personales y propiedades.",
+      "empty": "No se encontro el perfil del cliente.",
+      "manageAccount": "Gestionar cuenta",
+      "fields": {
+        "phone": "Telefono principal",
+        "phoneSecondary": "Telefono secundario",
+        "language": "Idioma preferido",
+        "type": "Tipo de cliente",
+        "address": "Direccion principal"
+      },
+      "addressFallback": "Sin ciudad registrada",
+      "properties": "Propiedades",
+      "noProperties": "No hay propiedades registradas.",
+      "property": {
+        "pool": "Piscina",
+        "water": "Tipo agua",
+        "volume": "Volumen N/A"
+      }
+    },
+    "invoices": {
+      "title": "Facturas",
+      "subtitle": "Historial de facturas y estados de pago.",
+      "emptyProfile": "No se encontro el perfil del cliente.",
+      "list": {
+        "title": "Facturas",
+        "total": "{{count}} total",
+        "empty": "No hay facturas aun.",
+        "viewPdf": "Ver PDF"
+      }
+    }
+  },
+  "tech": {
+    "home": {
+      "title": "Ruta del tecnico",
+      "subtitle": "Hoy necesitas evidencia en cada visita.",
+      "subtitleEmpty": "Tu perfil tecnico no esta configurado.",
+      "noProfile": "Contacta al administrador para activar tu perfil tecnico.",
+      "next": {
+        "kicker": "Siguiente visita",
+        "title": "Enfocate en el proximo servicio",
+        "today": "Hoy",
+        "complete": "Completar trabajo",
+        "done": "Todas las visitas de hoy estan completadas."
+      },
+      "stats": {
+        "stops": "Paradas hoy",
+        "scheduled": "Total programado",
+        "pending": "Pendientes",
+        "inRoute": "En ruta",
+        "remaining": "Por hacer",
+        "completed": "Completados",
+        "withPhotos": "Con fotos",
+        "onDemand": "On-demand",
+        "quickRequests": "Solicitudes rapidas"
+      },
+      "list": {
+        "title": "Lista del dia",
+        "empty": "No hay trabajos para hoy.",
+        "upload": "Completar trabajo"
+      }
+    },
+    "history": {
+      "title": "Historial del tecnico",
+      "subtitle": "Trabajos completados y evidencias.",
+      "completed": "Completados",
+      "total": "{{count}} total",
+      "empty": "No hay trabajos completados aun.",
+      "noDate": "Sin fecha",
+      "photos": "{{count}} fotos"
+    },
+    "profile": {
+      "title": "Perfil del tecnico",
+      "subtitle": "Datos personales y configuracion de cuenta.",
+      "fields": {
+        "name": "Nombre"
+      },
+      "manageAccount": "Gestionar cuenta",
+      "empty": "Perfil tecnico no configurado."
+    },
+    "jobs": {
+      "upload": {
+        "title": "Completar trabajo",
+        "subtitle": "Finaliza rapido con checklist y fotos.",
+        "kicker": "Visita de servicio",
+        "summaryTitle": "Resumen del trabajo",
+        "back": "Volver a ruta",
+        "checklistTitle": "Checklist",
+        "checklistAll": "Marcar todo",
+        "checklistClear": "Limpiar",
+        "checklistEmpty": "No hay checklist asignado.",
+        "checklistItem": "Item del checklist",
+        "notesTitle": "Notas",
+        "internalNotes": "Notas internas",
+        "internalNotesPlaceholder": "Notas para el equipo admin.",
+        "customerNotes": "Nota al cliente",
+        "customerNotesPlaceholder": "Nota visible para el cliente.",
+        "photosTitle": "Fotos",
+        "photosRequired": "Obligatorio",
+        "fields": {
+          "photo": "Evidencia fotografica"
+        },
+        "submit": "Completar trabajo",
+        "loading": "Subiendo...",
+        "success": "Evidencia subida y trabajo completado.",
+        "completedNote": "Este trabajo ya esta completado.",
+        "errors": {
+          "file": "Selecciona una foto.",
+          "checklist": "Completa el checklist antes de finalizar.",
+          "completed": "Este trabajo ya esta completado.",
+          "submit": "No se pudo subir la evidencia."
+        }
+      }
+    }
+  }
+}

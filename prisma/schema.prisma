@@ -1,0 +1,426 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TECH
+  CUSTOMER
+}
+
+enum Locale {
+  ES
+  EN
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CustomerType {
+  RESIDENTIAL
+  COMMERCIAL
+}
+
+enum JobStatus {
+  SCHEDULED
+  PENDING
+  ON_THE_WAY
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum JobType {
+  ROUTINE
+  ON_DEMAND
+}
+
+enum JobPriority {
+  NORMAL
+  URGENT
+}
+
+enum ServiceType {
+  WEEKLY_CLEANING
+  FILTER_CHECK
+  CHEM_BALANCE
+  EQUIPMENT_CHECK
+}
+
+enum PlanFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+}
+
+enum InvoiceTheme {
+  STANDARD
+  SPECIAL
+  ESTIMATE
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum DigestWindow {
+  MORNING
+  MIDDAY
+  EVENING
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  locale       Locale   @default(EN)
+  isActive     Boolean  @default(true)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  technician Technician?
+  customer   Customer?
+  requestedJobs Job[] @relation("UserRequestedJobs")
+  auditLogs  AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+  notificationPreferences NotificationPreference[]
+  actedNotifications Notification[] @relation("NotificationActor")
+}
+
+model Technician {
+  id     String  @id @default(cuid())
+  userId String  @unique
+  phone  String?
+  notes  String?
+  colorHex String?
+
+  user User @relation(fields: [userId], references: [id])
+  jobs Job[]
+  servicePlans ServicePlan[]
+  digests TechDigest[]
+  digestItems TechDigestItem[]
+  emailLogs EmailLog[]
+}
+
+model Customer {
+  id            String        @id @default(cuid())
+  userId        String?       @unique
+  nombre        String
+  apellidos     String
+  email         String
+  telefono      String
+  telefonoSecundario String?
+  idiomaPreferencia Locale        @default(EN)
+  estadoCuenta  AccountStatus @default(ACTIVE)
+  tipoCliente   CustomerType @default(RESIDENTIAL)
+  direccionLinea1 String?
+  direccionLinea2 String?
+  ciudad        String?
+  estadoProvincia String?
+  codigoPostal  String?
+  notas         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User?          @relation(fields: [userId], references: [id])
+  properties    Property[]
+  jobs          Job[]
+  invoices      Invoice[]
+  notifications Notification[]
+  servicePlans  ServicePlan[]
+  emailLogs     EmailLog[]
+}
+
+model Property {
+  id               String   @id @default(cuid())
+  customerId       String
+  name             String?
+  address          String
+  poolType         String?
+  poolVolumeGallons Int?
+  waterType        String?
+  surfaceType      String?
+  filterType       String?
+  pumpType         String?
+  heaterType       String?
+  hasSpa           Boolean  @default(false)
+  sanitizerType    String?
+  accessInfo       String?
+  locationNotes    String?
+  equipmentDetails String?
+  referencePhotos  Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  jobs     Job[]
+  servicePlans ServicePlan[]
+}
+
+model Job {
+    id            String    @id @default(cuid())
+    customerId    String
+    propertyId    String
+    technicianId  String?
+    serviceTierId String?
+    scheduledDate DateTime
+    status        JobStatus @default(SCHEDULED)
+    type          JobType   @default(ROUTINE)
+    priority      JobPriority @default(NORMAL)
+  serviceType   ServiceType @default(WEEKLY_CLEANING)
+  estimatedDurationMinutes Int?
+  sortOrder     Int?
+  notes         String?
+  customerNotes String?
+  checklist     Json?
+  planId        String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  requestedAt   DateTime?
+  requestedByUserId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+    customer   Customer   @relation(fields: [customerId], references: [id])
+    property   Property   @relation(fields: [propertyId], references: [id])
+    technician Technician? @relation(fields: [technicianId], references: [id])
+    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
+    plan       ServicePlan? @relation(fields: [planId], references: [id])
+    requestedBy User? @relation("UserRequestedJobs", fields: [requestedByUserId], references: [id])
+  photos     JobPhoto[]
+  invoices   Invoice[]
+  digestItems TechDigestItem[]
+  emailLogs EmailLog[]
+
+  @@index([scheduledDate])
+    @@index([technicianId, scheduledDate])
+    @@index([customerId, scheduledDate])
+    @@index([status])
+    @@index([serviceTierId])
+  }
+
+  model ServiceTier {
+    id        String   @id @default(cuid())
+    name      String
+    checklist Json?
+    isActive  Boolean  @default(true)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    jobs  Job[]
+    plans ServicePlan[]
+
+    @@unique([name])
+  }
+
+  model ServicePlan {
+    id            String       @id @default(cuid())
+    customerId    String
+    propertyId    String
+    technicianId  String?
+    serviceTierId String?
+    name          String
+    frequency     PlanFrequency
+    serviceType   ServiceType
+  priority      JobPriority  @default(NORMAL)
+  nextRunAt     DateTime
+  preferredTime String?
+  estimatedDurationMinutes Int?
+  checklist     Json?
+  notes         String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+    customer   Customer   @relation(fields: [customerId], references: [id])
+    property   Property   @relation(fields: [propertyId], references: [id])
+    technician Technician? @relation(fields: [technicianId], references: [id])
+    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
+    jobs       Job[]
+  }
+
+model JobPhoto {
+  id                String   @id @default(cuid())
+  jobId             String
+  takenAt           DateTime @default(now())
+  uploadedAt        DateTime @default(now())
+  url               String
+  visibleToCustomer Boolean  @default(true)
+  uploadedByUserId  String?
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  customerId String
+  jobId     String?
+  number    String        @unique
+  status    InvoiceStatus @default(DRAFT)
+  theme     InvoiceTheme  @default(STANDARD)
+  lineItems Json?
+  notes     String?
+  subtotal  Decimal       @db.Decimal(10, 2)
+  tax       Decimal       @db.Decimal(10, 2) @default(0)
+  total     Decimal       @db.Decimal(10, 2)
+  pdfUrl    String?
+  sentAt    DateTime?
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  job      Job?     @relation(fields: [jobId], references: [id])
+
+  @@index([status])
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  customerId String
+  recipientRole Role            @default(CUSTOMER)
+  channel   NotificationChannel @default(EMAIL)
+  eventType String
+  severity  NotificationSeverity @default(INFO)
+  status    NotificationStatus @default(QUEUED)
+  payload   Json?
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+  actorUserId String?
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id])
+
+  @@index([recipientRole, createdAt])
+  @@index([customerId, createdAt])
+  @@index([actorUserId])
+}
+
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    String
+  eventType String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, eventType])
+}
+
+model TechDigest {
+  id           String       @id @default(cuid())
+  technicianId String
+  routeDate    DateTime
+  window       DigestWindow
+  scheduledFor DateTime
+  status       NotificationStatus @default(QUEUED)
+  sentAt       DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  technician Technician @relation(fields: [technicianId], references: [id])
+  items       TechDigestItem[]
+  emailLogs   EmailLog[]
+}
+
+model TechDigestItem {
+  id           String   @id @default(cuid())
+  technicianId String
+  jobId        String
+  routeDate    DateTime
+  changeType   String
+  payload      Json?
+  digestId     String?
+  createdAt    DateTime @default(now())
+
+  technician Technician @relation(fields: [technicianId], references: [id])
+  job        Job        @relation(fields: [jobId], references: [id])
+  digest     TechDigest? @relation(fields: [digestId], references: [id])
+
+  @@index([technicianId, routeDate])
+  @@index([jobId])
+}
+
+model EmailLog {
+  id             String             @id @default(cuid())
+  recipientEmail String
+  recipientName  String?
+  recipientRole  String
+  subject        String
+  bodyText       String
+  bodyHtml       String?
+  status         NotificationStatus @default(QUEUED)
+  errorMessage   String?
+  sentAt         DateTime?
+  createdAt      DateTime           @default(now())
+  customerId     String?
+  technicianId   String?
+  jobId          String?
+  digestId       String?
+  metadata       Json?
+
+  customer   Customer?  @relation(fields: [customerId], references: [id])
+  technician Technician? @relation(fields: [technicianId], references: [id])
+  job        Job?       @relation(fields: [jobId], references: [id])
+  digest     TechDigest? @relation(fields: [digestId], references: [id])
+
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id       String   @id @default(cuid())
+  userId   String
+  action   String
+  entity   String
+  entityId String?
+  metadata Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}

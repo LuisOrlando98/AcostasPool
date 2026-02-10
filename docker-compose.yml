@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: acostaspool-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: acostaspool
+    ports:
+      - "5432:5432"
+    volumes:
+      - acostaspool_pgdata:/var/lib/postgresql/data
+
+volumes:
+  acostaspool_pgdata:

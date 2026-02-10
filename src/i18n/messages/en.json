@@ -1,0 +1,1339 @@
+{
+  "app": {
+    "name": "AcostasPool",
+    "tagline": "Service Admin System",
+    "platform": "Platform",
+    "footer": "Premium Operations - V1"
+  },
+  "common": {
+    "actions": {
+      "close": "Close",
+      "save": "Save",
+      "cancel": "Cancel",
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "view": "View",
+      "edit": "Edit",
+      "send": "Send",
+      "search": "Search"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "labels": {
+      "email": "Email",
+      "phone": "Phone",
+      "phoneSecondary": "Secondary phone",
+      "notes": "Notes",
+      "language": "Language",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "notAvailable": "Not available",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "navigation": {
+      "menu": "Menu",
+      "quick": "Quick navigation"
+    },
+    "environment": {
+      "local": "Local environment"
+    },
+    "language": {
+      "en": "English",
+      "es": "Spanish"
+    }
+  }
+  ,
+  "landing": {
+    "tagline": "Pool Operations Platform",
+    "nav": {
+      "services": "Services",
+      "process": "Process",
+      "team": "Team",
+      "contact": "Contact"
+    },
+    "cta": {
+      "signIn": "Sign In",
+      "clientPortal": "Client Portal",
+      "kicker": "Ready to scale",
+      "title": "Modernize your pool operations",
+      "subtitle": "Centralize teams, routes, and billing with a platform built for growth.",
+      "primary": "Book a demo",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone",
+      "hoursLabel": "Hours",
+      "hoursValue": "Mon-Sat · 8:00 AM - 6:00 PM"
+    },
+    "hero": {
+      "kicker": "Premium pool service operations",
+      "title": "Run every route with clarity, confidence, and proof.",
+      "subtitle": "AcostasPool keeps your field work, client updates, and invoices in sync so you can scale without chaos.",
+      "primaryCta": "Open admin suite",
+      "secondaryCta": "Explore client portal",
+      "badge1": "Route optimization",
+      "badge2": "Photo evidence",
+      "badge3": "Instant invoices"
+    },
+    "stats": {
+      "title": "Live operations",
+      "subtitle": "Everything visible in one dashboard",
+      "live": "Live",
+      "note": "Numbers shown are sample metrics for presentation.",
+      "routes": "Active routes",
+      "jobs": "Jobs scheduled",
+      "customers": "Customers served",
+      "invoices": "Invoices sent"
+    },
+    "services": {
+      "kicker": "What we deliver",
+      "title": "Everything your pool business needs",
+      "subtitle": "Designed for owners, technicians, and clients with real-time coordination and polished reporting.",
+      "operations": {
+        "title": "Route & schedule control",
+        "desc": "Plan weekly routes, track statuses, and adjust workloads in seconds."
+      },
+      "quality": {
+        "title": "Verified service quality",
+        "desc": "Capture evidence, checklists, and technician notes on every visit."
+      },
+      "billing": {
+        "title": "Smart billing & cashflow",
+        "desc": "Create professional invoices, send them instantly, and keep a full history."
+      },
+      "clients": {
+        "title": "Client experience",
+        "desc": "Give customers their own portal with schedules, photos, and invoices."
+      }
+    },
+    "process": {
+      "kicker": "How we work",
+      "title": "From request to payment",
+      "subtitle": "A simple workflow that keeps the office and field fully aligned.",
+      "step1": {
+        "title": "Plan & dispatch",
+        "desc": "Assign technicians, optimize routes, and confirm visits."
+      },
+      "step2": {
+        "title": "Service & evidence",
+        "desc": "Technicians log results, upload photos, and record notes."
+      },
+      "step3": {
+        "title": "Invoice & follow-up",
+        "desc": "Send invoices automatically and keep clients updated."
+      }
+    },
+    "team": {
+      "kicker": "Our team",
+      "title": "People behind the promise",
+      "subtitle": "Experienced operators focused on consistent service and transparent communication.",
+      "value1": "Certified technicians",
+      "value2": "Transparent reporting",
+      "value3": "Fast response time",
+      "value4": "Client-first operations",
+      "note": "We blend field expertise with modern systems to deliver measurable results."
+    }
+  }
+  ,
+  "nav": {
+    "admin": {
+      "dashboard": "Dashboard",
+      "calendar": "Calendar",
+      "technicians": "Technicians",
+      "customers": "Customers",
+      "invoices": "Invoices",
+      "reports": "Reports",
+      "settings": "Settings",
+      "routes": "Routes & Jobs"
+    },
+    "tech": {
+      "route": "My Route",
+      "history": "History",
+      "profile": "Profile"
+    },
+    "client": {
+      "home": "Home",
+      "request": "Request Service",
+      "invoices": "Invoices",
+      "profile": "Profile"
+    },
+    "account": "My account"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "tech": "Technician",
+    "client": "Client"
+  },
+  "userMenu": {
+    "notifications": "Notifications",
+    "recent": "Recent notifications",
+    "empty": "No new notifications.",
+    "system": "System notification",
+    "fallbackUser": "User",
+    "role": "Role",
+    "account": "My account",
+    "updates": "Updates",
+    "signOut": "Sign out",
+    "signingOut": "Signing out..."
+  },
+  "updates": {
+    "title": "Product updates",
+    "subtitle": "A living log of every change we ship.",
+    "empty": "No updates yet."
+  },
+  "notifications": {
+    "clear": "Clear",
+    "read": "Read",
+    "unread": "New",
+    "none": "No notification preferences available.",
+    "requested": "Requested",
+    "jobCompleted": "Job completed",
+    "customerRequest": "New service request",
+    "serviceScheduled": "Service scheduled",
+    "serviceRescheduled": "Service rescheduled",
+    "routeUpdated": "Route updated",
+    "invoiceSent": "Invoice sent",
+    "group": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "week": "This week",
+      "older": "Older"
+    },
+    "types": {
+      "JOB_COMPLETED": "Job completed",
+      "CUSTOMER_REQUEST": "New service request",
+      "SERVICE_SCHEDULED": "Service scheduled",
+      "SERVICE_RESCHEDULED": "Service rescheduled",
+      "ROUTE_UPDATED": "Route updated",
+      "INVOICE_SENT": "Invoice sent"
+    }
+  },
+  "account": {
+    "title": "My account",
+    "subtitle": "Manage your profile, language, and security.",
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Choose which updates you want to receive."
+    },
+    "profile": {
+      "title": "Profile",
+      "name": "Full name"
+    },
+    "photo": {
+      "title": "Profile photo"
+    },
+    "credentials": {
+      "title": "Credentials",
+      "subtitle": "Generate a temporary link to change your password."
+    },
+    "resetLink": {
+      "submit": "Generate reset link",
+      "loading": "Generating...",
+      "copy": "Copy link",
+      "error": "Unable to generate the link."
+    },
+    "avatar": {
+      "alt": "Avatar",
+      "empty": "No photo",
+      "submit": "Update photo",
+      "loading": "Uploading...",
+      "success": "Photo updated.",
+      "errors": {
+        "file": "Select an image.",
+        "upload": "Unable to upload."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Access the platform to continue.",
+      "kicker": "Secure access",
+      "headline": "Pool service",
+      "headlineAccent": "management",
+      "lede": "A modern platform to manage services, schedules, and customer experience across your pool operations.",
+      "metrics": {
+        "quality": {
+          "kicker": "Quality",
+          "title": "Water quality",
+          "desc": "Daily evidence and control."
+        },
+        "routes": {
+          "kicker": "Routes",
+          "title": "Planning",
+          "desc": "Optimized operations."
+        },
+        "security": {
+          "kicker": "Secure",
+          "title": "Internal data",
+          "desc": "Control and traceability."
+        }
+      },
+      "publicLink": "Back to public site",
+      "cardSubtitle": "Sign in to continue.",
+      "keepSignedIn": "Keep me signed in",
+      "forgot": "Forgot password?",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "••••••••",
+      "submit": "Sign in",
+      "loading": "Signing in...",
+      "error": "Unable to sign in."
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Enter the token and your new password.",
+      "token": "Token",
+      "tokenPlaceholder": "Token",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Update password",
+      "loading": "Saving...",
+      "success": "Password updated. You can sign in now.",
+      "errors": {
+        "token": "Token required.",
+        "length": "Password must be at least 6 characters.",
+        "mismatch": "Passwords do not match.",
+        "generic": "Unable to update password."
+      }
+    },
+    "complete": {
+      "title": "Complete your profile",
+      "subtitle": "Confirm your details and set your login password.",
+      "loading": "Loading profile...",
+      "password": "Password",
+      "passwordConfirm": "Confirm password",
+      "submit": "Complete profile",
+      "loadingSubmit": "Saving...",
+      "success": "Profile completed. You can sign in now.",
+      "notFound": "Profile not found.",
+      "errors": {
+        "token": "Token required.",
+        "load": "Unable to load profile.",
+        "length": "Password must be at least 6 characters.",
+        "mismatch": "Passwords do not match.",
+        "required": "First name, last name, and phone are required.",
+        "submit": "Unable to complete profile."
+      }
+    },
+    "unauthorized": {
+      "kicker": "Access restricted",
+      "title": "You don't have access",
+      "subtitle": "Your account doesn't have permission for this section. Contact the administrator for access.",
+      "backToLogin": "Back to login"
+    }
+  },
+  "address": {
+    "sectionTitle": "Primary address",
+    "sectionSubtitle": "Auto-fill city, state, and ZIP.",
+    "line1": "Address line 1",
+    "line2": "Address line 2",
+    "city": "City",
+    "country": "Country",
+    "countryValue": "USA",
+    "state": "State / Province",
+    "postal": "Postal code",
+    "placeholders": {
+      "line1": "Street, number",
+      "line2": "Apartment, suite, floor",
+      "city": "City",
+      "state": "State",
+      "postal": "ZIP"
+    },
+    "autocomplete": {
+      "enabled": "Autocomplete enabled for United States only.",
+      "missingKey": "Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to enable autocomplete."
+    }
+  },
+  "jobs": {
+    "status": {
+      "scheduled": "Scheduled",
+      "pending": "Pending",
+      "onTheWay": "On the way",
+      "inProgress": "In progress",
+      "completed": "Completed"
+    },
+    "type": {
+      "onDemand": "On-demand",
+      "routine": "Routine"
+    },
+    "priority": {
+      "urgent": "Urgent",
+      "normal": "Normal"
+    },
+    "service": {
+      "weeklyCleaning": "Weekly cleaning",
+      "filterCheck": "Filter check",
+      "chemBalance": "Chemical balance",
+      "equipmentCheck": "Equipment check"
+    },
+    "detail": {
+      "title": "Job details",
+      "subtitle": "Job details",
+      "notFound": "Job not found",
+      "invalidId": "Invalid ID.",
+      "notFoundMessage": "The requested job could not be found.",
+      "backToRoutes": "Back to routes",
+      "infoTitle": "Job information",
+      "fields": {
+        "tech": "Technician",
+        "jobType": "Job type",
+        "serviceType": "Service type",
+        "serviceTier": "Service tier",
+        "priority": "Priority",
+        "duration": "Estimated duration",
+        "plan": "Plan",
+        "evidence": "Evidence",
+        "internalNotes": "Internal notes",
+        "customerNotes": "Customer note"
+      },
+      "serviceTierFallback": "Standard",
+      "noTech": "Unassigned",
+      "durationValue": "{{minutes}} min",
+      "durationEmpty": "Not defined",
+      "planManual": "Manual",
+      "evidenceCount": "{{count}} photos",
+      "assignTech": "Assign technician",
+      "actions": {
+        "saveAssignment": "Save assignment",
+        "updateStatus": "Update status"
+      },
+      "statusTitle": "Status",
+      "checklist": "Checklist",
+      "noChecklist": "No checklist attached.",
+      "checklistItem": "Item",
+      "evidenceTitle": "Evidence",
+      "noEvidence": "No evidence available.",
+      "evidenceAlt": "Evidence",
+      "noAccess": "You don't have access to this job.",
+      "serviceTitle": "Service"
+    }
+  },
+  "plans": {
+    "frequency": {
+      "weekly": "Weekly",
+      "biweekly": "Biweekly",
+      "monthly": "Monthly"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Administration dashboard",
+      "subtitle": "Full control of routes, jobs, and invoices.",
+      "stats": {
+        "jobsToday": "Jobs today",
+        "inRoute": "In route",
+        "pending": "Pending",
+        "pendingToday": "Pending today",
+        "completed": "Completed",
+        "withEvidence": "With evidence",
+        "customers": "Customers",
+        "activeBase": "Active base"
+      },
+      "todayRoute": {
+        "title": "Today's route",
+        "count": "{{count}} jobs",
+        "empty": "No jobs scheduled for today."
+      },
+      "alerts": {
+        "title": "Critical alerts",
+        "onDemandToday": "On-demand requests today: {{count}}",
+        "pending": "Pending to complete: {{count}}"
+      },
+      "recentInvoices": {
+        "title": "Recent invoices",
+        "empty": "No recent invoices."
+      }
+    },
+    "routes": {
+      "title": "Routes & calendar",
+      "subtitle": "Daily planning and operational control.",
+      "errors": {
+        "needCustomers": "You need customers to assign jobs.",
+        "selectCustomerProperty": "Select a customer and property for each job.",
+        "createFailed": "Unable to create the jobs.",
+        "saveFailed": "Unable to save the changes.",
+        "saveJobFailed": "Unable to save the job changes."
+      },
+      "filters": {
+        "statusAll": "Status: All",
+        "priorityAll": "Priority: All",
+        "techAll": "Technician: All",
+        "search": "Search customer, address, technician...",
+        "rangeWeek": "Week",
+        "rangeMonth": "Month",
+        "rangeCustom": "Custom"
+      },
+      "table": {
+        "customer": "Customer",
+        "property": "Property",
+        "dateTime": "Date / Time",
+        "service": "Service",
+        "status": "Status",
+        "priority": "Priority",
+        "technician": "Technician",
+        "actions": "Actions"
+      },
+      "sections": {
+        "scheduledJobs": "Scheduled jobs",
+        "schedule": "Scheduling",
+        "propertyAccess": "Property & access",
+        "jobDetail": "Job details"
+      },
+      "actions": {
+        "creating": "Creating...",
+        "saveJobs": "Save jobs",
+        "saving": "Saving...",
+        "saveChanges": "Save changes",
+        "assignJobs": "Assign jobs",
+        "addJob": "Add another job",
+        "assignTechnician": "Assign technician"
+      },
+      "labels": {
+        "technicianFallback": "Technician",
+        "customer": "Customer",
+        "property": "Property",
+        "address": "Address",
+        "time": "Time",
+        "date": "Date",
+        "status": "Status",
+        "optional": "Optional",
+        "updateInfo": "Update info",
+        "accessNotes": "Access notes",
+        "noContact": "No contact",
+        "noProperties": "No properties",
+        "noEmail": "No email",
+        "noPhone": "No phone",
+        "withSpa": "With spa",
+        "withoutSpa": "No spa",
+        "unassigned": "Unassigned",
+        "access": "Access",
+        "free": "Free",
+        "manualOrder": "Manual order",
+        "jobsCount": "{{count}} jobs",
+        "scheduledTime": "Scheduled time",
+        "propertyFallback": "Property",
+        "saveHint": "Save to apply the job changes.",
+        "rangeCount": "{{range}} | {{count}} jobs",
+        "noJobsInRange": "No jobs for the selected range.",
+        "urgent": "Urgent",
+        "densityNormal": "Normal",
+        "densityCompact": "Compact",
+        "durationMinutes": "Estimated duration (min)",
+        "poolType": "Pool type",
+        "sanitizerSystem": "System",
+        "poolVolume": "Volume (gal)",
+        "filterType": "Filter type",
+        "waterType": "Water type",
+        "order": "Order",
+        "jobNumber": "Job #{{count}}",
+        "completedNoEvidence": "Job completed without evidence."
+      }
+    },
+    "technicians": {
+      "title": "Technicians",
+      "subtitle": "Manage and monitor technicians.",
+      "newTech": {
+        "kicker": "New technician",
+        "title": "Technician profile",
+        "fields": {
+          "fullName": "Full name",
+          "password": "Password",
+          "calendarColor": "Calendar color",
+          "notes": "Internal notes"
+        },
+        "actions": {
+          "create": "Create technician"
+        }
+      },
+      "overview": {
+        "cards": {
+          "technicians": "Technicians",
+          "total": "Total registered",
+          "active": "Active",
+          "activeHint": "Available",
+          "pending": "Pending",
+          "pendingHint": "On route",
+          "completed": "Completed",
+          "completedHint": "With evidence"
+        },
+        "title": "Technician team",
+        "results": "{{count}} technicians visible",
+        "placeholders": {
+          "search": "Search technician, email, phone..."
+        },
+        "filters": {
+          "all": "All",
+          "inactive": "Inactive"
+        },
+        "sort": {
+          "pending": "Sort: Pending",
+          "completed": "Sort: Completed",
+          "name": "Sort: Name"
+        },
+        "actions": {
+          "new": "New technician",
+          "viewRoute": "View route",
+          "viewProfile": "Profile"
+        },
+        "empty": "No technicians for the selected filters.",
+        "activity": {
+          "none": "No activity"
+        },
+        "table": {
+          "technician": "Technician",
+          "status": "Status",
+          "todayRoute": "Today's route",
+          "pending": "Pending",
+          "completed": "Completed",
+          "lastActivity": "Last activity",
+          "actions": "Actions",
+          "todayCount": "{{count}} jobs",
+          "noRoute": "No route"
+        }
+      },
+      "detail": {
+        "notFoundTitle": "Technician not found",
+        "notFoundSubtitle": "Invalid ID.",
+        "notFoundMessage": "The requested technician could not be found.",
+        "title": "Technician: {{name}}",
+        "subtitle": "Full job history.",
+        "roleLabel": "Technician",
+        "noPhone": "No phone",
+        "status": {
+          "inactive": "Inactive"
+        },
+        "actions": {
+          "back": "Back to technicians",
+          "viewRoute": "View route",
+          "assignJob": "Assign job"
+        },
+        "activity": {
+          "none": "No activity"
+        },
+        "stats": {
+          "today": "Today",
+          "todayHint": "Scheduled jobs",
+          "pending": "Pending",
+          "pendingHint": "On route",
+          "completed": "Completed",
+          "completedHint": "With evidence",
+          "lastActivity": "Last activity",
+          "lastActivityHint": "Recent update"
+        },
+        "profile": {
+          "title": "Profile & settings",
+          "subtitle": "Quick technician setup.",
+          "total": "Total: {{count}}",
+          "fields": {
+            "phone": "Updated phone",
+            "status": "Status",
+            "color": "Color",
+            "calendar": "Calendar",
+            "notes": "Internal notes"
+          },
+          "actions": {
+            "save": "Save changes"
+          }
+        },
+        "jobs": {
+          "upcomingTitle": "Upcoming jobs",
+          "upcomingSubtitle": "Quick calendar view for the technician.",
+          "completedTitle": "Completed history",
+          "completedSubtitle": "Recent jobs with evidence.",
+          "results": "{{count}} results",
+          "emptyDay": "Free",
+          "noEvidence": "No evidence",
+          "evidenceCount": "{{count}} photos",
+          "filters": {
+            "search": "Search customer, property...",
+            "status": "Status",
+            "priority": "Priority",
+            "service": "Service",
+            "evidence": "Evidence",
+            "withEvidence": "With evidence",
+            "withoutEvidence": "Without evidence",
+            "date": "Date",
+            "quickRange": "Quick range",
+            "all": "All",
+            "next7": "Next 7 days",
+            "next14": "Next 14 days",
+            "next30": "1 month",
+            "custom": "Custom",
+            "from": "From",
+            "to": "To",
+            "apply": "Apply",
+            "clear": "Clear",
+            "sortUpcoming": "Closest",
+            "sortOldest": "Oldest",
+            "sortFarthest": "Farthest",
+            "sortRecent": "Most recent"
+          },
+          "table": {
+            "date": "Date",
+            "customer": "Customer",
+            "address": "Address",
+            "service": "Service",
+            "priority": "Priority",
+            "status": "Status",
+            "evidence": "Evidence",
+            "action": "Action",
+            "viewJob": "View job",
+            "empty": "No jobs to show."
+          }
+        }
+      }
+    },
+    "customers": {
+      "title": "Customers",
+      "subtitle": "Profiles, properties, and history.",
+      "types": {
+        "residential": "Residential",
+        "commercial": "Commercial"
+      },
+      "overview": {
+        "cards": {
+          "customers": "Customers",
+          "total": "Total registered",
+          "active": "Active",
+          "activeHint": "In service",
+          "inactive": "Inactive",
+          "inactiveHint": "Off schedule",
+          "properties": "Properties",
+          "propertiesHint": "Registered"
+        },
+        "title": "Customer base",
+        "results": "{{count}} visible results.",
+        "page": "Page {{page}} of {{total}}",
+        "prev": "Previous",
+        "next": "Next",
+        "actions": {
+          "new": "New customer",
+          "viewProfile": "View profile"
+        },
+        "placeholders": {
+          "search": "Name or email"
+        },
+        "filters": {
+          "status": "Status"
+        },
+        "sort": {
+          "name": "Sort: Name",
+          "jobs": "Sort: Jobs",
+          "properties": "Sort: Properties"
+        },
+        "table": {
+          "customer": "Customer",
+          "status": "Status",
+          "properties": "Properties",
+          "jobs": "Jobs",
+          "invoices": "Invoices",
+          "action": "Action"
+        },
+        "empty": "No customers to display."
+      },
+      "new": {
+        "kicker": "New customer",
+        "title": "Customer profile",
+        "sections": {
+          "personal": {
+            "title": "Personal details",
+            "subtitle": "Basic customer and contact information."
+          },
+          "account": {
+            "title": "Account",
+            "subtitle": "Account status and customer classification."
+          }
+        },
+        "fields": {
+          "status": "Account status",
+          "type": "Customer type",
+          "sendInvite": "Send email to complete profile and create password."
+        },
+        "placeholders": {
+          "firstName": "First name",
+          "lastName": "Last name",
+          "email": "customer@email.com",
+          "phone": "+1 000-000-0000",
+          "notes": "Internal customer notes"
+        },
+        "actions": {
+          "create": "Create customer",
+          "creating": "Creating..."
+        }
+      },
+      "detail": {
+        "notFoundTitle": "Customer not found",
+        "notFoundSubtitle": "Invalid ID.",
+        "notFoundMessage": "The requested customer could not be found.",
+        "title": "Customer: {{name}}",
+        "subtitle": "Full profile, properties, and jobs.",
+        "kicker": "Customer",
+        "actions": {
+          "back": "Back to customers",
+          "addProperty": "Add property",
+          "scheduleJob": "Schedule job",
+          "newPlan": "New plan",
+          "sendInvite": "Send invite",
+          "saveChanges": "Save changes",
+          "saveProperty": "Save property",
+          "createJob": "Create job",
+          "createPlan": "Create recurring plan",
+          "saving": "Saving...",
+          "pause": "Pause",
+          "activate": "Activate"
+        },
+        "cards": {
+          "properties": "Properties",
+          "propertiesHint": "Registered",
+          "jobs": "Jobs",
+          "jobsHint": "History",
+          "plans": "Plans",
+          "plansHint": "Recurring",
+          "invoices": "Invoices",
+          "invoicesHint": "Issued"
+        },
+        "sections": {
+          "profileTitle": "Customer information",
+          "profileSubtitle": "Primary details and address.",
+          "propertiesTitle": "Properties",
+          "propertiesSubtitle": "Full pool details for each site.",
+          "plansTitle": "Recurring plans",
+          "plansSubtitle": "Weekly, biweekly, or monthly plans.",
+          "jobsTitle": "Jobs"
+        },
+        "labels": {
+          "total": "{{count}} total"
+        },
+        "properties": {
+          "empty": "No properties registered.",
+          "nameFallback": "Property",
+          "poolFallback": "Pool",
+          "systemFallback": "System",
+          "volumeFallback": "Volume N/A",
+          "modalKicker": "New property",
+          "modalTitle": "Pool details",
+          "modalSubtitle": "Capture address, system, and access notes.",
+          "fields": {
+            "name": "Property name",
+            "sanitizerType": "System (salt/chlorine)",
+            "spa": "Spa",
+            "accessInfo": "Access / pets",
+            "locationNotes": "Location notes"
+          },
+          "placeholders": {
+            "name": "Property name",
+            "nameExample": "Ex: Main house",
+            "address": "Street, number, city",
+            "poolType": "Pool type",
+            "waterType": "Clear, cloudy...",
+            "volume": "Volume",
+            "filterType": "Filter type",
+            "sanitizerType": "System (salt/chlorine)",
+            "accessInfo": "Access / pets / instructions",
+            "locationNotes": "Location notes"
+          },
+          "options": {
+            "select": "Select",
+            "concrete": "Concrete",
+            "fiberglass": "Fiberglass",
+            "vinyl": "Vinyl",
+            "altMaterial": "Alternative material",
+            "salt": "Salt",
+            "chlorine": "Chlorine",
+            "other": "Other"
+          },
+          "spaNo": "Spa: No",
+          "spaYes": "Spa: Yes"
+        },
+        "plans": {
+          "empty": "No active recurring plans.",
+          "nextRun": "Next:",
+          "paused": "Paused",
+          "modalKicker": "New plan",
+          "modalTitle": "Recurring plan",
+          "modalSubtitle": "Generate automatic jobs with checklists by service type.",
+          "fields": {
+            "name": "Plan name",
+            "frequency": "Frequency",
+            "nextDate": "Next date",
+            "notes": "Plan notes"
+          },
+          "placeholders": {
+            "name": "Primary weekly plan"
+          }
+        },
+        "jobs": {
+          "empty": "No jobs registered.",
+          "modalKicker": "New job",
+          "modalTitle": "Schedule job",
+          "modalSubtitle": "Set date, technician, and checklist."
+        }
+      },
+      "jobs": {
+        "title": "Job schedule",
+        "subtitle": "Full agenda with premium filters.",
+        "results": "{{count}} results",
+        "actions": {
+          "schedule": "Schedule job",
+          "view": "View job"
+        },
+        "placeholders": {
+          "search": "Property, address, or technician"
+        },
+        "filters": {
+          "status": "Status",
+          "priority": "Priority",
+          "service": "Service",
+          "technician": "Technician",
+          "evidence": "Evidence",
+          "withEvidence": "With evidence",
+          "withoutEvidence": "Without evidence",
+          "from": "From",
+          "to": "To",
+          "upcoming": "Upcoming",
+          "recent": "Most recent"
+        },
+        "table": {
+          "date": "Date",
+          "property": "Property",
+          "address": "Address",
+          "service": "Service",
+          "technician": "Technician",
+          "status": "Status",
+          "priority": "Priority",
+          "evidence": "Evidence",
+          "action": "Action"
+        },
+        "empty": "No jobs match the filters.",
+        "propertyFallback": "Property",
+        "noTech": "Unassigned",
+        "evidenceCount": "{{count}} photos",
+        "noEvidence": "No evidence"
+      },
+      "plans": {
+        "title": "Recurring plans",
+        "subtitle": "Manage frequency, next dates, and technicians.",
+        "results": "{{count}} plans",
+        "actions": {
+          "new": "New plan",
+          "createJob": "Create",
+          "pause": "Pause",
+          "activate": "Activate"
+        },
+        "placeholders": {
+          "search": "Plan, property, or technician"
+        },
+        "filters": {
+          "status": "Status",
+          "frequency": "Frequency",
+          "service": "Service",
+          "technician": "Technician"
+        },
+        "table": {
+          "plan": "Plan",
+          "property": "Property",
+          "frequency": "Frequency",
+          "next": "Next",
+          "technician": "Technician",
+          "priority": "Priority",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "empty": "No plans match the filters.",
+        "noTech": "Unassigned",
+        "status": {
+          "paused": "Paused"
+        }
+      }
+    },
+    "invoices": {
+      "title": "Invoices",
+      "subtitle": "Billing, delivery, and payment status.",
+      "theme": {
+        "standard": "Standard",
+        "special": "Special",
+        "estimate": "Estimate"
+      },
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue"
+      },
+      "list": {
+        "title": "Invoices",
+        "count": "{{count}} invoices registered.",
+        "showing": "Showing {{count}} of {{total}} invoices.",
+        "total": "{{count}} total",
+        "empty": "No invoices yet.",
+        "noTech": "No technician",
+        "theme": "Theme",
+        "job": "Job",
+        "tech": "Technician",
+        "noJob": "No job attached",
+        "viewPdf": "View PDF",
+        "page": "Page {{page}} of {{total}}",
+        "prev": "Previous",
+        "next": "Next"
+      },
+      "actions": {
+        "new": "New invoice"
+      },
+      "new": {
+        "kicker": "New invoice",
+        "title": "Billing details",
+        "fields": {
+          "customer": "Customer",
+          "job": "Job (optional)",
+          "noJob": "Unassigned",
+          "theme": "Theme",
+          "description": "Description",
+          "subtotal": "Subtotal",
+          "tax": "Tax"
+        },
+        "placeholders": {
+          "description": "Monthly service"
+        },
+        "actions": {
+          "create": "Create invoice"
+        }
+      },
+      "send": {
+        "submit": "Send",
+        "loading": "Sending...",
+        "success": "Sent.",
+        "error": "Unable to send."
+      }
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Operational performance, team productivity, and billing insights.",
+      "filters": {
+        "range": "Range",
+        "range7": "7 days",
+        "range30": "30 days",
+        "range90": "90 days",
+        "allTechs": "All technicians",
+        "allStatuses": "All statuses",
+        "allTypes": "All types",
+        "allServices": "All services",
+        "allPriorities": "All priorities",
+        "apply": "Apply",
+        "reset": "Reset"
+      },
+      "cards": {
+        "totalJobs": "Total jobs",
+        "completed": "completed",
+        "completionRate": "Completion rate",
+        "pending": "pending",
+        "onDemand": "On-demand jobs",
+        "requests": "requests",
+        "evidenceRate": "Evidence coverage",
+        "withEvidence": "with evidence",
+        "avgDelay": "Avg. completion delay",
+        "avgDelayHelper": "Minutes from schedule to completion",
+        "reschedules": "Reschedules",
+        "reschedulesHelper": "Schedule changes in range"
+      },
+      "technicians": {
+        "title": "Technician performance",
+        "empty": "No technician data available.",
+        "completed": "completed",
+        "pending": "pending",
+        "unassigned": "Unassigned",
+        "unknown": "Unknown"
+      },
+      "services": {
+        "title": "Service mix",
+        "empty": "No services in this range."
+      },
+      "priorities": {
+        "title": "Priority mix",
+        "empty": "No priorities in this range."
+      },
+      "invoices": {
+        "title": "Invoice summary",
+        "empty": "No invoices in this range."
+      },
+      "customers": {
+        "title": "Top customers",
+        "empty": "No customer activity yet."
+      },
+      "exports": {
+        "jobs": "Export jobs CSV",
+        "invoices": "Export invoices CSV"
+      },
+      "emails": {
+        "title": "Sent emails",
+        "count": "Showing {{count}} of {{total}} records in range.",
+        "empty": "No emails logged.",
+        "recipientFallback": "Recipient",
+        "page": "Page {{page}} of {{total}}",
+        "prev": "Previous",
+        "next": "Next",
+        "fields": {
+          "role": "Role",
+          "job": "Job",
+          "digest": "Digest",
+          "content": "Content"
+        },
+        "noJob": "No job linked"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "General system configuration.",
+      "business": {
+        "title": "Business information",
+        "placeholders": {
+          "name": "Business name",
+          "phone": "Phone",
+          "address": "Address",
+          "supportEmail": "Support email",
+          "timezone": "Timezone"
+        }
+      },
+      "billing": {
+        "title": "Billing",
+        "placeholders": {
+          "prefix": "Invoice prefix (INV-)",
+          "tax": "Default tax (%)",
+          "notes": "Legal notes for invoices"
+        }
+      },
+      "tiers": {
+        "title": "Service tiers",
+        "subtitle": "Manage the packages and their checklist templates.",
+        "helper": "{{count}} active tiers",
+        "loading": "Loading service tiers...",
+        "empty": "No service tiers configured yet.",
+        "labels": {
+          "checklist": "Checklist items"
+        },
+        "placeholders": {
+          "name": "Tier name",
+          "checklist": "One checklist item per line"
+        },
+        "defaults": {
+          "name": "New tier"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "actions": {
+          "add": "Add tier",
+          "saving": "Saving...",
+          "deactivate": "Deactivate"
+        },
+        "errors": {
+          "load": "Unable to load service tiers.",
+          "save": "Unable to save the service tier.",
+          "delete": "Unable to deactivate the service tier.",
+          "name": "Tier name is required."
+        }
+      },
+      "smtp": {
+        "title": "Email (SMTP)",
+        "placeholders": {
+          "user": "SMTP user",
+          "password": "SMTP password"
+        },
+        "actions": {
+          "save": "Save configuration"
+        }
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "Configure events that trigger automatic emails.",
+        "completedJob": "Job completed",
+        "invoiceSent": "Invoice sent",
+        "newCustomer": "New customer registered"
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "History of sends and automation rules."
+    },
+    "placeholder": {
+      "kicker": "Under construction",
+      "body": "This module is being crafted with a premium operational focus. Full workflows will appear here soon."
+    }
+  },
+  "client": {
+    "home": {
+      "title": "Client portal",
+      "subtitle": "Evidence and billing in one place.",
+      "subtitleEmpty": "Your profile isn't configured yet.",
+      "noProfile": "Contact the administrator to activate your profile.",
+      "stats": {
+        "nextService": "Next service",
+        "notScheduled": "Not scheduled",
+        "openInvoices": "Open invoices",
+        "latestInvoice": "Latest: {{number}}",
+        "totalServices": "Total services",
+        "history": "Full history"
+      },
+      "request": {
+        "title": "Request a quick service",
+        "subtitle": "Emergencies or extra visits outside the plan.",
+        "action": "Create request"
+      },
+      "recent": {
+        "title": "Recent history",
+        "evidence": "Evidence: {{count}}",
+        "empty": "No services yet."
+      }
+    },
+    "request": {
+      "title": "Quick service request",
+      "subtitle": "Create an additional visit outside the plan.",
+      "formTitle": "Request details",
+      "formSubtitle": "This request will be created as an on-demand job.",
+      "responseTime": "Response within 24h",
+      "fields": {
+        "property": "Property",
+        "noProperty": "No properties registered",
+        "reason": "Reason",
+        "preferredDate": "Preferred date",
+        "preferredTime": "Preferred time",
+        "description": "Description"
+      },
+      "placeholders": {
+        "description": "Describe the issue or requested service."
+      },
+      "notice": "The administrator will be notified once submitted.",
+      "submit": "Send request",
+      "loading": "Sending...",
+      "errors": {
+        "property": "Select a property.",
+        "submit": "Unable to submit the request."
+      },
+      "success": "Request sent successfully.",
+      "reasons": {
+        "emergency": "Emergency / Pump",
+        "quickCleaning": "Quick cleaning",
+        "chemBalance": "Urgent chemical balance",
+        "general": "General checkup"
+      }
+    },
+    "profile": {
+      "title": "Client profile",
+      "subtitle": "Personal data and properties.",
+      "empty": "Customer profile not found.",
+      "manageAccount": "Manage account settings",
+      "fields": {
+        "phone": "Primary phone",
+        "phoneSecondary": "Secondary phone",
+        "language": "Preferred language",
+        "type": "Customer type",
+        "address": "Primary address"
+      },
+      "addressFallback": "No city registered",
+      "properties": "Properties",
+      "noProperties": "No properties registered.",
+      "property": {
+        "pool": "Pool",
+        "water": "Water type",
+        "volume": "Volume N/A"
+      }
+    },
+    "invoices": {
+      "title": "Invoices",
+      "subtitle": "Invoice history and payment status.",
+      "emptyProfile": "Customer profile not found.",
+      "list": {
+        "title": "Invoices",
+        "total": "{{count}} total",
+        "empty": "No invoices yet.",
+        "viewPdf": "View PDF"
+      }
+    }
+  },
+  "tech": {
+    "home": {
+      "title": "Technician route",
+      "subtitle": "Evidence required on every visit today.",
+      "subtitleEmpty": "Your technician profile isn't configured yet.",
+      "noProfile": "Contact the administrator to activate your technician profile.",
+      "next": {
+        "kicker": "Next stop",
+        "title": "Focus on the next visit",
+        "today": "Today",
+        "complete": "Complete job",
+        "done": "All visits completed for today."
+      },
+      "stats": {
+        "stops": "Stops today",
+        "scheduled": "Scheduled",
+        "pending": "Pending",
+        "inRoute": "On route",
+        "remaining": "Remaining",
+        "completed": "Completed",
+        "withPhotos": "With photos",
+        "onDemand": "On-demand",
+        "quickRequests": "Quick requests"
+      },
+      "list": {
+        "title": "Today's list",
+        "empty": "No jobs scheduled for today.",
+        "upload": "Complete job"
+      }
+    },
+    "history": {
+      "title": "Technician history",
+      "subtitle": "Completed jobs and evidence.",
+      "completed": "Completed",
+      "total": "{{count}} total",
+      "empty": "No completed jobs yet.",
+      "noDate": "No date",
+      "photos": "{{count}} photos"
+    },
+    "profile": {
+      "title": "Technician profile",
+      "subtitle": "Personal details and account settings.",
+      "fields": {
+        "name": "Name"
+      },
+      "manageAccount": "Manage account settings",
+      "empty": "Technician profile not configured."
+    },
+    "jobs": {
+      "upload": {
+        "title": "Complete job",
+        "subtitle": "Finish the visit quickly with checklist and photos.",
+        "kicker": "Service visit",
+        "summaryTitle": "Job summary",
+        "back": "Back to route",
+        "checklistTitle": "Checklist",
+        "checklistAll": "Mark all",
+        "checklistClear": "Clear",
+        "checklistEmpty": "No checklist assigned for this job.",
+        "checklistItem": "Checklist item",
+        "notesTitle": "Notes",
+        "internalNotes": "Internal notes",
+        "internalNotesPlaceholder": "Notes for the admin team.",
+        "customerNotes": "Customer note",
+        "customerNotesPlaceholder": "Note visible to the customer.",
+        "photosTitle": "Photos",
+        "photosRequired": "Required",
+        "fields": {
+          "photo": "Photo evidence"
+        },
+        "submit": "Complete job",
+        "loading": "Uploading...",
+        "success": "Evidence uploaded and job completed.",
+        "completedNote": "This job is already completed.",
+        "errors": {
+          "file": "Select a photo.",
+          "checklist": "Complete the checklist before finishing the job.",
+          "completed": "This job is already completed.",
+          "submit": "Unable to upload evidence."
+        }
+      }
+    }
+  }
+}
