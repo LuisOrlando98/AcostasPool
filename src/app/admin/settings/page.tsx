@@ -14,8 +14,8 @@ export default async function SettingsPage() {
       subtitle={t("admin.settings.subtitle")}
       role="ADMIN"
     >
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-6">
+      <section className="space-y-6">
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className="app-card p-6 shadow-contrast">
             <h2 className="text-lg font-semibold">
               {t("admin.settings.business.title")}
@@ -65,17 +65,27 @@ export default async function SettingsPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="app-card p-6 shadow-contrast">
+          <h2 className="text-lg font-semibold">
+            {t("admin.settings.tiers.title")}
+          </h2>
+          <p className="mt-3 text-sm text-slate-600">
+            {t("admin.settings.tiers.subtitle")}
+          </p>
+          <div className="mt-4">
+            <ServiceTiersManager />
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
           <div className="app-card p-6 shadow-contrast">
             <h2 className="text-lg font-semibold">
-              {t("admin.settings.tiers.title")}
+              {t("admin.settings.notifications.title")}
             </h2>
             <p className="mt-3 text-sm text-slate-600">
-              {t("admin.settings.tiers.subtitle")}
+              {t("admin.settings.notifications.subtitle")}
             </p>
-            <div className="mt-4">
-              <ServiceTiersManager />
-            </div>
+            <NotificationPreferences />
           </div>
 
           <div className="app-card p-6 shadow-contrast">
@@ -100,16 +110,6 @@ export default async function SettingsPage() {
                 {t("admin.settings.smtp.actions.save")}
               </button>
             </div>
-          </div>
-
-          <div className="app-card p-6 shadow-contrast">
-            <h2 className="text-lg font-semibold">
-              {t("admin.settings.notifications.title")}
-            </h2>
-            <p className="mt-3 text-sm text-slate-600">
-              {t("admin.settings.notifications.subtitle")}
-            </p>
-            <NotificationPreferences />
           </div>
         </div>
       </section>

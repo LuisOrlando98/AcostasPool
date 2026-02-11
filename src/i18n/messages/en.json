@@ -10,6 +10,9 @@
       "close": "Close",
       "save": "Save",
       "cancel": "Cancel",
+      "add": "Add item",
+      "moveUp": "Up",
+      "moveDown": "Down",
       "create": "Create",
       "update": "Update",
       "delete": "Delete",
@@ -1124,11 +1127,13 @@
           "active": "Active",
           "inactive": "Inactive"
         },
-        "actions": {
-          "add": "Add tier",
-          "saving": "Saving...",
-          "deactivate": "Deactivate"
-        },
+      "actions": {
+        "add": "Add tier",
+        "showInactive": "Show inactive",
+        "hideInactive": "Hide inactive",
+        "saving": "Saving...",
+        "deactivate": "Deactivate"
+      },
         "errors": {
           "load": "Unable to load service tiers.",
           "save": "Unable to save the service tier.",

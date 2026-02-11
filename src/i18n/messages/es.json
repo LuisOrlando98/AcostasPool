@@ -10,6 +10,9 @@
       "close": "Cerrar",
       "save": "Guardar",
       "cancel": "Cancelar",
+      "add": "Agregar item",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
       "create": "Crear",
       "update": "Actualizar",
       "delete": "Eliminar",
@@ -1126,6 +1129,8 @@
         },
         "actions": {
           "add": "Agregar paquete",
+          "showInactive": "Mostrar inactivos",
+          "hideInactive": "Ocultar inactivos",
           "saving": "Guardando...",
           "deactivate": "Desactivar"
         },

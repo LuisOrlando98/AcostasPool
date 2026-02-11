@@ -58,15 +58,20 @@ export default function NotificationPreferences() {
           ? pref.eventType.replaceAll("_", " ")
           : label;
         return (
-        <label key={pref.eventType} className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={pref.enabled}
-            onChange={(event) => toggle(pref.eventType, event.target.checked)}
-          />
-          {resolvedLabel}
-        </label>
-      );})}
+          <label
+            key={pref.eventType}
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+          >
+            <span className="text-sm text-slate-700">{resolvedLabel}</span>
+            <input
+              type="checkbox"
+              className="app-toggle"
+              checked={pref.enabled}
+              onChange={(event) => toggle(pref.eventType, event.target.checked)}
+            />
+          </label>
+        );
+      })}
     </div>
   );
 }
