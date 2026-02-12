@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const eventType = typeof body?.eventType === "string" ? body.eventType : "";
   const enabled = Boolean(body?.enabled);
-  const allowed = ROLE_NOTIFICATION_TYPES[session.role] ?? [];
+  const allowed = (ROLE_NOTIFICATION_TYPES[session.role] ?? []) as readonly string[];
 
   if (!eventType || !allowed.includes(eventType)) {
     return NextResponse.json({ error: "Invalid event type" }, { status: 400 });

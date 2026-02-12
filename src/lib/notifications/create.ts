@@ -1,4 +1,9 @@
-import type { NotificationSeverity, NotificationStatus, Role } from "@prisma/client";
+import type {
+  NotificationSeverity,
+  NotificationStatus,
+  Prisma,
+  Role,
+} from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { publishNotification } from "@/lib/notifications/realtime";
 
@@ -28,7 +33,7 @@ export async function createNotification({
       eventType,
       severity,
       status,
-      payload: payload ?? undefined,
+      payload: (payload ?? undefined) as Prisma.InputJsonValue | undefined,
       actorUserId: actorUserId ?? undefined,
       channel: "EMAIL",
     },

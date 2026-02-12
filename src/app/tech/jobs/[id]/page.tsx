@@ -2,6 +2,7 @@ import AppShell from "@/components/layout/AppShell";
 import TechJobUploadForm from "@/components/tech/TechJobUploadForm";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { resolveParams } from "@/lib/utils/params";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
@@ -9,14 +10,31 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 export default async function TechJobUploadPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await requireRole("TECH");
   const t = await getTranslations();
   const locale = await getRequestLocale();
+  const resolvedParams = await resolveParams(params);
+  const jobId = resolvedParams?.id;
+  if (!jobId) {
+    return (
+      <AppShell
+        title={t("tech.jobs.upload.title")}
+        subtitle={t("jobs.detail.notFound")}
+        role="TECH"
+      >
+        <section className="app-card p-6 shadow-contrast">
+          <p className="text-sm text-slate-500">
+            {t("jobs.detail.notFoundMessage")}
+          </p>
+        </section>
+      </AppShell>
+    );
+  }
 
   const job = await prisma.job.findUnique({
-    where: { id: params.id },
+    where: { id: jobId },
     include: {
       customer: true,
       property: true,

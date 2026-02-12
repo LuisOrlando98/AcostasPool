@@ -8,16 +8,20 @@ import { readStoredAsset } from "@/lib/storage/object-store";
 
 export const runtime = "nodejs";
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 export async function POST(
   _request: Request,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const invoiceId = params?.id;
+  const { id: invoiceId } = await context.params;
   if (!invoiceId) {
     return NextResponse.json({ error: "Invalid invoice id" }, { status: 400 });
   }

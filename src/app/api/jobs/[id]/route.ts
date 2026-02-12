@@ -4,17 +4,22 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { getServiceTierChecklist } from "@/lib/service-tiers";
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { id: routeJobId } = await context.params;
   const body = await request.json().catch(() => ({}));
-  const jobId = params?.id ?? body?.jobId;
+  const jobId = routeJobId ?? body?.jobId;
   if (!jobId) {
     return NextResponse.json({ error: "Missing job id" }, { status: 400 });
   }

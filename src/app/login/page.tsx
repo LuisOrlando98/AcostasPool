@@ -12,6 +12,8 @@ type LoginResponse = {
   error?: string;
 };
 
+type PasswordCredentialCtor = new (form: HTMLFormElement) => Credential;
+
 export default function LoginPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -54,7 +56,7 @@ export default function LoginPage() {
 
     if (formRef.current && typeof window !== "undefined") {
       const PasswordCredentialCtor = (
-        window as typeof window & { PasswordCredential?: typeof PasswordCredential }
+        window as Window & { PasswordCredential?: PasswordCredentialCtor }
       ).PasswordCredential;
       if (PasswordCredentialCtor && navigator.credentials?.store) {
         try {

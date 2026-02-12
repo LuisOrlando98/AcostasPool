@@ -7,17 +7,22 @@ import { buildJobPhotoAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   const session = await getSession();
   if (!session || !["TECH", "ADMIN"].includes(session.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const { id: jobId } = await context.params;
 
   const job = await prisma.job.findUnique({
-    where: { id: params.id },
+    where: { id: jobId },
     include: { technician: { include: { user: true } } },
   });
   if (!job) {
@@ -82,14 +87,14 @@ export async function POST(
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const url = await storePublicAsset({
-      relativePath: buildJobPhotoAssetPath(params.id, file.name),
+      relativePath: buildJobPhotoAssetPath(jobId, file.name),
       buffer,
       contentType: file.type || undefined,
       cacheControl: "public, max-age=31536000, immutable",
     });
     const photo = await prisma.jobPhoto.create({
       data: {
-        jobId: params.id,
+        jobId,
         url,
         uploadedByUserId: session.sub,
       },
@@ -117,7 +122,7 @@ export async function POST(
 
   if (Object.keys(updateData).length > 0) {
     await prisma.job.update({
-      where: { id: params.id },
+      where: { id: jobId },
       data: updateData,
     });
   }

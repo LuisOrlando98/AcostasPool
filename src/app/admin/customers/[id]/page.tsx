@@ -547,7 +547,7 @@ async function createJobFromPlan(formData: FormData) {
 export default async function CustomerDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireRole("ADMIN");
   const t = await getTranslations();
@@ -1469,7 +1469,7 @@ export default async function CustomerDetailPage({
                   className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
                 >
                   <div>
-                    <p className="font-medium text-slate-900">{invoice.code}</p>
+                    <p className="font-medium text-slate-900">{invoice.number}</p>
                     <p className="text-xs text-slate-500">
                       {invoice.createdAt.toLocaleDateString(locale)} - {statusLabel}
                     </p>

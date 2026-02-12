@@ -46,7 +46,7 @@ async function updateTechnician(formData: FormData) {
 export default async function TechnicianDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireRole("ADMIN");
   const t = await getTranslations();

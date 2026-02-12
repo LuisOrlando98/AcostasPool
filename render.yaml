@@ -52,4 +52,3 @@ databases:
   - name: acostaspool-db
     plan: free
     databaseName: acostaspool
-    user: postgres

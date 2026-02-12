@@ -9,7 +9,7 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 export default async function ClientJobDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const session = await requireRole("CUSTOMER");
   const t = await getTranslations();

@@ -151,6 +151,23 @@ export default async function RoutesPage() {
       address: property.address,
     })),
   }));
+  const serviceTiersData = serviceTiers.map((tier) => ({
+    id: tier.id,
+    name: tier.name,
+    isActive: tier.isActive,
+    checklist: Array.isArray(tier.checklist)
+      ? tier.checklist.map((item) => {
+          if (!item || typeof item !== "object" || Array.isArray(item)) {
+            return { label: undefined, completed: false };
+          }
+          const candidate = item as { label?: unknown; completed?: unknown };
+          return {
+            label: typeof candidate.label === "string" ? candidate.label : undefined,
+            completed: Boolean(candidate.completed),
+          };
+        })
+      : null,
+  }));
 
   return (
     <AppShell
@@ -162,7 +179,7 @@ export default async function RoutesPage() {
         jobs={jobsData}
         technicians={techniciansData}
         customers={customersData}
-        serviceTiers={serviceTiers}
+        serviceTiers={serviceTiersData}
       />
     </AppShell>
   );

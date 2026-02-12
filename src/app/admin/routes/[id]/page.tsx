@@ -63,7 +63,7 @@ async function updateJobTechnician(formData: FormData) {
 export default async function JobDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireRole("ADMIN");
   const t = await getTranslations();

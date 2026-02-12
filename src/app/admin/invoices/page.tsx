@@ -84,9 +84,7 @@ async function createInvoice(formData: FormData) {
 }
 
 type InvoicesPageProps = {
-  searchParams?:
-    | Record<string, string | string[] | undefined>
-    | Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function InvoicesPage({ searchParams }: InvoicesPageProps) {

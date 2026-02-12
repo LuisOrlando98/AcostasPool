@@ -16,9 +16,7 @@ import {
 } from "@/lib/reports/filters";
 
 type ReportsPageProps = {
-  searchParams?:
-    | Record<string, string | string[] | undefined>
-    | Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const getReportSnapshot = (filtersKey: string, filters: ReportFilters) =>

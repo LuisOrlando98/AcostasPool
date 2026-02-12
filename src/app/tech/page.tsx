@@ -7,7 +7,7 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 export default async function TechPage() {
-  await requireRole("TECH");
+  const session = await requireRole("TECH");
   const t = await getTranslations();
   const locale = await getRequestLocale();
 

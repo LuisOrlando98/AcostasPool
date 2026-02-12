@@ -89,9 +89,7 @@ async function createCustomer(formData: FormData) {
 }
 
 type CustomersPageProps = {
-  searchParams?:
-    | Record<string, string | string[] | undefined>
-    | Promise<Record<string, string | string[] | undefined>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function CustomersPage({ searchParams }: CustomersPageProps) {
