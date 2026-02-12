@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import path from "path";
-import { readFile } from "fs/promises";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { formatCustomerName } from "@/lib/customers/format";
 import { createNotification } from "@/lib/notifications/create";
+import { readStoredAsset } from "@/lib/storage/object-store";
 
 export const runtime = "nodejs";
 
@@ -45,11 +44,6 @@ export async function POST(
     );
   }
 
-  const pdfPath = path.join(
-    process.cwd(),
-    "public",
-    invoice.pdfUrl.replace(/^\//, "")
-  );
   const customerName = formatCustomerName(invoice.customer);
 
   try {
@@ -60,7 +54,7 @@ export async function POST(
       auth: { user, pass },
     });
 
-    const pdfBuffer = await readFile(pdfPath);
+    const pdfBuffer = await readStoredAsset(invoice.pdfUrl);
 
     await transporter.sendMail({
       from,

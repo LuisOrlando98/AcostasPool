@@ -62,6 +62,7 @@ async function createInvoice(formData: FormData) {
   });
 
   const pdfUrl = await generateInvoicePdf({
+    customerId: customer.id,
     invoiceNumber: invoice.number,
     issueDate: invoice.createdAt,
     customerName,

@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: acostaspool-web
+    env: node
+    plan: free
+    buildCommand: |
+      npm install
+      npx prisma generate
+      npm run build
+    startCommand: |
+      npx prisma migrate deploy
+      npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: acostaspool-db
+          property: connectionString
+      - key: AUTH_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: NEXT_PUBLIC_CDN_URL
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      - key: AWS_S3_BUCKET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+databases:
+  - name: acostaspool-db
+    plan: free
+    databaseName: acostaspool
+    user: postgres

@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { storePublicAsset } from "@/lib/storage/object-store";
+import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 
 export type InvoiceLineItem = {
   label: string;
@@ -8,6 +8,7 @@ export type InvoiceLineItem = {
 };
 
 type InvoicePdfInput = {
+  customerId: string;
   invoiceNumber: string;
   issueDate: Date;
   customerName: string;
@@ -228,11 +229,14 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   }
 
   const pdfBytes = await pdfDoc.save();
-  const fileName = `${input.invoiceNumber}.pdf`.replace(/[^a-zA-Z0-9-_\.]/g, "");
-  const invoicesDir = path.join(process.cwd(), "public", "invoices");
-  await mkdir(invoicesDir, { recursive: true });
-  const outputPath = path.join(invoicesDir, fileName);
-  await writeFile(outputPath, pdfBytes);
-
-  return `/invoices/${fileName}`;
+  return storePublicAsset({
+    relativePath: buildInvoicePdfAssetPath(
+      input.customerId,
+      input.invoiceNumber,
+      input.issueDate
+    ),
+    buffer: Buffer.from(pdfBytes),
+    contentType: "application/pdf",
+    cacheControl: "public, max-age=31536000, immutable",
+  });
 }

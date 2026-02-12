@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import path from "path";
-import { mkdir, writeFile } from "fs/promises";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { signSessionToken } from "@/lib/auth/jwt";
 import { AUTH_COOKIE_MAX_AGE, AUTH_COOKIE_NAME } from "@/lib/auth/config";
+import { storePublicAsset } from "@/lib/storage/object-store";
+import { buildAvatarAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 
@@ -22,14 +22,12 @@ export async function POST(request: Request) {
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const safeName = file.name.replace(/[^a-zA-Z0-9-_.]/g, "_");
-  const fileName = `${Date.now()}-${safeName}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
-  await mkdir(uploadDir, { recursive: true });
-  const outputPath = path.join(uploadDir, fileName);
-  await writeFile(outputPath, buffer);
-
-  const avatarUrl = `/uploads/avatars/${fileName}`;
+  const avatarUrl = await storePublicAsset({
+    relativePath: buildAvatarAssetPath(session.sub, file.name),
+    buffer,
+    contentType: file.type || undefined,
+    cacheControl: "public, max-age=31536000, immutable",
+  });
   const user = await prisma.user.update({
     where: { id: session.sub },
     data: { avatarUrl },

@@ -43,6 +43,12 @@ Abre `http://localhost:3000`.
 ## Variables de entorno
 - `DATABASE_URL`
 - `AUTH_SECRET`
+- `STORAGE_DRIVER` (`local` o `s3`)
+- `NEXT_PUBLIC_CDN_URL`
+- `AWS_REGION`
+- `AWS_S3_BUCKET`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
 - `SEED_ADMIN_EMAIL`
 - `SEED_ADMIN_PASSWORD`
 - `SEED_TECH_EMAIL`
@@ -68,3 +74,22 @@ Abre `http://localhost:3000`.
 - `docs/Architecture.md`
 - `docs/DataModel.md`
 - `docs/Backlog.md`
+
+## Storage S3
+- Avatares: `uploads/avatars/{userId}/{YYYY}/{MM}/...`
+- Fotos de trabajos: `uploads/jobs/{jobId}/{YYYY}/{MM}/...`
+- Facturas PDF: `invoices/{YYYY}/{MM}/{customerId}/{invoiceNumber}.pdf`
+
+## Deploy en Render
+1. Crea servicios con `render.yaml` (web + postgres).
+2. Configura variables:
+   - `AUTH_SECRET`
+   - `APP_URL`
+   - `STORAGE_DRIVER=s3`
+   - `AWS_REGION`
+   - `AWS_S3_BUCKET`
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `NEXT_PUBLIC_CDN_URL`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+3. Haz deploy y valida subida de avatar, fotos y PDFs.

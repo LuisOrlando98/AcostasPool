@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import path from "path";
-import { mkdir, writeFile } from "fs/promises";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
+import { storePublicAsset } from "@/lib/storage/object-store";
+import { buildJobPhotoAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 
@@ -77,25 +77,16 @@ export async function POST(
     }
   }
 
-  const uploadDir = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "jobs",
-    params.id
-  );
-  await mkdir(uploadDir, { recursive: true });
-
   const createdPhotos = [];
   for (const file of fileEntries) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const safeName = file.name.replace(/[^a-zA-Z0-9-_.]/g, "_");
-    const fileName = `${Date.now()}-${safeName}`;
-    const outputPath = path.join(uploadDir, fileName);
-    await writeFile(outputPath, buffer);
-
-    const url = `/uploads/jobs/${params.id}/${fileName}`;
+    const url = await storePublicAsset({
+      relativePath: buildJobPhotoAssetPath(params.id, file.name),
+      buffer,
+      contentType: file.type || undefined,
+      cacheControl: "public, max-age=31536000, immutable",
+    });
     const photo = await prisma.jobPhoto.create({
       data: {
         jobId: params.id,
