@@ -8,7 +8,13 @@ services:
       npm ci --include=dev
       npx prisma generate
       npm run build
-    startCommand: npx prisma migrate deploy && npm run start -- -H 0.0.0.0 -p $PORT
+    startCommand: |
+      for i in 1 2 3; do
+        npx prisma migrate deploy && break
+        echo "Prisma migrate deploy failed (attempt $i). Retrying in 5s..."
+        sleep 5
+      done
+      npm run start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_VERSION
         value: "20"
