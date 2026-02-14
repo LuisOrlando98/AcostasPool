@@ -82,14 +82,16 @@ Abre `http://localhost:3000`.
 
 ## Deploy en Render
 1. Crea servicios con `render.yaml` (web + postgres).
-2. Configura variables:
+2. Configura variables minimas para levantar la app:
    - `AUTH_SECRET`
    - `APP_URL`
-   - `STORAGE_DRIVER=s3`
+   - `STORAGE_DRIVER=local` (usa `s3` solo cuando ya tengas bucket y credenciales listas)
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+3. Si activas S3, agrega:
    - `AWS_REGION`
    - `AWS_S3_BUCKET`
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `NEXT_PUBLIC_CDN_URL`
-   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-3. Haz deploy y valida subida de avatar, fotos y PDFs.
+4. Haz deploy y valida `GET /api/health` antes de probar login.
+5. Valida subida de avatar, fotos y PDFs.

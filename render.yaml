@@ -3,13 +3,12 @@ services:
     name: acostaspool-web
     env: node
     plan: free
+    healthCheckPath: /api/health
     buildCommand: |
-      npm install
+      npm ci
       npx prisma generate
       npm run build
-    startCommand: |
-      npx prisma migrate deploy
-      npm run start
+    startCommand: npx prisma migrate deploy && npm run start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_VERSION
         value: "20"
@@ -24,7 +23,7 @@ services:
       - key: APP_URL
         sync: false
       - key: STORAGE_DRIVER
-        value: s3
+        value: local
       - key: NEXT_PUBLIC_CDN_URL
         sync: false
       - key: AWS_REGION
