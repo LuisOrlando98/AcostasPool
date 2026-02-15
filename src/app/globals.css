@@ -1982,7 +1982,7 @@ summary.no-marker::marker {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.2rem 1rem 5.2rem;
+  padding: calc(env(safe-area-inset-top) + 1rem) 1.2rem 1rem 5.2rem;
   backdrop-filter: blur(10px);
   background: color-mix(in srgb, var(--imm-surface) 88%, transparent);
   border-bottom: 1px solid var(--imm-border);
@@ -2030,8 +2030,8 @@ summary.no-marker::marker {
 
 .imm-theme-toggle {
   position: fixed;
-  top: 0.9rem;
-  left: 1rem;
+  top: calc(env(safe-area-inset-top) + 0.9rem);
+  left: calc(env(safe-area-inset-left) + 1rem);
   z-index: 50;
   display: inline-flex;
   align-items: center;
@@ -2074,6 +2074,7 @@ summary.no-marker::marker {
 .imm-hero {
   position: relative;
   min-height: 100vh;
+  min-height: 100svh;
   overflow: clip;
 }
 
@@ -2100,6 +2101,7 @@ summary.no-marker::marker {
   position: relative;
   z-index: 2;
   min-height: 100vh;
+  min-height: 100svh;
   display: grid;
   align-content: end;
   gap: 1rem;
@@ -2174,6 +2176,7 @@ summary.no-marker::marker {
 .imm-story-panel {
   position: relative;
   min-height: 78vh;
+  min-height: 78svh;
   overflow: clip;
 }
 
@@ -2181,6 +2184,7 @@ summary.no-marker::marker {
   position: relative;
   z-index: 2;
   min-height: 78vh;
+  min-height: 78svh;
   display: grid;
   align-content: center;
   gap: 0.75rem;
@@ -2219,6 +2223,7 @@ summary.no-marker::marker {
 .imm-carousel-frame {
   position: relative;
   min-height: 72vh;
+  min-height: 72svh;
   border-radius: 1.2rem;
   overflow: clip;
   border: 1px solid var(--imm-border);
@@ -2325,6 +2330,7 @@ summary.no-marker::marker {
 .imm-contact {
   position: relative;
   min-height: 66vh;
+  min-height: 66svh;
   overflow: clip;
 }
 
@@ -2332,6 +2338,7 @@ summary.no-marker::marker {
   position: relative;
   z-index: 2;
   min-height: 66vh;
+  min-height: 66svh;
   display: grid;
   align-content: center;
   gap: 0.8rem;
@@ -2358,7 +2365,7 @@ summary.no-marker::marker {
 }
 
 .imm-footer {
-  padding: 1.5rem 1.2rem 2.8rem;
+  padding: 1.5rem 1.2rem calc(env(safe-area-inset-bottom) + 2.8rem);
   border-top: 1px solid var(--imm-border);
   display: flex;
   flex-wrap: wrap;
@@ -2448,6 +2455,7 @@ summary.no-marker::marker {
   .imm-story-panel,
   .imm-story-caption {
     min-height: 66vh;
+    min-height: 66svh;
   }
 
   .imm-story-caption {
@@ -2461,10 +2469,100 @@ summary.no-marker::marker {
 
   .imm-carousel-frame {
     min-height: 58vh;
+    min-height: 58svh;
   }
 
   .imm-contact,
   .imm-contact-content {
     min-height: 58vh;
+    min-height: 58svh;
+  }
+}
+
+@media (max-width: 560px) {
+  .imm-theme-toggle {
+    top: calc(env(safe-area-inset-top) + 0.6rem);
+    left: calc(env(safe-area-inset-left) + 0.65rem);
+  }
+
+  .imm-theme-toggle-btn {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .imm-header {
+    padding:
+      calc(env(safe-area-inset-top) + 0.78rem)
+      0.8rem
+      0.78rem
+      4rem;
+  }
+
+  .imm-brand {
+    font-size: 0.9rem;
+  }
+
+  .imm-hero-content {
+    padding: calc(env(safe-area-inset-top) + 6.2rem) 0.9rem 2rem;
+  }
+
+  .imm-hero-content h1 {
+    max-width: 12ch;
+  }
+
+  .imm-hero-actions .imm-btn,
+  .imm-contact-actions .imm-btn {
+    width: 100%;
+  }
+
+  .imm-story-caption h2 {
+    max-width: 13ch;
+    font-size: clamp(1.25rem, 6.5vw, 2rem);
+  }
+
+  .imm-carousel-section {
+    padding: 2.6rem 0.8rem;
+  }
+
+  .imm-carousel-frame {
+    border-radius: 0.95rem;
+    min-height: 52vh;
+    min-height: 52svh;
+  }
+
+  .imm-carousel-caption p {
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+  }
+
+  .imm-contact-content {
+    padding: 2rem 0.9rem;
+  }
+
+  .imm-footer {
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .imm-carousel-slide,
+  .imm-btn,
+  .imm-carousel-dot {
+    transition: none;
+  }
+
+  .imm-hero-media,
+  .imm-story-media,
+  .imm-contact-media {
+    transform: none;
   }
 }
