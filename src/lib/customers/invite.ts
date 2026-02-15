@@ -94,7 +94,10 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     },
   });
 
-  const baseUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const baseUrl = process.env.APP_URL?.trim();
+  if (!baseUrl) {
+    return { ok: false, error: "APP_URL no configurado" };
+  }
   const inviteLink = `${baseUrl}/complete-profile?token=${token}`;
 
   const host = process.env.SMTP_HOST;

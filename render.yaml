@@ -1,20 +1,20 @@
 services:
   - type: web
     name: acostaspool-web
-    env: node
-    plan: free
+    runtime: node
+    plan: starter
     healthCheckPath: /api/health
     buildCommand: |
       npm ci --include=dev
       npx prisma generate
       npm run build
-    startCommand: |
+    preDeployCommand: |
       for i in 1 2 3; do
         npx prisma migrate deploy && break
         echo "Prisma migrate deploy failed (attempt $i). Retrying in 5s..."
         sleep 5
       done
-      npm run start -- -H 0.0.0.0 -p $PORT
+    startCommand: npm run start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_VERSION
         value: "20"
@@ -27,7 +27,7 @@ services:
       - key: AUTH_SECRET
         sync: false
       - key: APP_URL
-        sync: false
+        value: https://acostaspool-web.onrender.com
       - key: STORAGE_DRIVER
         value: local
       - key: NEXT_PUBLIC_CDN_URL

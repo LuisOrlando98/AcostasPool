@@ -2,43 +2,30 @@
 
 Plataforma web para administracion de servicios a piscinas: rutas, evidencias e invoices.
 
-## Requisitos
-- Node.js 20+
-- PostgreSQL (local para V1)
+## Modo de trabajo
+Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 
-## Configuracion rapida
-1. Copia `.env.example` a `.env` y ajusta valores.
-2. Instala dependencias:
+## Deploy en Render
+1. Crea servicios con `render.yaml` (web + postgres).
+2. Define estas variables en el servicio web:
+   - `AUTH_SECRET`
+   - `APP_URL`
+   - `STORAGE_DRIVER` (`local` o `s3`)
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+3. Si activas S3, agrega:
+   - `AWS_REGION`
+   - `AWS_S3_BUCKET`
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `NEXT_PUBLIC_CDN_URL`
+4. Haz deploy y valida:
+   - `GET /api/health`
+   - `GET /api/health/db`
 
-```bash
-npm install
-```
-
-3. Genera el cliente de Prisma:
-
-```bash
-npm run db:generate
-```
-
-4. Aplica el esquema a la base de datos:
-
-```bash
-npm run db:push
-```
-
-5. Crea el usuario admin inicial:
-
-```bash
-npm run db:seed
-```
-
-6. Ejecuta el servidor:
-
-```bash
-npm run dev
-```
-
-Abre `http://localhost:3000`.
+## Flujo de migraciones
+1. Sube los cambios con la carpeta `prisma/migrations` al repositorio.
+2. Haz deploy en Render.
+3. Render ejecuta `preDeployCommand` con `npx prisma migrate deploy` y aplica migraciones antes de iniciar la app.
 
 ## Variables de entorno
 - `DATABASE_URL`
@@ -58,9 +45,9 @@ Abre `http://localhost:3000`.
 
 ## Scripts utiles
 - `npm run db:generate`
-- `npm run db:push`
 - `npm run db:migrate`
 - `npm run db:studio`
+- `npm run db:create-admin`
 - `npm run db:seed`
 
 ## Credenciales demo (seed)
@@ -79,19 +66,3 @@ Abre `http://localhost:3000`.
 - Avatares: `uploads/avatars/{userId}/{YYYY}/{MM}/...`
 - Fotos de trabajos: `uploads/jobs/{jobId}/{YYYY}/{MM}/...`
 - Facturas PDF: `invoices/{YYYY}/{MM}/{customerId}/{invoiceNumber}.pdf`
-
-## Deploy en Render
-1. Crea servicios con `render.yaml` (web + postgres).
-2. Configura variables minimas para levantar la app:
-   - `AUTH_SECRET`
-   - `APP_URL`
-   - `STORAGE_DRIVER=local` (usa `s3` solo cuando ya tengas bucket y credenciales listas)
-   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-3. Si activas S3, agrega:
-   - `AWS_REGION`
-   - `AWS_S3_BUCKET`
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `NEXT_PUBLIC_CDN_URL`
-4. Haz deploy y valida `GET /api/health` antes de probar login.
-5. Valida subida de avatar, fotos y PDFs.

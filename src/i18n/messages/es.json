@@ -240,11 +240,18 @@
     "avatar": {
       "alt": "Avatar",
       "empty": "Sin foto",
+      "choose": "Elegir foto",
+      "change": "Cambiar foto",
+      "ready": "Puedes subir cualquier imagen. La normalizamos automaticamente a maximo 700x700.",
+      "hint": "Formato final optimizado para avatar cuadrado.",
+      "selected": "Archivo seleccionado: {{name}} ({{size}})",
       "submit": "Actualizar foto",
       "loading": "Subiendo...",
+      "processing": "Normalizando imagen...",
       "success": "Imagen actualizada.",
       "errors": {
         "file": "Selecciona una imagen.",
+        "normalize": "No se pudo procesar la imagen.",
         "upload": "No se pudo subir."
       }
     }

@@ -7,10 +7,61 @@ import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildAvatarAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
+const MAX_AVATAR_SIDE = 700;
+
+type AvatarOutput = {
+  format: "jpeg" | "png" | "webp";
+  contentType: string;
+  extension: string;
+};
+
+function getAvatarOutput(fileType: string): AvatarOutput {
+  if (fileType === "image/png") {
+    return { format: "png", contentType: "image/png", extension: "png" };
+  }
+  if (fileType === "image/webp") {
+    return { format: "webp", contentType: "image/webp", extension: "webp" };
+  }
+  return { format: "jpeg", contentType: "image/jpeg", extension: "jpg" };
+}
+
+async function normalizeAvatar(buffer: Buffer, fileType: string) {
+  const sharp = (await import("sharp")).default;
+  const output = getAvatarOutput(fileType);
+
+  let pipeline = sharp(buffer)
+    .rotate()
+    .resize(MAX_AVATAR_SIDE, MAX_AVATAR_SIDE, {
+      fit: "cover",
+      position: "centre",
+      withoutEnlargement: true,
+    });
+
+  if (output.format === "png") {
+    pipeline = pipeline.png({ compressionLevel: 9 });
+  } else if (output.format === "webp") {
+    pipeline = pipeline.webp({ quality: 90 });
+  } else {
+    pipeline = pipeline.jpeg({ quality: 90, mozjpeg: true });
+  }
+
+  return {
+    buffer: await pipeline.toBuffer(),
+    contentType: output.contentType,
+    extension: output.extension,
+  };
+}
 
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { id: true, role: true, fullName: true },
+  });
+  if (!currentUser) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -19,13 +70,28 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "File required" }, { status: 400 });
   }
+  if (!file.type.startsWith("image/")) {
+    return NextResponse.json({ error: "Image file required" }, { status: 400 });
+  }
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+  let normalized;
+  try {
+    normalized = await normalizeAvatar(buffer, file.type);
+  } catch (error) {
+    console.error("Avatar normalization failed", error);
+    return NextResponse.json({ error: "Unable to process image" }, { status: 400 });
+  }
+
   const avatarUrl = await storePublicAsset({
-    relativePath: buildAvatarAssetPath(session.sub, file.name),
-    buffer,
-    contentType: file.type || undefined,
+    relativePath: buildAvatarAssetPath(
+      currentUser.role,
+      currentUser.fullName,
+      `avatar.${normalized.extension}`
+    ),
+    buffer: normalized.buffer,
+    contentType: normalized.contentType,
     cacheControl: "public, max-age=31536000, immutable",
   });
   const user = await prisma.user.update({

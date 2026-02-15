@@ -1,5 +1,6 @@
 const SAFE_SEGMENT_PATTERN = /[^a-zA-Z0-9-_]/g;
 const SAFE_FILE_BASENAME_PATTERN = /[^a-zA-Z0-9-_.]/g;
+const SAFE_FILE_EXTENSION_PATTERN = /[^a-zA-Z0-9]/g;
 
 function sanitizeSegment(value: string, fallback: string) {
   const normalized = value.trim().replace(SAFE_SEGMENT_PATTERN, "_");
@@ -21,9 +22,46 @@ function buildFileName(originalName: string, now: Date) {
   return `${now.getTime()}-${safeBaseName || fallback}`;
 }
 
-export function buildAvatarAssetPath(userId: string, originalName: string) {
+function slugifyName(value: string, fallback: string) {
+  const normalized = value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || fallback;
+}
+
+function getFileExtension(originalName: string, fallback: string) {
+  const extIndex = originalName.lastIndexOf(".");
+  if (extIndex === -1) {
+    return fallback;
+  }
+  const extension = originalName
+    .slice(extIndex + 1)
+    .toLowerCase()
+    .replace(SAFE_FILE_EXTENSION_PATTERN, "");
+  return extension || fallback;
+}
+
+function getAvatarRoleSegment(role: string) {
+  if (role === "TECH") return "tech";
+  if (role === "CUSTOMER") return "client";
+  return "admin";
+}
+
+export function buildAvatarAssetPath(
+  role: string,
+  fullName: string,
+  originalName: string
+) {
   const now = new Date();
-  return `uploads/avatars/${sanitizeSegment(userId, "user")}/${toYearMonth(now)}/${buildFileName(originalName, now)}`;
+  const roleSegment = getAvatarRoleSegment(role);
+  const baseName = slugifyName(fullName, "user");
+  const extension = getFileExtension(originalName, "jpg");
+  return `avatars/${roleSegment}/${baseName}-${now.getTime()}.${extension}`;
 }
 
 export function buildJobPhotoAssetPath(jobId: string, originalName: string) {

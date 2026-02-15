@@ -27,12 +27,12 @@ async function upsertUser({ email, password, fullName, role }) {
 }
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@acostaspool.local";
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@acostaspool.com";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || "Admin123!";
-  const techEmail = process.env.SEED_TECH_EMAIL || "tech@acostaspool.local";
+  const techEmail = process.env.SEED_TECH_EMAIL || "tech@acostaspool.com";
   const techPassword = process.env.SEED_TECH_PASSWORD || "Tech123!";
   const customerEmail =
-    process.env.SEED_CUSTOMER_EMAIL || "cliente@acostaspool.local";
+    process.env.SEED_CUSTOMER_EMAIL || "cliente@acostaspool.com";
   const customerPassword =
     process.env.SEED_CUSTOMER_PASSWORD || "Client123!";
 
