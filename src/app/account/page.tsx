@@ -2,6 +2,7 @@ import AppShell from "@/components/layout/AppShell";
 import AvatarUpload from "@/components/account/AvatarUpload";
 import ResetLinkButton from "@/components/account/ResetLinkButton";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
+import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth/guards";
 import { cookies } from "next/headers";
@@ -101,9 +102,12 @@ export default async function AccountPage() {
                   <option value="ES">ES</option>
                 </select>
               </div>
-              <button className="app-button-primary w-full px-4 py-3 text-sm font-semibold">
-                {t("common.actions.save")}
-              </button>
+              <FormSubmitButton
+                idleLabel={t("common.actions.save")}
+                pendingLabel={t("common.feedback.saving")}
+                successLabel={t("common.feedback.saved")}
+                className="w-full px-4 py-3"
+              />
             </form>
           </div>
 

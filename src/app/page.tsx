@@ -3,13 +3,13 @@ import ClientLanding from "@/components/landing/ClientLanding";
 import { getSiteSocialLinks } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "Professional Pool Maintenance You Can Trust | AcostasPool",
+  title: "Luxury Pool Maintenance in South Florida | AcostasPool",
   description:
-    "Weekly pool service, repairs, and chemical balancing in Miami-Dade. Licensed and insured technicians with fast quote response.",
+    "Immersive luxury pool maintenance experience for South Florida homes. Weekly care, chemistry control, and premium presentation.",
   openGraph: {
-    title: "Professional Pool Maintenance You Can Trust",
+    title: "Luxury Pool Maintenance in South Florida",
     description:
-      "Weekly service, equipment repairs, and water chemistry management for Miami-Dade homes.",
+      "Premium weekly service, equipment care, and crystal-clear water management for South Florida properties.",
     type: "website",
   },
   keywords: [

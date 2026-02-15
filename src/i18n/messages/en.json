@@ -21,6 +21,14 @@
       "send": "Send",
       "search": "Search"
     },
+    "feedback": {
+      "saving": "Saving...",
+      "saved": "Saved",
+      "creating": "Creating...",
+      "created": "Created",
+      "updating": "Updating...",
+      "updated": "Updated"
+    },
     "status": {
       "active": "Active",
       "inactive": "Inactive"
@@ -1028,10 +1036,18 @@
       "title": "Reports",
       "subtitle": "Operational performance, team productivity, and billing insights.",
       "filters": {
+        "toolbar": "Filters",
         "range": "Range",
         "range7": "7 days",
         "range30": "30 days",
         "range90": "90 days",
+        "from": "From",
+        "to": "To",
+        "technician": "Technician",
+        "status": "Status",
+        "type": "Type",
+        "service": "Service",
+        "priority": "Priority",
         "allTechs": "All technicians",
         "allStatuses": "All statuses",
         "allTypes": "All types",
@@ -1123,6 +1139,15 @@
           "youtube": "YouTube",
           "tiktok": "TikTok"
         },
+        "hints": {
+          "instagram": "Profile or direct link.",
+          "facebook": "Business page or profile.",
+          "whatsapp": "Phone number or wa.me link.",
+          "x": "X / Twitter profile.",
+          "youtube": "Channel or profile URL.",
+          "tiktok": "Public TikTok profile."
+        },
+        "footerHint": "Only valid and complete links are shown in the landing footer.",
         "actions": {
           "save": "Save social links"
         }

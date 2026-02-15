@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
+import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
@@ -466,9 +467,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
                 />
               </div>
-              <button className="app-button-primary w-full px-4 py-3 text-sm font-semibold">
-                {t("admin.invoices.new.actions.create")}
-              </button>
+              <FormSubmitButton
+                idleLabel={t("admin.invoices.new.actions.create")}
+                pendingLabel={t("common.feedback.creating")}
+                successLabel={t("common.feedback.created")}
+                className="w-full px-4 py-3"
+              />
               </form>
             </div>
           </div>

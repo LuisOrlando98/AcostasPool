@@ -3,6 +3,7 @@ import { JobStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
+import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { prisma } from "@/lib/db";
 import { getJobStatusLabel } from "@/lib/constants";
 import { requireRole } from "@/lib/auth/guards";
@@ -260,9 +261,12 @@ export default async function JobDetailPage({
                       </option>
                     ))}
                   </select>
-                  <button className="app-button-primary w-full px-4 py-3 text-sm font-semibold">
-                    {t("jobs.detail.actions.saveAssignment")}
-                  </button>
+                  <FormSubmitButton
+                    idleLabel={t("jobs.detail.actions.saveAssignment")}
+                    pendingLabel={t("common.feedback.saving")}
+                    successLabel={t("common.feedback.saved")}
+                    className="w-full px-4 py-3"
+                  />
                 </form>
               </div>
               <div>
@@ -282,9 +286,12 @@ export default async function JobDetailPage({
                     <option value="IN_PROGRESS">{t("jobs.status.inProgress")}</option>
                     <option value="COMPLETED">{t("jobs.status.completed")}</option>
                   </select>
-                  <button className="app-button-primary w-full px-4 py-3 text-sm font-semibold">
-                    {t("jobs.detail.actions.updateStatus")}
-                  </button>
+                  <FormSubmitButton
+                    idleLabel={t("jobs.detail.actions.updateStatus")}
+                    pendingLabel={t("common.feedback.updating")}
+                    successLabel={t("common.feedback.updated")}
+                    className="w-full px-4 py-3"
+                  />
                 </form>
               </div>
             </div>

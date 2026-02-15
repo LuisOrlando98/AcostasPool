@@ -21,6 +21,14 @@
       "send": "Enviar",
       "search": "Buscar"
     },
+    "feedback": {
+      "saving": "Guardando...",
+      "saved": "Guardado",
+      "creating": "Creando...",
+      "created": "Creado",
+      "updating": "Actualizando...",
+      "updated": "Actualizado"
+    },
     "status": {
       "active": "Activo",
       "inactive": "Desactivado"
@@ -1028,10 +1036,18 @@
       "title": "Reportes",
       "subtitle": "Rendimiento operativo, productividad del equipo y facturacion.",
       "filters": {
+        "toolbar": "Filtros",
         "range": "Rango",
         "range7": "7 dias",
         "range30": "30 dias",
         "range90": "90 dias",
+        "from": "Desde",
+        "to": "Hasta",
+        "technician": "Tecnico",
+        "status": "Estado",
+        "type": "Tipo",
+        "service": "Servicio",
+        "priority": "Prioridad",
         "allTechs": "Todos los tecnicos",
         "allStatuses": "Todos los estados",
         "allTypes": "Todos los tipos",
@@ -1123,6 +1139,15 @@
           "youtube": "YouTube",
           "tiktok": "TikTok"
         },
+        "hints": {
+          "instagram": "Perfil o enlace directo.",
+          "facebook": "Pagina o perfil comercial.",
+          "whatsapp": "Numero o enlace wa.me.",
+          "x": "Perfil de X / Twitter.",
+          "youtube": "Canal o usuario.",
+          "tiktok": "Perfil publico de TikTok."
+        },
+        "footerHint": "Solo se muestran en el footer los enlaces validos y completos.",
         "actions": {
           "save": "Guardar redes sociales"
         }

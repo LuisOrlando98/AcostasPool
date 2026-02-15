@@ -1,3 +1,4 @@
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/db";
 
 export type SiteSocialLinks = {
@@ -17,6 +18,8 @@ const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   youtubeUrl: null,
   tiktokUrl: null,
 };
+
+const SITE_SETTINGS_TAG = "site-settings";
 
 function normalizeUrl(value: string) {
   const trimmed = value.trim();
@@ -57,24 +60,32 @@ function normalizeWhatsApp(value: string) {
   return `https://wa.me/${digits}`;
 }
 
+const getSiteSocialLinksCached = unstable_cache(
+  async () => {
+    const settings = await prisma.siteSettings.findUnique({
+      where: { id: "default" },
+      select: {
+        instagramUrl: true,
+        facebookUrl: true,
+        whatsappUrl: true,
+        xUrl: true,
+        youtubeUrl: true,
+        tiktokUrl: true,
+      },
+    });
+
+    if (!settings) {
+      return EMPTY_SOCIAL_LINKS;
+    }
+
+    return settings;
+  },
+  ["site-settings-social-links"],
+  { revalidate: 300, tags: [SITE_SETTINGS_TAG] }
+);
+
 export async function getSiteSocialLinks() {
-  const settings = await prisma.siteSettings.findUnique({
-    where: { id: "default" },
-    select: {
-      instagramUrl: true,
-      facebookUrl: true,
-      whatsappUrl: true,
-      xUrl: true,
-      youtubeUrl: true,
-      tiktokUrl: true,
-    },
-  });
-
-  if (!settings) {
-    return EMPTY_SOCIAL_LINKS;
-  }
-
-  return settings;
+  return getSiteSocialLinksCached();
 }
 
 export async function saveSiteSocialLinks(input: SiteSocialLinks) {
@@ -87,7 +98,7 @@ export async function saveSiteSocialLinks(input: SiteSocialLinks) {
     tiktokUrl: normalizeUrl(input.tiktokUrl ?? "") ?? null,
   };
 
-  return prisma.siteSettings.upsert({
+  const saved = await prisma.siteSettings.upsert({
     where: { id: "default" },
     create: {
       id: "default",
@@ -95,4 +106,7 @@ export async function saveSiteSocialLinks(input: SiteSocialLinks) {
     },
     update: data,
   });
+
+  revalidateTag(SITE_SETTINGS_TAG);
+  return saved;
 }

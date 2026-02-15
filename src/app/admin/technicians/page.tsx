@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import TechniciansOverview from "@/components/technicians/TechniciansOverview";
+import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
@@ -256,9 +257,12 @@ export default async function TechniciansPage() {
                   className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
                 />
               </div>
-              <button className="app-button-primary w-full px-4 py-3 text-sm font-semibold">
-                {t("admin.technicians.newTech.actions.create")}
-              </button>
+              <FormSubmitButton
+                idleLabel={t("admin.technicians.newTech.actions.create")}
+                pendingLabel={t("common.feedback.creating")}
+                successLabel={t("common.feedback.created")}
+                className="w-full px-4 py-3"
+              />
               </form>
             </div>
           </div>

@@ -173,6 +173,44 @@ const getReportSnapshot = (filtersKey: string, filters: ReportFilters) =>
     { revalidate: 60 }
   )();
 
+const getLogsTotal = (filtersKey: string, filters: ReportFilters) =>
+  unstable_cache(
+    async () =>
+      prisma.emailLog.count({
+        where: {
+          createdAt: { gte: filters.from, lte: filters.to },
+        },
+      }),
+    ["reports-logs-total", filtersKey],
+    { revalidate: 45 }
+  )();
+
+const getLogsPageData = (
+  filtersKey: string,
+  filters: ReportFilters,
+  page: number,
+  pageSize: number
+) =>
+  unstable_cache(
+    async () =>
+      prisma.emailLog.findMany({
+        where: {
+          createdAt: { gte: filters.from, lte: filters.to },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          customer: true,
+          technician: { include: { user: true } },
+          job: { include: { property: true } },
+          digest: true,
+        },
+      }),
+    ["reports-logs-page", filtersKey, String(page), String(pageSize)],
+    { revalidate: 45 }
+  )();
+
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   await requireRole("ADMIN");
   const t = await getTranslations();
@@ -185,14 +223,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     ? Number(logsPageRaw[0])
     : Number(logsPageRaw);
   const logsPageSize = 15;
-
-  const logsWhere = {
-    createdAt: { gte: filters.from, lte: filters.to },
-  };
-
   const [snapshot, logsTotal] = await Promise.all([
     getReportSnapshot(filtersKey, filters),
-    prisma.emailLog.count({ where: logsWhere }),
+    getLogsTotal(filtersKey, filters),
   ]);
 
   const logsTotalPages = Math.max(1, Math.ceil(logsTotal / logsPageSize));
@@ -200,20 +233,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     Number.isFinite(requestedLogsPage) && requestedLogsPage > 0
       ? Math.min(requestedLogsPage, logsTotalPages)
       : 1;
-  const logsSkip = (logsPage - 1) * logsPageSize;
-
-  const logs = await prisma.emailLog.findMany({
-    where: logsWhere,
-    orderBy: { createdAt: "desc" },
-    skip: logsSkip,
-    take: logsPageSize,
-    include: {
-      customer: true,
-      technician: { include: { user: true } },
-      job: { include: { property: true } },
-      digest: true,
-    },
-  });
+  const logs = await getLogsPageData(filtersKey, filters, logsPage, logsPageSize);
 
   const {
     technicians,
@@ -319,21 +339,24 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       role="ADMIN"
     >
       <section className="ui-panel p-5 shadow-contrast">
-        <form className="ui-filter-bar flex flex-wrap gap-3" method="get">
-          <div className="flex flex-1 flex-wrap items-center gap-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        <form className="ui-filter-bar ui-filter-toolbar p-3 sm:p-4" method="get">
+          <div className="ui-filter-chip-label">
+            <span className="ui-filter-chip-dot" aria-hidden="true" />
+            {t("admin.reports.filters.toolbar")}
+          </div>
+
+          <div className="ui-segment">
+            <span className="mr-1 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
               {t("admin.reports.filters.range")}
-            </div>
+            </span>
             {(["7", "30", "90"] as const).map((range) => (
               <button
                 key={range}
                 type="submit"
                 name="range"
                 value={range}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                  filters.range === range
-                    ? "border-sky-200 bg-sky-50 text-sky-700"
-                    : "border-slate-200 bg-white text-slate-500"
+                className={`ui-segment-item ${
+                  filters.range === range ? "is-active" : ""
                 }`}
               >
                 {t(`admin.reports.filters.range${range}`)}
@@ -341,23 +364,32 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.from")}</span>
             <input
               type="date"
               name="from"
               defaultValue={formatDateInput(filters.from)}
-              className="app-input px-3 py-2 text-sm"
+              className="ui-filter-input"
             />
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.to")}</span>
             <input
               type="date"
               name="to"
               defaultValue={formatDateInput(filters.to)}
-              className="app-input px-3 py-2 text-sm"
+              className="ui-filter-input"
             />
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.technician")}</span>
             <select
               name="technicianId"
               defaultValue={filters.technicianId ?? ""}
-              className="app-input bg-white px-3 py-2 text-sm"
+              className="ui-filter-select"
             >
               <option value="">{t("admin.reports.filters.allTechs")}</option>
               {technicians.map((tech) => (
@@ -366,10 +398,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.status")}</span>
             <select
               name="status"
               defaultValue={filters.status ?? ""}
-              className="app-input bg-white px-3 py-2 text-sm"
+              className="ui-filter-select"
             >
               <option value="">{t("admin.reports.filters.allStatuses")}</option>
               {JOB_STATUSES.map((status) => (
@@ -378,10 +414,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.type")}</span>
             <select
               name="type"
               defaultValue={filters.type ?? ""}
-              className="app-input bg-white px-3 py-2 text-sm"
+              className="ui-filter-select"
             >
               <option value="">{t("admin.reports.filters.allTypes")}</option>
               {JOB_TYPES.map((type) => (
@@ -392,10 +432,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.service")}</span>
             <select
               name="serviceType"
               defaultValue={filters.serviceType ?? ""}
-              className="app-input bg-white px-3 py-2 text-sm"
+              className="ui-filter-select"
             >
               <option value="">{t("admin.reports.filters.allServices")}</option>
               <option value="WEEKLY_CLEANING">
@@ -411,10 +455,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                 {t("jobs.service.equipmentCheck")}
               </option>
             </select>
+          </label>
+
+          <label className="ui-filter-pill">
+            <span>{t("admin.reports.filters.priority")}</span>
             <select
               name="priority"
               defaultValue={filters.priority ?? ""}
-              className="app-input bg-white px-3 py-2 text-sm"
+              className="ui-filter-select"
             >
               <option value="">
                 {t("admin.reports.filters.allPriorities")}
@@ -422,6 +470,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               <option value="NORMAL">{t("jobs.priority.normal")}</option>
               <option value="URGENT">{t("jobs.priority.urgent")}</option>
             </select>
+          </label>
+
+          <div className="ui-filter-actions">
             <button
               type="submit"
               className="app-button-primary px-4 py-2 text-sm font-semibold"
