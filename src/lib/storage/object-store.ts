@@ -37,6 +37,22 @@ const getS3Client = () => {
 
 const getS3Bucket = () => getRequiredEnv("AWS_S3_BUCKET");
 
+const joinUrl = (base: string, key: string) => {
+  const trimmedBase = base.endsWith("/") ? base.slice(0, -1) : base;
+  const trimmedKey = key.startsWith("/") ? key.slice(1) : key;
+  return `${trimmedBase}/${trimmedKey}`;
+};
+
+const getS3PublicUrl = (storagePath: string) => {
+  const cdnBase = process.env.NEXT_PUBLIC_CDN_URL?.trim();
+  if (cdnBase) {
+    return joinUrl(cdnBase, storagePath);
+  }
+  const bucket = getS3Bucket();
+  const region = getRequiredEnv("AWS_REGION");
+  return `https://${bucket}.s3.${region}.amazonaws.com/${storagePath}`;
+};
+
 const normalizeStoragePath = (value: string) => {
   let normalized = value.trim();
   if (!normalized) {
@@ -82,7 +98,7 @@ export async function storePublicAsset({
         CacheControl: cacheControl,
       })
     );
-    return `/${storagePath}`;
+    return getS3PublicUrl(storagePath);
   }
 
   const outputPath = resolveLocalPath(storagePath);

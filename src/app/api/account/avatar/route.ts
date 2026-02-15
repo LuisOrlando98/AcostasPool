@@ -123,16 +123,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unable to process image" }, { status: 400 });
   }
 
-  const avatarUrl = await storePublicAsset({
-    relativePath: buildAvatarAssetPath(
-      currentUser.role,
-      currentUser.fullName,
-      `avatar.${normalized.extension}`
-    ),
-    buffer: normalized.buffer,
-    contentType: normalized.contentType,
-    cacheControl: "public, max-age=31536000, immutable",
-  });
+  let avatarUrl: string;
+  try {
+    avatarUrl = await storePublicAsset({
+      relativePath: buildAvatarAssetPath(
+        currentUser.role,
+        currentUser.fullName,
+        `avatar.${normalized.extension}`
+      ),
+      buffer: normalized.buffer,
+      contentType: normalized.contentType,
+      cacheControl: "public, max-age=31536000, immutable",
+    });
+  } catch (error) {
+    console.error("Avatar storage failed", error);
+    return NextResponse.json(
+      {
+        error:
+          "No pudimos guardar tu foto en este momento. Verifica la configuracion de almacenamiento.",
+      },
+      { status: 503 }
+    );
+  }
+
   const user = await prisma.user.update({
     where: { id: session.sub },
     data: { avatarUrl },
