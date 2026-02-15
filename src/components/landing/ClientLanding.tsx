@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type ThemeName = "ocean" | "night";
@@ -22,74 +22,80 @@ type SocialLinks = {
   tiktokUrl?: string | null;
 };
 
-type StoryScene = {
-  id: string;
-  title: string;
-  label: string;
-  image: string;
-  speed: number;
-};
-
 const PHONE_DISPLAY = "+1 (305) 555-0199";
 const PHONE_E164 = "+13055550199";
 
-const STORY_SCENES: StoryScene[] = [
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=80";
+
+const GALLERY_SLIDES = [
   {
-    id: "precision",
-    label: "South Florida Standard",
-    title: "Water clarity managed with exact weekly precision.",
-    image:
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=2200&q=80",
-    speed: 0.18,
-  },
-  {
-    id: "hospitality",
-    label: "Luxury Service Rhythm",
-    title: "Every arrival feels resort-ready, every day of the week.",
+    id: "1",
+    title: "Resort-level water finish",
     image:
       "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=2200&q=80",
-    speed: 0.15,
   },
   {
-    id: "nightcare",
-    label: "Operational Control",
-    title: "Behind the scenes execution, visible quality in every visit.",
+    id: "2",
+    title: "Balanced chemistry, every visit",
     image:
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=2200&q=80",
-    speed: 0.2,
+      "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=2200&q=80",
+  },
+  {
+    id: "3",
+    title: "Clean Water Built for Daily Life",
+    image:
+      "https://images.unsplash.com/photo-1600566752225-74fced6d4d2d?auto=format&fit=crop&w=2200&q=80",
+  },
+  {
+    id: "4",
+    title: "Luxury presentation, predictable service",
+    image:
+      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=2200&q=80",
   },
 ];
 
-const CAROUSEL_SLIDES = [
+const SERVICES = [
+  "Weekly maintenance & cleaning",
+  "Water chemistry management",
+  "Equipment diagnostics & repair",
+  "Storm recovery and deep cleanups",
+];
+
+const REVIEWS = [
   {
-    id: "villa",
-    title: "Residential Signature Care",
-    image:
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=2400&q=80",
+    author: "R. Martinez",
+    zone: "Coral Gables",
+    quote:
+      "The service quality and consistency are on another level. Our pool always looks perfect.",
   },
   {
-    id: "waterline",
-    title: "Tile, chemistry, and equipment harmony",
-    image:
-      "https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?auto=format&fit=crop&w=2400&q=80",
+    author: "S. Henderson",
+    zone: "Kendall",
+    quote:
+      "Fast communication, clean execution, and clear updates after every visit.",
   },
   {
-    id: "lifestyle",
-    title: "Clean water built for daily lifestyle",
-    image:
-      "https://images.unsplash.com/photo-1603565816030-6b389eeb23cb?auto=format&fit=crop&w=2400&q=80",
-  },
-  {
-    id: "hospitality",
-    title: "Professional standards, elevated presentation",
-    image:
-      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=2400&q=80",
+    author: "A. Patel",
+    zone: "Doral",
+    quote:
+      "They solved recurring chemistry issues in two weeks. Best decision for our property.",
   },
 ];
 
-const THEME_CHOICES: Array<{ id: ThemeName; label: string }> = [
-  { id: "ocean", label: "Light" },
-  { id: "night", label: "Dark" },
+const FOOTER_LINKS = [
+  {
+    title: "Services",
+    items: ["Weekly Maintenance", "Repairs", "Chemical Balancing", "Emergency Cleanup"],
+  },
+  {
+    title: "Coverage",
+    items: ["Miami", "Kendall", "Coral Gables", "Doral", "Homestead"],
+  },
+  {
+    title: "Company",
+    items: ["About AcostasPool", "Quality Promise", "Client Portal", "Contact"],
+  },
 ];
 
 function SunIcon() {
@@ -111,31 +117,36 @@ function MoonIcon() {
 
 export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLinks }) {
   const searchParams = useSearchParams();
-  const shellRef = useRef<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === "undefined") {
       return "ocean";
     }
-    const saved = window.localStorage.getItem("ap:immersive-theme");
-    return saved === "night" ? "night" : "ocean";
+    return window.localStorage.getItem("ap:landing-theme-v2") === "night"
+      ? "night"
+      : "ocean";
   });
   const [activeSlide, setActiveSlide] = useState(0);
   const [pauseCarousel, setPauseCarousel] = useState(false);
 
   const cityParam = (searchParams.get("city") ?? "").trim();
   const servingLine = cityParam
-    ? `Serving ${cityParam} and South Florida premium homes`
-    : "Serving South Florida premium homes";
+    ? `${cityParam} + South Florida premium homes`
+    : "South Florida premium homes";
 
   const defaultWhatsAppLink = useMemo(() => {
     const text = encodeURIComponent(
-      "Hi AcostasPool, I want a premium maintenance plan for my pool."
+      "Hi AcostasPool, I want a professional pool maintenance plan."
     );
     return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${text}`;
   }, []);
   const whatsappLink = socialLinks?.whatsappUrl || defaultWhatsAppLink;
 
-  const footerSocialLinks = useMemo(
+  const youtubeVideoId = (process.env.NEXT_PUBLIC_LANDING_YOUTUBE_ID ?? "").trim();
+  const youtubeSrc = `https://www.youtube-nocookie.com/embed/${
+    youtubeVideoId || "M7lc1UVf-VE"
+  }?rel=0&modestbranding=1`;
+
+  const socialItems = useMemo(
     () =>
       [
         { id: "instagram", label: "Instagram", icon: "IG", href: socialLinks?.instagramUrl },
@@ -158,7 +169,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   );
 
   useEffect(() => {
-    window.localStorage.setItem("ap:immersive-theme", theme);
+    window.localStorage.setItem("ap:landing-theme-v2", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -166,270 +177,291 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
       return;
     }
     const timer = window.setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length);
-    }, 5200);
+      setActiveSlide((prev) => (prev + 1) % GALLERY_SLIDES.length);
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [pauseCarousel]);
 
-  useEffect(() => {
-    const root = shellRef.current;
-    if (!root) {
-      return;
-    }
-
-    const revealNodes = Array.from(
-      root.querySelectorAll<HTMLElement>("[data-reveal]")
-    );
-
-    if (typeof window.IntersectionObserver !== "undefined") {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("is-visible");
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
-      );
-
-      revealNodes.forEach((node) => observer.observe(node));
-      return () => observer.disconnect();
-    }
-
-    revealNodes.forEach((node) => node.classList.add("is-visible"));
-  }, []);
-
-  useEffect(() => {
-    const root = shellRef.current;
-    if (!root) {
-      return;
-    }
-
-    const parallaxNodes = Array.from(
-      root.querySelectorAll<HTMLElement>("[data-parallax-speed]")
-    );
-    let rafId = 0;
-
-    const updateParallax = () => {
-      const viewportHeight = window.innerHeight || 900;
-      parallaxNodes.forEach((node) => {
-        const speed = Number(node.dataset.parallaxSpeed ?? "0.16");
-        const rect = node.getBoundingClientRect();
-        const relative =
-          (rect.top + rect.height * 0.5 - viewportHeight * 0.5) / viewportHeight;
-        const shift = relative * speed * -220;
-        node.style.setProperty("--imm-parallax-shift", `${shift.toFixed(2)}px`);
-      });
-      rafId = 0;
-    };
-
-    const queueUpdate = () => {
-      if (rafId !== 0) {
-        return;
-      }
-      rafId = window.requestAnimationFrame(updateParallax);
-    };
-
-    queueUpdate();
-    window.addEventListener("scroll", queueUpdate, { passive: true });
-    window.addEventListener("resize", queueUpdate);
-
-    return () => {
-      if (rafId !== 0) {
-        window.cancelAnimationFrame(rafId);
-      }
-      window.removeEventListener("scroll", queueUpdate);
-      window.removeEventListener("resize", queueUpdate);
-    };
-  }, []);
-
   return (
-    <div ref={shellRef} className="imm-shell" data-theme={theme}>
-      <div className="imm-theme-toggle" role="group" aria-label="Theme switcher">
-        {THEME_CHOICES.map((choice) => (
-          <button
-            key={choice.id}
-            type="button"
-            className="imm-theme-toggle-btn"
-            data-active={theme === choice.id}
-            onClick={() => setTheme(choice.id)}
-            aria-label={choice.label}
-            title={choice.label}
-          >
-            {choice.id === "ocean" ? <SunIcon /> : <MoonIcon />}
-          </button>
-        ))}
-      </div>
+    <div className="lp-shell" data-theme={theme}>
+      <header className="lp-header">
+        <div className="lp-container lp-header-inner">
+          <Link href="/" className="lp-brand">
+            <span className="lp-brand-dot" aria-hidden="true" />
+            <span>AcostasPool</span>
+          </Link>
 
-      <header className="imm-header">
-        <Link href="/" className="imm-brand">
-          <span className="imm-brand-mark" aria-hidden="true" />
-          <span>AcostasPool</span>
-        </Link>
-        <nav className="imm-nav" aria-label="Primary">
-          <a href="#story">Story</a>
-          <a href="#gallery">Gallery</a>
-          <a href="#contact">Contact</a>
-        </nav>
+          <div className="lp-header-right">
+            <nav className="lp-nav" aria-label="Primary">
+              <a href="#services">Services</a>
+              <a href="#gallery">Gallery</a>
+              <a href="#video">Video</a>
+              <a href="#reviews">Reviews</a>
+              <a href="#contact">Contact</a>
+            </nav>
+
+            <div className="lp-theme-switch" role="group" aria-label="Theme">
+              <button
+                type="button"
+                className="lp-theme-btn"
+                data-active={theme === "ocean"}
+                onClick={() => setTheme("ocean")}
+                aria-label="Light theme"
+                title="Light theme"
+              >
+                <SunIcon />
+              </button>
+              <button
+                type="button"
+                className="lp-theme-btn"
+                data-active={theme === "night"}
+                onClick={() => setTheme("night")}
+                aria-label="Dark theme"
+                title="Dark theme"
+              >
+                <MoonIcon />
+              </button>
+            </div>
+          </div>
+        </div>
       </header>
 
-      <main>
-        <section className="imm-hero">
-          <div
-            className="imm-hero-media"
-            data-parallax-speed="0.12"
-            style={{
-              backgroundImage:
-                "url(https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=2600&q=80)",
-            }}
-          />
-          <div className="imm-hero-overlay" />
-          <div className="imm-hero-content" data-reveal>
-            <p className="imm-hero-kicker">{servingLine}</p>
-            <h1>Pool maintenance that feels like a five-star property experience.</h1>
-            <div className="imm-hero-actions">
-              <a href={whatsappLink} className="imm-btn imm-btn-primary">
-                Start on WhatsApp
-              </a>
-              <a href={`tel:${PHONE_E164}`} className="imm-btn imm-btn-ghost">
-                Call {PHONE_DISPLAY}
-              </a>
+      <main className="lp-main">
+        <section className="lp-hero">
+          <div className="lp-container lp-hero-grid">
+            <div className="lp-hero-copy">
+              <p className="lp-kicker">Serving {servingLine}</p>
+              <h1>Professional pool care with luxury-level consistency.</h1>
+              <p>
+                Premium weekly maintenance, chemistry control, and equipment care
+                designed for South Florida properties.
+              </p>
+              <div className="lp-actions">
+                <a href={whatsappLink} className="lp-btn lp-btn-primary">
+                  Start on WhatsApp
+                </a>
+                <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
+                  Call {PHONE_DISPLAY}
+                </a>
+              </div>
+
+              <div className="lp-stats">
+                <div>
+                  <strong>24h</strong>
+                  <span>Average response</span>
+                </div>
+                <div>
+                  <strong>4.9/5</strong>
+                  <span>Client satisfaction</span>
+                </div>
+                <div>
+                  <strong>100%</strong>
+                  <span>Service-focused team</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="lp-hero-media">
+              <img src={HERO_IMAGE} alt="Luxury pool home in South Florida" />
             </div>
           </div>
         </section>
 
-        <section id="story" className="imm-story-wrap">
-          {STORY_SCENES.map((scene, index) => (
-            <article
-              key={scene.id}
-              className="imm-story-panel"
-              data-reveal
-              data-side={index % 2 === 0 ? "left" : "right"}
-            >
-              <div
-                className="imm-story-media"
-                data-parallax-speed={scene.speed}
-                style={{ backgroundImage: `url(${scene.image})` }}
-              />
-              <div className="imm-story-overlay" />
-              <div className="imm-story-caption">
-                <p>{scene.label}</p>
-                <h2>{scene.title}</h2>
-              </div>
-            </article>
-          ))}
+        <section id="services" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p>Why clients choose us</p>
+              <h2>Clear service structure, premium execution.</h2>
+            </div>
+            <div className="lp-service-grid">
+              {SERVICES.map((service) => (
+                <article key={service} className="lp-service-card">
+                  <span aria-hidden="true" />
+                  <p>{service}</p>
+                </article>
+              ))}
+            </div>
+          </div>
         </section>
 
-        <section id="gallery" className="imm-carousel-section" data-reveal>
-          <div
-            className="imm-carousel-frame"
-            onMouseEnter={() => setPauseCarousel(true)}
-            onMouseLeave={() => setPauseCarousel(false)}
-          >
-            {CAROUSEL_SLIDES.map((slide, index) => (
-              <article
-                key={slide.id}
-                className="imm-carousel-slide"
-                data-active={index === activeSlide}
-              >
-                <div
-                  className="imm-carousel-media"
-                  style={{ backgroundImage: `url(${slide.image})` }}
-                />
-                <div className="imm-carousel-caption">
-                  <p>{slide.title}</p>
-                </div>
-              </article>
-            ))}
-
-            <button
-              type="button"
-              className="imm-carousel-nav"
-              data-dir="prev"
-              onClick={() =>
-                setActiveSlide(
-                  (prev) =>
-                    (prev - 1 + CAROUSEL_SLIDES.length) % CAROUSEL_SLIDES.length
-                )
-              }
-              aria-label="Previous image"
+        <section id="gallery" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p>Visual quality</p>
+              <h2>Clean Water Built for Daily Life.</h2>
+            </div>
+            <div
+              className="lp-carousel"
+              onMouseEnter={() => setPauseCarousel(true)}
+              onMouseLeave={() => setPauseCarousel(false)}
             >
-              <span aria-hidden="true">{"<"}</span>
-            </button>
-            <button
-              type="button"
-              className="imm-carousel-nav"
-              data-dir="next"
-              onClick={() => setActiveSlide((prev) => (prev + 1) % CAROUSEL_SLIDES.length)}
-              aria-label="Next image"
-            >
-              <span aria-hidden="true">{">"}</span>
-            </button>
-          </div>
+              {GALLERY_SLIDES.map((slide, index) => (
+                <article
+                  key={slide.id}
+                  className="lp-slide"
+                  data-active={activeSlide === index}
+                >
+                  <img src={slide.image} alt={slide.title} />
+                  <div className="lp-slide-caption">{slide.title}</div>
+                </article>
+              ))}
 
-          <div className="imm-carousel-dots" role="tablist" aria-label="Gallery pagination">
-            {CAROUSEL_SLIDES.map((slide, index) => (
               <button
-                key={slide.id}
                 type="button"
-                role="tab"
-                aria-selected={index === activeSlide}
-                aria-label={`Show slide ${index + 1}`}
-                className="imm-carousel-dot"
-                data-active={index === activeSlide}
-                onClick={() => setActiveSlide(index)}
-              />
-            ))}
+                className="lp-slide-nav"
+                data-dir="prev"
+                onClick={() =>
+                  setActiveSlide(
+                    (prev) => (prev - 1 + GALLERY_SLIDES.length) % GALLERY_SLIDES.length
+                  )
+                }
+                aria-label="Previous image"
+              >
+                <span>{"<"}</span>
+              </button>
+              <button
+                type="button"
+                className="lp-slide-nav"
+                data-dir="next"
+                onClick={() => setActiveSlide((prev) => (prev + 1) % GALLERY_SLIDES.length)}
+                aria-label="Next image"
+              >
+                <span>{">"}</span>
+              </button>
+            </div>
+
+            <div className="lp-slide-dots">
+              {GALLERY_SLIDES.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  className="lp-dot"
+                  data-active={activeSlide === index}
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`Show image ${index + 1}`}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
-        <section id="contact" className="imm-contact" data-reveal>
-          <div
-            className="imm-contact-media"
-            data-parallax-speed="0.14"
-            style={{
-              backgroundImage:
-                "url(https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=2200&q=80)",
-            }}
-          />
-          <div className="imm-contact-overlay" />
-          <div className="imm-contact-content">
-            <p>Ready when you are</p>
-            <h2>Your pool, professionally managed from this week forward.</h2>
-            <div className="imm-contact-actions">
-              <a href={whatsappLink} className="imm-btn imm-btn-primary">
-                Request service plan
-              </a>
-              <Link href="/login" className="imm-btn imm-btn-ghost">
-                Client portal
-              </Link>
+        <section id="video" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p>Watch our process</p>
+              <h2>See how we keep pools at a premium standard.</h2>
+            </div>
+            <div className="lp-video-card">
+              <iframe
+                src={youtubeSrc}
+                title="AcostasPool service video"
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </section>
+
+        <section id="reviews" className="lp-section">
+          <div className="lp-container">
+            <div className="lp-section-head">
+              <p>Client reviews</p>
+              <h2>Trusted by homeowners across South Florida.</h2>
+            </div>
+            <div className="lp-review-grid">
+              {REVIEWS.map((review) => (
+                <article key={review.author} className="lp-review-card">
+                  <div className="lp-review-stars">★★★★★</div>
+                  <p className="lp-review-quote">&ldquo;{review.quote}&rdquo;</p>
+                  <p className="lp-review-author">
+                    {review.author} - {review.zone}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="contact" className="lp-section lp-contact-section">
+          <div className="lp-container">
+            <div className="lp-contact-card">
+              <div>
+                <p className="lp-kicker">Contact</p>
+                <h2>Ready to elevate your pool maintenance?</h2>
+                <p className="lp-contact-copy">
+                  Let us build a weekly plan that matches your property,
+                  equipment, and quality expectations.
+                </p>
+              </div>
+              <div className="lp-contact-actions">
+                <a href={whatsappLink} className="lp-btn lp-btn-primary">
+                  Request service plan
+                </a>
+                <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
+                  Call now
+                </a>
+                <Link href="/login" className="lp-btn lp-btn-soft">
+                  Client portal
+                </Link>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="imm-footer" data-reveal>
-        <p>AcostasPool | South Florida luxury pool care.</p>
-        {footerSocialLinks.length > 0 ? (
-          <div className="imm-social">
-            {footerSocialLinks.map((social) => (
-              <a
-                key={social.id}
-                href={social.href}
-                target="_blank"
-                rel="noreferrer"
-                className="imm-social-link"
-                aria-label={social.label}
-                title={social.label}
-              >
-                <span>{social.icon}</span>
-                <span>{social.label}</span>
-              </a>
-            ))}
+      <footer className="lp-footer">
+        <div className="lp-container">
+          <div className="lp-footer-top">
+            <div className="lp-footer-brand">
+              <Link href="/" className="lp-brand">
+                <span className="lp-brand-dot" aria-hidden="true" />
+                <span>AcostasPool</span>
+              </Link>
+              <p>
+                Professional pool maintenance for South Florida homes and premium
+                residential properties.
+              </p>
+              <p>{PHONE_DISPLAY}</p>
+            </div>
+
+            <div className="lp-footer-links">
+              {FOOTER_LINKS.map((group) => (
+                <div key={group.title}>
+                  <h3>{group.title}</h3>
+                  <ul>
+                    {group.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
-        ) : null}
+
+          <div className="lp-footer-bottom">
+            <p>© {new Date().getFullYear()} AcostasPool. All rights reserved.</p>
+            {socialItems.length > 0 ? (
+              <div className="lp-footer-social">
+                {socialItems.map((social) => (
+                  <a
+                    key={social.id}
+                    href={social.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="lp-social-link"
+                    aria-label={social.label}
+                    title={social.label}
+                  >
+                    <span>{social.icon}</span>
+                    <span>{social.label}</span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
       </footer>
     </div>
   );
