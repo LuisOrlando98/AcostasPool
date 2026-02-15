@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 
@@ -9,6 +9,15 @@ type AvatarUploadProps = {
 };
 
 const MAX_AVATAR_SIDE = 700;
+const SUPPORTED_ACCEPT =
+  ".jpg,.jpeg,.png,.gif,.webp,image/jpeg,image/png,image/gif,image/webp";
+const SUPPORTED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+const SUPPORTED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -24,6 +33,20 @@ function baseNameWithoutExtension(fileName: string) {
   return base || "avatar";
 }
 
+function getFileExtension(fileName: string) {
+  const dotIndex = fileName.lastIndexOf(".");
+  if (dotIndex === -1) return "";
+  return fileName.slice(dotIndex + 1).trim().toLowerCase();
+}
+
+function isSupportedImageFile(file: File) {
+  const mimeType = (file.type || "").toLowerCase();
+  if (SUPPORTED_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+  return SUPPORTED_EXTENSIONS.has(getFileExtension(file.name));
+}
+
 function extensionForMimeType(mimeType: string) {
   if (mimeType === "image/png") return "png";
   if (mimeType === "image/webp") return "webp";
@@ -34,6 +57,7 @@ function outputMimeType(inputMimeType: string) {
   if (inputMimeType === "image/png") return "image/png";
   if (inputMimeType === "image/webp") return "image/webp";
   if (inputMimeType === "image/jpeg") return "image/jpeg";
+  if (inputMimeType === "image/gif") return "image/jpeg";
   return "image/jpeg";
 }
 
@@ -47,7 +71,7 @@ function loadImageFromObjectUrl(objectUrl: string) {
 }
 
 async function normalizeAvatarFile(file: File) {
-  if (!file.type.startsWith("image/")) {
+  if (!isSupportedImageFile(file)) {
     throw new Error("Not an image");
   }
 
@@ -151,8 +175,18 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
     inputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    updateSelectedFile(event.target.files?.[0] ?? null);
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null;
+    if (nextFile && !isSupportedImageFile(nextFile)) {
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+      updateSelectedFile(null);
+      setMessageTone("error");
+      setMessage(t("account.avatar.errors.format"));
+      return;
+    }
+    updateSelectedFile(nextFile);
     setMessage(null);
     setMessageTone("neutral");
   };
@@ -163,9 +197,14 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
       setMessage(t("account.avatar.errors.file"));
       return;
     }
+    if (!isSupportedImageFile(file)) {
+      setMessageTone("error");
+      setMessage(t("account.avatar.errors.format"));
+      return;
+    }
 
     setLoading(true);
-    setMessage(t("account.avatar.processing"));
+    setMessage(null);
     setMessageTone("neutral");
 
     let normalizedFile: File;
@@ -189,7 +228,11 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMessageTone("error");
-        setMessage(data.error ?? t("account.avatar.errors.upload"));
+        if (res.status === 415) {
+          setMessage(t("account.avatar.errors.format"));
+        } else {
+          setMessage(data.error ?? t("account.avatar.errors.upload"));
+        }
         return;
       }
 
@@ -225,6 +268,15 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
               src={preview}
               alt={t("account.avatar.alt")}
               className="h-full w-full object-cover"
+              onError={() => {
+                if (selectedPreview) {
+                  updateSelectedFile(null);
+                  setMessageTone("error");
+                  setMessage(t("account.avatar.errors.preview"));
+                  return;
+                }
+                setSavedPreview(null);
+              }}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center px-4 text-center text-xs font-medium text-slate-500">
@@ -232,18 +284,17 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
             </div>
           )}
         </div>
-        <p className="text-center text-xs text-slate-500">{t("account.avatar.hint")}</p>
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={SUPPORTED_ACCEPT}
           onChange={handleFileChange}
           className="hidden"
         />
-        <p className="text-sm font-medium text-slate-700">{t("account.avatar.ready")}</p>
+        <p className="text-sm font-medium text-slate-700">{t("account.avatar.formats")}</p>
 
         {hasFile ? (
           <p className="mt-2 text-xs text-slate-500">

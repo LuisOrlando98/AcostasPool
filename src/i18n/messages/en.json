@@ -242,15 +242,15 @@
       "empty": "No photo",
       "choose": "Choose photo",
       "change": "Change photo",
-      "ready": "You can upload any image. We automatically normalize it to a maximum of 700x700.",
-      "hint": "Final output is optimized for a square avatar.",
-      "selected": "Selected file: {{name}} ({{size}})",
+      "formats": "Formats: JPG, JPEG, PNG, GIF, WEBP",
+      "selected": "Selected: {{name}} ({{size}})",
       "submit": "Update photo",
       "loading": "Uploading...",
-      "processing": "Normalizing image...",
       "success": "Photo updated.",
       "errors": {
         "file": "Select an image.",
+        "format": "Unsupported format. Use JPG, JPEG, PNG, GIF, or WEBP.",
+        "preview": "We couldn't preview this image. Please choose another one.",
         "normalize": "Unable to process the image.",
         "upload": "Unable to upload."
       }

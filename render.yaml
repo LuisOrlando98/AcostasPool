@@ -27,9 +27,9 @@ services:
       - key: AUTH_SECRET
         sync: false
       - key: APP_URL
-        value: https://acostaspool-web.onrender.com
+        value: https://acostaspool.com
       - key: STORAGE_DRIVER
-        value: local
+        value: s3
       - key: NEXT_PUBLIC_CDN_URL
         sync: false
       - key: AWS_REGION

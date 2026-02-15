@@ -8,12 +8,47 @@ import { buildAvatarAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 const MAX_AVATAR_SIDE = 700;
+const ALLOWED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+const ALLOWED_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp"]);
 
 type AvatarOutput = {
   format: "jpeg" | "png" | "webp";
   contentType: string;
   extension: string;
 };
+
+function getFileExtension(fileName: string) {
+  const dotIndex = fileName.lastIndexOf(".");
+  if (dotIndex === -1) return "";
+  return fileName.slice(dotIndex + 1).trim().toLowerCase();
+}
+
+function isAllowedImage(file: File) {
+  const mimeType = (file.type || "").toLowerCase();
+  if (ALLOWED_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+  return ALLOWED_EXTENSIONS.has(getFileExtension(file.name));
+}
+
+function resolveInputImageType(file: File) {
+  const mimeType = (file.type || "").toLowerCase();
+  if (ALLOWED_MIME_TYPES.has(mimeType)) {
+    return mimeType;
+  }
+
+  const extension = getFileExtension(file.name);
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  if (extension === "gif") return "image/gif";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  return "image/jpeg";
+}
 
 function getAvatarOutput(fileType: string): AvatarOutput {
   if (fileType === "image/png") {
@@ -70,15 +105,19 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "File required" }, { status: 400 });
   }
-  if (!file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "Image file required" }, { status: 400 });
+  if (!isAllowedImage(file)) {
+    return NextResponse.json(
+      { error: "Unsupported format. Use JPG, JPEG, PNG, GIF, or WEBP." },
+      { status: 415 }
+    );
   }
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
+  const inputImageType = resolveInputImageType(file);
   let normalized;
   try {
-    normalized = await normalizeAvatar(buffer, file.type);
+    normalized = await normalizeAvatar(buffer, inputImageType);
   } catch (error) {
     console.error("Avatar normalization failed", error);
     return NextResponse.json({ error: "Unable to process image" }, { status: 400 });
