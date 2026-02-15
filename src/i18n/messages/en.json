@@ -523,6 +523,7 @@
         "free": "Free",
         "manualOrder": "Manual order",
         "jobsCount": "{{count}} jobs",
+        "capacity": "Capacity {{used}}/{{total}}",
         "scheduledTime": "Scheduled time",
         "propertyFallback": "Property",
         "saveHint": "Save to apply the job changes.",
@@ -760,7 +761,8 @@
         "fields": {
           "status": "Account status",
           "type": "Customer type",
-          "sendInvite": "Send email to complete profile and create password."
+          "sendInvite": "Send email invitation now",
+          "inviteHint": "No portal user is created until you send an invitation."
         },
         "placeholders": {
           "firstName": "First name",
@@ -815,7 +817,11 @@
           "jobsTitle": "Jobs"
         },
         "labels": {
-          "total": "{{count}} total"
+          "total": "{{count}} total",
+          "portalNotInvited": "Portal: not invited",
+          "portalInvitePending": "Portal: invite pending",
+          "portalActive": "Portal: active",
+          "portalLinked": "Portal: linked"
         },
         "properties": {
           "empty": "No properties registered.",
@@ -1106,6 +1112,21 @@
           "timezone": "Timezone"
         }
       },
+      "social": {
+        "title": "Social media links",
+        "subtitle": "These links are shown in the public landing footer only when configured.",
+        "fields": {
+          "instagram": "Instagram",
+          "facebook": "Facebook",
+          "whatsapp": "WhatsApp",
+          "x": "X",
+          "youtube": "YouTube",
+          "tiktok": "TikTok"
+        },
+        "actions": {
+          "save": "Save social links"
+        }
+      },
       "billing": {
         "title": "Billing",
         "placeholders": {
@@ -1204,27 +1225,49 @@
       "title": "Quick service request",
       "subtitle": "Create an additional visit outside the plan.",
       "formTitle": "Request details",
-      "formSubtitle": "This request will be created as an on-demand job.",
-      "responseTime": "Response within 24h",
+      "formSubtitle": "Choose available slots or send an urgent request for manual review.",
+      "leadTime": "Minimum lead time: {{days}} days",
       "fields": {
         "property": "Property",
         "noProperty": "No properties registered",
+        "noAvailability": "No available slots found",
         "reason": "Reason",
+        "mode": "Scheduling mode",
+        "weeks": "Duration (weeks)",
+        "visitsPerWeek": "Visits per week",
+        "availableDate": "Available date",
+        "availableTime": "Available time",
         "preferredDate": "Preferred date",
         "preferredTime": "Preferred time",
+        "urgentOverride": "Need a sooner date? Send as urgent request (manual review)",
         "description": "Description"
       },
       "placeholders": {
         "description": "Describe the issue or requested service."
       },
-      "notice": "The administrator will be notified once submitted.",
+      "modes": {
+        "single": "Single visit",
+        "recurring": "Recurring schedule"
+      },
+      "options": {
+        "oncePerWeek": "1 visit / week",
+        "twicePerWeek": "2 visits / week",
+        "weeksCount": "{{count}} week(s)",
+        "dayCapacity": "{{date}} · {{count}} slot(s)",
+        "timeCapacity": "{{time}} · {{count}} slot(s)"
+      },
+      "notice": "The system will auto-assign your request based on real availability.",
+      "noticeUrgent": "Urgent requests under the lead time are sent for manual review.",
       "submit": "Send request",
       "loading": "Sending...",
       "errors": {
         "property": "Select a property.",
+        "availability": "Select date and time.",
         "submit": "Unable to submit the request."
       },
-      "success": "Request sent successfully.",
+      "successCount": "Request scheduled successfully. Visits created: {{count}}.",
+      "successReview": "Urgent request sent. Our team will review and confirm as soon as possible.",
+      "successPartial": "Partial schedule created due limited availability. Visits created: {{count}}.",
       "reasons": {
         "emergency": "Emergency / Pump",
         "quickCleaning": "Quick cleaning",

@@ -1663,6 +1663,69 @@ summary.no-marker::marker {
   margin: 0;
 }
 
+.marketing-footer {
+  border-top: 1px solid var(--mk-border);
+  margin-top: 2.5rem;
+  padding: 1.5rem 0 5.5rem;
+}
+
+.marketing-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.marketing-footer-copy {
+  color: var(--mk-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.marketing-social-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.marketing-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--mk-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
+  text-decoration: none;
+  color: var(--mk-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--mk-surface-alt) 86%, transparent);
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.marketing-social-link:hover {
+  border-color: color-mix(in srgb, var(--mk-brand) 55%, var(--mk-border));
+  transform: translateY(-1px);
+}
+
+.marketing-social-icon {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mk-brand) 82%, #ffffff 18%),
+    color-mix(in srgb, var(--mk-brand-2) 74%, #ffffff 26%)
+  );
+}
+
 .marketing-mobile-bar {
   position: fixed;
   bottom: 0.9rem;

@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
+import { TECH_DAILY_CAPACITY } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
@@ -210,6 +211,20 @@ export default function RoutesCalendar({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [jobModal, setJobModal] = useState<JobModalState | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [techFilter, setTechFilter] = useState("ALL");
+  const [priorityFilter, setPriorityFilter] = useState("ALL");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [rangeFilter, setRangeFilter] = useState<"WEEK" | "MONTH" | "CUSTOM">(
+    "WEEK"
+  );
+  const [customStart, setCustomStart] = useState(() => toDateKey(new Date()));
+  const [customEnd, setCustomEnd] = useState(() => toDateKey(new Date()));
+  const [density, setDensity] = useState<"comfortable" | "compact">(
+    "comfortable"
+  );
+  const [sortKey, setSortKey] = useState<SortKey>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const searchParams = useSearchParams();
   const daysShort = useMemo(() => buildDaysShort(locale), [locale]);
   const techniciansById = useMemo(
@@ -260,20 +275,6 @@ export default function RoutesCalendar({
       setDragOverTarget(null);
     }
   }, [editMode]);
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [techFilter, setTechFilter] = useState("ALL");
-  const [priorityFilter, setPriorityFilter] = useState("ALL");
-  const [searchFilter, setSearchFilter] = useState("");
-  const [rangeFilter, setRangeFilter] = useState<"WEEK" | "MONTH" | "CUSTOM">(
-    "WEEK"
-  );
-  const [customStart, setCustomStart] = useState(() => toDateKey(new Date()));
-  const [customEnd, setCustomEnd] = useState(() => toDateKey(new Date()));
-  const [density, setDensity] = useState<"comfortable" | "compact">(
-    "comfortable"
-  );
-  const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const today = new Date();
   const todayKey = toDateKey(today);
@@ -1210,12 +1211,7 @@ export default function RoutesCalendar({
 
         <div className="mt-6 grid grid-cols-6 gap-2">
           {(() => {
-            const maxJobs = Math.max(
-              1,
-              ...calendarDays.map(
-                (day) => jobsByDate.get(toDateKey(day))?.length ?? 0
-              )
-            );
+            const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
             return calendarDays.map((day) => {
               const key = toDateKey(day);
               const isCurrentMonth = day.getMonth() === monthStart.getMonth();
@@ -1232,7 +1228,7 @@ export default function RoutesCalendar({
               const hasManualOrder = jobsForDay.some(
                 (job) => job.sortOrder != null
               );
-              const fillPct = Math.round((jobsForDay.length / maxJobs) * 100);
+              const fillPct = Math.round((jobsForDay.length / dayCapacity) * 100);
               const fillWidth =
                 jobsForDay.length === 0 ? 0 : Math.max(10, fillPct);
               const dayIndex = (day.getDay() + 6) % 7;
@@ -1303,6 +1299,12 @@ export default function RoutesCalendar({
                           {t("admin.routes.labels.free")}
                         </span>
                       )}
+                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[8px] font-semibold text-sky-700">
+                        {t("admin.routes.labels.capacity", {
+                          used: String(jobsForDay.length),
+                          total: String(dayCapacity),
+                        })}
+                      </span>
                       {hasManualOrder && editMode ? (
                         <span className="text-[8px] font-semibold text-slate-400">
                           {t("admin.routes.labels.manualOrder")}

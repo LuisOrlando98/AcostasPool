@@ -572,6 +572,21 @@ export default async function CustomerDetailPage({
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
     include: {
+      user: {
+        select: {
+          id: true,
+          createdAt: true,
+          passwordResetTokens: {
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            select: {
+              createdAt: true,
+              expiresAt: true,
+              usedAt: true,
+            },
+          },
+        },
+      },
       properties: true,
       jobs: {
         orderBy: { scheduledDate: "desc" },
@@ -616,6 +631,26 @@ export default async function CustomerDetailPage({
   }
 
   const customerName = formatCustomerName(customer);
+  const now = new Date();
+  const inviteTokens = customer.user?.passwordResetTokens ?? [];
+  const hasPendingInvite = inviteTokens.some(
+    (token) => !token.usedAt && token.expiresAt > now
+  );
+  const hasCompletedInvite = inviteTokens.some((token) => Boolean(token.usedAt));
+  const portalStatusLabel = !customer.user
+    ? t("admin.customers.detail.labels.portalNotInvited")
+    : hasPendingInvite
+    ? t("admin.customers.detail.labels.portalInvitePending")
+    : hasCompletedInvite
+    ? t("admin.customers.detail.labels.portalActive")
+    : t("admin.customers.detail.labels.portalLinked");
+  const portalStatusClass = !customer.user
+    ? "border-slate-200 bg-slate-100 text-slate-700"
+    : hasPendingInvite
+    ? "border-amber-200 bg-amber-50 text-amber-700"
+    : hasCompletedInvite
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-indigo-200 bg-indigo-50 text-indigo-700";
   const technicians = await prisma.technician.findMany({
     include: { user: true },
     orderBy: { user: { fullName: "asc" } },
@@ -688,6 +723,9 @@ export default async function CustomerDetailPage({
                 <p className="text-xs text-sky-100/60">
                   {formatUsPhone(customer.telefono) ||
                     t("admin.routes.labels.noPhone")}
+                </p>
+                <p className="mt-2 inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/90">
+                  {portalStatusLabel}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -782,6 +820,9 @@ export default async function CustomerDetailPage({
                   <p className="text-xs text-slate-500">
                     {t("admin.customers.detail.sections.profileSubtitle")}
                   </p>
+                  <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}>
+                    {portalStatusLabel}
+                  </span>
                 </div>
                 <form action={inviteCustomer}>
                   <input type="hidden" name="customerId" value={customer.id} />

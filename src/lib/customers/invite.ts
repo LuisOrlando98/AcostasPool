@@ -86,6 +86,16 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     Date.now() + 1000 * 60 * 60 * DEFAULT_INVITE_HOURS
   );
 
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: user.id,
+      usedAt: null,
+    },
+    data: {
+      usedAt: new Date(),
+    },
+  });
+
   await prisma.passwordResetToken.create({
     data: {
       userId: user.id,

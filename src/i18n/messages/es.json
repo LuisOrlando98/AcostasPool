@@ -523,6 +523,7 @@
         "free": "Libre",
         "manualOrder": "Orden manual",
         "jobsCount": "{{count}} trabajos",
+        "capacity": "Capacidad {{used}}/{{total}}",
         "scheduledTime": "Hora programada",
         "propertyFallback": "Propiedad",
         "saveHint": "Guarda para aplicar los cambios del trabajo.",
@@ -760,7 +761,8 @@
         "fields": {
           "status": "Estado de cuenta",
           "type": "Tipo de cliente",
-          "sendInvite": "Enviar email para completar perfil y crear contrasena."
+          "sendInvite": "Enviar invitacion por email ahora",
+          "inviteHint": "No se crea usuario de portal hasta que envies la invitacion."
         },
         "placeholders": {
           "firstName": "Nombre",
@@ -815,7 +817,11 @@
           "jobsTitle": "Trabajos"
         },
         "labels": {
-          "total": "{{count}} total"
+          "total": "{{count}} total",
+          "portalNotInvited": "Portal: sin invitacion",
+          "portalInvitePending": "Portal: invitacion pendiente",
+          "portalActive": "Portal: activo",
+          "portalLinked": "Portal: vinculado"
         },
         "properties": {
           "empty": "No hay propiedades registradas.",
@@ -1106,6 +1112,21 @@
           "timezone": "Zona horaria"
         }
       },
+      "social": {
+        "title": "Redes sociales",
+        "subtitle": "Estos enlaces se muestran en el footer del landing solo si estan configurados.",
+        "fields": {
+          "instagram": "Instagram",
+          "facebook": "Facebook",
+          "whatsapp": "WhatsApp",
+          "x": "X",
+          "youtube": "YouTube",
+          "tiktok": "TikTok"
+        },
+        "actions": {
+          "save": "Guardar redes sociales"
+        }
+      },
       "billing": {
         "title": "Facturacion",
         "placeholders": {
@@ -1204,27 +1225,49 @@
       "title": "Solicitud de servicio rapido",
       "subtitle": "Crea una visita adicional fuera del plan.",
       "formTitle": "Detalle de la solicitud",
-      "formSubtitle": "Esta solicitud se creara como trabajo on-demand.",
-      "responseTime": "Respuesta en menos de 24h",
+      "formSubtitle": "Elige disponibilidad real o envia una solicitud urgente para revision manual.",
+      "leadTime": "Anticipacion minima: {{days}} dias",
       "fields": {
         "property": "Propiedad",
         "noProperty": "Sin propiedades registradas",
+        "noAvailability": "No se encontraron horarios disponibles",
         "reason": "Motivo",
+        "mode": "Modo de agenda",
+        "weeks": "Duracion (semanas)",
+        "visitsPerWeek": "Visitas por semana",
+        "availableDate": "Fecha disponible",
+        "availableTime": "Hora disponible",
         "preferredDate": "Fecha preferida",
         "preferredTime": "Horario sugerido",
+        "urgentOverride": "Necesito una fecha mas cercana (revision manual)",
         "description": "Descripcion"
       },
       "placeholders": {
         "description": "Explica el problema o el servicio requerido."
       },
-      "notice": "Se notificara al administrador una vez enviada la solicitud.",
+      "modes": {
+        "single": "Visita unica",
+        "recurring": "Servicio recurrente"
+      },
+      "options": {
+        "oncePerWeek": "1 visita / semana",
+        "twicePerWeek": "2 visitas / semana",
+        "weeksCount": "{{count}} semana(s)",
+        "dayCapacity": "{{date}} · {{count}} espacio(s)",
+        "timeCapacity": "{{time}} · {{count}} espacio(s)"
+      },
+      "notice": "El sistema asigna automaticamente segun la disponibilidad real.",
+      "noticeUrgent": "Las solicitudes urgentes fuera del tiempo minimo pasan a revision manual.",
       "submit": "Enviar solicitud",
       "loading": "Enviando...",
       "errors": {
         "property": "Selecciona una propiedad.",
+        "availability": "Selecciona fecha y hora.",
         "submit": "No se pudo enviar la solicitud."
       },
-      "success": "Solicitud enviada correctamente.",
+      "successCount": "Solicitud programada correctamente. Visitas creadas: {{count}}.",
+      "successReview": "Solicitud urgente enviada. Nuestro equipo la revisara y confirmara lo antes posible.",
+      "successPartial": "Se creo una programacion parcial por disponibilidad limitada. Visitas creadas: {{count}}.",
       "reasons": {
         "emergency": "Emergencia / Bomba",
         "quickCleaning": "Limpieza rapida",

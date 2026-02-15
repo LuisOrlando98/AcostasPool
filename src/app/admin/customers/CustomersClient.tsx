@@ -290,6 +290,9 @@ export default function CustomersClient({
                       {t("admin.customers.new.fields.sendInvite")}
                     </span>
                   </label>
+                  <p className="text-[11px] text-slate-500">
+                    {t("admin.customers.new.fields.inviteHint")}
+                  </p>
                 </div>
 
                 <FormSubmitButton

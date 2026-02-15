@@ -13,6 +13,22 @@ import { useSearchParams } from "next/navigation";
 
 type ThemeName = "ocean" | "mint" | "night";
 type DensityName = "comfortable" | "compact";
+type SocialPlatform =
+  | "instagram"
+  | "facebook"
+  | "whatsapp"
+  | "x"
+  | "youtube"
+  | "tiktok";
+
+type SocialLinks = {
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  whatsappUrl?: string | null;
+  xUrl?: string | null;
+  youtubeUrl?: string | null;
+  tiktokUrl?: string | null;
+};
 
 type QuoteFormState = {
   name: string;
@@ -158,7 +174,7 @@ const emptyForm: QuoteFormState = {
   message: "",
 };
 
-export default function ClientLanding() {
+export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLinks }) {
   const searchParams = useSearchParams();
   const shellRef = useRef<HTMLDivElement | null>(null);
   const [theme, setTheme] = useState<ThemeName>(() => {
@@ -199,12 +215,35 @@ export default function ClientLanding() {
     ? `Serving ${cityParam}, Miami-Dade & surrounding areas`
     : "Serving Miami-Dade & Surrounding Areas";
 
-  const whatsappLink = useMemo(() => {
+  const defaultWhatsAppLink = useMemo(() => {
     const text = encodeURIComponent(
       "Hi AcostasPool, I want a quote for professional pool maintenance."
     );
     return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${text}`;
   }, []);
+  const whatsappLink = socialLinks?.whatsappUrl || defaultWhatsAppLink;
+
+  const footerSocialLinks = useMemo(
+    () =>
+      [
+        { id: "instagram", label: "Instagram", icon: "IG", href: socialLinks?.instagramUrl },
+        { id: "facebook", label: "Facebook", icon: "FB", href: socialLinks?.facebookUrl },
+        { id: "whatsapp", label: "WhatsApp", icon: "WA", href: socialLinks?.whatsappUrl },
+        { id: "x", label: "X", icon: "X", href: socialLinks?.xUrl },
+        { id: "youtube", label: "YouTube", icon: "YT", href: socialLinks?.youtubeUrl },
+        { id: "tiktok", label: "TikTok", icon: "TT", href: socialLinks?.tiktokUrl },
+      ].filter(
+        (
+          item
+        ): item is {
+          id: SocialPlatform;
+          label: string;
+          icon: string;
+          href: string;
+        } => Boolean(item.href)
+      ),
+    [socialLinks]
+  );
 
   useEffect(() => {
     window.localStorage.setItem("ap:landing-theme", theme);
@@ -675,6 +714,34 @@ export default function ClientLanding() {
           </div>
         </section>
       </main>
+
+      <footer className="marketing-footer" data-reveal>
+        <div className="marketing-container marketing-footer-inner">
+          <p className="marketing-footer-copy">
+            AcostasPool · Reliable pool care in Miami-Dade
+          </p>
+          {footerSocialLinks.length > 0 ? (
+            <div className="marketing-social-grid">
+              {footerSocialLinks.map((social) => (
+                <a
+                  key={social.id}
+                  href={social.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="marketing-social-link"
+                  aria-label={social.label}
+                  title={social.label}
+                >
+                  <span className="marketing-social-icon" aria-hidden="true">
+                    {social.icon}
+                  </span>
+                  <span>{social.label}</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </footer>
 
       <div className="marketing-mobile-bar">
         <a className="marketing-btn marketing-btn-primary" href="#quote">

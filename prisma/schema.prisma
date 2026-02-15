@@ -424,3 +424,15 @@ model PasswordResetToken {
 
   user User @relation(fields: [userId], references: [id])
 }
+
+model SiteSettings {
+  id           String   @id @default("default")
+  instagramUrl String?
+  facebookUrl  String?
+  whatsappUrl  String?
+  xUrl         String?
+  youtubeUrl   String?
+  tiktokUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

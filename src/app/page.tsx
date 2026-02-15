@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ClientLanding from "@/components/landing/ClientLanding";
+import { getSiteSocialLinks } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Professional Pool Maintenance You Can Trust | AcostasPool",
@@ -37,14 +38,16 @@ const localBusinessSchema = {
   ],
 };
 
-export default function Home() {
+export default async function Home() {
+  const socialLinks = await getSiteSocialLinks();
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
-      <ClientLanding />
+      <ClientLanding socialLinks={socialLinks} />
     </>
   );
 }
