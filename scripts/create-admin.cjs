@@ -24,29 +24,34 @@ function promptText(rl, question, { required = true, defaultValue = "" } = {}) {
 }
 
 function promptHidden(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
+
   return new Promise((resolve) => {
-    const mutableStdout = {
-      muted: false,
-      write(chunk, encoding, callback) {
-        if (!this.muted) {
-          process.stdout.write(chunk, encoding);
-        }
-        if (callback) callback();
-      },
+    const originalWrite = rl._writeToOutput;
+    rl.stdoutMuted = true;
+    rl._writeToOutput = function _writeToOutput(stringToWrite) {
+      if (!rl.stdoutMuted) {
+        originalWrite.call(rl, stringToWrite);
+        return;
+      }
+      if (stringToWrite.startsWith(`${question}:`)) {
+        originalWrite.call(rl, stringToWrite);
+        return;
+      }
+      originalWrite.call(rl, "*");
     };
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: mutableStdout,
-      terminal: true,
-    });
-
     rl.question(`${question}: `, (value) => {
+      rl.stdoutMuted = false;
+      rl._writeToOutput = originalWrite;
       rl.close();
       console.log("");
       resolve(value.trim());
     });
-    mutableStdout.muted = true;
   });
 }
 
