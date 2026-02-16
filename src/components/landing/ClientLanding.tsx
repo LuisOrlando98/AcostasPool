@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type MouseEvent,
+} from "react";
 import { useSearchParams } from "next/navigation";
 
 type ThemeName = "ocean" | "night";
@@ -30,9 +37,10 @@ type SocialItem = {
 
 const PHONE_DISPLAY = "+1 (305) 555-0199";
 const PHONE_E164 = "+13055550199";
+const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2600&q=80";
+  "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=2600&q=80";
 
 const GALLERY_SLIDES = [
   {
@@ -61,36 +69,103 @@ const GALLERY_SLIDES = [
   },
 ];
 
-const CORE_SERVICES = [
-  "Weekly maintenance and cleaning",
-  "Water chemistry balancing",
-  "Equipment diagnostics and repair",
-  "Green-to-clean recovery and deep cleanups",
+const NAV_ITEMS = [
+  { id: "overview", label: "Home" },
+  { id: "services", label: "Services" },
+  { id: "gallery", label: "Gallery" },
+  { id: "video", label: "Video" },
+  { id: "reviews", label: "Reviews" },
+  { id: "quote", label: "Contact" },
 ];
 
-const PACKAGE_ITEMS = [
-  "Skim, brush, and vacuum routine",
-  "Filter and pump performance checks",
-  "Water test and chemistry adjustment",
-  "Service notes and recommendations",
+const TRUST_SIGNALS = [
+  {
+    title: "Licensed and insured",
+    detail: "Florida-compliant operation for residential pool care.",
+  },
+  {
+    title: "Photo-backed service notes",
+    detail: "Each visit can include visual proof and status updates.",
+  },
+  {
+    title: "Predictable weekly rhythm",
+    detail: "Structured routes with quality checks and clear handoff.",
+  },
+];
+
+const SERVICE_PILLARS = [
+  {
+    title: "Weekly Signature Care",
+    subtitle: "For homeowners that want consistent crystal-clear water.",
+    points: [
+      "Surface skimming and brushing",
+      "Vacuum and basket cleaning",
+      "Water chemistry balance",
+      "Equipment status review",
+    ],
+  },
+  {
+    title: "Repair and Recovery",
+    subtitle: "For pumps, filters, and green-to-clean recovery windows.",
+    points: [
+      "Pump and filter diagnostics",
+      "Storm and algae recovery",
+      "Priority issue handling",
+      "Repair recommendations",
+    ],
+  },
+  {
+    title: "Premium Property Standard",
+    subtitle: "For homes that need high-end visual and technical consistency.",
+    points: [
+      "Detail-focused water polish",
+      "Tile and circulation checks",
+      "Preventive risk control",
+      "Proactive maintenance notes",
+    ],
+  },
+];
+
+const SERVICE_FLOW = [
+  {
+    id: "01",
+    title: "Request",
+    text: "You share your location, pool details, and preferred service days.",
+  },
+  {
+    id: "02",
+    title: "Plan",
+    text: "We align the best route window and maintenance cadence for your property.",
+  },
+  {
+    id: "03",
+    title: "Deliver",
+    text: "Our team executes service visits with checks, notes, and continuity.",
+  },
 ];
 
 const REVIEWS = [
   {
     author: "R. Martinez",
     zone: "Coral Gables",
+    rating: 5,
+    service: "Weekly maintenance",
     quote:
       "Consistent, professional, and detail-focused. The pool quality has stayed perfect.",
   },
   {
     author: "S. Henderson",
     zone: "Kendall",
+    rating: 5,
+    service: "Chemistry recovery",
     quote:
       "Excellent communication and clean execution. We always know what was done.",
   },
   {
     author: "A. Patel",
     zone: "Doral",
+    rating: 5,
+    service: "Premium plan",
     quote:
       "They fixed recurring chemistry issues fast and built a reliable maintenance rhythm.",
   },
@@ -103,11 +178,11 @@ const FOOTER_LINK_GROUPS = [
   },
   {
     title: "Company",
-    items: ["About", "Why AcostasPool", "Reviews", "Careers"],
+    items: ["About", "Why AcostasPool", "Reviews", "Coverage"],
   },
   {
     title: "Support",
-    items: ["Contact page", "Client portal", "FAQ", "Service areas"],
+    items: ["Client portal", "FAQ", "Service areas", "Get a quote"],
   },
   {
     title: "Coverage",
@@ -132,6 +207,17 @@ function MoonIcon() {
   );
 }
 
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor">
+      <path
+        strokeWidth="1.7"
+        d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 5.9L12 16.8 6.6 19.7l1-5.9L3.3 9.6l6-.9L12 3.2Z"
+      />
+    </svg>
+  );
+}
+
 function SocialIcon({ id }: { id: SocialPlatform }) {
   if (id === "instagram") {
     return (
@@ -151,8 +237,8 @@ function SocialIcon({ id }: { id: SocialPlatform }) {
   }
   if (id === "x") {
     return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M4 4l16 16M20 4L4 20" />
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.2 3H21l-6.1 7 7.2 11h-5.7L12 14.4 6.2 21H3.4l6.5-7.4L3 3h5.8L12.8 9 18.2 3Zm-1 16.2h1.6L7.9 4.7H6.2l11 14.5Z" />
       </svg>
     );
   }
@@ -187,6 +273,8 @@ function SocialIcon({ id }: { id: SocialPlatform }) {
 
 export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLinks }) {
   const searchParams = useSearchParams();
+  const navPressTimer = useRef<number | null>(null);
+
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === "undefined") {
       return "ocean";
@@ -197,11 +285,21 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   });
   const [activeSlide, setActiveSlide] = useState(0);
   const [pauseCarousel, setPauseCarousel] = useState(false);
+  const [activeNav, setActiveNav] = useState("overview");
+  const [pressedNav, setPressedNav] = useState<string | null>(null);
+  const [quoteStatus, setQuoteStatus] = useState("");
+  const [quoteForm, setQuoteForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
+    service: "Weekly Signature Care",
+    frequency: "Weekly",
+    notes: "",
+  });
 
   const cityParam = (searchParams.get("city") ?? "").trim();
-  const servingLine = cityParam
-    ? `${cityParam} + South Florida`
-    : "South Florida";
+  const servingLine = cityParam ? `${cityParam} + South Florida` : "South Florida";
 
   const defaultWhatsAppLink = useMemo(() => {
     const text = encodeURIComponent(
@@ -216,22 +314,79 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     youtubeVideoId || "M7lc1UVf-VE"
   }?rel=0&modestbranding=1`;
 
-  const socialItems = useMemo<SocialItem[]>(
-    () =>
-      [
-        { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
-        { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
-        { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
-        { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
-        { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
-        { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
-      ].filter((item) => Boolean(item.href)),
-    [socialLinks]
-  );
+  const socialItems = useMemo<SocialItem[]>(() => {
+    const items: SocialItem[] = [
+      { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
+      { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
+      { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
+      { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
+      { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
+      { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
+    ];
+    return items.filter((item) => Boolean(item.href));
+  }, [socialLinks]);
 
   useEffect(() => {
     window.localStorage.setItem("ap:landing-theme-v3", theme);
   }, [theme]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let candidate = "";
+        let candidateRatio = 0;
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= candidateRatio) {
+            candidate = entry.target.id;
+            candidateRatio = entry.intersectionRatio;
+          }
+        }
+        if (candidate) {
+          setActiveNav(candidate);
+        }
+      },
+      {
+        threshold: [0.25, 0.4, 0.6],
+        rootMargin: "-18% 0px -42% 0px",
+      }
+    );
+
+    for (const item of NAV_ITEMS) {
+      const el = document.getElementById(item.id);
+      if (el) {
+        observer.observe(el);
+      }
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const revealElements = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-lp-reveal]")
+    );
+    if (revealElements.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries, currentObserver) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            currentObserver.unobserve(entry.target);
+          }
+        }
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
+    );
+
+    for (const element of revealElements) {
+      observer.observe(element);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (pauseCarousel) {
@@ -243,31 +398,92 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     return () => window.clearInterval(timer);
   }, [pauseCarousel]);
 
+  useEffect(() => {
+    return () => {
+      if (navPressTimer.current) {
+        window.clearTimeout(navPressTimer.current);
+      }
+    };
+  }, []);
+
+  function setQuoteField(field: keyof typeof quoteForm, value: string) {
+    setQuoteForm((prev) => ({ ...prev, [field]: value }));
+    if (quoteStatus) {
+      setQuoteStatus("");
+    }
+  }
+
+  function handleNavClick(event: MouseEvent<HTMLAnchorElement>, sectionId: string) {
+    event.preventDefault();
+    setPressedNav(sectionId);
+    setActiveNav(sectionId);
+
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    if (navPressTimer.current) {
+      window.clearTimeout(navPressTimer.current);
+    }
+    navPressTimer.current = window.setTimeout(() => {
+      setPressedNav(null);
+    }, 220);
+  }
+
+  function handleQuoteSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const subject = `Pool service quote request - ${quoteForm.city || "South Florida"}`;
+    const body = [
+      "Hi AcostasPool team,",
+      "",
+      "I would like to request a service quote.",
+      "",
+      `Name: ${quoteForm.name || "-"}`,
+      `Email: ${quoteForm.email || "-"}`,
+      `Phone: ${quoteForm.phone || "-"}`,
+      `City/Area: ${quoteForm.city || "-"}`,
+      `Service interest: ${quoteForm.service || "-"}`,
+      `Preferred frequency: ${quoteForm.frequency || "-"}`,
+      "",
+      "Property notes:",
+      quoteForm.notes || "-",
+    ].join("\n");
+
+    const mailtoHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoHref;
+    setQuoteStatus("Email draft ready. Send it and we will respond fast.");
+  }
+
   return (
     <div className="lp-shell" data-theme={theme}>
       <header className="lp-header">
         <div className="lp-container lp-header-inner">
-          <div className="lp-brand-wrap">
-            <Link href="/" className="lp-brand">
-              <span className="lp-brand-dot" aria-hidden="true" />
-              <span>AcostasPool</span>
-            </Link>
-            <span className="lp-brand-tag">Luxury Pool Care</span>
-          </div>
+          <Link href="/" className="lp-brand">
+            <span className="lp-brand-dot" aria-hidden="true" />
+            <span className="lp-brand-name">
+              <span>Acostas</span>
+              <span>Pool</span>
+            </span>
+          </Link>
 
-          <div className="lp-header-right">
-            <nav className="lp-nav" aria-label="Primary">
-              <a href="#services">Services</a>
-              <a href="#gallery">Gallery</a>
-              <a href="#video">Video</a>
-              <a href="#reviews">Reviews</a>
-              <Link href="/contact">Contact</Link>
-            </nav>
+          <nav className="lp-nav" aria-label="Primary">
+            {NAV_ITEMS.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                className="lp-nav-link"
+                data-active={activeNav === item.id}
+                data-pressed={pressedNav === item.id}
+                onClick={(event) => handleNavClick(event, item.id)}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
 
-            <Link href="/login" className="lp-login-btn">
-              Log in
-            </Link>
-
+          <div className="lp-header-actions">
             <div className="lp-theme-switch" role="group" aria-label="Theme">
               <button
                 type="button"
@@ -290,38 +506,41 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 <MoonIcon />
               </button>
             </div>
+
+            <Link href="/login" className="lp-login-btn">
+              Client log in
+            </Link>
+          </div>
+        </div>
+
+        <div className="lp-announce">
+          <div className="lp-container lp-announce-inner">
+            <p>South Florida premium maintenance | Licensed and insured | Service-ready support</p>
           </div>
         </div>
       </header>
 
-      <div className="lp-announce">
-        <div className="lp-container">
-          <p>
-            Licensed and insured in Florida | Fast response windows | Premium weekly routes
-          </p>
-        </div>
-      </div>
-
       <main className="lp-main">
-        <section className="lp-hero">
+        <section id="overview" className="lp-hero">
           <div className="lp-container lp-hero-grid">
-            <div className="lp-hero-copy lp-surface">
+            <div className="lp-hero-copy lp-surface" data-lp-reveal>
               <p className="lp-kicker">Serving {servingLine} premium homes</p>
-              <h1>Professional pool care with luxury-level consistency.</h1>
+              <h1>Professional pool care that feels effortless for your home.</h1>
               <p>
-                A service model built around quality control, transparent communication, and
-                dependable weekly execution.
+                Trusted maintenance plans, clear communication, and reliable weekly execution for
+                South Florida properties.
               </p>
+
               <div className="lp-actions">
                 <a href={whatsappLink} className="lp-btn lp-btn-primary">
                   Start on WhatsApp
                 </a>
+                <a href="#quote" className="lp-btn lp-btn-ghost">
+                  Get a quote
+                </a>
                 <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
                   Call {PHONE_DISPLAY}
                 </a>
-                <Link href="/contact" className="lp-btn lp-btn-soft">
-                  Contact us
-                </Link>
               </div>
 
               <div className="lp-stats">
@@ -335,40 +554,59 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 </div>
                 <div>
                   <strong>100%</strong>
-                  <span>Service focus</span>
+                  <span>Service-focused team</span>
                 </div>
               </div>
             </div>
 
-            <div className="lp-hero-media lp-surface">
+            <div className="lp-hero-media lp-surface" data-lp-reveal>
               <img src={HERO_IMAGE} alt="Luxury residential pool in South Florida" />
             </div>
+          </div>
+
+          <div className="lp-container lp-trust-grid">
+            {TRUST_SIGNALS.map((item) => (
+              <article key={item.title} className="lp-trust-card lp-surface" data-lp-reveal>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+              </article>
+            ))}
           </div>
         </section>
 
         <section id="services" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <p>Service model</p>
-              <h2>Clear structure, premium execution, measurable quality.</h2>
+              <p>Service experience</p>
+              <h2>Built to guide you clearly from request to recurring care.</h2>
             </div>
 
-            <div className="lp-service-grid">
-              {CORE_SERVICES.map((service) => (
-                <article key={service} className="lp-service-card lp-surface">
-                  <span aria-hidden="true" />
-                  <p>{service}</p>
+            <div className="lp-flow-grid">
+              {SERVICE_FLOW.map((step) => (
+                <article key={step.id} className="lp-flow-card lp-surface" data-lp-reveal>
+                  <span>{step.id}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.text}</p>
                 </article>
               ))}
             </div>
 
-            <div className="lp-package lp-surface">
-              <h3>What is included in a standard weekly package</h3>
-              <ul>
-                {PACKAGE_ITEMS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+            <div className="lp-service-plan-grid">
+              {SERVICE_PILLARS.map((pillar) => (
+                <article
+                  key={pillar.title}
+                  className="lp-service-plan-card lp-surface"
+                  data-lp-reveal
+                >
+                  <h3>{pillar.title}</h3>
+                  <p>{pillar.subtitle}</p>
+                  <ul>
+                    {pillar.points.map((point) => (
+                      <li key={point}>{point}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -379,17 +617,15 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               <p>Visual quality</p>
               <h2>Clean Water Built for Daily Life.</h2>
             </div>
+
             <div
               className="lp-carousel lp-surface"
+              data-lp-reveal
               onMouseEnter={() => setPauseCarousel(true)}
               onMouseLeave={() => setPauseCarousel(false)}
             >
               {GALLERY_SLIDES.map((slide, index) => (
-                <article
-                  key={slide.id}
-                  className="lp-slide"
-                  data-active={activeSlide === index}
-                >
+                <article key={slide.id} className="lp-slide" data-active={activeSlide === index}>
                   <img src={slide.image} alt={slide.title} />
                   <div className="lp-slide-caption">{slide.title}</div>
                 </article>
@@ -408,6 +644,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               >
                 <span>{"<"}</span>
               </button>
+
               <button
                 type="button"
                 className="lp-slide-nav"
@@ -438,9 +675,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           <div className="lp-container">
             <div className="lp-section-head">
               <p>Video</p>
-              <h2>See our service standards in action.</h2>
+              <h2>See the quality standard behind every service visit.</h2>
             </div>
-            <div className="lp-video-card lp-surface">
+            <div className="lp-video-card lp-surface" data-lp-reveal>
               <iframe
                 src={youtubeSrc}
                 title="AcostasPool service video"
@@ -461,11 +698,17 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             </div>
             <div className="lp-review-grid">
               {REVIEWS.map((review) => (
-                <article key={review.author} className="lp-review-card lp-surface">
-                  <div className="lp-review-stars">5.0 rating</div>
+                <article key={review.author} className="lp-review-card lp-surface" data-lp-reveal>
+                  <div className="lp-review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <StarIcon key={`${review.author}-${index}`} filled={index < review.rating} />
+                    ))}
+                    <span>{review.rating.toFixed(1)}</span>
+                  </div>
                   <p className="lp-review-quote">&ldquo;{review.quote}&rdquo;</p>
+                  <p className="lp-review-service">{review.service}</p>
                   <p className="lp-review-author">
-                    {review.author} - {review.zone}
+                    {review.author} | {review.zone}
                   </p>
                 </article>
               ))}
@@ -473,21 +716,130 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           </div>
         </section>
 
-        <section className="lp-section lp-cta-row">
+        <section id="quote" className="lp-section lp-quote-section">
           <div className="lp-container">
-            <div className="lp-cta-card lp-surface">
-              <div>
-                <p className="lp-kicker">Need a proposal?</p>
-                <h2>Contact us on a dedicated page with full intake details.</h2>
-              </div>
-              <div className="lp-cta-actions">
-                <Link href="/contact" className="lp-btn lp-btn-primary">
-                  Go to Contact page
-                </Link>
-                <Link href="/login" className="lp-btn lp-btn-ghost">
-                  Client log in
-                </Link>
-              </div>
+            <div className="lp-section-head">
+              <p>Get a quote</p>
+              <h2>Tell us what you need and get a faster service recommendation.</h2>
+            </div>
+
+            <div className="lp-quote-grid">
+              <article className="lp-quote-info lp-surface" data-lp-reveal>
+                <h3>Direct channels</h3>
+                <p>
+                  Use WhatsApp for fast intake, call us for urgent support, or send your details by
+                  email.
+                </p>
+
+                <div className="lp-actions lp-quote-actions">
+                  <a href={whatsappLink} className="lp-btn lp-btn-primary">
+                    WhatsApp
+                  </a>
+                  <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
+                    Call us
+                  </a>
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-btn lp-btn-soft">
+                    Email us
+                  </a>
+                </div>
+
+                <ul className="lp-quote-list">
+                  <li>Service area coverage: Miami, Kendall, Coral Gables, Doral, Homestead</li>
+                  <li>Typical response: same day or next business day</li>
+                  <li>Best results when we receive size, current condition, and goals</li>
+                </ul>
+              </article>
+
+              <form className="lp-quote-form lp-surface" onSubmit={handleQuoteSubmit} data-lp-reveal>
+                <h3>Send quote details by email</h3>
+
+                <label>
+                  Full name
+                  <input
+                    type="text"
+                    value={quoteForm.name}
+                    onChange={(event) => setQuoteField("name", event.target.value)}
+                    placeholder="Your name"
+                    required
+                  />
+                </label>
+
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={quoteForm.email}
+                    onChange={(event) => setQuoteField("email", event.target.value)}
+                    placeholder="you@email.com"
+                    required
+                  />
+                </label>
+
+                <div className="lp-quote-form-row">
+                  <label>
+                    Phone
+                    <input
+                      type="tel"
+                      value={quoteForm.phone}
+                      onChange={(event) => setQuoteField("phone", event.target.value)}
+                      placeholder="+1"
+                    />
+                  </label>
+
+                  <label>
+                    City
+                    <input
+                      type="text"
+                      value={quoteForm.city}
+                      onChange={(event) => setQuoteField("city", event.target.value)}
+                      placeholder="City or area"
+                    />
+                  </label>
+                </div>
+
+                <div className="lp-quote-form-row">
+                  <label>
+                    Service
+                    <select
+                      value={quoteForm.service}
+                      onChange={(event) => setQuoteField("service", event.target.value)}
+                    >
+                      <option>Weekly Signature Care</option>
+                      <option>Premium Property Standard</option>
+                      <option>Repair and Recovery</option>
+                      <option>One-time Cleanup</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Frequency
+                    <select
+                      value={quoteForm.frequency}
+                      onChange={(event) => setQuoteField("frequency", event.target.value)}
+                    >
+                      <option>Weekly</option>
+                      <option>Twice per week</option>
+                      <option>One-time visit</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label>
+                  Notes
+                  <textarea
+                    value={quoteForm.notes}
+                    onChange={(event) => setQuoteField("notes", event.target.value)}
+                    placeholder="Pool size, current issue, preferred day, or any details."
+                    rows={4}
+                  />
+                </label>
+
+                <button type="submit" className="lp-btn lp-btn-primary">
+                  Prepare email quote request
+                </button>
+
+                {quoteStatus ? <p className="lp-quote-status">{quoteStatus}</p> : null}
+              </form>
             </div>
           </div>
         </section>
@@ -520,10 +872,14 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             <div className="lp-footer-brand">
               <Link href="/" className="lp-brand">
                 <span className="lp-brand-dot" aria-hidden="true" />
-                <span>AcostasPool</span>
+                <span className="lp-brand-name">
+                  <span>Acostas</span>
+                  <span>Pool</span>
+                </span>
               </Link>
               <p>Professional maintenance for luxury and residential pools in South Florida.</p>
               <p>{PHONE_DISPLAY}</p>
+              <p>{SUPPORT_EMAIL}</p>
             </div>
 
             {FOOTER_LINK_GROUPS.map((group) => (
@@ -539,9 +895,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           </div>
 
           <div className="lp-footer-meta">
-            <p>© {new Date().getFullYear()} AcostasPool. All rights reserved.</p>
+            <p>(c) {new Date().getFullYear()} AcostasPool. All rights reserved.</p>
             <div className="lp-footer-meta-links">
-              <Link href="/contact">Contact</Link>
+              <a href="#quote">Get a quote</a>
               <Link href="/login">Log in</Link>
             </div>
           </div>
