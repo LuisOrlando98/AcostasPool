@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     "Contact AcostasPool for premium weekly pool maintenance, equipment diagnostics, and chemistry management in South Florida.",
 };
 
-const PHONE_DISPLAY = "+1 (305) 555-0199";
-const PHONE_E164 = "+13055550199";
+const PHONE_DISPLAY = "+1 (786) 519-5059";
+const PHONE_E164 = "+17865195059";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 export default async function ContactPage() {
@@ -90,3 +90,4 @@ export default async function ContactPage() {
     </div>
   );
 }
+

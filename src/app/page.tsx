@@ -26,7 +26,7 @@ const localBusinessSchema = {
   "@type": "LocalBusiness",
   name: "AcostasPool",
   areaServed: ["Miami", "Kendall", "Doral", "Homestead", "Cutler Bay"],
-  telephone: "+1-305-555-0199",
+  telephone: "+1-786-519-5059",
   priceRange: "$$",
   description:
     "Professional pool maintenance, repairs, and water chemistry services.",
@@ -51,3 +51,4 @@ export default async function Home() {
     </>
   );
 }
+

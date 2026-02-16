@@ -35,8 +35,8 @@ type SocialItem = {
   href: string;
 };
 
-const PHONE_DISPLAY = "+1 (305) 555-0199";
-const PHONE_E164 = "+13055550199";
+const PHONE_DISPLAY = "+1 (786) 519-5059";
+const PHONE_E164 = "+17865195059";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 const HERO_IMAGE =
@@ -171,6 +171,69 @@ const REVIEWS = [
   },
 ];
 
+const QUOTE_CHANNELS = [
+  {
+    id: "whatsapp",
+    title: "WhatsApp",
+    badge: "Fastest",
+    description: "Best for quick answers and sending pool photos instantly.",
+    action: "Open chat",
+  },
+  {
+    id: "call",
+    title: "Call us",
+    badge: "Direct",
+    description: "Ideal for urgent situations or same-day service coordination.",
+    action: "Call now",
+  },
+  {
+    id: "email",
+    title: "Email",
+    badge: "Detailed",
+    description: "Great when you want to share full details in one message.",
+    action: "Send email",
+  },
+] as const;
+
+const QUOTE_FACTS = [
+  {
+    title: "Service area",
+    detail: "Miami, Kendall, Coral Gables, Doral, Homestead",
+  },
+  {
+    title: "Typical response",
+    detail: "Same day or next business day",
+  },
+  {
+    title: "Best first message",
+    detail: "Pool size, condition, and preferred service day",
+  },
+];
+
+const QUOTE_PRESETS = [
+  {
+    id: "weekly",
+    title: "Weekly Signature Care",
+    frequency: "Weekly",
+    label: "Most requested",
+    detail: "Balanced weekly maintenance and chemistry consistency.",
+  },
+  {
+    id: "premium",
+    title: "Premium Property Standard",
+    frequency: "Twice per week",
+    label: "High touch",
+    detail: "Extra visual polish and tighter quality rhythm.",
+  },
+  {
+    id: "recovery",
+    title: "Repair and Recovery",
+    frequency: "One-time visit",
+    label: "Issue solving",
+    detail: "Diagnostics, repairs, and water recovery windows.",
+  },
+] as const;
+
 const FOOTER_LINK_GROUPS = [
   {
     title: "Services",
@@ -274,6 +337,7 @@ function SocialIcon({ id }: { id: SocialPlatform }) {
 export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLinks }) {
   const searchParams = useSearchParams();
   const navPressTimer = useRef<number | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === "undefined") {
@@ -287,7 +351,17 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const [pauseCarousel, setPauseCarousel] = useState(false);
   const [activeNav, setActiveNav] = useState("overview");
   const [pressedNav, setPressedNav] = useState<string | null>(null);
-  const [quoteStatus, setQuoteStatus] = useState("");
+  const [activeQuotePreset, setActiveQuotePreset] = useState("weekly");
+  const [quoteSending, setQuoteSending] = useState(false);
+  const [toast, setToast] = useState<{
+    visible: boolean;
+    tone: "success" | "error";
+    message: string;
+  }>({
+    visible: false,
+    tone: "success",
+    message: "",
+  });
   const [quoteForm, setQuoteForm] = useState({
     name: "",
     email: "",
@@ -403,14 +477,52 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
       if (navPressTimer.current) {
         window.clearTimeout(navPressTimer.current);
       }
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
     };
   }, []);
 
-  function setQuoteField(field: keyof typeof quoteForm, value: string) {
-    setQuoteForm((prev) => ({ ...prev, [field]: value }));
-    if (quoteStatus) {
-      setQuoteStatus("");
+  function showToast(message: string, tone: "success" | "error") {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
     }
+
+    setToast({
+      visible: true,
+      tone,
+      message,
+    });
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast((previous) => ({ ...previous, visible: false }));
+    }, 3200);
+  }
+
+  function setQuoteField(field: keyof typeof quoteForm, value: string) {
+    const nextForm = { ...quoteForm, [field]: value };
+    setQuoteForm(nextForm);
+
+    if (field === "service" || field === "frequency") {
+      const matchedPreset = QUOTE_PRESETS.find(
+        (preset) =>
+          preset.title === nextForm.service && preset.frequency === nextForm.frequency
+      );
+      setActiveQuotePreset(matchedPreset?.id ?? "custom");
+    }
+  }
+
+  function applyQuotePreset(presetId: string) {
+    const preset = QUOTE_PRESETS.find((item) => item.id === presetId);
+    if (!preset) {
+      return;
+    }
+    setActiveQuotePreset(preset.id);
+    setQuoteForm((prev) => ({
+      ...prev,
+      service: preset.title,
+      frequency: preset.frequency,
+    }));
   }
 
   function handleNavClick(event: MouseEvent<HTMLAnchorElement>, sectionId: string) {
@@ -431,33 +543,57 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     }, 220);
   }
 
-  function handleQuoteSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleQuoteSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (quoteSending) {
+      return;
+    }
 
-    const subject = `Pool service quote request - ${quoteForm.city || "South Florida"}`;
-    const body = [
-      "Hi AcostasPool team,",
-      "",
-      "I would like to request a service quote.",
-      "",
-      `Name: ${quoteForm.name || "-"}`,
-      `Email: ${quoteForm.email || "-"}`,
-      `Phone: ${quoteForm.phone || "-"}`,
-      `City/Area: ${quoteForm.city || "-"}`,
-      `Service interest: ${quoteForm.service || "-"}`,
-      `Preferred frequency: ${quoteForm.frequency || "-"}`,
-      "",
-      "Property notes:",
-      quoteForm.notes || "-",
-    ].join("\n");
+    try {
+      setQuoteSending(true);
 
-    const mailtoHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoHref;
-    setQuoteStatus("Email draft ready. Send it and we will respond fast.");
+      const response = await fetch("/api/contact/quote", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          ...quoteForm,
+          source: "landing",
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Unable to send quote request.");
+      }
+
+      setQuoteForm((previous) => ({
+        ...previous,
+        name: "",
+        email: "",
+        phone: "",
+        city: "",
+        notes: "",
+      }));
+      showToast("Email sent successfully. We will contact you shortly.", "success");
+    } catch (error) {
+      console.error("Quote request failed:", error);
+      showToast("We could not send your email. Please try again or call us.", "error");
+    } finally {
+      setQuoteSending(false);
+    }
   }
 
   return (
     <div className="lp-shell" data-theme={theme}>
+      <div className="lp-toast-layer" aria-live="polite" aria-atomic="true">
+        <div className="lp-toast" data-visible={toast.visible} data-tone={toast.tone}>
+          <span className="lp-toast-dot" aria-hidden="true" />
+          <p>{toast.message}</p>
+        </div>
+      </div>
+
       <header className="lp-header">
         <div className="lp-container lp-header-inner">
           <Link href="/" className="lp-brand">
@@ -725,33 +861,62 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
 
             <div className="lp-quote-grid">
               <article className="lp-quote-info lp-surface" data-lp-reveal>
-                <h3>Direct channels</h3>
-                <p>
-                  Use WhatsApp for fast intake, call us for urgent support, or send your details by
-                  email.
-                </p>
+                <h3>Choose your preferred contact route</h3>
+                <p>Pick the channel you want and our team will follow up quickly.</p>
 
-                <div className="lp-actions lp-quote-actions">
-                  <a href={whatsappLink} className="lp-btn lp-btn-primary">
-                    WhatsApp
-                  </a>
-                  <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
-                    Call us
-                  </a>
-                  <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-btn lp-btn-soft">
-                    Email us
-                  </a>
+                <div className="lp-channel-grid">
+                  {QUOTE_CHANNELS.map((channel) => {
+                    let href = whatsappLink;
+                    if (channel.id === "call") {
+                      href = `tel:${PHONE_E164}`;
+                    }
+                    if (channel.id === "email") {
+                      href = "#quote-form";
+                    }
+                    return (
+                      <a key={channel.id} href={href} className="lp-channel-card">
+                        <span className="lp-channel-badge">{channel.badge}</span>
+                        <h4>{channel.title}</h4>
+                        <p>{channel.description}</p>
+                        <span className="lp-channel-cta">{channel.action}</span>
+                      </a>
+                    );
+                  })}
                 </div>
 
-                <ul className="lp-quote-list">
-                  <li>Service area coverage: Miami, Kendall, Coral Gables, Doral, Homestead</li>
-                  <li>Typical response: same day or next business day</li>
-                  <li>Best results when we receive size, current condition, and goals</li>
-                </ul>
+                <div className="lp-quote-facts-grid">
+                  {QUOTE_FACTS.map((fact) => (
+                    <article key={fact.title} className="lp-quote-fact">
+                      <strong>{fact.title}</strong>
+                      <p>{fact.detail}</p>
+                    </article>
+                  ))}
+                </div>
               </article>
 
-              <form className="lp-quote-form lp-surface" onSubmit={handleQuoteSubmit} data-lp-reveal>
+              <form
+                id="quote-form"
+                className="lp-quote-form lp-surface"
+                onSubmit={handleQuoteSubmit}
+                data-lp-reveal
+              >
                 <h3>Send quote details by email</h3>
+
+                <div className="lp-quote-preset-grid">
+                  {QUOTE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className="lp-quote-preset"
+                      data-active={activeQuotePreset === preset.id}
+                      onClick={() => applyQuotePreset(preset.id)}
+                    >
+                      <span>{preset.label}</span>
+                      <strong>{preset.title}</strong>
+                      <p>{preset.detail}</p>
+                    </button>
+                  ))}
+                </div>
 
                 <label>
                   Full name
@@ -834,11 +999,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                   />
                 </label>
 
-                <button type="submit" className="lp-btn lp-btn-primary">
-                  Prepare email quote request
+                <button type="submit" className="lp-btn lp-btn-primary" disabled={quoteSending}>
+                  {quoteSending ? "Sending..." : "Send quote request"}
                 </button>
-
-                {quoteStatus ? <p className="lp-quote-status">{quoteStatus}</p> : null}
               </form>
             </div>
           </div>
