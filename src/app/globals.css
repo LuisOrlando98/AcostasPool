@@ -3045,24 +3045,26 @@ summary.no-marker::marker {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  min-height: 6.9rem;
-  padding: 1rem 1rem 1rem 3.25rem;
+  min-height: 7.1rem;
+  padding: 1rem;
   display: grid;
-  gap: 0.48rem;
+  grid-template-columns: 2.7rem 1fr;
+  align-items: start;
+  gap: 0.65rem;
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
 .lp-trust-card::before {
   content: attr(data-rank);
   position: absolute;
-  left: 1rem;
-  top: 1rem;
+  right: 0.78rem;
+  top: 0.74rem;
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 0.48rem;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 42%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 11%, transparent);
-  color: var(--lp-brand);
+  background: color-mix(in srgb, var(--lp-surface) 78%, transparent);
+  color: color-mix(in srgb, var(--lp-brand) 78%, var(--lp-muted));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3094,16 +3096,40 @@ summary.no-marker::marker {
   box-shadow: 0 16px 28px rgba(8, 25, 43, 0.14);
 }
 
-.lp-trust-card h3 {
-  margin: 0;
-  font-size: 0.94rem;
+.lp-trust-icon {
+  width: 2.7rem;
+  height: 2.7rem;
+  object-fit: cover;
+  border-radius: 0.82rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 28%, var(--lp-border));
+  box-shadow: 0 10px 18px rgba(8, 25, 43, 0.14);
 }
 
-.lp-trust-card p {
+.lp-trust-copy {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.lp-trust-copy h3 {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.2;
+  padding-right: 1.75rem;
+}
+
+.lp-trust-copy p {
   margin: 0;
   color: var(--lp-muted);
-  line-height: 1.6;
+  line-height: 1.52;
   font-size: 0.84rem;
+}
+
+.lp-trust-copy small {
+  color: color-mix(in srgb, var(--lp-brand) 74%, var(--lp-muted));
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 800;
 }
 
 .lp-section-head {
@@ -3161,6 +3187,9 @@ summary.no-marker::marker {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-areas:
+    "visual visual"
+    "flow plans";
   gap: 0.72rem;
   padding: clamp(0.85rem, 1.25vw, 1.18rem);
   border-radius: 1.24rem;
@@ -3196,11 +3225,101 @@ summary.no-marker::marker {
   pointer-events: none;
 }
 
+.lp-services-visual-card {
+  grid-area: visual;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 22%, var(--lp-border));
+  min-height: clamp(16rem, 28vw, 21rem);
+  box-shadow: 0 18px 30px rgba(8, 25, 43, 0.16);
+}
+
+.lp-services-visual-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lp-services-visual-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(150deg, rgba(4, 13, 24, 0.26), transparent 42%),
+    linear-gradient(180deg, rgba(4, 13, 24, 0.12), rgba(4, 13, 24, 0.74));
+  pointer-events: none;
+}
+
+.lp-services-visual-overlay {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  padding: 0.82rem;
+  border-radius: 0.92rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(5, 17, 31, 0.48);
+  backdrop-filter: blur(7px);
+  display: grid;
+  gap: 0.42rem;
+}
+
+.lp-services-visual-overlay p {
+  margin: 0;
+}
+
+.lp-services-visual-overlay p:first-child {
+  color: #87daff;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.lp-services-visual-overlay h3 {
+  margin: 0;
+  color: #f0f8ff;
+  font-size: clamp(1rem, 1.45vw, 1.32rem);
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.lp-services-visual-overlay p:nth-of-type(2) {
+  color: rgba(230, 241, 255, 0.92);
+  font-size: 0.81rem;
+  line-height: 1.56;
+}
+
+.lp-services-visual-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.lp-services-visual-tags span {
+  min-height: 1.32rem;
+  padding: 0 0.56rem;
+  border-radius: 999px;
+  border: 1px solid rgba(141, 224, 255, 0.42);
+  background: rgba(6, 29, 48, 0.54);
+  color: #def3ff;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 .lp-flow-grid {
+  grid-area: flow;
   position: relative;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.62rem;
+  gap: 0.72rem;
   align-content: start;
   padding: 0.15rem 0 0.1rem 0.25rem;
 }
@@ -3208,9 +3327,9 @@ summary.no-marker::marker {
 .lp-flow-grid::before {
   content: "";
   position: absolute;
-  left: 1.1rem;
+  left: 2.2rem;
   top: 0.8rem;
-  bottom: 0.75rem;
+  bottom: 8.2rem;
   width: 2px;
   border-radius: 999px;
   background: linear-gradient(
@@ -3223,28 +3342,16 @@ summary.no-marker::marker {
 
 .lp-flow-card {
   position: relative;
-  padding: 0.95rem 0.95rem 0.95rem 2.72rem;
+  padding: 0.82rem;
   border-radius: 1rem;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
   background: color-mix(in srgb, var(--lp-surface-soft) 88%, transparent);
   display: grid;
-  gap: 0.3rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.58rem 0.72rem;
+  align-items: start;
   box-shadow: 0 12px 20px rgba(8, 25, 43, 0.08);
   transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
-}
-
-.lp-flow-card::before {
-  content: "";
-  position: absolute;
-  left: 0.89rem;
-  top: 1rem;
-  width: 0.62rem;
-  height: 0.62rem;
-  border-radius: 999px;
-  background: linear-gradient(145deg, var(--lp-brand), var(--lp-brand-2));
-  box-shadow:
-    0 0 0 4px color-mix(in srgb, var(--lp-surface) 82%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--lp-brand) 40%, transparent);
 }
 
 .lp-flow-card:hover {
@@ -3253,35 +3360,66 @@ summary.no-marker::marker {
   background: color-mix(in srgb, var(--lp-brand) 10%, var(--lp-surface-soft));
 }
 
-.lp-flow-card span {
+.lp-flow-icon {
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: cover;
+  border-radius: 0.76rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 34%, var(--lp-border));
+  box-shadow: 0 10px 18px rgba(8, 25, 43, 0.14);
+}
+
+.lp-flow-card-copy {
+  display: grid;
+  gap: 0.26rem;
+  min-width: 0;
+}
+
+.lp-flow-card-copy span {
   color: var(--lp-brand);
   font-size: 0.62rem;
   letter-spacing: 0.16em;
   font-weight: 800;
 }
 
-.lp-flow-card h3 {
+.lp-flow-card-copy h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.96rem;
 }
 
-.lp-flow-card p {
+.lp-flow-card-copy p {
   margin: 0;
   color: var(--lp-muted);
-  line-height: 1.58;
-  font-size: 0.84rem;
+  line-height: 1.56;
+  font-size: 0.82rem;
 }
 
-.lp-flow-card small {
+.lp-flow-card-copy small {
   margin-top: 0.12rem;
   color: color-mix(in srgb, var(--lp-brand) 72%, var(--lp-muted));
-  font-size: 0.67rem;
+  font-size: 0.62rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
 }
 
+.lp-flow-thumb {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  border-radius: 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 20%, var(--lp-border));
+  min-height: 6.6rem;
+}
+
+.lp-flow-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .lp-service-plan-grid {
+  grid-area: plans;
   margin-top: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3351,6 +3489,41 @@ summary.no-marker::marker {
   box-shadow: 0 20px 30px rgba(8, 25, 43, 0.14);
 }
 
+.lp-service-plan-media {
+  position: relative;
+  margin: -0.18rem -0.18rem 0.1rem;
+  border-radius: 0.88rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
+  min-height: 8.5rem;
+}
+
+.lp-service-plan-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lp-service-plan-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 12, 21, 0.06), rgba(5, 12, 21, 0.44));
+}
+
+.lp-service-plan-icon {
+  position: absolute;
+  right: 0.58rem;
+  bottom: 0.58rem;
+  z-index: 2;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.72rem;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  box-shadow: 0 12px 22px rgba(4, 11, 21, 0.36);
+}
+
 .lp-service-plan-meta {
   display: flex;
   align-items: center;
@@ -3391,6 +3564,14 @@ summary.no-marker::marker {
   color: var(--lp-muted);
   line-height: 1.62;
   font-size: 0.84rem;
+}
+
+.lp-service-plan-outcome {
+  color: color-mix(in srgb, var(--lp-brand) 76%, var(--lp-muted));
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 800;
 }
 
 .lp-service-plan-card ul {
@@ -4065,10 +4246,20 @@ summary.no-marker::marker {
 
   .lp-services-layout {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "visual"
+      "flow"
+      "plans";
   }
 
   .lp-flow-grid {
     grid-template-columns: 1fr;
+    padding-left: 0;
+  }
+
+  .lp-flow-grid::before {
+    left: 2rem;
+    bottom: 7.6rem;
   }
 
   .lp-service-plan-grid,
@@ -4107,12 +4298,34 @@ summary.no-marker::marker {
     padding: 0.78rem;
   }
 
+  .lp-services-visual-card {
+    min-height: 14.2rem;
+  }
+
+  .lp-services-visual-overlay {
+    left: 0.72rem;
+    right: 0.72rem;
+    bottom: 0.72rem;
+    padding: 0.68rem;
+  }
+
+  .lp-services-visual-tags span {
+    font-size: 0.54rem;
+  }
+
   .lp-flow-grid::before {
-    left: 1rem;
+    left: 1.86rem;
+    bottom: 7rem;
   }
 
   .lp-flow-card {
-    padding-left: 2.56rem;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .lp-flow-icon {
+    width: 2.28rem;
+    height: 2.28rem;
   }
 
   .lp-announce p {
