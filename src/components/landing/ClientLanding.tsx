@@ -131,17 +131,26 @@ const SERVICE_FLOW = [
     id: "01",
     title: "Request",
     text: "You share your location, pool details, and preferred service days.",
+    highlight: "Intake response in less than 24 hours.",
   },
   {
     id: "02",
     title: "Plan",
     text: "We align the best route window and maintenance cadence for your property.",
+    highlight: "Cadence tuned to usage, seasonality, and equipment profile.",
   },
   {
     id: "03",
     title: "Deliver",
     text: "Our team executes service visits with checks, notes, and continuity.",
+    highlight: "Visual proof and concise notes after each completed visit.",
   },
+];
+
+const SERVICE_PILLAR_BADGES = [
+  "Most requested",
+  "Priority support",
+  "White-glove consistency",
 ];
 
 const REVIEWS = [
@@ -701,8 +710,13 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           </div>
 
           <div className="lp-container lp-trust-grid">
-            {TRUST_SIGNALS.map((item) => (
-              <article key={item.title} className="lp-trust-card lp-surface" data-lp-reveal>
+            {TRUST_SIGNALS.map((item, index) => (
+              <article
+                key={item.title}
+                className="lp-trust-card lp-surface"
+                data-rank={String(index + 1).padStart(2, "0")}
+                data-lp-reveal
+              >
                 <h3>{item.title}</h3>
                 <p>{item.detail}</p>
               </article>
@@ -710,39 +724,46 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           </div>
         </section>
 
-        <section id="services" className="lp-section">
+        <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
             <div className="lp-section-head">
               <p>Service experience</p>
-              <h2>Built to guide you clearly from request to recurring care.</h2>
+              <h2>A concierge-style workflow tailored to {servingLine} homes.</h2>
+              <p className="lp-section-head-copy">
+                We personalize cadence, chemistry targets, and communication style so your pool
+                stays pristine without extra coordination from your side.
+              </p>
             </div>
 
-            <div className="lp-flow-grid">
-              {SERVICE_FLOW.map((step) => (
-                <article key={step.id} className="lp-flow-card lp-surface" data-lp-reveal>
-                  <span>{step.id}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.text}</p>
-                </article>
-              ))}
-            </div>
+            <div className="lp-services-layout" data-lp-reveal>
+              <div className="lp-flow-grid">
+                {SERVICE_FLOW.map((step) => (
+                  <article key={step.id} className="lp-flow-card">
+                    <span>{step.id}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
+                    <small>{step.highlight}</small>
+                  </article>
+                ))}
+              </div>
 
-            <div className="lp-service-plan-grid">
-              {SERVICE_PILLARS.map((pillar) => (
-                <article
-                  key={pillar.title}
-                  className="lp-service-plan-card lp-surface"
-                  data-lp-reveal
-                >
-                  <h3>{pillar.title}</h3>
-                  <p>{pillar.subtitle}</p>
-                  <ul>
-                    {pillar.points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
+              <div className="lp-service-plan-grid">
+                {SERVICE_PILLARS.map((pillar, index) => (
+                  <article key={pillar.title} className="lp-service-plan-card">
+                    <div className="lp-service-plan-meta">
+                      <span className="lp-service-plan-badge">{SERVICE_PILLAR_BADGES[index]}</span>
+                      <strong>{String(index + 1).padStart(2, "0")}</strong>
+                    </div>
+                    <h3>{pillar.title}</h3>
+                    <p>{pillar.subtitle}</p>
+                    <ul>
+                      {pillar.points.map((point) => (
+                        <li key={point}>{point}</li>
+                      ))}
+                    </ul>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>

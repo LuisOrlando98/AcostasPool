@@ -3035,21 +3035,68 @@ summary.no-marker::marker {
 }
 
 .lp-trust-grid {
-  margin-top: 0.72rem;
+  margin-top: 0.84rem;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: 0.72rem;
 }
 
 .lp-trust-card {
-  padding: 0.95rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  min-height: 6.9rem;
+  padding: 1rem 1rem 1rem 3.25rem;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.48rem;
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.lp-trust-card::before {
+  content: attr(data-rank);
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 42%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 11%, transparent);
+  color: var(--lp-brand);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.61rem;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+
+.lp-trust-card::after {
+  content: "";
+  position: absolute;
+  right: -1.8rem;
+  bottom: -2.1rem;
+  width: 7.6rem;
+  height: 7.6rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--lp-brand) 12%, transparent) 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lp-trust-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lp-brand) 34%, var(--lp-border));
+  box-shadow: 0 16px 28px rgba(8, 25, 43, 0.14);
 }
 
 .lp-trust-card h3 {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.94rem;
 }
 
 .lp-trust-card p {
@@ -3060,7 +3107,8 @@ summary.no-marker::marker {
 }
 
 .lp-section-head {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.95rem;
+  max-width: min(72rem, 100%);
 }
 
 .lp-section-head p {
@@ -3076,23 +3124,138 @@ summary.no-marker::marker {
   margin: 0.42rem 0 0;
   font-size: clamp(1.32rem, 2.65vw, 2.32rem);
   line-height: 1.1;
+  text-wrap: balance;
+}
+
+.lp-section-head p.lp-section-head-copy {
+  margin: 0.62rem 0 0;
+  max-width: 62ch;
+  color: var(--lp-muted);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-weight: 500;
+  font-size: 0.92rem;
+  line-height: 1.62;
+}
+
+.lp-services-section {
+  position: relative;
+}
+
+.lp-services-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10% 10%, color-mix(in srgb, var(--lp-brand) 9%, transparent), transparent 44%),
+    radial-gradient(
+      circle at 94% 12%,
+      color-mix(in srgb, var(--lp-brand-2) 10%, transparent),
+      transparent 42%
+    );
+  opacity: 0.75;
+}
+
+.lp-services-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 0.72rem;
+  padding: clamp(0.85rem, 1.25vw, 1.18rem);
+  border-radius: 1.24rem;
+  border: 1px solid color-mix(in srgb, var(--lp-border) 80%, var(--lp-brand) 20%);
+  background:
+    radial-gradient(
+      circle at 16% -6%,
+      color-mix(in srgb, var(--lp-brand) 12%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 108% 6%,
+      color-mix(in srgb, var(--lp-brand-2) 10%, transparent),
+      transparent 58%
+    ),
+    color-mix(in srgb, var(--lp-surface) 89%, transparent);
+  box-shadow: var(--lp-shadow);
+  isolation: isolate;
+}
+
+.lp-services-layout::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    130deg,
+    transparent 0%,
+    color-mix(in srgb, var(--lp-brand) 6%, transparent) 35%,
+    transparent 76%
+  );
+  opacity: 0.7;
+  pointer-events: none;
 }
 
 .lp-flow-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.58rem;
+  grid-template-columns: 1fr;
+  gap: 0.62rem;
+  align-content: start;
+  padding: 0.15rem 0 0.1rem 0.25rem;
+}
+
+.lp-flow-grid::before {
+  content: "";
+  position: absolute;
+  left: 1.1rem;
+  top: 0.8rem;
+  bottom: 0.75rem;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--lp-brand) 76%, transparent),
+    color-mix(in srgb, var(--lp-brand-2) 72%, transparent)
+  );
+  opacity: 0.62;
 }
 
 .lp-flow-card {
-  padding: 0.95rem;
+  position: relative;
+  padding: 0.95rem 0.95rem 0.95rem 2.72rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface-soft) 88%, transparent);
   display: grid;
-  gap: 0.34rem;
+  gap: 0.3rem;
+  box-shadow: 0 12px 20px rgba(8, 25, 43, 0.08);
+  transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+}
+
+.lp-flow-card::before {
+  content: "";
+  position: absolute;
+  left: 0.89rem;
+  top: 1rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: linear-gradient(145deg, var(--lp-brand), var(--lp-brand-2));
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--lp-surface) 82%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--lp-brand) 40%, transparent);
+}
+
+.lp-flow-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lp-brand) 52%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 10%, var(--lp-surface-soft));
 }
 
 .lp-flow-card span {
   color: var(--lp-brand);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   letter-spacing: 0.16em;
   font-weight: 800;
 }
@@ -3109,28 +3272,125 @@ summary.no-marker::marker {
   font-size: 0.84rem;
 }
 
+.lp-flow-card small {
+  margin-top: 0.12rem;
+  color: color-mix(in srgb, var(--lp-brand) 72%, var(--lp-muted));
+  font-size: 0.67rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 .lp-service-plan-grid {
-  margin-top: 0.65rem;
+  margin-top: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.58rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.64rem;
+  align-content: start;
 }
 
 .lp-service-plan-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   padding: 1rem;
+  border-radius: 1.04rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 26%, var(--lp-border));
+  background:
+    linear-gradient(
+      168deg,
+      color-mix(in srgb, var(--lp-surface-soft) 92%, transparent),
+      color-mix(in srgb, var(--lp-surface) 88%, transparent)
+    );
   display: grid;
   gap: 0.42rem;
+  box-shadow: 0 16px 26px rgba(8, 25, 43, 0.1);
+  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.lp-service-plan-card:nth-child(1) {
+  grid-column: 1 / -1;
+}
+
+.lp-service-plan-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--lp-brand) 10%, transparent),
+    transparent 45%,
+    color-mix(in srgb, var(--lp-brand-2) 10%, transparent) 100%
+  );
+  opacity: 0.9;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lp-service-plan-card::after {
+  content: "";
+  position: absolute;
+  right: -2.2rem;
+  top: -2.4rem;
+  width: 7rem;
+  height: 7rem;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--lp-brand) 14%, transparent) 0%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lp-service-plan-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--lp-brand) 54%, var(--lp-border));
+  box-shadow: 0 20px 30px rgba(8, 25, 43, 0.14);
+}
+
+.lp-service-plan-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.52rem;
+}
+
+.lp-service-plan-badge {
+  min-height: 1.34rem;
+  padding: 0 0.58rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 40%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 12%, transparent);
+  color: var(--lp-brand);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.56rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.lp-service-plan-meta strong {
+  color: color-mix(in srgb, var(--lp-brand) 75%, var(--lp-muted));
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 800;
 }
 
 .lp-service-plan-card h3 {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 1rem;
 }
 
 .lp-service-plan-card p {
   margin: 0;
   color: var(--lp-muted);
-  line-height: 1.58;
+  line-height: 1.62;
+  font-size: 0.84rem;
 }
 
 .lp-service-plan-card ul {
@@ -3143,9 +3403,10 @@ summary.no-marker::marker {
 
 .lp-service-plan-card li {
   position: relative;
-  padding-left: 1rem;
+  padding-left: 1.06rem;
   color: var(--lp-muted);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
+  line-height: 1.56;
 }
 
 .lp-service-plan-card li::before {
@@ -3153,10 +3414,11 @@ summary.no-marker::marker {
   position: absolute;
   left: 0;
   top: 0.45rem;
-  width: 0.46rem;
-  height: 0.46rem;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 999px;
   background: linear-gradient(150deg, var(--lp-brand), var(--lp-brand-2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lp-surface) 84%, transparent);
 }
 
 .lp-carousel {
@@ -3801,7 +4063,14 @@ summary.no-marker::marker {
     grid-template-columns: 1fr;
   }
 
-  .lp-flow-grid,
+  .lp-services-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
   .lp-service-plan-grid,
   .lp-review-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3832,6 +4101,18 @@ summary.no-marker::marker {
   .lp-theme-btn {
     width: 1.82rem;
     height: 1.82rem;
+  }
+
+  .lp-services-layout {
+    padding: 0.78rem;
+  }
+
+  .lp-flow-grid::before {
+    left: 1rem;
+  }
+
+  .lp-flow-card {
+    padding-left: 2.56rem;
   }
 
   .lp-announce p {
@@ -3865,6 +4146,9 @@ summary.no-marker::marker {
   .lp-nav-link,
   .lp-btn,
   .lp-slide,
+  .lp-trust-card,
+  .lp-flow-card,
+  .lp-service-plan-card,
   [data-lp-reveal] {
     transition: none;
   }
