@@ -82,20 +82,14 @@ const TRUST_SIGNALS = [
   {
     title: "Licensed and insured",
     detail: "Florida-compliant operation for residential pool care.",
-    icon: "/landing/icons/trust-license.png",
-    note: "Florida-ready compliance",
   },
   {
     title: "Photo-backed service notes",
     detail: "Each visit can include visual proof and status updates.",
-    icon: "/landing/icons/trust-photo.png",
-    note: "Visit-by-visit transparency",
   },
   {
     title: "Predictable weekly rhythm",
     detail: "Structured routes with quality checks and clear handoff.",
-    icon: "/landing/icons/trust-rhythm.png",
-    note: "Route discipline every week",
   },
 ];
 
@@ -103,10 +97,6 @@ const SERVICE_PILLARS = [
   {
     title: "Weekly Signature Care",
     subtitle: "For homeowners that want consistent crystal-clear water.",
-    icon: "/landing/icons/pillar-weekly.png",
-    image:
-      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1800&q=80",
-    outcome: "Balanced quality on every route cycle.",
     points: [
       "Surface skimming and brushing",
       "Vacuum and basket cleaning",
@@ -117,10 +107,6 @@ const SERVICE_PILLARS = [
   {
     title: "Repair and Recovery",
     subtitle: "For pumps, filters, and green-to-clean recovery windows.",
-    icon: "/landing/icons/pillar-repair.png",
-    image:
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1800&q=80",
-    outcome: "Fast diagnostics with clear next-action notes.",
     points: [
       "Pump and filter diagnostics",
       "Storm and algae recovery",
@@ -131,10 +117,6 @@ const SERVICE_PILLARS = [
   {
     title: "Premium Property Standard",
     subtitle: "For homes that need high-end visual and technical consistency.",
-    icon: "/landing/icons/pillar-premium.png",
-    image:
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1800&q=80",
-    outcome: "White-glove polish for luxury residential presentation.",
     points: [
       "Detail-focused water polish",
       "Tile and circulation checks",
@@ -150,27 +132,18 @@ const SERVICE_FLOW = [
     title: "Request",
     text: "You share your location, pool details, and preferred service days.",
     highlight: "Intake response in less than 24 hours.",
-    icon: "/landing/icons/flow-request.png",
-    image:
-      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1400&q=80",
   },
   {
     id: "02",
     title: "Plan",
     text: "We align the best route window and maintenance cadence for your property.",
     highlight: "Cadence tuned to usage, seasonality, and equipment profile.",
-    icon: "/landing/icons/flow-plan.png",
-    image:
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1400&q=80",
   },
   {
     id: "03",
     title: "Deliver",
     text: "Our team executes service visits with checks, notes, and continuity.",
     highlight: "Visual proof and concise notes after each completed visit.",
-    icon: "/landing/icons/flow-deliver.png",
-    image:
-      "https://images.unsplash.com/photo-1600566753051-f0b55746f8f6?auto=format&fit=crop&w=1400&q=80",
   },
 ];
 
@@ -179,15 +152,6 @@ const SERVICE_PILLAR_BADGES = [
   "Priority support",
   "White-glove consistency",
 ];
-
-const SERVICES_VISUAL_PANEL = {
-  image:
-    "https://images.unsplash.com/photo-1600607687644-c7171b42498f?auto=format&fit=crop&w=2600&q=80",
-  title: "A premium operating rhythm that protects water quality and presentation.",
-  detail:
-    "From intake to recurring visits, every action is documented and calibrated for your property profile.",
-  tags: ["Visual report after service", "Chemistry checks with continuity", "Dedicated route windows"],
-};
 
 const REVIEWS = [
   {
@@ -753,12 +717,8 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 data-rank={String(index + 1).padStart(2, "0")}
                 data-lp-reveal
               >
-                <img src={item.icon} alt="" aria-hidden="true" className="lp-trust-icon" />
-                <div className="lp-trust-copy">
-                  <h3>{item.title}</h3>
-                  <p>{item.detail}</p>
-                  <small>{item.note}</small>
-                </div>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
               </article>
             ))}
           </div>
@@ -776,36 +736,13 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             </div>
 
             <div className="lp-services-layout" data-lp-reveal>
-              <article className="lp-services-visual-card">
-                <img
-                  src={SERVICES_VISUAL_PANEL.image}
-                  alt="Premium backyard pool with polished water and deck finish"
-                />
-                <div className="lp-services-visual-overlay">
-                  <p>Premium operations</p>
-                  <h3>{SERVICES_VISUAL_PANEL.title}</h3>
-                  <p>{SERVICES_VISUAL_PANEL.detail}</p>
-                  <div className="lp-services-visual-tags">
-                    {SERVICES_VISUAL_PANEL.tags.map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              </article>
-
               <div className="lp-flow-grid">
                 {SERVICE_FLOW.map((step) => (
                   <article key={step.id} className="lp-flow-card">
-                    <img src={step.icon} alt="" aria-hidden="true" className="lp-flow-icon" />
-                    <div className="lp-flow-card-copy">
-                      <span>{step.id}</span>
-                      <h3>{step.title}</h3>
-                      <p>{step.text}</p>
-                      <small>{step.highlight}</small>
-                    </div>
-                    <div className="lp-flow-thumb">
-                      <img src={step.image} alt={`Service step ${step.id}: ${step.title}`} />
-                    </div>
+                    <span>{step.id}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
+                    <small>{step.highlight}</small>
                   </article>
                 ))}
               </div>
@@ -813,22 +750,12 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               <div className="lp-service-plan-grid">
                 {SERVICE_PILLARS.map((pillar, index) => (
                   <article key={pillar.title} className="lp-service-plan-card">
-                    <div className="lp-service-plan-media">
-                      <img src={pillar.image} alt={`${pillar.title} pool care showcase`} />
-                      <img
-                        src={pillar.icon}
-                        alt=""
-                        aria-hidden="true"
-                        className="lp-service-plan-icon"
-                      />
-                    </div>
                     <div className="lp-service-plan-meta">
                       <span className="lp-service-plan-badge">{SERVICE_PILLAR_BADGES[index]}</span>
                       <strong>{String(index + 1).padStart(2, "0")}</strong>
                     </div>
                     <h3>{pillar.title}</h3>
                     <p>{pillar.subtitle}</p>
-                    <small className="lp-service-plan-outcome">{pillar.outcome}</small>
                     <ul>
                       {pillar.points.map((point) => (
                         <li key={point}>{point}</li>
