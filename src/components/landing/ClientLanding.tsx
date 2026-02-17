@@ -69,9 +69,9 @@ const TRUST_SIGNALS = [
 const SERVICE_PILLARS = [
   {
     title: "Weekly Signature Care",
-    subtitle: "Consistent crystal-clear water for high-use residential pools.",
+    subtitle: "Weekly cleaning and chemistry balancing for stable, polished water.",
     image:
-      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=1800&q=80",
     icon: "/landing/icons/pillar-weekly.png",
     points: [
       "Surface skimming and brushing",
@@ -81,32 +81,48 @@ const SERVICE_PILLARS = [
     ],
   },
   {
-    title: "Repair and Recovery",
-    subtitle: "Diagnostics and corrective action for pumps, filters, and water issues.",
+    title: "Pool Cleaning",
+    subtitle: "Debris removal, wall brushing, and filter care for crystal-clear water.",
     image:
-      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1628534818423-4f59bdbf4df0?auto=format&fit=crop&w=1800&q=80",
     icon: "/landing/icons/pillar-repair.png",
     points: [
-      "Pump and filter diagnostics",
-      "Storm and algae recovery",
-      "Priority issue handling",
-      "Repair recommendations",
+      "Filter cleaning routine",
+      "Wall and tile brushing",
+      "Vacuuming service",
+      "Clarity-focused finish",
     ],
   },
   {
-    title: "Premium Property Standard",
-    subtitle: "White-glove upkeep for properties with higher visual and technical demand.",
+    title: "Equipment Repair",
+    subtitle: "Troubleshooting and repair for pumps, filters, and circulation components.",
     image:
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1617098474202-0d0d7f60f36a?auto=format&fit=crop&w=1800&q=80",
     icon: "/landing/icons/pillar-premium.png",
     points: [
-      "Detail-focused water polish",
-      "Tile and circulation checks",
-      "Preventive risk control",
-      "Proactive maintenance notes",
+      "Leak and pressure checks",
+      "Pump and motor service",
+      "Filter replacement support",
+      "Heater maintenance review",
+    ],
+  },
+  {
+    title: "Water Testing Service",
+    subtitle: "Balanced chemistry with preventive checks to keep swimmers safe.",
+    image:
+      "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1800&q=80",
+    icon: "/landing/icons/trust-photo.png",
+    points: [
+      "pH and chlorine testing",
+      "Alkalinity monitoring",
+      "Imbalance detection",
+      "Clear treatment guidance",
     ],
   },
 ];
+
+const SERVICES_BACKGROUND_IMAGE =
+  "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=2600&q=80";
 
 const GALLERY_SLIDES = [
   {
@@ -148,7 +164,7 @@ const REVIEWS = [
     author: "S. Henderson",
     zone: "Kendall",
     rating: 5,
-    plan: "Repair and Recovery",
+    plan: "Pool Cleaning",
     quote:
       "They solved recurring water issues fast and documented every recommendation clearly.",
   },
@@ -156,7 +172,7 @@ const REVIEWS = [
     author: "A. Patel",
     zone: "Doral",
     rating: 5,
-    plan: "Premium Property Standard",
+    plan: "Equipment Repair",
     quote:
       "Excellent detail level. Our pool looks polished and equipment checks are always on point.",
   },
@@ -545,27 +561,40 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             </div>
           </div>
 
-          <div className="lp-container lp-trust-grid">
-            {TRUST_SIGNALS.map((item) => (
-              <article key={item.title} className="lp-trust-card lp-surface" data-lp-reveal>
-                <img src={item.icon} alt="" aria-hidden="true" className="lp-trust-icon" />
-                <div>
-                  <h3>{item.title}</h3>
-                  <p>{item.detail}</p>
-                </div>
-              </article>
-            ))}
-          </div>
         </section>
 
         <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
-            <div className="lp-section-head lp-services-head">
-              <h2>Pool services designed for clean water and dependable operation.</h2>
-              <p className="lp-section-head-copy">
-                Three focused service lines, each built for clear expectations and consistent
-                execution.
-              </p>
+            <div className="lp-services-intro-shell lp-surface" data-lp-reveal>
+              <img
+                src={SERVICES_BACKGROUND_IMAGE}
+                alt="Premium pool deck with palm trees and modern architecture"
+                className="lp-services-intro-bg"
+              />
+              <div className="lp-services-intro-overlay" />
+
+              <div className="lp-services-intro-content">
+                <div className="lp-services-intro-copy">
+                  <p className="lp-kicker">Designed for South Florida homes</p>
+                  <h2>Pool services designed for clean water and dependable operation.</h2>
+                  <p className="lp-section-head-copy">
+                    Structured weekly workflows, clear reporting, and detail-focused execution to
+                    keep your pool healthy and visually consistent.
+                  </p>
+                </div>
+
+                <div className="lp-services-intro-trust">
+                  {TRUST_SIGNALS.map((item) => (
+                    <article key={item.title} className="lp-services-intro-trust-card">
+                      <img src={item.icon} alt="" aria-hidden="true" className="lp-trust-icon" />
+                      <div>
+                        <h3>{item.title}</h3>
+                        <p>{item.detail}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div className="lp-service-plan-grid" data-lp-reveal>
@@ -688,13 +717,27 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               </div>
 
               <article className="lp-video-copy lp-surface">
+                <p className="lp-kicker">Visit protocol</p>
                 <h3>Quality checks in every routine service</h3>
-                <ul>
-                  <li>Water chemistry testing and balancing</li>
-                  <li>Skimming, brushing, and vacuum workflow</li>
-                  <li>Pump, filter, and circulation review</li>
-                  <li>Short report with key findings</li>
-                </ul>
+                <p>
+                  Every stop follows a consistent sequence so your water quality, equipment
+                  performance, and presentation remain under control.
+                </p>
+                <div className="lp-video-copy-lists">
+                  <ul>
+                    <li>Water chemistry testing and balancing</li>
+                    <li>Skimming, brushing, and vacuum workflow</li>
+                  </ul>
+                  <ul>
+                    <li>Pump, filter, and circulation review</li>
+                    <li>Short report with key findings</li>
+                  </ul>
+                </div>
+                <div className="lp-video-copy-tags">
+                  <span>Checklist-based execution</span>
+                  <span>Photo-ready finish quality</span>
+                  <span>Preventive equipment focus</span>
+                </div>
                 <Link href="/about" className="lp-btn lp-btn-soft">
                   Learn more about our process
                 </Link>
@@ -707,21 +750,6 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
           <div className="lp-container">
             <div className="lp-section-head">
               <h2>Premium homeowner reviews.</h2>
-            </div>
-
-            <div className="lp-review-summary" data-lp-reveal>
-              <article className="lp-review-summary-card lp-surface">
-                <strong>4.9/5 average</strong>
-                <span>Based on repeat residential clients.</span>
-              </article>
-              <article className="lp-review-summary-card lp-surface">
-                <strong>Fast communication</strong>
-                <span>Most inquiries receive same-day or next-day response.</span>
-              </article>
-              <article className="lp-review-summary-card lp-surface">
-                <strong>High consistency</strong>
-                <span>Structured routes and checklist-based execution.</span>
-              </article>
             </div>
 
             <div className="lp-review-grid">

@@ -46,6 +46,24 @@ const FLOW_STEPS = [
   },
 ];
 
+const HISTORY_MILESTONES = [
+  {
+    year: "2019",
+    title: "First recurring routes",
+    text: "Started with a small group of residential clients focused on consistency and clean communication.",
+  },
+  {
+    year: "2022",
+    title: "Process standardization",
+    text: "Introduced structured visit checklists and clearer diagnostic reporting for equipment and water balance.",
+  },
+  {
+    year: "Today",
+    title: "Commitment to premium care",
+    text: "Serving South Florida properties with preventive maintenance and dependable weekly execution.",
+  },
+];
+
 export default async function AboutPage() {
   const socialLinks = await getSiteSocialLinks();
   const whatsappLink =
@@ -135,6 +153,32 @@ export default async function AboutPage() {
                 src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=80"
                 alt="Modern residential property representing premium pool maintenance standards"
               />
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-section">
+          <div className="lp-container lp-about-history-layout">
+            <article className="lp-about-history-copy lp-surface">
+              <h2>Our History and Commitment</h2>
+              <p>
+                AcostasPool grew from a simple objective: deliver premium pool care with reliable
+                weekly discipline, not inconsistent one-off fixes.
+              </p>
+              <p>
+                Our commitment remains the same on every property: stable water chemistry, clear
+                technical communication, and service execution homeowners can trust long-term.
+              </p>
+            </article>
+
+            <div className="lp-about-history-timeline">
+              {HISTORY_MILESTONES.map((item) => (
+                <article key={item.title} className="lp-about-history-step lp-surface">
+                  <span>{item.year}</span>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
