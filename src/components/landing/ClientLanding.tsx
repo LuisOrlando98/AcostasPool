@@ -93,10 +93,30 @@ const TRUST_SIGNALS = [
   },
 ];
 
+const SERVICE_HIGHLIGHTS = [
+  {
+    label: "Get a free quote today",
+    value: PHONE_DISPLAY,
+    note: "Fast response by call or WhatsApp",
+  },
+  {
+    label: "Based on real reviews",
+    value: "5-star service",
+    note: "Trusted by homeowners across South Florida",
+  },
+  {
+    label: "Years of experience",
+    value: "5+ years",
+    note: "Reliable weekly service rhythm",
+  },
+];
+
 const SERVICE_PILLARS = [
   {
     title: "Weekly Signature Care",
     subtitle: "For homeowners that want consistent crystal-clear water.",
+    image:
+      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1800&q=80",
     points: [
       "Surface skimming and brushing",
       "Vacuum and basket cleaning",
@@ -107,6 +127,8 @@ const SERVICE_PILLARS = [
   {
     title: "Repair and Recovery",
     subtitle: "For pumps, filters, and green-to-clean recovery windows.",
+    image:
+      "https://images.unsplash.com/photo-1545239351-1141bd82e8a6?auto=format&fit=crop&w=1800&q=80",
     points: [
       "Pump and filter diagnostics",
       "Storm and algae recovery",
@@ -117,6 +139,8 @@ const SERVICE_PILLARS = [
   {
     title: "Premium Property Standard",
     subtitle: "For homes that need high-end visual and technical consistency.",
+    image:
+      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=1800&q=80",
     points: [
       "Detail-focused water polish",
       "Tile and circulation checks",
@@ -126,31 +150,16 @@ const SERVICE_PILLARS = [
   },
 ];
 
-const SERVICE_FLOW = [
-  {
-    id: "01",
-    title: "Request",
-    text: "You share your location, pool details, and preferred service days.",
-    highlight: "Intake response in less than 24 hours.",
-  },
-  {
-    id: "02",
-    title: "Plan",
-    text: "We align the best route window and maintenance cadence for your property.",
-    highlight: "Cadence tuned to usage, seasonality, and equipment profile.",
-  },
-  {
-    id: "03",
-    title: "Deliver",
-    text: "Our team executes service visits with checks, notes, and continuity.",
-    highlight: "Visual proof and concise notes after each completed visit.",
-  },
-];
-
 const SERVICE_PILLAR_BADGES = [
   "Most requested",
   "Priority support",
   "White-glove consistency",
+];
+
+const SERVICE_CREDENTIALS = [
+  "Licensed and insured",
+  "Photo-backed notes",
+  "Predictable weekly routes",
 ];
 
 const REVIEWS = [
@@ -727,22 +736,25 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <p>Service experience</p>
-              <h2>A concierge-style workflow tailored to {servingLine} homes.</h2>
+              <p>Premier pool services</p>
+              <h2>Our premier pool services include.</h2>
               <p className="lp-section-head-copy">
-                We personalize cadence, chemistry targets, and communication style so your pool
-                stays pristine without extra coordination from your side.
+                Built for {servingLine} homes that need reliable weekly quality, clear communication,
+                and proactive equipment care.
               </p>
             </div>
 
             <div className="lp-services-layout" data-lp-reveal>
-              <div className="lp-flow-grid">
-                {SERVICE_FLOW.map((step) => (
-                  <article key={step.id} className="lp-flow-card">
-                    <span>{step.id}</span>
-                    <h3>{step.title}</h3>
-                    <p>{step.text}</p>
-                    <small>{step.highlight}</small>
+              <div className="lp-service-highlights">
+                {SERVICE_HIGHLIGHTS.map((item, index) => (
+                  <article key={item.label} className="lp-service-highlight">
+                    <p>{item.label}</p>
+                    {index === 0 ? (
+                      <a href={`tel:${PHONE_E164}`}>{item.value}</a>
+                    ) : (
+                      <strong>{item.value}</strong>
+                    )}
+                    <span>{item.note}</span>
                   </article>
                 ))}
               </div>
@@ -750,6 +762,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               <div className="lp-service-plan-grid">
                 {SERVICE_PILLARS.map((pillar, index) => (
                   <article key={pillar.title} className="lp-service-plan-card">
+                    <div className="lp-service-plan-media">
+                      <img src={pillar.image} alt={`${pillar.title} service preview`} />
+                    </div>
                     <div className="lp-service-plan-meta">
                       <span className="lp-service-plan-badge">{SERVICE_PILLAR_BADGES[index]}</span>
                       <strong>{String(index + 1).padStart(2, "0")}</strong>
@@ -763,6 +778,21 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                     </ul>
                   </article>
                 ))}
+              </div>
+
+              <div className="lp-service-credentials">
+                {SERVICE_CREDENTIALS.map((item) => (
+                  <span key={item}>{item}</span>
+                ))}
+              </div>
+
+              <div className="lp-service-cta-row">
+                <a href="#quote" className="lp-btn lp-btn-primary">
+                  Get a custom quote
+                </a>
+                <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
+                  Call {PHONE_DISPLAY}
+                </a>
               </div>
             </div>
           </div>
