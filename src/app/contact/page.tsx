@@ -12,6 +12,15 @@ const PHONE_DISPLAY = "+1 (786) 519-5059";
 const PHONE_E164 = "+17865195059";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
+const COVERAGE_CITIES = [
+  "Miami",
+  "Kendall",
+  "Coral Gables",
+  "Doral",
+  "Homestead",
+  "Cutler Bay",
+];
+
 export default async function ContactPage() {
   const socialLinks = await getSiteSocialLinks();
   const whatsappLink =
@@ -26,14 +35,27 @@ export default async function ContactPage() {
         <div className="lp-container lp-header-inner">
           <Link href="/" className="lp-brand">
             <span className="lp-brand-dot" aria-hidden="true" />
-            <span>AcostasPool</span>
+            <span className="lp-brand-name">
+              <span>Acostas</span>
+              <span>Pool</span>
+            </span>
           </Link>
-          <div className="lp-header-right">
-            <Link href="/" className="lp-nav-inline-link">
+
+          <nav className="lp-nav" aria-label="Primary">
+            <Link href="/" className="lp-nav-link lp-nav-link-page">
               Home
             </Link>
+            <Link href="/about" className="lp-nav-link lp-nav-link-page">
+              About
+            </Link>
+            <Link href="/contact" className="lp-nav-link" data-active="true">
+              Contact
+            </Link>
+          </nav>
+
+          <div className="lp-header-actions">
             <Link href="/login" className="lp-login-btn">
-              Log in
+              Client log in
             </Link>
           </div>
         </div>
@@ -42,52 +64,69 @@ export default async function ContactPage() {
       <main className="lp-main">
         <section className="lp-section">
           <div className="lp-container">
-            <div className="lp-section-head">
-              <p>Contact us</p>
-              <h1 className="lp-contact-title">Let us design your maintenance plan.</h1>
-            </div>
-
-            <div className="lp-contact-layout">
-              <article className="lp-contact-panel lp-surface">
-                <h2>Direct channels</h2>
+            <article className="lp-contact-hero lp-surface">
+              <img
+                src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=2400&q=80"
+                alt="Premium pool and modern residential property"
+              />
+              <div className="lp-contact-hero-overlay">
+                <h1>Contact AcostasPool</h1>
                 <p>
-                  Reach us directly and our team will confirm the best service window for your
-                  property.
+                  Tell us your pool location, current condition, and preferred schedule. We will
+                  reply with a clear service recommendation.
                 </p>
-                <div className="lp-contact-actions-list">
-                  <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-primary">
+                <div className="lp-actions">
+                  <a href={whatsappLink} className="lp-btn lp-btn-primary">
+                    Start on WhatsApp
+                  </a>
+                  <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
                     Call {PHONE_DISPLAY}
                   </a>
-                  <a href={whatsappLink} className="lp-btn lp-btn-ghost">
-                    WhatsApp
-                  </a>
-                  <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-btn lp-btn-soft">
-                    {SUPPORT_EMAIL}
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-btn lp-btn-ghost">
+                    Send email
                   </a>
                 </div>
-                <div className="lp-contact-meta">
-                  <p>Business hours: Mon - Sat, 8:00 AM - 6:00 PM</p>
-                  <p>Coverage: Miami, Kendall, Coral Gables, Doral, Homestead</p>
-                </div>
-              </article>
+              </div>
+            </article>
+          </div>
+        </section>
 
-              <article className="lp-contact-panel lp-surface">
-                <h2>What to have ready</h2>
-                <ul className="lp-contact-checklist">
-                  <li>Property address and preferred service day</li>
-                  <li>Pool type and estimated size</li>
-                  <li>Any current equipment or water issues</li>
-                  <li>Photos or short video if available</li>
-                </ul>
-                <p className="lp-contact-note">
-                  This helps us send a faster and more accurate service proposal.
-                </p>
-              </article>
-            </div>
+        <section className="lp-section">
+          <div className="lp-container lp-contact-grid-v2">
+            <article className="lp-contact-card lp-surface">
+              <h2>Fastest way to get a quote</h2>
+              <ol className="lp-contact-steps">
+                <li>Share your city and pool size.</li>
+                <li>Tell us your current issue or maintenance goal.</li>
+                <li>Pick your preferred contact method and service day.</li>
+              </ol>
+              <p className="lp-contact-note">Business hours: Monday to Saturday, 8:00 AM to 6:00 PM.</p>
+            </article>
+
+            <article className="lp-contact-card lp-surface">
+              <h2>What to include in your first message</h2>
+              <ul className="lp-contact-checklist">
+                <li>Pool size and current water condition</li>
+                <li>Any equipment concerns you have noticed</li>
+                <li>Preferred weekly service cadence</li>
+                <li>Optional photos for faster evaluation</li>
+              </ul>
+            </article>
+
+            <article className="lp-contact-card lp-surface">
+              <h2>Service area</h2>
+              <ul className="lp-contact-coverage">
+                {COVERAGE_CITIES.map((city) => (
+                  <li key={city}>{city}</li>
+                ))}
+              </ul>
+              <Link href="/about" className="lp-btn lp-btn-soft">
+                Learn about our team
+              </Link>
+            </article>
           </div>
         </section>
       </main>
     </div>
   );
 }
-
