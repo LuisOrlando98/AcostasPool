@@ -3138,6 +3138,10 @@ summary.no-marker::marker {
   line-height: 1.62;
 }
 
+.lp-services-head h2 {
+  max-width: 24ch;
+}
+
 .lp-services-section {
   position: relative;
 }
@@ -3161,84 +3165,17 @@ summary.no-marker::marker {
   position: relative;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.86rem;
-  padding: clamp(0.85rem, 1.25vw, 1.18rem);
-  border-radius: 1.24rem;
-  border: 1px solid color-mix(in srgb, var(--lp-border) 80%, var(--lp-brand) 20%);
-  background:
-    radial-gradient(
-      circle at 16% -6%,
-      color-mix(in srgb, var(--lp-brand) 12%, transparent),
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 108% 6%,
-      color-mix(in srgb, var(--lp-brand-2) 10%, transparent),
-      transparent 58%
-    ),
-    color-mix(in srgb, var(--lp-surface) 89%, transparent);
-  box-shadow: var(--lp-shadow);
+  gap: 0.8rem;
+  padding: clamp(0.92rem, 1.3vw, 1.28rem);
+  border-radius: 1.28rem;
+  border: 1px solid color-mix(in srgb, var(--lp-border) 86%, var(--lp-brand) 14%);
+  background: color-mix(in srgb, var(--lp-surface) 95%, transparent);
+  box-shadow: 0 18px 34px rgba(8, 25, 43, 0.08);
   isolation: isolate;
 }
 
 .lp-services-layout::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    130deg,
-    transparent 0%,
-    color-mix(in srgb, var(--lp-brand) 6%, transparent) 35%,
-    transparent 76%
-  );
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.lp-service-highlights {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.58rem;
-}
-
-.lp-service-highlight {
-  border-radius: 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 18%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-surface-soft) 88%, transparent);
-  padding: 0.72rem 0.78rem;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.lp-service-highlight p {
-  margin: 0;
-  color: var(--lp-muted);
-  font-size: 0.64rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 700;
-}
-
-.lp-service-highlight strong,
-.lp-service-highlight a {
-  margin: 0;
-  color: var(--lp-ink);
-  font-size: 1.02rem;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.lp-service-highlight a:hover {
-  color: var(--lp-brand);
-}
-
-.lp-service-highlight span {
-  color: var(--lp-muted);
-  font-size: 0.74rem;
-  line-height: 1.45;
+  content: none;
 }
 
 .lp-flow-grid {
@@ -3327,76 +3264,44 @@ summary.no-marker::marker {
 }
 
 .lp-service-plan-grid {
-  margin-top: 0.1rem;
+  margin-top: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.68rem;
+  gap: 0.72rem;
   align-content: start;
 }
 
 .lp-service-plan-card {
   position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  padding: 1rem;
-  border-radius: 1.04rem;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 26%, var(--lp-border));
-  background:
-    linear-gradient(
-      168deg,
-      color-mix(in srgb, var(--lp-surface-soft) 92%, transparent),
-      color-mix(in srgb, var(--lp-surface) 88%, transparent)
-    );
+  padding: 0.92rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 18%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface) 96%, transparent);
   display: grid;
-  gap: 0.42rem;
-  box-shadow: 0 16px 26px rgba(8, 25, 43, 0.1);
-  transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+  gap: 0.5rem;
+  box-shadow: 0 12px 24px rgba(8, 25, 43, 0.08);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .lp-service-plan-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--lp-brand) 10%, transparent),
-    transparent 45%,
-    color-mix(in srgb, var(--lp-brand-2) 10%, transparent) 100%
-  );
-  opacity: 0.9;
-  pointer-events: none;
-  z-index: -1;
+  content: none;
 }
 
 .lp-service-plan-card::after {
-  content: "";
-  position: absolute;
-  right: -2.2rem;
-  top: -2.4rem;
-  width: 7rem;
-  height: 7rem;
-  border-radius: 999px;
-  background: radial-gradient(
-    circle,
-    color-mix(in srgb, var(--lp-brand) 14%, transparent) 0%,
-    transparent 72%
-  );
-  pointer-events: none;
-  z-index: -1;
+  content: none;
 }
 
 .lp-service-plan-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--lp-brand) 54%, var(--lp-border));
-  box-shadow: 0 20px 30px rgba(8, 25, 43, 0.14);
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lp-brand) 32%, var(--lp-border));
+  box-shadow: 0 16px 26px rgba(8, 25, 43, 0.11);
 }
 
 .lp-service-plan-media {
-  margin: -0.16rem -0.16rem 0.14rem;
+  margin: -0.1rem -0.1rem 0.18rem;
   border-radius: 0.86rem;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 18%, var(--lp-border));
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 12%, var(--lp-border));
   aspect-ratio: 16 / 10;
 }
 
@@ -3408,20 +3313,20 @@ summary.no-marker::marker {
 }
 
 .lp-service-plan-meta {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 0.52rem;
 }
 
 .lp-service-plan-badge {
+  display: none;
   min-height: 1.34rem;
   padding: 0 0.58rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 40%, var(--lp-border));
   background: color-mix(in srgb, var(--lp-brand) 12%, transparent);
   color: var(--lp-brand);
-  display: inline-flex;
   align-items: center;
   font-size: 0.56rem;
   letter-spacing: 0.11em;
@@ -3430,78 +3335,76 @@ summary.no-marker::marker {
 }
 
 .lp-service-plan-meta strong {
-  color: color-mix(in srgb, var(--lp-brand) 75%, var(--lp-muted));
-  font-size: 0.64rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  font-weight: 800;
+  display: none;
 }
 
 .lp-service-plan-card h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.03rem;
+  line-height: 1.28;
 }
 
 .lp-service-plan-card p {
   margin: 0;
   color: var(--lp-muted);
-  line-height: 1.62;
-  font-size: 0.84rem;
+  line-height: 1.56;
+  font-size: 0.83rem;
 }
 
 .lp-service-plan-card ul {
-  margin: 0.45rem 0 0;
+  margin: 0.25rem 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.42rem;
 }
 
 .lp-service-plan-card li {
   position: relative;
-  padding-left: 1.06rem;
+  padding-left: 1.02rem;
   color: var(--lp-muted);
-  font-size: 0.82rem;
-  line-height: 1.56;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .lp-service-plan-card li::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.45rem;
-  width: 0.5rem;
-  height: 0.5rem;
+  top: 0.43rem;
+  width: 0.45rem;
+  height: 0.45rem;
   border-radius: 999px;
   background: linear-gradient(150deg, var(--lp-brand), var(--lp-brand-2));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lp-surface) 84%, transparent);
 }
 
-.lp-service-credentials {
+.lp-service-trust-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.42rem;
+  align-items: center;
+  gap: 0.28rem;
 }
 
-.lp-service-credentials span {
-  min-height: 1.34rem;
-  padding: 0 0.54rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 30%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
-  color: color-mix(in srgb, var(--lp-brand) 80%, var(--lp-muted));
+.lp-service-trust-line span {
   display: inline-flex;
   align-items: center;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 700;
+  color: var(--lp-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+.lp-service-trust-line span + span::before {
+  content: "\2022";
+  margin: 0 0.42rem 0 0.2rem;
+  color: color-mix(in srgb, var(--lp-brand) 72%, var(--lp-muted));
 }
 
 .lp-service-cta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 0.48rem;
+  padding-top: 0.22rem;
 }
 
 .lp-carousel {
@@ -3663,55 +3566,64 @@ summary.no-marker::marker {
 }
 
 .lp-quote-section {
-  padding-top: 1.65rem;
+  padding-top: 1.8rem;
+}
+
+.lp-quote-head h2 {
+  max-width: 26ch;
 }
 
 .lp-quote-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.72rem;
+  gap: 0.86rem;
 }
 
 .lp-quote-info,
 .lp-quote-form {
-  padding: 1.02rem;
+  padding: 1.16rem;
+  border-color: color-mix(in srgb, var(--lp-brand) 16%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface) 96%, transparent);
+  box-shadow: 0 16px 30px rgba(8, 25, 43, 0.08);
 }
 
 .lp-quote-info h3,
 .lp-quote-form h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.06rem;
+  line-height: 1.28;
 }
 
 .lp-quote-info p {
-  margin: 0.52rem 0 0;
+  margin: 0.48rem 0 0;
   color: var(--lp-muted);
-  line-height: 1.6;
+  line-height: 1.58;
+  max-width: 42ch;
 }
 
 .lp-channel-grid {
-  margin-top: 0.78rem;
+  margin-top: 0.9rem;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.58rem;
 }
 
 .lp-channel-card {
-  border-radius: 0.95rem;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-surface-soft) 86%, transparent);
-  padding: 0.72rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 14%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface) 95%, transparent);
+  padding: 0.78rem;
   text-decoration: none;
   display: grid;
-  gap: 0.34rem;
+  gap: 0.38rem;
   color: inherit;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .lp-channel-card:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--lp-brand) 55%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
+  border-color: color-mix(in srgb, var(--lp-brand) 34%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 6%, var(--lp-surface));
+  box-shadow: 0 12px 22px rgba(8, 25, 43, 0.08);
 }
 
 .lp-channel-badge {
@@ -3731,110 +3643,94 @@ summary.no-marker::marker {
 
 .lp-channel-card h4 {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.96rem;
 }
 
 .lp-channel-card p {
   margin: 0;
   color: var(--lp-muted);
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.81rem;
+  line-height: 1.48;
 }
 
 .lp-channel-cta {
   justify-self: start;
   margin-top: 0.12rem;
-  color: var(--lp-ink);
-  font-size: 0.65rem;
+  color: color-mix(in srgb, var(--lp-brand) 82%, var(--lp-ink));
+  font-size: 0.62rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 800;
 }
 
-.lp-quote-facts-grid {
-  margin-top: 0.74rem;
+.lp-quote-facts-list {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.48rem;
+  gap: 0.42rem;
 }
 
-.lp-quote-fact {
-  border-radius: 0.9rem;
-  border: 1px solid var(--lp-border);
-  background: color-mix(in srgb, var(--lp-surface-soft) 90%, transparent);
-  padding: 0.65rem 0.7rem;
+.lp-quote-facts-list li {
   display: grid;
-  gap: 0.24rem;
+  gap: 0.08rem;
 }
 
-.lp-quote-fact strong {
-  margin: 0;
+.lp-quote-facts-list strong {
   color: var(--lp-ink);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 800;
 }
 
-.lp-quote-fact p {
-  margin: 0;
+.lp-quote-facts-list span {
   color: var(--lp-muted);
-  font-size: 0.78rem;
-  line-height: 1.48;
+  font-size: 0.82rem;
+  line-height: 1.44;
 }
 
 .lp-quote-preset-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.48rem;
-  margin-bottom: 0.25rem;
+  gap: 0.52rem;
+  margin-bottom: 0.34rem;
 }
 
 .lp-quote-preset {
-  border-radius: 0.95rem;
-  border: 1px solid var(--lp-border);
-  background: color-mix(in srgb, var(--lp-surface-soft) 88%, transparent);
+  border-radius: 0.88rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 15%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface) 95%, transparent);
   text-align: left;
-  padding: 0.68rem;
+  padding: 0.74rem;
   display: grid;
-  gap: 0.26rem;
+  gap: 0.22rem;
   color: var(--lp-ink);
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
-}
-
-.lp-quote-preset span {
-  color: var(--lp-brand);
-  font-size: 0.58rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 800;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .lp-quote-preset strong {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.32;
 }
 
 .lp-quote-preset p {
   margin: 0;
   color: var(--lp-muted);
-  font-size: 0.76rem;
-  line-height: 1.44;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .lp-quote-preset[data-active="true"] {
-  border-color: color-mix(in srgb, var(--lp-brand) 56%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 12%, transparent);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--lp-brand) 44%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 9%, var(--lp-surface));
+  box-shadow: 0 10px 20px rgba(8, 25, 43, 0.08);
 }
 
 .lp-quote-preset:hover {
-  border-color: color-mix(in srgb, var(--lp-brand) 45%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
-}
-
-.lp-quote-preset:active {
-  transform: translateY(0);
+  border-color: color-mix(in srgb, var(--lp-brand) 32%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 6%, var(--lp-surface));
 }
 
 .lp-quote-preset:focus-visible {
@@ -3842,26 +3738,19 @@ summary.no-marker::marker {
   box-shadow: 0 0 0 3px rgba(11, 165, 227, 0.18);
 }
 
-.lp-quote-preset[data-active="true"] span {
-  background: linear-gradient(150deg, var(--lp-brand), var(--lp-brand-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .lp-quote-form {
   display: grid;
-  gap: 0.62rem;
+  gap: 0.72rem;
 }
 
 .lp-quote-form label {
   display: grid;
-  gap: 0.34rem;
+  gap: 0.32rem;
   color: var(--lp-muted);
-  font-size: 0.73rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  font-weight: 700;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 600;
 }
 
 .lp-quote-form-row {
@@ -3874,13 +3763,13 @@ summary.no-marker::marker {
 .lp-quote-form select,
 .lp-quote-form textarea {
   width: 100%;
-  border-radius: 0.82rem;
-  border: 1px solid var(--lp-border);
-  background: color-mix(in srgb, var(--lp-surface-soft) 82%, transparent);
+  border-radius: 0.84rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 10%, var(--lp-border));
+  background: #ffffff;
   color: var(--lp-ink);
   font-family: inherit;
-  font-size: 0.86rem;
-  padding: 0.62rem 0.7rem;
+  font-size: 0.9rem;
+  padding: 0.68rem 0.75rem;
   outline: none;
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
@@ -3895,6 +3784,11 @@ summary.no-marker::marker {
 .lp-quote-form textarea:focus {
   border-color: color-mix(in srgb, var(--lp-brand) 58%, var(--lp-border));
   box-shadow: 0 0 0 3px rgba(11, 165, 227, 0.16);
+}
+
+.lp-quote-submit {
+  width: 100%;
+  justify-content: center;
 }
 
 .lp-footer {
@@ -4197,7 +4091,6 @@ summary.no-marker::marker {
 
   .lp-stats,
   .lp-trust-grid,
-  .lp-service-highlights,
   .lp-flow-grid,
   .lp-service-plan-grid,
   .lp-review-grid,
@@ -4211,6 +4104,15 @@ summary.no-marker::marker {
 
   .lp-carousel {
     min-height: 54vh;
+  }
+
+  .lp-service-trust-line {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .lp-service-trust-line span + span::before {
+    content: none;
   }
 
   .lp-footer-follow {

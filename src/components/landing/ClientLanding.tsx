@@ -93,24 +93,6 @@ const TRUST_SIGNALS = [
   },
 ];
 
-const SERVICE_HIGHLIGHTS = [
-  {
-    label: "Get a free quote today",
-    value: PHONE_DISPLAY,
-    note: "Fast response by call or WhatsApp",
-  },
-  {
-    label: "Based on real reviews",
-    value: "5-star service",
-    note: "Trusted by homeowners across South Florida",
-  },
-  {
-    label: "Years of experience",
-    value: "5+ years",
-    note: "Reliable weekly service rhythm",
-  },
-];
-
 const SERVICE_PILLARS = [
   {
     title: "Weekly Signature Care",
@@ -148,12 +130,6 @@ const SERVICE_PILLARS = [
       "Proactive maintenance notes",
     ],
   },
-];
-
-const SERVICE_PILLAR_BADGES = [
-  "Most requested",
-  "Priority support",
-  "White-glove consistency",
 ];
 
 const SERVICE_CREDENTIALS = [
@@ -735,9 +711,8 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
 
         <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
-            <div className="lp-section-head">
-              <p>Premier pool services</p>
-              <h2>Our premier pool services include.</h2>
+            <div className="lp-section-head lp-services-head">
+              <h2>Pool services designed for clean water and zero hassle.</h2>
               <p className="lp-section-head-copy">
                 Built for {servingLine} homes that need reliable weekly quality, clear communication,
                 and proactive equipment care.
@@ -745,29 +720,11 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             </div>
 
             <div className="lp-services-layout" data-lp-reveal>
-              <div className="lp-service-highlights">
-                {SERVICE_HIGHLIGHTS.map((item, index) => (
-                  <article key={item.label} className="lp-service-highlight">
-                    <p>{item.label}</p>
-                    {index === 0 ? (
-                      <a href={`tel:${PHONE_E164}`}>{item.value}</a>
-                    ) : (
-                      <strong>{item.value}</strong>
-                    )}
-                    <span>{item.note}</span>
-                  </article>
-                ))}
-              </div>
-
               <div className="lp-service-plan-grid">
-                {SERVICE_PILLARS.map((pillar, index) => (
+                {SERVICE_PILLARS.map((pillar) => (
                   <article key={pillar.title} className="lp-service-plan-card">
                     <div className="lp-service-plan-media">
                       <img src={pillar.image} alt={`${pillar.title} service preview`} />
-                    </div>
-                    <div className="lp-service-plan-meta">
-                      <span className="lp-service-plan-badge">{SERVICE_PILLAR_BADGES[index]}</span>
-                      <strong>{String(index + 1).padStart(2, "0")}</strong>
                     </div>
                     <h3>{pillar.title}</h3>
                     <p>{pillar.subtitle}</p>
@@ -780,7 +737,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 ))}
               </div>
 
-              <div className="lp-service-credentials">
+              <div className="lp-service-trust-line">
                 {SERVICE_CREDENTIALS.map((item) => (
                   <span key={item}>{item}</span>
                 ))}
@@ -905,15 +862,17 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
 
         <section id="quote" className="lp-section lp-quote-section">
           <div className="lp-container">
-            <div className="lp-section-head">
-              <p>Get a quote</p>
+            <div className="lp-section-head lp-quote-head">
               <h2>Tell us what you need and get a faster service recommendation.</h2>
+              <p className="lp-section-head-copy">
+                Choose WhatsApp, call, or email. Most requests receive a same-day follow-up.
+              </p>
             </div>
 
             <div className="lp-quote-grid">
               <article className="lp-quote-info lp-surface" data-lp-reveal>
                 <h3>Choose your preferred contact route</h3>
-                <p>Pick the channel you want and our team will follow up quickly.</p>
+                <p>Pick the channel that feels easiest and we will respond quickly.</p>
 
                 <div className="lp-channel-grid">
                   {QUOTE_CHANNELS.map((channel) => {
@@ -926,7 +885,6 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                     }
                     return (
                       <a key={channel.id} href={href} className="lp-channel-card">
-                        <span className="lp-channel-badge">{channel.badge}</span>
                         <h4>{channel.title}</h4>
                         <p>{channel.description}</p>
                         <span className="lp-channel-cta">{channel.action}</span>
@@ -935,14 +893,14 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                   })}
                 </div>
 
-                <div className="lp-quote-facts-grid">
+                <ul className="lp-quote-facts-list">
                   {QUOTE_FACTS.map((fact) => (
-                    <article key={fact.title} className="lp-quote-fact">
+                    <li key={fact.title}>
                       <strong>{fact.title}</strong>
-                      <p>{fact.detail}</p>
-                    </article>
+                      <span>{fact.detail}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </article>
 
               <form
@@ -962,7 +920,6 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                       data-active={activeQuotePreset === preset.id}
                       onClick={() => applyQuotePreset(preset.id)}
                     >
-                      <span>{preset.label}</span>
                       <strong>{preset.title}</strong>
                       <p>{preset.detail}</p>
                     </button>
@@ -1050,7 +1007,11 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                   />
                 </label>
 
-                <button type="submit" className="lp-btn lp-btn-primary" disabled={quoteSending}>
+                <button
+                  type="submit"
+                  className="lp-btn lp-btn-primary lp-quote-submit"
+                  disabled={quoteSending}
+                >
                   {quoteSending ? "Sending..." : "Send quote request"}
                 </button>
               </form>
