@@ -72,6 +72,7 @@ const GALLERY_SLIDES = [
 const NAV_ITEMS = [
   { id: "overview", label: "Home" },
   { id: "services", label: "Services" },
+  { id: "about", label: "About" },
   { id: "gallery", label: "Gallery" },
   { id: "video", label: "Video" },
   { id: "reviews", label: "Reviews" },
@@ -132,10 +133,22 @@ const SERVICE_PILLARS = [
   },
 ];
 
-const SERVICE_CREDENTIALS = [
-  "Licensed and insured",
-  "Photo-backed notes",
-  "Predictable weekly routes",
+const ABOUT_IMAGE =
+  "https://images.unsplash.com/photo-1560185008-b033106af5c3?auto=format&fit=crop&w=2200&q=80";
+
+const ABOUT_HIGHLIGHTS = [
+  {
+    title: "Detail-first execution",
+    text: "Every visit follows a clear checklist for surface, chemistry, and equipment.",
+  },
+  {
+    title: "Reliable communication",
+    text: "You get concise updates, photo-backed notes, and simple next-step guidance.",
+  },
+  {
+    title: "Built for premium homes",
+    text: "Service cadence is tuned to your property, usage, and seasonal changes.",
+  },
 ];
 
 const REVIEWS = [
@@ -169,22 +182,19 @@ const QUOTE_CHANNELS = [
   {
     id: "whatsapp",
     title: "WhatsApp",
-    badge: "Fastest",
-    description: "Best for quick answers and sending pool photos instantly.",
+    description: "Fastest way to get a same-day response.",
     action: "Open chat",
   },
   {
     id: "call",
     title: "Call us",
-    badge: "Direct",
-    description: "Ideal for urgent situations or same-day service coordination.",
+    description: "Best for urgent situations and direct coordination.",
     action: "Call now",
   },
   {
     id: "email",
     title: "Email",
-    badge: "Detailed",
-    description: "Great when you want to share full details in one message.",
+    description: "Great when you want to share all details at once.",
     action: "Send email",
   },
 ] as const;
@@ -200,33 +210,9 @@ const QUOTE_FACTS = [
   },
   {
     title: "Best first message",
-    detail: "Pool size, condition, and preferred service day",
+    detail: "Pool size, current condition, and preferred service day",
   },
 ];
-
-const QUOTE_PRESETS = [
-  {
-    id: "weekly",
-    title: "Weekly Signature Care",
-    frequency: "Weekly",
-    label: "Most requested",
-    detail: "Balanced weekly maintenance and chemistry consistency.",
-  },
-  {
-    id: "premium",
-    title: "Premium Property Standard",
-    frequency: "Twice per week",
-    label: "High touch",
-    detail: "Extra visual polish and tighter quality rhythm.",
-  },
-  {
-    id: "recovery",
-    title: "Repair and Recovery",
-    frequency: "One-time visit",
-    label: "Issue solving",
-    detail: "Diagnostics, repairs, and water recovery windows.",
-  },
-] as const;
 
 const FOOTER_LINK_GROUPS = [
   {
@@ -345,7 +331,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const [pauseCarousel, setPauseCarousel] = useState(false);
   const [activeNav, setActiveNav] = useState("overview");
   const [pressedNav, setPressedNav] = useState<string | null>(null);
-  const [activeQuotePreset, setActiveQuotePreset] = useState("weekly");
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [quoteSending, setQuoteSending] = useState(false);
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -467,6 +453,16 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   }, [pauseCarousel]);
 
   useEffect(() => {
+    const onScroll = () => {
+      setShowBackToTop(window.scrollY > 520);
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (navPressTimer.current) {
         window.clearTimeout(navPressTimer.current);
@@ -494,28 +490,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   }
 
   function setQuoteField(field: keyof typeof quoteForm, value: string) {
-    const nextForm = { ...quoteForm, [field]: value };
-    setQuoteForm(nextForm);
-
-    if (field === "service" || field === "frequency") {
-      const matchedPreset = QUOTE_PRESETS.find(
-        (preset) =>
-          preset.title === nextForm.service && preset.frequency === nextForm.frequency
-      );
-      setActiveQuotePreset(matchedPreset?.id ?? "custom");
-    }
-  }
-
-  function applyQuotePreset(presetId: string) {
-    const preset = QUOTE_PRESETS.find((item) => item.id === presetId);
-    if (!preset) {
-      return;
-    }
-    setActiveQuotePreset(preset.id);
-    setQuoteForm((prev) => ({
-      ...prev,
-      service: preset.title,
-      frequency: preset.frequency,
+    setQuoteForm((previous) => ({
+      ...previous,
+      [field]: value,
     }));
   }
 
@@ -712,7 +689,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
             <div className="lp-section-head lp-services-head">
-              <h2>Pool services designed for clean water and zero hassle.</h2>
+              <h2>Pool services designed for clean water and zero hassle</h2>
               <p className="lp-section-head-copy">
                 Built for {servingLine} homes that need reliable weekly quality, clear communication,
                 and proactive equipment care.
@@ -736,30 +713,39 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                   </article>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
 
-              <div className="lp-service-trust-line">
-                {SERVICE_CREDENTIALS.map((item) => (
-                  <span key={item}>{item}</span>
+        <section id="about" className="lp-section lp-about-section">
+          <div className="lp-container lp-about-layout">
+            <div className="lp-about-media lp-surface" data-lp-reveal>
+              <img src={ABOUT_IMAGE} alt="AcostasPool team serving a premium residential property" />
+            </div>
+
+            <article className="lp-about-copy lp-surface" data-lp-reveal>
+              <h2>About AcostasPool</h2>
+              <p>
+                We are a South Florida pool care team focused on consistency, communication, and
+                long-term water quality for homeowners who expect a premium standard.
+              </p>
+
+              <div className="lp-about-points">
+                {ABOUT_HIGHLIGHTS.map((item) => (
+                  <article key={item.title} className="lp-about-point">
+                    <h3>{item.title}</h3>
+                    <p>{item.text}</p>
+                  </article>
                 ))}
               </div>
-
-              <div className="lp-service-cta-row">
-                <a href="#quote" className="lp-btn lp-btn-primary">
-                  Get a custom quote
-                </a>
-                <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
-                  Call {PHONE_DISPLAY}
-                </a>
-              </div>
-            </div>
+            </article>
           </div>
         </section>
 
         <section id="gallery" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <p>Visual quality</p>
-              <h2>Clean Water Built for Daily Life.</h2>
+              <h2>Clean water built for daily life</h2>
             </div>
 
             <div
@@ -812,14 +798,29 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 />
               ))}
             </div>
+
+            <div className="lp-gallery-strip" data-lp-reveal>
+              {GALLERY_SLIDES.map((slide, index) => (
+                <button
+                  key={`${slide.id}-thumb`}
+                  type="button"
+                  className="lp-gallery-strip-item"
+                  data-active={activeSlide === index}
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`View ${slide.title}`}
+                >
+                  <img src={slide.image} alt="" aria-hidden="true" />
+                  <span>{slide.title}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
         <section id="video" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <p>Video</p>
-              <h2>See the quality standard behind every service visit.</h2>
+              <h2>See the quality standard behind every service visit</h2>
             </div>
             <div className="lp-video-card lp-surface" data-lp-reveal>
               <iframe
@@ -837,25 +838,40 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="reviews" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <p>Reviews</p>
-              <h2>Trusted by homeowners across South Florida.</h2>
+              <h2>Trusted by homeowners across South Florida</h2>
             </div>
             <div className="lp-review-grid">
-              {REVIEWS.map((review) => (
-                <article key={review.author} className="lp-review-card lp-surface" data-lp-reveal>
-                  <div className="lp-review-stars" aria-label={`${review.rating} out of 5 stars`}>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <StarIcon key={`${review.author}-${index}`} filled={index < review.rating} />
-                    ))}
-                    <span>{review.rating.toFixed(1)}</span>
-                  </div>
-                  <p className="lp-review-quote">&ldquo;{review.quote}&rdquo;</p>
-                  <p className="lp-review-service">{review.service}</p>
-                  <p className="lp-review-author">
-                    {review.author} | {review.zone}
-                  </p>
-                </article>
-              ))}
+              {REVIEWS.map((review) => {
+                const initials = review.author
+                  .split(" ")
+                  .map((token) => token.charAt(0))
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase();
+
+                return (
+                  <article key={review.author} className="lp-review-card lp-surface" data-lp-reveal>
+                    <header className="lp-review-head">
+                      <div className="lp-review-avatar" aria-hidden="true">
+                        {initials}
+                      </div>
+                      <div className="lp-review-meta">
+                        <p className="lp-review-author">{review.author}</p>
+                        <p className="lp-review-zone">{review.zone}</p>
+                      </div>
+                    </header>
+
+                    <div className="lp-review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <StarIcon key={`${review.author}-${index}`} filled={index < review.rating} />
+                      ))}
+                      <span>{review.rating.toFixed(1)}</span>
+                    </div>
+                    <p className="lp-review-quote">&ldquo;{review.quote}&rdquo;</p>
+                    <p className="lp-review-service">{review.service}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -863,16 +879,24 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="quote" className="lp-section lp-quote-section">
           <div className="lp-container">
             <div className="lp-section-head lp-quote-head">
-              <h2>Tell us what you need and get a faster service recommendation.</h2>
+              <h2>Tell us what you need and get a clear recommendation</h2>
               <p className="lp-section-head-copy">
-                Choose WhatsApp, call, or email. Most requests receive a same-day follow-up.
+                Simple intake, faster follow-up, and a plan that matches your property.
               </p>
             </div>
 
             <div className="lp-quote-grid">
               <article className="lp-quote-info lp-surface" data-lp-reveal>
-                <h3>Choose your preferred contact route</h3>
-                <p>Pick the channel that feels easiest and we will respond quickly.</p>
+                <div className="lp-quote-visual">
+                  <img
+                    src="https://images.unsplash.com/photo-1564078516393-cf04bd966897?auto=format&fit=crop&w=1800&q=80"
+                    alt="Premium residential pool at sunset"
+                  />
+                  <div className="lp-quote-visual-overlay">
+                    <h3>Fast, simple, and tailored to your home</h3>
+                    <p>Most requests get a same-day follow-up.</p>
+                  </div>
+                </div>
 
                 <div className="lp-channel-grid">
                   {QUOTE_CHANNELS.map((channel) => {
@@ -886,7 +910,6 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                     return (
                       <a key={channel.id} href={href} className="lp-channel-card">
                         <h4>{channel.title}</h4>
-                        <p>{channel.description}</p>
                         <span className="lp-channel-cta">{channel.action}</span>
                       </a>
                     );
@@ -909,25 +932,10 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 onSubmit={handleQuoteSubmit}
                 data-lp-reveal
               >
-                <h3>Send quote details by email</h3>
-
-                <div className="lp-quote-preset-grid">
-                  {QUOTE_PRESETS.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      className="lp-quote-preset"
-                      data-active={activeQuotePreset === preset.id}
-                      onClick={() => applyQuotePreset(preset.id)}
-                    >
-                      <strong>{preset.title}</strong>
-                      <p>{preset.detail}</p>
-                    </button>
-                  ))}
-                </div>
+                <h3>Request your service recommendation</h3>
 
                 <label>
-                  Full name
+                  Name
                   <input
                     type="text"
                     value={quoteForm.name}
@@ -938,7 +946,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 </label>
 
                 <label>
-                  Email
+                  Email address
                   <input
                     type="email"
                     value={quoteForm.email}
@@ -950,7 +958,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
 
                 <div className="lp-quote-form-row">
                   <label>
-                    Phone
+                    Phone number
                     <input
                       type="tel"
                       value={quoteForm.phone}
@@ -972,7 +980,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
 
                 <div className="lp-quote-form-row">
                   <label>
-                    Service
+                    Service plan
                     <select
                       value={quoteForm.service}
                       onChange={(event) => setQuoteField("service", event.target.value)}
@@ -998,7 +1006,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 </div>
 
                 <label>
-                  Notes
+                  Project notes
                   <textarea
                     value={quoteForm.notes}
                     onChange={(event) => setQuoteField("notes", event.target.value)}
@@ -1012,13 +1020,23 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                   className="lp-btn lp-btn-primary lp-quote-submit"
                   disabled={quoteSending}
                 >
-                  {quoteSending ? "Sending..." : "Send quote request"}
+                  {quoteSending ? "Sending..." : "Get my recommendation"}
                 </button>
               </form>
             </div>
           </div>
         </section>
       </main>
+
+      <button
+        type="button"
+        className="lp-back-to-top"
+        data-visible={showBackToTop}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Back to top"
+      >
+        <span>{"^"}</span>
+      </button>
 
       <footer className="lp-footer">
         <div className="lp-container">
