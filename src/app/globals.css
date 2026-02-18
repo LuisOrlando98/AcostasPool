@@ -3147,13 +3147,29 @@ summary.no-marker::marker {
 .lp-services-intro-trust-card {
   border-radius: 1rem;
   border: 1px solid rgba(205, 230, 247, 0.32);
-  background: rgba(5, 22, 39, 0.48);
+  background: rgba(5, 22, 39, 0.42);
   backdrop-filter: blur(7px);
   padding: 0.74rem;
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.58rem;
   align-items: start;
+}
+
+.lp-services-trust-icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  color: #7dd7ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-services-trust-icon svg {
+  width: 1.22rem;
+  height: 1.22rem;
 }
 
 .lp-services-intro-trust-card h3 {

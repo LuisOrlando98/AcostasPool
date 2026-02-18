@@ -12,6 +12,7 @@ type SocialPlatform =
   | "x"
   | "youtube"
   | "tiktok";
+type TrustSignalIconName = "shield" | "camera" | "route";
 
 type SocialLinks = {
   instagramUrl?: string | null;
@@ -48,21 +49,21 @@ const PAGE_NAV_ITEMS = [
   { href: "/contact", label: "Contact" },
 ] as const;
 
-const TRUST_SIGNALS = [
+const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIconName }> = [
   {
     title: "Licensed and insured",
     detail: "Florida-compliant operation for residential pool care and service accountability.",
-    icon: "/landing/icons/trust-license.png",
+    icon: "shield",
   },
   {
     title: "Photo-backed notes",
     detail: "Each visit includes a visual service log with chemistry and equipment observations.",
-    icon: "/landing/icons/trust-photo.png",
+    icon: "camera",
   },
   {
     title: "Predictable weekly routes",
     detail: "Structured cadence and route discipline for clean, consistent weekly results.",
-    icon: "/landing/icons/trust-rhythm.png",
+    icon: "route",
   },
 ];
 
@@ -229,6 +230,35 @@ function StarIcon({ filled }: { filled: boolean }) {
         strokeWidth="1.7"
         d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 5.9L12 16.8 6.6 19.7l1-5.9L3.3 9.6l6-.9L12 3.2Z"
       />
+    </svg>
+  );
+}
+
+function TrustSignalIcon({ id }: { id: TrustSignalIconName }) {
+  if (id === "shield") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path d="M12 3.5 5.8 6v5.7c0 4.5 2.6 7.6 6.2 8.8 3.6-1.2 6.2-4.3 6.2-8.8V6L12 3.5Z" />
+        <path d="m9.5 11.9 1.6 1.6 3.4-3.4" />
+      </svg>
+    );
+  }
+  if (id === "camera") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path d="M4.5 8.2h15a2 2 0 0 1 2 2v6.3a2 2 0 0 1-2 2h-15a2 2 0 0 1-2-2v-6.3a2 2 0 0 1 2-2Z" />
+        <path d="m9 8.2 1-2.2h4l1 2.2" />
+        <circle cx="12" cy="13.3" r="2.8" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+      <path d="M3 17.8h6l2-3.5h10" />
+      <path d="m4.6 12.6 4.3-4.3 2.5 2.5 4.8-4.8 2.2 2.2" />
+      <circle cx="4.6" cy="12.6" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="11.4" cy="10.8" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="18.4" cy="8" r="1.1" fill="currentColor" stroke="none" />
     </svg>
   );
 }
@@ -586,7 +616,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 <div className="lp-services-intro-trust">
                   {TRUST_SIGNALS.map((item) => (
                     <article key={item.title} className="lp-services-intro-trust-card">
-                      <img src={item.icon} alt="" aria-hidden="true" className="lp-trust-icon" />
+                      <span className="lp-services-trust-icon" aria-hidden="true">
+                        <TrustSignalIcon id={item.icon} />
+                      </span>
                       <div>
                         <h3>{item.title}</h3>
                         <p>{item.detail}</p>
