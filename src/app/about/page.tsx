@@ -109,7 +109,7 @@ export default async function AboutPage() {
           <div className="lp-container">
             <article className="lp-about-hero lp-surface">
               <img
-                src="https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=2400&q=80"
+                src="https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=2400&q=80"
                 alt="Premium pool deck and palm trees in South Florida"
               />
               <div className="lp-about-hero-overlay">
@@ -150,8 +150,8 @@ export default async function AboutPage() {
 
             <div className="lp-about-story-media lp-surface">
               <img
-                src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2200&q=80"
-                alt="Modern residential property representing premium pool maintenance standards"
+                src="https://images.unsplash.com/photo-1628534818423-4f59bdbf4df0?auto=format&fit=crop&w=2200&q=80"
+                alt="Residential swimming pool prepared for premium maintenance service"
               />
             </div>
           </div>

@@ -72,7 +72,7 @@ const SERVICE_PILLARS = [
     title: "Weekly Signature Care",
     subtitle: "Weekly cleaning and chemistry balancing for stable, polished water.",
     image:
-      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1800&q=80",
     icon: "/landing/icons/pillar-weekly.png",
     points: [
       "Surface skimming and brushing",
@@ -98,7 +98,7 @@ const SERVICE_PILLARS = [
     title: "Equipment Repair",
     subtitle: "Troubleshooting and repair for pumps, filters, and circulation components.",
     image:
-      "https://images.unsplash.com/photo-1617098474202-0d0d7f60f36a?auto=format&fit=crop&w=1800&q=80",
+      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=1800&q=80",
     icon: "/landing/icons/pillar-premium.png",
     points: [
       "Leak and pressure checks",
@@ -123,7 +123,7 @@ const SERVICE_PILLARS = [
 ];
 
 const SERVICES_BACKGROUND_IMAGE =
-  "https://images.unsplash.com/photo-1560185127-6ed189bf02f4?auto=format&fit=crop&w=2600&q=80";
+  "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2600&q=80";
 
 const GALLERY_SLIDES = [
   {
@@ -136,19 +136,19 @@ const GALLERY_SLIDES = [
     id: "pool-2",
     title: "Balanced chemistry and healthy circulation",
     image:
-      "https://images.unsplash.com/photo-1601758123927-196f49e4df95?auto=format&fit=crop&w=2400&q=80",
+      "https://images.unsplash.com/photo-1628534818423-4f59bdbf4df0?auto=format&fit=crop&w=2400&q=80",
   },
   {
     id: "pool-3",
     title: "Clean presentation for premium properties",
     image:
-      "https://images.unsplash.com/photo-1600566753051-f0b55746f8f6?auto=format&fit=crop&w=2400&q=80",
+      "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=2400&q=80",
   },
   {
     id: "pool-4",
     title: "Equipment health and preventive checks",
     image:
-      "https://images.unsplash.com/photo-1512918728675-ed5a9ecdebfd?auto=format&fit=crop&w=2400&q=80",
+      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2400&q=80",
   },
 ];
 

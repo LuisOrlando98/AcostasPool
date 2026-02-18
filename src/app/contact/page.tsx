@@ -84,7 +84,7 @@ export default async function ContactPage() {
           <div className="lp-container">
             <article className="lp-contact-hero lp-surface">
               <img
-                src="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=2400&q=80"
+                src="https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2400&q=80"
                 alt="Premium pool and modern residential property"
               />
               <div className="lp-contact-hero-overlay">
