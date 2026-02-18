@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { LOCALE_COOKIE } from "@/i18n/config";
 
 type ThemeName = "ocean" | "night";
+type LandingLocale = "en" | "es";
 type SocialPlatform =
   | "instagram"
   | "facebook"
@@ -13,6 +15,7 @@ type SocialPlatform =
   | "youtube"
   | "tiktok";
 type TrustSignalIconName = "shield" | "camera" | "route";
+type ServicePillarIconName = "spark" | "clean" | "repair" | "chemistry";
 
 type SocialLinks = {
   instagramUrl?: string | null;
@@ -29,24 +32,156 @@ type SocialItem = {
   href: string;
 };
 
+const LANDING_COPY: Record<
+  LandingLocale,
+  {
+    nav: {
+      overview: string;
+      services: string;
+      gallery: string;
+      video: string;
+      reviews: string;
+      about: string;
+      contact: string;
+      login: string;
+    };
+    announce: string;
+    hero: {
+      title: string;
+      subtitle: string;
+      whatsapp: string;
+      quote: string;
+      callPrefix: string;
+      responseTime: string;
+      satisfaction: string;
+      yearsService: string;
+      mediaNote: string;
+    };
+    services: {
+      title: string;
+    };
+    gallery: {
+      title: string;
+    };
+    visit: {
+      title: string;
+    };
+    reviews: {
+      title: string;
+    };
+  }
+> = {
+  en: {
+    nav: {
+      overview: "Home",
+      services: "Services",
+      gallery: "Gallery",
+      video: "Video",
+      reviews: "Reviews",
+      about: "About",
+      contact: "Contact",
+      login: "Client log in",
+    },
+    announce: "South Florida premium pool maintenance with clear weekly execution",
+    hero: {
+      title: "Professional pool care that feels effortless for your home.",
+      subtitle:
+        "Reliable weekly plans, clean communication, and proactive maintenance for homeowners who expect quality without friction.",
+      whatsapp: "Start on WhatsApp",
+      quote: "Get a quote",
+      callPrefix: "Call",
+      responseTime: "Average response time",
+      satisfaction: "Client satisfaction",
+      yearsService: "South Florida service",
+      mediaNote: "Every visit can include service photos, chemistry checks, and equipment notes.",
+    },
+    services: {
+      title: "Pool services designed for clean water and dependable operation.",
+    },
+    gallery: {
+      title: "Visual quality standards from real service environments.",
+    },
+    visit: {
+      title: "What each visit includes.",
+    },
+    reviews: {
+      title: "Premium homeowner reviews.",
+    },
+  },
+  es: {
+    nav: {
+      overview: "Inicio",
+      services: "Servicios",
+      gallery: "Galeria",
+      video: "Video",
+      reviews: "Resenas",
+      about: "Nosotros",
+      contact: "Contacto",
+      login: "Acceso clientes",
+    },
+    announce: "Mantenimiento premium de piscinas en el sur de Florida con ejecucion semanal clara",
+    hero: {
+      title: "Cuidado profesional de piscinas para que tu hogar funcione sin friccion.",
+      subtitle:
+        "Planes semanales confiables, comunicacion clara y mantenimiento preventivo para propietarios que exigen calidad.",
+      whatsapp: "Comenzar por WhatsApp",
+      quote: "Solicitar cotizacion",
+      callPrefix: "Llamar",
+      responseTime: "Tiempo promedio de respuesta",
+      satisfaction: "Satisfaccion del cliente",
+      yearsService: "Servicio en South Florida",
+      mediaNote:
+        "Cada visita puede incluir fotos del servicio, chequeo quimico y notas de equipos.",
+    },
+    services: {
+      title: "Servicios de piscina pensados para agua limpia y operacion confiable.",
+    },
+    gallery: {
+      title: "Estandares visuales de calidad en entornos reales de servicio.",
+    },
+    visit: {
+      title: "Que incluye cada visita.",
+    },
+    reviews: {
+      title: "Resenas de propietarios premium.",
+    },
+  },
+};
+
+function resolveLandingLocale(raw?: string | null): LandingLocale {
+  return raw?.toLowerCase() === "es" ? "es" : "en";
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(";")
+    .map((token) => token.trim())
+    .find((token) => token.startsWith(prefix));
+  return cookie ? cookie.slice(prefix.length) : null;
+}
+
 const PHONE_DISPLAY = "+1 (786) 519-5059";
 const PHONE_E164 = "+17865195059";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=2600&q=80";
+  "/landing/media/curated/images/pool-premium-residential-deck.jpg";
 
 const SECTION_NAV_ITEMS = [
-  { id: "overview", label: "Home" },
-  { id: "services", label: "Services" },
-  { id: "gallery", label: "Gallery" },
-  { id: "video", label: "Video" },
-  { id: "reviews", label: "Reviews" },
+  { id: "overview" },
+  { id: "services" },
+  { id: "gallery" },
+  { id: "video" },
+  { id: "reviews" },
 ] as const;
 
 const PAGE_NAV_ITEMS = [
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
+  { href: "/about", key: "about" },
+  { href: "/contact", key: "contact" },
 ] as const;
 
 const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIconName }> = [
@@ -67,13 +202,18 @@ const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIco
   },
 ];
 
-const SERVICE_PILLARS = [
+const SERVICE_PILLARS: Array<{
+  title: string;
+  subtitle: string;
+  image: string;
+  icon: ServicePillarIconName;
+  points: string[];
+}> = [
   {
     title: "Weekly Signature Care",
     subtitle: "Weekly cleaning and chemistry balancing for stable, polished water.",
-    image:
-      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=1800&q=80",
-    icon: "/landing/icons/pillar-weekly.png",
+    image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
+    icon: "spark",
     points: [
       "Surface skimming and brushing",
       "Vacuum and basket cleaning",
@@ -84,9 +224,8 @@ const SERVICE_PILLARS = [
   {
     title: "Pool Cleaning",
     subtitle: "Debris removal, wall brushing, and filter care for crystal-clear water.",
-    image:
-      "https://images.unsplash.com/photo-1628534818423-4f59bdbf4df0?auto=format&fit=crop&w=1800&q=80",
-    icon: "/landing/icons/pillar-repair.png",
+    image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
+    icon: "clean",
     points: [
       "Filter cleaning routine",
       "Wall and tile brushing",
@@ -97,9 +236,8 @@ const SERVICE_PILLARS = [
   {
     title: "Equipment Repair",
     subtitle: "Troubleshooting and repair for pumps, filters, and circulation components.",
-    image:
-      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=1800&q=80",
-    icon: "/landing/icons/pillar-premium.png",
+    image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
+    icon: "repair",
     points: [
       "Leak and pressure checks",
       "Pump and motor service",
@@ -110,9 +248,8 @@ const SERVICE_PILLARS = [
   {
     title: "Water Testing Service",
     subtitle: "Balanced chemistry with preventive checks to keep swimmers safe.",
-    image:
-      "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=1800&q=80",
-    icon: "/landing/icons/trust-photo.png",
+    image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+    icon: "chemistry",
     points: [
       "pH and chlorine testing",
       "Alkalinity monitoring",
@@ -122,33 +259,34 @@ const SERVICE_PILLARS = [
   },
 ];
 
-const SERVICES_BACKGROUND_IMAGE =
-  "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2600&q=80";
+const SERVICES_BACKGROUND_IMAGE = "/landing/media/curated/images/pool-home-services-hero-technician.jpg";
+const SERVICES_BACKGROUND_VIDEO =
+  process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC?.trim() ||
+  "/landing/media/curated/videos/pool-background-water-loop.mp4";
+const SERVICES_BACKGROUND_VIDEO_ENABLED =
+  (process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED ?? "true").toLowerCase() !==
+  "false";
 
 const GALLERY_SLIDES = [
   {
     id: "pool-1",
     title: "Resort-level finish, every week",
-    image:
-      "https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?auto=format&fit=crop&w=2400&q=80",
+    image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
   },
   {
     id: "pool-2",
     title: "Balanced chemistry and healthy circulation",
-    image:
-      "https://images.unsplash.com/photo-1628534818423-4f59bdbf4df0?auto=format&fit=crop&w=2400&q=80",
+    image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
   },
   {
     id: "pool-3",
     title: "Clean presentation for premium properties",
-    image:
-      "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=2400&q=80",
+    image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
   },
   {
     id: "pool-4",
     title: "Equipment health and preventive checks",
-    image:
-      "https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2400&q=80",
+    image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
   },
 ];
 
@@ -263,6 +401,40 @@ function TrustSignalIcon({ id }: { id: TrustSignalIconName }) {
   );
 }
 
+function ServicePillarIcon({ id }: { id: ServicePillarIconName }) {
+  if (id === "spark") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path d="m12 3.5 1.9 4.3 4.3 1.9-4.3 1.9-1.9 4.3-1.9-4.3-4.3-1.9 4.3-1.9L12 3.5Z" />
+        <path d="m18.2 14.8.9 2 .2.2 2 .9-2 .9-.9 2-.9-2-2-.9 2-.9.9-2Z" />
+      </svg>
+    );
+  }
+  if (id === "clean") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path d="M3.8 17.2h16.4" />
+        <path d="m7.2 14.6 6.6-6.6a1.2 1.2 0 0 1 1.7 0l.5.5a1.2 1.2 0 0 1 0 1.7l-6.6 6.6H7.2Z" />
+        <path d="m14.4 6.9 2.8 2.8" />
+      </svg>
+    );
+  }
+  if (id === "repair") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+        <path d="m14.6 4.6 4.8 4.8-3 3-4.8-4.8a4 4 0 0 1-5 5l-2.9 2.9a1.4 1.4 0 0 0 2 2l2.9-2.9a4 4 0 0 1 5-5l1-1Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+      <path d="M6.2 5.2h11.6l-1.4 11.6H7.6L6.2 5.2Z" />
+      <path d="M8.8 9.2h6.4M9.3 12.2h5.4" />
+      <path d="M12 3v2.2" />
+    </svg>
+  );
+}
+
 function SocialIcon({ id }: { id: SocialPlatform }) {
   if (id === "instagram") {
     return (
@@ -320,6 +492,17 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const searchParams = useSearchParams();
   const navPressTimer = useRef<number | null>(null);
 
+  const [language, setLanguage] = useState<LandingLocale>(() => {
+    if (typeof window === "undefined") {
+      return "en";
+    }
+    const local = window.localStorage.getItem("ap:landing-locale-v1");
+    if (local === "en" || local === "es") {
+      return local;
+    }
+    const cookie = readCookie(LOCALE_COOKIE);
+    return resolveLandingLocale(cookie ?? document.documentElement.lang);
+  });
   const [theme, setTheme] = useState<ThemeName>(() => {
     if (typeof window === "undefined") {
       return "ocean";
@@ -334,6 +517,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     useState<(typeof SECTION_NAV_ITEMS)[number]["id"]>("overview");
   const [pressedNav, setPressedNav] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const copy = LANDING_COPY[language];
 
   const cityParam = (searchParams.get("city") ?? "").trim();
   const servingLine = cityParam ? `${cityParam} and South Florida` : "South Florida";
@@ -366,6 +550,12 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   useEffect(() => {
     window.localStorage.setItem("ap:landing-theme-v4", theme);
   }, [theme]);
+
+  useEffect(() => {
+    window.localStorage.setItem("ap:landing-locale-v1", language);
+    document.cookie = `${LOCALE_COOKIE}=${language}; path=/; max-age=2592000`;
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -474,6 +664,14 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     }, 220);
   }
 
+  const sectionLabels: Record<(typeof SECTION_NAV_ITEMS)[number]["id"], string> = {
+    overview: copy.nav.overview,
+    services: copy.nav.services,
+    gallery: copy.nav.gallery,
+    video: copy.nav.video,
+    reviews: copy.nav.reviews,
+  };
+
   return (
     <div className="lp-shell" data-theme={theme}>
       <header className="lp-header">
@@ -496,18 +694,41 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 data-pressed={pressedNav === item.id}
                 onClick={(event) => handleNavClick(event, item.id)}
               >
-                {item.label}
+                {sectionLabels[item.id]}
               </a>
             ))}
 
             {PAGE_NAV_ITEMS.map((item) => (
               <Link key={item.href} href={item.href} className="lp-nav-link lp-nav-link-page">
-                {item.label}
+                {copy.nav[item.key]}
               </Link>
             ))}
           </nav>
 
           <div className="lp-header-actions">
+            <div className="lp-lang-switch" role="group" aria-label="Language">
+              <button
+                type="button"
+                className="lp-lang-btn"
+                data-active={language === "en"}
+                onClick={() => setLanguage("en")}
+                aria-label="English"
+                title="English"
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className="lp-lang-btn"
+                data-active={language === "es"}
+                onClick={() => setLanguage("es")}
+                aria-label="Espanol"
+                title="Espanol"
+              >
+                ES
+              </button>
+            </div>
+
             <div className="lp-theme-switch" role="group" aria-label="Theme">
               <button
                 type="button"
@@ -532,14 +753,14 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             </div>
 
             <Link href="/login" className="lp-login-btn">
-              Client log in
+              {copy.nav.login}
             </Link>
           </div>
         </div>
 
         <div className="lp-announce">
           <div className="lp-container lp-announce-inner">
-            <p>South Florida premium pool maintenance with clear weekly execution</p>
+            <p>{copy.announce}</p>
           </div>
         </div>
       </header>
@@ -548,37 +769,38 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="overview" className="lp-hero">
           <div className="lp-container lp-hero-grid">
             <article className="lp-hero-copy lp-surface" data-lp-reveal>
-              <p className="lp-kicker">Serving {servingLine} premium homes</p>
-              <h1>Professional pool care that feels effortless for your home.</h1>
-              <p>
-                Reliable weekly plans, clean communication, and proactive maintenance for
-                homeowners who expect quality without friction.
+              <p className="lp-kicker">
+                {language === "es"
+                  ? `Sirviendo hogares premium en ${servingLine}`
+                  : `Serving ${servingLine} premium homes`}
               </p>
+              <h1>{copy.hero.title}</h1>
+              <p>{copy.hero.subtitle}</p>
 
               <div className="lp-actions">
                 <a href={whatsappLink} className="lp-btn lp-btn-primary">
-                  Start on WhatsApp
+                  {copy.hero.whatsapp}
                 </a>
                 <Link href="/contact" className="lp-btn lp-btn-ghost">
-                  Get a quote
+                  {copy.hero.quote}
                 </Link>
                 <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
-                  Call {PHONE_DISPLAY}
+                  {copy.hero.callPrefix} {PHONE_DISPLAY}
                 </a>
               </div>
 
               <div className="lp-stats">
                 <div>
                   <strong>&lt;24h</strong>
-                  <span>Average response time</span>
+                  <span>{copy.hero.responseTime}</span>
                 </div>
                 <div>
                   <strong>4.9/5</strong>
-                  <span>Client satisfaction</span>
+                  <span>{copy.hero.satisfaction}</span>
                 </div>
                 <div>
                   <strong>5+ years</strong>
-                  <span>South Florida service</span>
+                  <span>{copy.hero.yearsService}</span>
                 </div>
               </div>
             </article>
@@ -586,7 +808,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
             <div className="lp-hero-media lp-surface" data-lp-reveal>
               <img src={HERO_IMAGE} alt="Luxury residential pool in South Florida" />
               <div className="lp-hero-media-overlay">
-                <p>Every visit can include service photos, chemistry checks, and equipment notes.</p>
+                <p>{copy.hero.mediaNote}</p>
               </div>
             </div>
           </div>
@@ -601,15 +823,34 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 alt="Premium pool deck with palm trees and modern architecture"
                 className="lp-services-intro-bg"
               />
+              {SERVICES_BACKGROUND_VIDEO_ENABLED ? (
+                <video
+                  className="lp-services-intro-video"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  poster={SERVICES_BACKGROUND_IMAGE}
+                  aria-hidden="true"
+                >
+                  <source src={SERVICES_BACKGROUND_VIDEO} type="video/mp4" />
+                </video>
+              ) : null}
               <div className="lp-services-intro-overlay" />
 
               <div className="lp-services-intro-content">
                 <div className="lp-services-intro-copy">
-                  <p className="lp-kicker">Designed for South Florida homes</p>
-                  <h2>Pool services designed for clean water and dependable operation.</h2>
+                  <p className="lp-kicker">
+                    {language === "es"
+                      ? "Disenado para hogares del sur de Florida"
+                      : "Designed for South Florida homes"}
+                  </p>
+                  <h2>{copy.services.title}</h2>
                   <p className="lp-section-head-copy">
-                    Structured weekly workflows, clear reporting, and detail-focused execution to
-                    keep your pool healthy and visually consistent.
+                    {language === "es"
+                      ? "Flujos semanales estructurados, reportes claros y ejecucion enfocada en detalle para mantener tu piscina saludable y consistente."
+                      : "Structured weekly workflows, clear reporting, and detail-focused execution to keep your pool healthy and visually consistent."}
                   </p>
                 </div>
 
@@ -636,7 +877,9 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                     <img src={pillar.image} alt={`${pillar.title} service preview`} />
                   </div>
                   <div className="lp-service-plan-head">
-                    <img src={pillar.icon} alt="" aria-hidden="true" className="lp-service-icon" />
+                    <span className="lp-service-icon" aria-hidden="true">
+                      <ServicePillarIcon id={pillar.icon} />
+                    </span>
                     <h3>{pillar.title}</h3>
                   </div>
                   <p>{pillar.subtitle}</p>
@@ -654,7 +897,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="gallery" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <h2>Visual quality standards from real service environments.</h2>
+              <h2>{copy.gallery.title}</h2>
             </div>
 
             <div
@@ -712,28 +955,13 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               ))}
             </div>
 
-            <div className="lp-gallery-strip" data-lp-reveal>
-              {GALLERY_SLIDES.map((slide, index) => (
-                <button
-                  key={`${slide.id}-thumb`}
-                  type="button"
-                  className="lp-gallery-strip-item"
-                  data-active={activeSlide === index}
-                  onClick={() => setActiveSlide(index)}
-                  aria-label={`View ${slide.title}`}
-                >
-                  <img src={slide.image} alt="" aria-hidden="true" />
-                  <span>{slide.title}</span>
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
         <section id="video" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <h2>What each visit includes.</h2>
+              <h2>{copy.visit.title}</h2>
             </div>
 
             <div className="lp-video-layout" data-lp-reveal>
@@ -781,7 +1009,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
         <section id="reviews" className="lp-section">
           <div className="lp-container">
             <div className="lp-section-head">
-              <h2>Premium homeowner reviews.</h2>
+              <h2>{copy.reviews.title}</h2>
             </div>
 
             <div className="lp-review-grid">

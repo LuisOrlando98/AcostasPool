@@ -2741,6 +2741,35 @@ summary.no-marker::marker {
   gap: 0.62rem;
 }
 
+.lp-lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--lp-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lp-surface-soft) 90%, transparent);
+  padding: 0.25rem;
+}
+
+.lp-lang-btn {
+  min-width: 2.1rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--lp-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.lp-lang-btn[data-active="true"] {
+  color: var(--lp-ink);
+  border-color: color-mix(in srgb, var(--lp-brand) 32%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 14%, transparent);
+}
+
 .lp-theme-switch {
   display: inline-flex;
   align-items: center;
@@ -3095,6 +3124,15 @@ summary.no-marker::marker {
   display: block;
 }
 
+.lp-services-intro-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .lp-services-intro-overlay {
   position: absolute;
   inset: 0;
@@ -3233,11 +3271,16 @@ summary.no-marker::marker {
 .lp-service-icon {
   width: 1.95rem;
   height: 1.95rem;
-  border-radius: 0.6rem;
-  object-fit: contain;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
-  padding: 0.3rem;
+  color: color-mix(in srgb, var(--lp-brand) 86%, var(--lp-ink));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lp-service-icon svg {
+  width: 1.16rem;
+  height: 1.16rem;
 }
 
 .lp-service-plan-card h3 {
@@ -3989,13 +4032,18 @@ summary.no-marker::marker {
   gap: 0.44rem;
 }
 
-.lp-about-principle img {
+.lp-about-principle-icon {
   width: 2.1rem;
   height: 2.1rem;
-  border-radius: 0.62rem;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
-  padding: 0.28rem;
+  color: color-mix(in srgb, var(--lp-brand) 86%, var(--lp-ink));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-about-principle-icon svg {
+  width: 1.22rem;
+  height: 1.22rem;
 }
 
 .lp-about-principle h3 {
@@ -4029,13 +4077,18 @@ summary.no-marker::marker {
   gap: 0.44rem;
 }
 
-.lp-about-flow-head img {
+.lp-about-flow-icon {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.58rem;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 10%, transparent);
-  padding: 0.27rem;
+  color: color-mix(in srgb, var(--lp-brand) 86%, var(--lp-ink));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-about-flow-icon svg {
+  width: 1.18rem;
+  height: 1.18rem;
 }
 
 .lp-about-flow-head span {
@@ -4119,9 +4172,6 @@ summary.no-marker::marker {
 .lp-contact-method-icon {
   width: 2.2rem;
   height: 2.2rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--lp-brand) 26%, var(--lp-border));
-  background: color-mix(in srgb, var(--lp-brand) 12%, transparent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4155,8 +4205,6 @@ summary.no-marker::marker {
 }
 
 .lp-contact-method-whatsapp .lp-contact-method-icon {
-  border-color: color-mix(in srgb, #25d366 62%, #ffffff);
-  background: color-mix(in srgb, #25d366 28%, #ffffff);
   color: #0f6a35;
 }
 
@@ -4264,6 +4312,100 @@ summary.no-marker::marker {
 .lp-contact-card h2 {
   margin: 0;
   font-size: 1rem;
+}
+
+.lp-contact-card-map {
+  grid-column: span 2;
+  gap: 0.68rem;
+}
+
+.lp-contact-map-head {
+  display: grid;
+  gap: 0.24rem;
+}
+
+.lp-contact-map-head p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 0.84rem;
+  line-height: 1.56;
+}
+
+.lp-contact-map-cities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.lp-contact-map-city-btn {
+  min-height: 2rem;
+  padding: 0 0.66rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 8%, transparent);
+  color: color-mix(in srgb, var(--lp-brand) 86%, var(--lp-ink));
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.lp-contact-map-city-btn:hover {
+  transform: translateY(-1px);
+}
+
+.lp-contact-map-city-btn[data-active="true"] {
+  border-color: color-mix(in srgb, var(--lp-brand) 42%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 16%, transparent);
+}
+
+.lp-contact-map-frame {
+  border-radius: 0.92rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
+  min-height: 16rem;
+}
+
+.lp-contact-map-frame iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 16rem;
+  border: 0;
+  display: block;
+}
+
+.lp-contact-map-zipcodes {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.lp-contact-map-zipcodes p {
+  margin: 0;
+  color: var(--lp-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.lp-contact-map-zipcodes ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.lp-contact-map-zipcodes li {
+  min-height: 1.92rem;
+  padding: 0 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 22%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface-soft) 86%, transparent);
+  color: var(--lp-ink);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
 .lp-contact-steps {
@@ -4401,6 +4543,7 @@ summary.no-marker::marker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .lp-contact-card-map,
   .lp-contact-grid-v2 .lp-contact-card:last-child {
     grid-column: 1 / -1;
   }
@@ -4456,6 +4599,10 @@ summary.no-marker::marker {
 
   .lp-services-intro-shell {
     min-height: 26rem;
+  }
+
+  .lp-services-intro-video {
+    display: none;
   }
 
   .lp-services-intro-content {
@@ -4518,6 +4665,11 @@ summary.no-marker::marker {
 
   .lp-contact-coverage li {
     min-height: 1.9rem;
+  }
+
+  .lp-contact-map-frame,
+  .lp-contact-map-frame iframe {
+    min-height: 14rem;
   }
 
   .lp-footer-follow {

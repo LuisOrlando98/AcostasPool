@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getSiteSocialLinks } from "@/lib/site-settings";
 import ContactRequestForm from "@/components/landing/ContactRequestForm";
+import CoverageMapCard from "@/components/landing/CoverageMapCard";
 
 export const metadata: Metadata = {
   title: "Contact AcostasPool | South Florida Pool Maintenance",
@@ -12,15 +13,6 @@ export const metadata: Metadata = {
 const PHONE_DISPLAY = "+1 (786) 519-5059";
 const PHONE_E164 = "+17865195059";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
-
-const COVERAGE_CITIES = [
-  "Miami",
-  "Kendall",
-  "Coral Gables",
-  "Doral",
-  "Homestead",
-  "Cutler Bay",
-];
 
 function WhatsAppIcon() {
   return (
@@ -84,8 +76,8 @@ export default async function ContactPage() {
           <div className="lp-container">
             <article className="lp-contact-hero lp-surface">
               <img
-                src="https://images.unsplash.com/photo-1576013551627-0f5d7d36e8bb?auto=format&fit=crop&w=2400&q=80"
-                alt="Premium pool and modern residential property"
+                src="/landing/media/curated/images/pool-service-weekly-technician.jpg"
+                alt="Pool service technician cleaning a residential swimming pool"
               />
               <div className="lp-contact-hero-overlay">
                 <h1>Get In Touch Now</h1>
@@ -163,14 +155,7 @@ export default async function ContactPage() {
 
         <section className="lp-section">
           <div className="lp-container lp-contact-grid-v2">
-            <article className="lp-contact-card lp-surface">
-              <h2>Service area</h2>
-              <ul className="lp-contact-coverage">
-                {COVERAGE_CITIES.map((city) => (
-                  <li key={city}>{city}</li>
-                ))}
-              </ul>
-            </article>
+            <CoverageMapCard />
 
             <article className="lp-contact-card lp-surface">
               <h2>What to include in your first message</h2>
