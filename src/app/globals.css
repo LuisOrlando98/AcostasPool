@@ -4315,7 +4315,7 @@ summary.no-marker::marker {
 }
 
 .lp-contact-card-map {
-  grid-column: span 2;
+  grid-column: 1 / -1;
   gap: 0.68rem;
 }
 
@@ -4335,6 +4335,13 @@ summary.no-marker::marker {
   display: flex;
   flex-wrap: wrap;
   gap: 0.42rem;
+}
+
+.lp-contact-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  gap: 0.72rem;
+  align-items: start;
 }
 
 .lp-contact-map-city-btn {
@@ -4363,20 +4370,84 @@ summary.no-marker::marker {
   border-radius: 0.92rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  min-height: 16rem;
+  min-height: 21rem;
 }
 
-.lp-contact-map-frame iframe {
+.lp-contact-map-svg {
   width: 100%;
   height: 100%;
-  min-height: 16rem;
-  border: 0;
+  min-height: 21rem;
   display: block;
+}
+
+.lp-contact-map-coast {
+  fill: rgba(191, 232, 255, 0.08);
+  stroke: rgba(168, 220, 255, 0.4);
+  stroke-width: 2;
+}
+
+.lp-contact-map-road {
+  fill: none;
+  stroke: rgba(220, 243, 255, 0.18);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.lp-contact-map-region {
+  fill: rgba(124, 208, 255, 0.16);
+  stroke: rgba(176, 233, 255, 0.5);
+  stroke-width: 1.6;
+  cursor: pointer;
+  transition: fill 180ms ease, stroke 180ms ease, filter 180ms ease;
+}
+
+.lp-contact-map-region:hover {
+  fill: rgba(124, 208, 255, 0.28);
+}
+
+.lp-contact-map-region[data-active="true"] {
+  fill: rgba(42, 186, 255, 0.46);
+  stroke: rgba(224, 246, 255, 0.92);
+  filter: drop-shadow(0 0 16px rgba(85, 195, 255, 0.26));
+}
+
+.lp-contact-map-pin circle {
+  fill: rgba(212, 242, 255, 0.65);
+  stroke: rgba(17, 66, 109, 0.6);
+  stroke-width: 1;
+  transition: fill 180ms ease, transform 180ms ease;
+}
+
+.lp-contact-map-pin text {
+  fill: rgba(233, 249, 255, 0.95);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.lp-contact-map-pin[data-active="true"] circle {
+  fill: #88ddff;
+  transform: scale(1.12);
+}
+
+.lp-contact-map-pin[data-active="true"] text {
+  fill: #ffffff;
+}
+
+.lp-contact-map-side {
+  display: grid;
+  gap: 0.66rem;
+  align-content: start;
 }
 
 .lp-contact-map-zipcodes {
   display: grid;
   gap: 0.4rem;
+  padding: 0.7rem;
+  border-radius: 0.88rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-surface-soft) 82%, transparent);
 }
 
 .lp-contact-map-zipcodes p {
@@ -4547,6 +4618,10 @@ summary.no-marker::marker {
   .lp-contact-grid-v2 .lp-contact-card:last-child {
     grid-column: 1 / -1;
   }
+
+  .lp-contact-map-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -4668,7 +4743,7 @@ summary.no-marker::marker {
   }
 
   .lp-contact-map-frame,
-  .lp-contact-map-frame iframe {
+  .lp-contact-map-svg {
     min-height: 14rem;
   }
 

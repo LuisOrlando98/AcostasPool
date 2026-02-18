@@ -1,110 +1,164 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 type CoverageArea = {
   city: string;
-  center: { lat: number; lon: number };
+  region: string;
+  labelPos: { x: number; y: number };
   zipCodes: string[];
 };
 
 const COVERAGE_AREAS: CoverageArea[] = [
   {
     city: "Miami",
-    center: { lat: 25.7617, lon: -80.1918 },
+    region: "430,160 620,150 640,300 460,320",
+    labelPos: { x: 525, y: 230 },
     zipCodes: ["33125", "33130", "33133", "33137", "33155"],
   },
   {
     city: "Kendall",
-    center: { lat: 25.6793, lon: -80.3173 },
+    region: "260,300 460,300 445,440 240,455",
+    labelPos: { x: 348, y: 375 },
     zipCodes: ["33176", "33183", "33186", "33196"],
   },
   {
     city: "Coral Gables",
-    center: { lat: 25.7215, lon: -80.2684 },
+    region: "330,210 470,205 465,315 315,330",
+    labelPos: { x: 395, y: 270 },
     zipCodes: ["33134", "33146", "33156"],
   },
   {
     city: "Doral",
-    center: { lat: 25.8195, lon: -80.3553 },
+    region: "260,95 405,92 405,205 245,215",
+    labelPos: { x: 328, y: 153 },
     zipCodes: ["33122", "33166", "33172", "33178"],
   },
   {
     city: "Homestead",
-    center: { lat: 25.4687, lon: -80.4776 },
+    region: "360,445 610,438 596,512 342,512",
+    labelPos: { x: 474, y: 482 },
     zipCodes: ["33030", "33032", "33033", "33035"],
   },
   {
     city: "Cutler Bay",
-    center: { lat: 25.5808, lon: -80.3467 },
+    region: "470,315 635,300 640,438 455,455",
+    labelPos: { x: 548, y: 378 },
     zipCodes: ["33157", "33189", "33190"],
   },
 ];
-
-function getMapEmbedUrl(lat: number, lon: number) {
-  const lonDelta = 0.105;
-  const latDelta = 0.075;
-  const left = lon - lonDelta;
-  const right = lon + lonDelta;
-  const bottom = lat - latDelta;
-  const top = lat + latDelta;
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${left.toFixed(5)}%2C${bottom.toFixed(5)}%2C${right.toFixed(5)}%2C${top.toFixed(5)}&layer=mapnik&marker=${lat.toFixed(5)}%2C${lon.toFixed(5)}`;
-}
 
 export default function CoverageMapCard() {
   const [activeIndex, setActiveIndex] = useState(0);
   const area = COVERAGE_AREAS[activeIndex] ?? COVERAGE_AREAS[0];
 
-  const mapSrc = useMemo(() => {
-    return getMapEmbedUrl(area.center.lat, area.center.lon);
-  }, [area.center.lat, area.center.lon]);
-
   return (
     <article className="lp-contact-card lp-contact-card-map lp-surface">
       <div className="lp-contact-map-head">
         <h2>Service area map</h2>
-        <p>Select a city to view the ZIP codes we currently cover.</p>
+        <p>Select a city to highlight the coverage zone and view the ZIP codes we serve.</p>
       </div>
 
-      <div className="lp-contact-map-cities" role="tablist" aria-label="Service cities">
-        {COVERAGE_AREAS.map((item, index) => (
-          <button
-            key={item.city}
-            type="button"
-            className="lp-contact-map-city-btn"
-            data-active={index === activeIndex}
-            onClick={() => setActiveIndex(index)}
-            role="tab"
-            aria-selected={index === activeIndex}
-            aria-controls={`coverage-panel-${item.city.toLowerCase().replaceAll(" ", "-")}`}
-            id={`coverage-tab-${item.city.toLowerCase().replaceAll(" ", "-")}`}
+      <div className="lp-contact-map-layout">
+        <div className="lp-contact-map-frame" aria-label="Coverage map">
+          <svg
+            className="lp-contact-map-svg"
+            viewBox="0 0 1000 540"
+            role="img"
+            aria-label={`Coverage zones map, active city: ${area.city}`}
           >
-            {item.city}
-          </button>
-        ))}
-      </div>
+            <defs>
+              <linearGradient id="mapWater" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#0f2b47" />
+                <stop offset="100%" stopColor="#15456e" />
+              </linearGradient>
+              <radialGradient id="mapGlow" cx="50%" cy="50%" r="65%">
+                <stop offset="0%" stopColor="rgba(88, 196, 255, 0.28)" />
+                <stop offset="100%" stopColor="rgba(88, 196, 255, 0)" />
+              </radialGradient>
+            </defs>
 
-      <div className="lp-contact-map-frame">
-        <iframe
-          src={mapSrc}
-          title={`Coverage map centered on ${area.city}`}
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
-      </div>
+            <rect x="0" y="0" width="1000" height="540" fill="url(#mapWater)" />
+            <rect x="0" y="0" width="1000" height="540" fill="url(#mapGlow)" />
 
-      <div
-        className="lp-contact-map-zipcodes"
-        role="tabpanel"
-        id={`coverage-panel-${area.city.toLowerCase().replaceAll(" ", "-")}`}
-        aria-labelledby={`coverage-tab-${area.city.toLowerCase().replaceAll(" ", "-")}`}
-      >
-        <p>ZIP codes in {area.city}</p>
-        <ul>
-          {area.zipCodes.map((zipCode) => (
-            <li key={zipCode}>{zipCode}</li>
-          ))}
-        </ul>
+            <path
+              className="lp-contact-map-coast"
+              d="M140 70 720 52 860 150 882 262 846 366 772 470 686 515 218 532 126 452 102 348 98 235 120 144Z"
+            />
+
+            <path className="lp-contact-map-road" d="M180 100 760 460" />
+            <path className="lp-contact-map-road" d="M220 490 640 120" />
+            <path className="lp-contact-map-road" d="M170 260 830 265" />
+
+            {COVERAGE_AREAS.map((item, index) => {
+              const isActive = index === activeIndex;
+              const citySlug = item.city.toLowerCase().replaceAll(" ", "-");
+              return (
+                <g key={item.city}>
+                  <polygon
+                    points={item.region}
+                    className="lp-contact-map-region"
+                    data-active={isActive}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Highlight ${item.city}`}
+                    onClick={() => setActiveIndex(index)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setActiveIndex(index);
+                      }
+                    }}
+                  />
+                  <g
+                    className="lp-contact-map-pin"
+                    data-active={isActive}
+                    onClick={() => setActiveIndex(index)}
+                  >
+                    <circle cx={item.labelPos.x} cy={item.labelPos.y} r="8" />
+                    <text x={item.labelPos.x + 12} y={item.labelPos.y + 4} id={`map-label-${citySlug}`}>
+                      {item.city}
+                    </text>
+                  </g>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        <div className="lp-contact-map-side">
+          <div className="lp-contact-map-cities" role="tablist" aria-label="Service cities">
+            {COVERAGE_AREAS.map((item, index) => (
+              <button
+                key={item.city}
+                type="button"
+                className="lp-contact-map-city-btn"
+                data-active={index === activeIndex}
+                onClick={() => setActiveIndex(index)}
+                role="tab"
+                aria-selected={index === activeIndex}
+                aria-controls={`coverage-panel-${item.city.toLowerCase().replaceAll(" ", "-")}`}
+                id={`coverage-tab-${item.city.toLowerCase().replaceAll(" ", "-")}`}
+              >
+                {item.city}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className="lp-contact-map-zipcodes"
+            role="tabpanel"
+            id={`coverage-panel-${area.city.toLowerCase().replaceAll(" ", "-")}`}
+            aria-labelledby={`coverage-tab-${area.city.toLowerCase().replaceAll(" ", "-")}`}
+          >
+            <p>ZIP codes in {area.city}</p>
+            <ul>
+              {area.zipCodes.map((zipCode) => (
+                <li key={zipCode}>{zipCode}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     </article>
   );
