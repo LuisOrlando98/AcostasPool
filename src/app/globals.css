@@ -4298,7 +4298,12 @@ summary.no-marker::marker {
 
 .lp-contact-grid-v2 {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.lp-contact-support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.72rem;
 }
 
@@ -4315,8 +4320,7 @@ summary.no-marker::marker {
 }
 
 .lp-contact-card-map {
-  grid-column: 1 / -1;
-  gap: 0.68rem;
+  gap: 0.74rem;
 }
 
 .lp-contact-map-head {
@@ -4339,7 +4343,7 @@ summary.no-marker::marker {
 
 .lp-contact-map-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  grid-template-columns: 1fr;
   gap: 0.72rem;
   align-items: start;
 }
@@ -4367,78 +4371,91 @@ summary.no-marker::marker {
 }
 
 .lp-contact-map-frame {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.lp-contact-map-stage {
+  position: relative;
   border-radius: 0.92rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 24%, var(--lp-border));
-  min-height: 21rem;
+  min-height: 30rem;
+  background: color-mix(in srgb, var(--lp-brand) 18%, #0d2237);
+  isolation: isolate;
 }
 
-.lp-contact-map-svg {
+.lp-contact-map-embed {
   width: 100%;
   height: 100%;
-  min-height: 21rem;
+  min-height: 30rem;
+  border: 0;
   display: block;
+  filter: saturate(1.07) contrast(1.05);
 }
 
-.lp-contact-map-coast {
-  fill: rgba(191, 232, 255, 0.08);
-  stroke: rgba(168, 220, 255, 0.4);
-  stroke-width: 2;
-}
-
-.lp-contact-map-road {
-  fill: none;
-  stroke: rgba(220, 243, 255, 0.18);
-  stroke-width: 2.2;
-  stroke-linecap: round;
+.lp-contact-map-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .lp-contact-map-region {
-  fill: rgba(124, 208, 255, 0.16);
-  stroke: rgba(176, 233, 255, 0.5);
-  stroke-width: 1.6;
-  cursor: pointer;
+  fill: rgba(53, 174, 255, 0.2);
+  stroke: rgba(203, 242, 255, 0.62);
+  stroke-width: 0.3;
   transition: fill 180ms ease, stroke 180ms ease, filter 180ms ease;
 }
 
-.lp-contact-map-region:hover {
-  fill: rgba(124, 208, 255, 0.28);
-}
-
 .lp-contact-map-region[data-active="true"] {
-  fill: rgba(42, 186, 255, 0.46);
+  fill: rgba(31, 181, 255, 0.56);
   stroke: rgba(224, 246, 255, 0.92);
-  filter: drop-shadow(0 0 16px rgba(85, 195, 255, 0.26));
+  filter: drop-shadow(0 0 8px rgba(85, 195, 255, 0.34));
 }
 
-.lp-contact-map-pin circle {
+.lp-contact-map-pin-dot {
   fill: rgba(212, 242, 255, 0.65);
   stroke: rgba(17, 66, 109, 0.6);
-  stroke-width: 1;
-  transition: fill 180ms ease, transform 180ms ease;
+  stroke-width: 0.24;
+  transition: fill 180ms ease, stroke 180ms ease;
 }
 
-.lp-contact-map-pin text {
+.lp-contact-map-pin-dot[data-active="true"] {
+  fill: #8fe3ff;
+  stroke: rgba(240, 252, 255, 0.96);
+}
+
+.lp-contact-map-pin-label {
   fill: rgba(233, 249, 255, 0.95);
-  font-size: 15px;
+  font-size: 2.35px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  user-select: none;
+  paint-order: stroke;
+  stroke: rgba(11, 34, 58, 0.48);
+  stroke-width: 0.26;
 }
 
-.lp-contact-map-pin[data-active="true"] circle {
-  fill: #88ddff;
-  transform: scale(1.12);
-}
-
-.lp-contact-map-pin[data-active="true"] text {
+.lp-contact-map-pin-label[data-active="true"] {
   fill: #ffffff;
+  stroke: rgba(9, 31, 50, 0.8);
 }
 
-.lp-contact-map-side {
-  display: grid;
-  gap: 0.66rem;
-  align-content: start;
+.lp-contact-map-source {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.56rem;
+  align-items: center;
+  color: var(--lp-muted);
+  font-size: 0.72rem;
+}
+
+.lp-contact-map-source a {
+  color: color-mix(in srgb, var(--lp-brand) 82%, var(--lp-ink));
+  text-decoration: none;
+  font-weight: 700;
 }
 
 .lp-contact-map-zipcodes {
@@ -4610,17 +4627,13 @@ summary.no-marker::marker {
     grid-template-columns: 1fr;
   }
 
-  .lp-contact-grid-v2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .lp-contact-card-map,
-  .lp-contact-grid-v2 .lp-contact-card:last-child {
-    grid-column: 1 / -1;
-  }
-
   .lp-contact-map-layout {
     grid-template-columns: 1fr;
+  }
+
+  .lp-contact-map-stage,
+  .lp-contact-map-embed {
+    min-height: 21rem;
   }
 }
 
@@ -4667,8 +4680,7 @@ summary.no-marker::marker {
   .lp-review-grid,
   .lp-about-principles-grid,
   .lp-about-flow-grid,
-  .lp-footer-grid,
-  .lp-contact-grid-v2 {
+  .lp-footer-grid {
     grid-template-columns: 1fr;
   }
 
@@ -4738,13 +4750,17 @@ summary.no-marker::marker {
     grid-template-columns: 1fr;
   }
 
+  .lp-contact-support-grid {
+    grid-template-columns: 1fr;
+  }
+
   .lp-contact-coverage li {
     min-height: 1.9rem;
   }
 
-  .lp-contact-map-frame,
-  .lp-contact-map-svg {
-    min-height: 14rem;
+  .lp-contact-map-stage,
+  .lp-contact-map-embed {
+    min-height: 15rem;
   }
 
   .lp-footer-follow {

@@ -157,26 +157,28 @@ export default async function ContactPage() {
           <div className="lp-container lp-contact-grid-v2">
             <CoverageMapCard />
 
-            <article className="lp-contact-card lp-surface">
-              <h2>What to include in your first message</h2>
-              <ul className="lp-contact-checklist">
-                <li>Pool size and current water condition</li>
-                <li>Any equipment concerns you have noticed</li>
-                <li>Preferred weekly service cadence</li>
-                <li>Optional photos for faster evaluation</li>
-              </ul>
-            </article>
+            <div className="lp-contact-support-grid">
+              <article className="lp-contact-card lp-surface">
+                <h2>What to include in your first message</h2>
+                <ul className="lp-contact-checklist">
+                  <li>Pool size and current water condition</li>
+                  <li>Any equipment concerns you have noticed</li>
+                  <li>Preferred weekly service cadence</li>
+                  <li>Optional photos for faster evaluation</li>
+                </ul>
+              </article>
 
-            <article className="lp-contact-card lp-surface">
-              <h2>Need more details before booking?</h2>
-              <p className="lp-contact-note">
-                Learn how we organize route cadence, technical checks, and homeowner reporting
-                before your first visit.
-              </p>
-              <Link href="/about" className="lp-btn lp-btn-soft">
-                Learn about our team
-              </Link>
-            </article>
+              <article className="lp-contact-card lp-surface">
+                <h2>Need more details before booking?</h2>
+                <p className="lp-contact-note">
+                  Learn how we organize route cadence, technical checks, and homeowner reporting
+                  before your first visit.
+                </p>
+                <Link href="/about" className="lp-btn lp-btn-soft">
+                  Learn about our team
+                </Link>
+              </article>
+            </div>
           </div>
         </section>
       </main>
