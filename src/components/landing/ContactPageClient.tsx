@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 import ContactRequestForm from "@/components/landing/ContactRequestForm";
 import CoverageMapCard from "@/components/landing/CoverageMapCard";
 
-type SocialLinks = {
-  whatsappUrl?: string | null;
-};
+type SocialLinks = LandingSocialLinks;
 
 const PHONE_DISPLAY = "+1 (786) 519-5059";
 const PHONE_E164 = "+17865195059";
@@ -228,8 +227,21 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
           </Link>
 
           <nav className="lp-nav" aria-label="Primary">
+            <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
+              <span className="lp-nav-logo-dot" aria-hidden="true" />
+              <span className="lp-nav-logo-text">
+                <span>Acostas</span>
+                <span>Pool</span>
+              </span>
+            </Link>
+
             {SECTION_NAV_ITEMS.map((item) => (
-              <Link key={item.id} href={`/#${item.id}`} className="lp-nav-link">
+              <Link
+                key={item.id}
+                href={`/#${item.id}`}
+                className="lp-nav-link"
+                data-nav-key={item.id}
+              >
                 {sectionLabels[item.id]}
               </Link>
             ))}
@@ -239,6 +251,7 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                 key={item.href}
                 href={item.href}
                 className="lp-nav-link lp-nav-link-page"
+                data-nav-key={item.key}
                 data-active={item.href === "/contact"}
               >
                 {copy.nav[item.key]}
@@ -407,6 +420,14 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
           </div>
         </section>
       </main>
+
+      <LandingFooter
+        language={language}
+        theme={theme}
+        onLanguageChange={(nextLocale) => setLanguage(nextLocale)}
+        onThemeChange={(nextTheme) => setTheme(nextTheme)}
+        socialLinks={socialLinks}
+      />
     </div>
   );
 }

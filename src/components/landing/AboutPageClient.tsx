@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
+import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 
-type SocialLinks = {
-  whatsappUrl?: string | null;
-};
+type SocialLinks = LandingSocialLinks;
 
 type PrincipleIconName = "shield" | "camera" | "route";
 type FlowIconName = "request" | "plan" | "deliver";
@@ -356,8 +355,21 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
           </Link>
 
           <nav className="lp-nav" aria-label="Primary">
+            <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
+              <span className="lp-nav-logo-dot" aria-hidden="true" />
+              <span className="lp-nav-logo-text">
+                <span>Acostas</span>
+                <span>Pool</span>
+              </span>
+            </Link>
+
             {SECTION_NAV_ITEMS.map((item) => (
-              <Link key={item.id} href={`/#${item.id}`} className="lp-nav-link">
+              <Link
+                key={item.id}
+                href={`/#${item.id}`}
+                className="lp-nav-link"
+                data-nav-key={item.id}
+              >
                 {sectionLabels[item.id]}
               </Link>
             ))}
@@ -367,6 +379,7 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
                 key={item.href}
                 href={item.href}
                 className="lp-nav-link lp-nav-link-page"
+                data-nav-key={item.key}
                 data-active={item.href === "/about"}
               >
                 {copy.nav[item.key]}
@@ -542,6 +555,14 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
           </div>
         </section>
       </main>
+
+      <LandingFooter
+        language={language}
+        theme={theme}
+        onLanguageChange={(nextLocale) => setLanguage(nextLocale)}
+        onThemeChange={(nextTheme) => setTheme(nextTheme)}
+        socialLinks={socialLinks}
+      />
     </div>
   );
 }
