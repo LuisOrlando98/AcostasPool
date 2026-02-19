@@ -60,7 +60,7 @@ const LANDING_COPY: Record<
       reviews: "Reviews",
       about: "About",
       contact: "Contact",
-      login: "Client log in",
+      login: "Log in",
     },
     announce: "South Florida premium pool maintenance with clear weekly execution",
     hero: {
@@ -97,7 +97,7 @@ const LANDING_COPY: Record<
       reviews: "Resenas",
       about: "Nosotros",
       contact: "Contacto",
-      login: "Acceso clientes",
+      login: "Acceso",
     },
     announce: "Mantenimiento premium de piscinas en el sur de Florida con ejecucion semanal clara",
     hero: {
@@ -145,6 +145,7 @@ const SECTION_NAV_ITEMS = [
 const PAGE_NAV_ITEMS = [
   { href: "/about", key: "about" },
   { href: "/contact", key: "contact" },
+  { href: "/login", key: "login" },
 ] as const;
 
 const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIconName }> = [
