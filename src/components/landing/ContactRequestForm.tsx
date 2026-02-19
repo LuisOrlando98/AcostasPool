@@ -1,15 +1,109 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import type { LandingLocale } from "@/components/landing/preferences";
 
-const SERVICE_OPTIONS = [
-  "Weekly Signature Care",
-  "Pool Cleaning",
-  "Equipment Repair",
-  "Water Testing Service",
-];
+type SelectOption = {
+  value: string;
+  label: string;
+};
 
-const FREQUENCY_OPTIONS = ["Weekly", "Bi-weekly", "Monthly", "One-time visit"];
+const FORM_COPY: Record<
+  LandingLocale,
+  {
+    title: string;
+    subtitle: string;
+    labels: {
+      name: string;
+      email: string;
+      phone: string;
+      city: string;
+      service: string;
+      frequency: string;
+      notes: string;
+    };
+    notesPlaceholder: string;
+    serviceOptions: SelectOption[];
+    frequencyOptions: SelectOption[];
+    actions: {
+      send: string;
+      sending: string;
+    };
+    feedback: {
+      success: string;
+      sendError: string;
+    };
+  }
+> = {
+  en: {
+    title: "Send us your request",
+    subtitle: "No email app needed. Submit here and we will reply to your inbox.",
+    labels: {
+      name: "Full name",
+      email: "Email",
+      phone: "Phone",
+      city: "City",
+      service: "Service",
+      frequency: "Frequency",
+      notes: "Notes",
+    },
+    notesPlaceholder: "Tell us your pool condition, goals, or equipment concerns.",
+    serviceOptions: [
+      { value: "Weekly Signature Care", label: "Weekly Signature Care" },
+      { value: "Pool Cleaning", label: "Pool Cleaning" },
+      { value: "Equipment Repair", label: "Equipment Repair" },
+      { value: "Water Testing Service", label: "Water Testing Service" },
+    ],
+    frequencyOptions: [
+      { value: "Weekly", label: "Weekly" },
+      { value: "Bi-weekly", label: "Bi-weekly" },
+      { value: "Monthly", label: "Monthly" },
+      { value: "One-time visit", label: "One-time visit" },
+    ],
+    actions: {
+      send: "Send request",
+      sending: "Sending...",
+    },
+    feedback: {
+      success: "Request sent. We will contact you shortly.",
+      sendError: "Could not send your request.",
+    },
+  },
+  es: {
+    title: "Envianos tu solicitud",
+    subtitle: "No necesitas una app de correo. Envia aqui y responderemos a tu bandeja.",
+    labels: {
+      name: "Nombre completo",
+      email: "Correo",
+      phone: "Telefono",
+      city: "Ciudad",
+      service: "Servicio",
+      frequency: "Frecuencia",
+      notes: "Notas",
+    },
+    notesPlaceholder: "Comparte condicion de la piscina, objetivos o preocupaciones de equipos.",
+    serviceOptions: [
+      { value: "Weekly Signature Care", label: "Cuidado semanal premium" },
+      { value: "Pool Cleaning", label: "Limpieza de piscina" },
+      { value: "Equipment Repair", label: "Reparacion de equipos" },
+      { value: "Water Testing Service", label: "Pruebas de quimica" },
+    ],
+    frequencyOptions: [
+      { value: "Weekly", label: "Semanal" },
+      { value: "Bi-weekly", label: "Quincenal" },
+      { value: "Monthly", label: "Mensual" },
+      { value: "One-time visit", label: "Visita unica" },
+    ],
+    actions: {
+      send: "Enviar solicitud",
+      sending: "Enviando...",
+    },
+    feedback: {
+      success: "Solicitud enviada. Te contactaremos pronto.",
+      sendError: "No se pudo enviar tu solicitud.",
+    },
+  },
+};
 
 type ContactFormState = {
   name: string;
@@ -21,22 +115,40 @@ type ContactFormState = {
   notes: string;
 };
 
-const INITIAL_FORM_STATE: ContactFormState = {
-  name: "",
-  email: "",
-  phone: "",
-  city: "",
-  service: SERVICE_OPTIONS[0] ?? "Weekly Signature Care",
-  frequency: FREQUENCY_OPTIONS[0] ?? "Weekly",
-  notes: "",
-};
-
 type SubmitStatus = "idle" | "sending" | "success" | "error";
 
-export default function ContactRequestForm() {
-  const [form, setForm] = useState<ContactFormState>(INITIAL_FORM_STATE);
+function getInitialState(language: LandingLocale): ContactFormState {
+  const copy = FORM_COPY[language];
+  return {
+    name: "",
+    email: "",
+    phone: "",
+    city: "",
+    service: copy.serviceOptions[0]?.value ?? "Weekly Signature Care",
+    frequency: copy.frequencyOptions[0]?.value ?? "Weekly",
+    notes: "",
+  };
+}
+
+export default function ContactRequestForm({ language = "en" }: { language?: LandingLocale }) {
+  const copy = useMemo(() => FORM_COPY[language], [language]);
+  const [form, setForm] = useState<ContactFormState>(() => getInitialState(language));
   const [status, setStatus] = useState<SubmitStatus>("idle");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      service: copy.serviceOptions.some((option) => option.value === prev.service)
+        ? prev.service
+        : (copy.serviceOptions[0]?.value ?? ""),
+      frequency: copy.frequencyOptions.some((option) => option.value === prev.frequency)
+        ? prev.frequency
+        : (copy.frequencyOptions[0]?.value ?? ""),
+    }));
+    setStatus("idle");
+    setMessage("");
+  }, [copy]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,15 +168,15 @@ export default function ContactRequestForm() {
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
 
       if (!response.ok) {
-        throw new Error(payload.error || "Could not send your request.");
+        throw new Error(payload.error || copy.feedback.sendError);
       }
 
       setStatus("success");
-      setMessage("Request sent. We will contact you shortly.");
-      setForm(INITIAL_FORM_STATE);
+      setMessage(copy.feedback.success);
+      setForm(getInitialState(language));
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Could not send your request.");
+      setMessage(error instanceof Error ? error.message : copy.feedback.sendError);
     }
   }
 
@@ -75,13 +187,13 @@ export default function ContactRequestForm() {
   return (
     <form className="lp-contact-form" onSubmit={handleSubmit}>
       <div className="lp-contact-form-head">
-        <h2>Send us your request</h2>
-        <p>No email app needed. Submit here and we will reply to your inbox.</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.subtitle}</p>
       </div>
 
       <div className="lp-contact-form-grid">
         <label>
-          Full name
+          {copy.labels.name}
           <input
             type="text"
             name="name"
@@ -93,7 +205,7 @@ export default function ContactRequestForm() {
         </label>
 
         <label>
-          Email
+          {copy.labels.email}
           <input
             type="email"
             name="email"
@@ -105,7 +217,7 @@ export default function ContactRequestForm() {
         </label>
 
         <label>
-          Phone
+          {copy.labels.phone}
           <input
             type="tel"
             name="phone"
@@ -116,7 +228,7 @@ export default function ContactRequestForm() {
         </label>
 
         <label>
-          City
+          {copy.labels.city}
           <input
             type="text"
             name="city"
@@ -127,52 +239,52 @@ export default function ContactRequestForm() {
         </label>
 
         <label>
-          Service
+          {copy.labels.service}
           <select
             name="service"
             required
             value={form.service}
             onChange={(event) => updateField("service", event.currentTarget.value)}
           >
-            {SERVICE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            {copy.serviceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </label>
 
         <label>
-          Frequency
+          {copy.labels.frequency}
           <select
             name="frequency"
             required
             value={form.frequency}
             onChange={(event) => updateField("frequency", event.currentTarget.value)}
           >
-            {FREQUENCY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            {copy.frequencyOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </label>
 
         <label className="lp-contact-form-notes">
-          Notes
+          {copy.labels.notes}
           <textarea
             name="notes"
             rows={5}
             value={form.notes}
             onChange={(event) => updateField("notes", event.currentTarget.value)}
-            placeholder="Tell us your pool condition, goals, or equipment concerns."
+            placeholder={copy.notesPlaceholder}
           />
         </label>
       </div>
 
       <div className="lp-contact-form-actions">
         <button type="submit" className="lp-btn lp-btn-primary" disabled={status === "sending"}>
-          {status === "sending" ? "Sending..." : "Send request"}
+          {status === "sending" ? copy.actions.sending : copy.actions.send}
         </button>
         <p aria-live="polite" data-status={status}>
           {message}

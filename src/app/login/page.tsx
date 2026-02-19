@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { ROLE_REDIRECTS } from "@/lib/auth/config";
 import { useI18n } from "@/i18n/client";
 import { LOCALE_COOKIE } from "@/i18n/config";
+import { LANDING_LOCALE_STORAGE_KEY } from "@/components/landing/preferences";
 
 type LoginResponse = {
   ok?: boolean;
@@ -31,6 +32,7 @@ export default function LoginPage() {
       return;
     }
     setSwitchingLocale(true);
+    window.localStorage.setItem(LANDING_LOCALE_STORAGE_KEY, nextLocale);
     document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=2592000`;
     window.location.reload();
   };

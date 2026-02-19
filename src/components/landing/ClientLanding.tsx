@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { LOCALE_COOKIE } from "@/i18n/config";
+import type { LandingLocale } from "@/components/landing/preferences";
+import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 
-type ThemeName = "ocean" | "night";
-type LandingLocale = "en" | "es";
 type SocialPlatform =
   | "instagram"
   | "facebook"
@@ -147,22 +146,6 @@ const LANDING_COPY: Record<
     },
   },
 };
-
-function resolveLandingLocale(raw?: string | null): LandingLocale {
-  return raw?.toLowerCase() === "es" ? "es" : "en";
-}
-
-function readCookie(name: string) {
-  if (typeof document === "undefined") {
-    return null;
-  }
-  const prefix = `${name}=`;
-  const cookie = document.cookie
-    .split(";")
-    .map((token) => token.trim())
-    .find((token) => token.startsWith(prefix));
-  return cookie ? cookie.slice(prefix.length) : null;
-}
 
 const PHONE_DISPLAY = "+1 (786) 519-5059";
 const PHONE_E164 = "+17865195059";
@@ -492,25 +475,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const searchParams = useSearchParams();
   const navPressTimer = useRef<number | null>(null);
 
-  const [language, setLanguage] = useState<LandingLocale>(() => {
-    if (typeof window === "undefined") {
-      return "en";
-    }
-    const local = window.localStorage.getItem("ap:landing-locale-v1");
-    if (local === "en" || local === "es") {
-      return local;
-    }
-    const cookie = readCookie(LOCALE_COOKIE);
-    return resolveLandingLocale(cookie ?? document.documentElement.lang);
-  });
-  const [theme, setTheme] = useState<ThemeName>(() => {
-    if (typeof window === "undefined") {
-      return "ocean";
-    }
-    return window.localStorage.getItem("ap:landing-theme-v4") === "night"
-      ? "night"
-      : "ocean";
-  });
+  const { language, setLanguage, theme, setTheme } = useLandingPreferences();
   const [activeSlide, setActiveSlide] = useState(0);
   const [pauseCarousel, setPauseCarousel] = useState(false);
   const [activeNav, setActiveNav] =
@@ -546,16 +511,6 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
     ];
     return items.filter((item) => Boolean(item.href));
   }, [socialLinks]);
-
-  useEffect(() => {
-    window.localStorage.setItem("ap:landing-theme-v4", theme);
-  }, [theme]);
-
-  useEffect(() => {
-    window.localStorage.setItem("ap:landing-locale-v1", language);
-    document.cookie = `${LOCALE_COOKIE}=${language}; path=/; max-age=2592000`;
-    document.documentElement.lang = language;
-  }, [language]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

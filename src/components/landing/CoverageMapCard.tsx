@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { LandingLocale } from "@/components/landing/preferences";
 
 type GeoBounds = {
   north: number;
@@ -15,15 +16,6 @@ type CoverageArea = {
   center: { lat: number; lng: number };
   zipCodes: string[];
 };
-
-const MAP_BOUNDS: GeoBounds = {
-  north: 25.92,
-  south: 25.34,
-  east: -80.08,
-  west: -80.58,
-};
-
-const MAP_EMBED_URL = `https://www.openstreetmap.org/export/embed.html?bbox=${MAP_BOUNDS.west}%2C${MAP_BOUNDS.south}%2C${MAP_BOUNDS.east}%2C${MAP_BOUNDS.north}&layer=mapnik`;
 
 const COVERAGE_AREAS: CoverageArea[] = [
   {
@@ -64,43 +56,62 @@ const COVERAGE_AREAS: CoverageArea[] = [
   },
 ];
 
-function lngToPercent(lng: number) {
-  return ((lng - MAP_BOUNDS.west) / (MAP_BOUNDS.east - MAP_BOUNDS.west)) * 100;
+const MAP_COPY: Record<
+  LandingLocale,
+  {
+    title: string;
+    lead: string;
+    tabLabel: string;
+    frameLabel: string;
+    iframeTitle: string;
+    source: string;
+    openMap: string;
+    zipcodesPrefix: string;
+  }
+> = {
+  en: {
+    title: "Service area map",
+    lead: "Select a city to center the map and view the ZIP codes we serve.",
+    tabLabel: "Service cities",
+    frameLabel: "Map centered on",
+    iframeTitle: "South Florida service map",
+    source: "Map data by OpenStreetMap contributors.",
+    openMap: "Open full map",
+    zipcodesPrefix: "ZIP codes in",
+  },
+  es: {
+    title: "Mapa de cobertura",
+    lead: "Selecciona una ciudad para centrar el mapa y ver los codigos ZIP disponibles.",
+    tabLabel: "Ciudades de servicio",
+    frameLabel: "Mapa centrado en",
+    iframeTitle: "Mapa de servicio en South Florida",
+    source: "Datos del mapa por colaboradores de OpenStreetMap.",
+    openMap: "Abrir mapa completo",
+    zipcodesPrefix: "Codigos ZIP en",
+  },
+};
+
+function getMapEmbedUrl(area: CoverageArea) {
+  const bbox = `${area.bounds.west},${area.bounds.south},${area.bounds.east},${area.bounds.north}`;
+  const marker = `${area.center.lat},${area.center.lng}`;
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marker)}`;
 }
 
-function latToPercent(lat: number) {
-  return ((MAP_BOUNDS.north - lat) / (MAP_BOUNDS.north - MAP_BOUNDS.south)) * 100;
-}
-
-function getAreaShape(area: CoverageArea) {
-  const left = lngToPercent(area.bounds.west);
-  const right = lngToPercent(area.bounds.east);
-  const top = latToPercent(area.bounds.north);
-  const bottom = latToPercent(area.bounds.south);
-
-  return {
-    left,
-    top,
-    width: right - left,
-    height: bottom - top,
-    centerX: (left + right) / 2,
-    centerY: (top + bottom) / 2,
-  };
-}
-
-export default function CoverageMapCard() {
+export default function CoverageMapCard({ language = "en" }: { language?: LandingLocale }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const area = COVERAGE_AREAS[activeIndex] ?? COVERAGE_AREAS[0];
   const citySlug = area.city.toLowerCase().replaceAll(" ", "-");
+  const copy = MAP_COPY[language];
+  const mapEmbedUrl = getMapEmbedUrl(area);
 
   return (
     <article className="lp-contact-card lp-contact-card-map lp-surface">
       <div className="lp-contact-map-head">
-        <h2>Service area map</h2>
-        <p>Select a city to highlight the coverage zone and view the ZIP codes we serve.</p>
+        <h2>{copy.title}</h2>
+        <p>{copy.lead}</p>
       </div>
 
-      <div className="lp-contact-map-cities" role="tablist" aria-label="Service cities">
+      <div className="lp-contact-map-cities" role="tablist" aria-label={copy.tabLabel}>
         {COVERAGE_AREAS.map((item, index) => {
           const itemSlug = item.city.toLowerCase().replaceAll(" ", "-");
           return (
@@ -122,60 +133,26 @@ export default function CoverageMapCard() {
       </div>
 
       <div className="lp-contact-map-layout">
-        <div className="lp-contact-map-frame" aria-label={`Coverage map, active city: ${area.city}`}>
+        <div className="lp-contact-map-frame" aria-label={`${copy.frameLabel}: ${area.city}`}>
           <div className="lp-contact-map-stage">
             <iframe
-              title="South Florida service map"
+              key={area.city}
+              title={copy.iframeTitle}
               className="lp-contact-map-embed"
-              src={MAP_EMBED_URL}
+              src={mapEmbedUrl}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
-
-            <svg className="lp-contact-map-overlay" viewBox="0 0 100 100" aria-hidden="true">
-              {COVERAGE_AREAS.map((item, index) => {
-                const isActive = index === activeIndex;
-                const shape = getAreaShape(item);
-                return (
-                  <g key={item.city}>
-                    <rect
-                      x={shape.left}
-                      y={shape.top}
-                      width={shape.width}
-                      height={shape.height}
-                      rx={1.2}
-                      className="lp-contact-map-region"
-                      data-active={isActive}
-                    />
-                    <circle
-                      cx={shape.centerX}
-                      cy={shape.centerY}
-                      r={1.08}
-                      className="lp-contact-map-pin-dot"
-                      data-active={isActive}
-                    />
-                    <text
-                      x={shape.centerX + 1.5}
-                      y={shape.centerY + 0.66}
-                      className="lp-contact-map-pin-label"
-                      data-active={isActive}
-                    >
-                      {item.city}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
           </div>
 
           <p className="lp-contact-map-source">
-            Map data by OpenStreetMap contributors.
+            {copy.source}
             <a
               href={`https://www.openstreetmap.org/?mlat=${area.center.lat}&mlon=${area.center.lng}#map=11/${area.center.lat}/${area.center.lng}`}
               target="_blank"
               rel="noreferrer"
             >
-              Open full map
+              {copy.openMap}
             </a>
           </p>
         </div>
@@ -185,7 +162,9 @@ export default function CoverageMapCard() {
           id="coverage-panel"
           aria-labelledby={`coverage-tab-${citySlug}`}
         >
-          <p>ZIP codes in {area.city}</p>
+          <p>
+            {copy.zipcodesPrefix} {area.city}
+          </p>
           <ul>
             {area.zipCodes.map((zipCode) => (
               <li key={zipCode}>{zipCode}</li>
