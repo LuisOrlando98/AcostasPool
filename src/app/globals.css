@@ -4917,7 +4917,10 @@ summary.no-marker::marker {
   }
 
   .lp-header-inner {
-    row-gap: 0.56rem;
+    row-gap: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .lp-header-inner > .lp-brand {
@@ -4930,9 +4933,10 @@ summary.no-marker::marker {
 
   .lp-header-actions {
     width: auto;
-    margin-left: auto;
+    margin-left: 0;
     justify-content: flex-end;
     gap: 0.4rem;
+    flex: 0 0 auto;
   }
 
   .lp-header-actions .lp-lang-switch,
@@ -4971,6 +4975,10 @@ summary.no-marker::marker {
     justify-items: stretch;
     column-gap: 0.18rem;
     row-gap: 0.18rem;
+    order: 0;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .lp-nav-link {

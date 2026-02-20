@@ -177,20 +177,20 @@ const SERVICE_PROMO_COPY: Record<
   }
 > = {
   en: {
-    badge: "WhatsApp direct line",
-    title: "Get your quote on WhatsApp in minutes",
+    badge: "Promotion: First service free",
+    title: "FIRST SERVICE FREE on WhatsApp",
     detail:
-      "Tap the WhatsApp button now and send your pool details to receive a fast, personalized response from our team.",
-    note: "Share your city and one pool photo for faster support.",
-    cta: "Tap button to contact WhatsApp",
+      "Tap the WhatsApp button now and send your pool details. New clients get the first service free.",
+    note: "Share your city and one pool photo to claim the promotion faster.",
+    cta: "Claim first free service",
   },
   es: {
-    badge: "Linea directa por WhatsApp",
-    title: "Recibe tu cotizacion por WhatsApp en minutos",
+    badge: "Promocion: primer servicio gratis",
+    title: "PRIMER SERVICIO GRATIS por WhatsApp",
     detail:
-      "Toca el boton de WhatsApp ahora y envianos los datos de tu piscina para darte una respuesta rapida y personalizada.",
-    note: "Comparte tu ciudad y una foto de la piscina para ayudarte mas rapido.",
-    cta: "Toca el boton de WhatsApp",
+      "Toca el boton de WhatsApp ahora y envianos los datos de tu piscina. Clientes nuevos reciben el primer servicio gratis.",
+    note: "Comparte tu ciudad y una foto de la piscina para reclamar la promocion mas rapido.",
+    cta: "Reclamar servicio gratis",
   },
 };
 
