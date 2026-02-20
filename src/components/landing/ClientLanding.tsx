@@ -62,7 +62,7 @@ const LANDING_COPY: Record<
       contact: "Contact",
       login: "Log in",
     },
-    announce: "South Florida premium pool maintenance with clear weekly execution",
+    announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
     hero: {
       title: "Professional pool care that feels effortless for your home.",
       subtitle:
@@ -99,7 +99,7 @@ const LANDING_COPY: Record<
       contact: "Contacto",
       login: "Acceso",
     },
-    announce: "Mantenimiento premium de piscinas en el sur de Florida con ejecucion semanal clara",
+    announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
     hero: {
       title: "Cuidado profesional de piscinas para que tu hogar funcione sin friccion.",
       subtitle:
@@ -177,20 +177,20 @@ const SERVICE_PROMO_COPY: Record<
   }
 > = {
   en: {
-    badge: "Limited-time offer",
-    title: "First service is free for new clients",
+    badge: "WhatsApp direct line",
+    title: "Get your quote on WhatsApp in minutes",
     detail:
-      "Try your first pool service at no cost, feel what a truly clean pool is like, and verify our quality before committing.",
-    note: "Applies to first-time residential visits.",
-    cta: "Claim free first service",
+      "Tap the WhatsApp button now and send your pool details to receive a fast, personalized response from our team.",
+    note: "Share your city and one pool photo for faster support.",
+    cta: "Tap button to contact WhatsApp",
   },
   es: {
-    badge: "Promocion activa",
-    title: "Primer servicio gratis para clientes nuevos",
+    badge: "Linea directa por WhatsApp",
+    title: "Recibe tu cotizacion por WhatsApp en minutos",
     detail:
-      "Prueba tu primer servicio sin costo, siente la diferencia de una piscina limpia y comprueba la calidad de nuestro trabajo.",
-    note: "Aplica en la primera visita residencial.",
-    cta: "Quiero mi servicio gratis",
+      "Toca el boton de WhatsApp ahora y envianos los datos de tu piscina para darte una respuesta rapida y personalizada.",
+    note: "Comparte tu ciudad y una foto de la piscina para ayudarte mas rapido.",
+    cta: "Toca el boton de WhatsApp",
   },
 };
 

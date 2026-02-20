@@ -66,7 +66,7 @@ const CONTACT_COPY: Record<
       contact: "Contact",
       login: "Log in",
     },
-    announce: "South Florida premium pool maintenance with clear weekly execution",
+    announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
     hero: {
       title: "Get In Touch Now",
       lead:
@@ -112,7 +112,7 @@ const CONTACT_COPY: Record<
       contact: "Contacto",
       login: "Acceso",
     },
-    announce: "Mantenimiento premium de piscinas en el sur de Florida con ejecucion semanal clara",
+    announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
     hero: {
       title: "Contactanos ahora",
       lead:
