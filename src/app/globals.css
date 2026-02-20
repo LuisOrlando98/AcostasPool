@@ -3260,6 +3260,68 @@ summary.no-marker::marker {
   font-size: 0.78rem;
 }
 
+.lp-service-promo {
+  margin: 0 0 0.72rem;
+  padding: 0.92rem;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 34%, var(--lp-border));
+  background:
+    linear-gradient(
+      118deg,
+      color-mix(in srgb, var(--lp-brand) 24%, var(--lp-surface)) 0%,
+      color-mix(in srgb, var(--lp-brand-2) 26%, var(--lp-surface)) 52%,
+      var(--lp-surface) 100%
+    );
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.74rem;
+  align-items: center;
+}
+
+.lp-service-promo-copy {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.lp-service-promo-badge {
+  margin: 0;
+  justify-self: start;
+  min-height: 1.75rem;
+  padding: 0 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--lp-brand) 42%, var(--lp-border));
+  background: color-mix(in srgb, var(--lp-brand) 16%, transparent);
+  color: color-mix(in srgb, var(--lp-brand) 88%, var(--lp-ink));
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lp-service-promo h3 {
+  margin: 0;
+  font-size: clamp(1.05rem, 2vw, 1.5rem);
+  line-height: 1.2;
+}
+
+.lp-service-promo p {
+  margin: 0;
+  color: var(--lp-muted);
+  line-height: 1.55;
+  font-size: 0.85rem;
+  max-width: 72ch;
+}
+
+.lp-service-promo-note {
+  color: color-mix(in srgb, var(--lp-brand) 72%, var(--lp-muted));
+  font-size: 0.75rem;
+}
+
+.lp-service-promo-cta {
+  white-space: nowrap;
+}
+
 .lp-service-plan-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4736,6 +4798,15 @@ summary.no-marker::marker {
     align-content: start;
   }
 
+  .lp-service-promo {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .lp-service-promo-cta {
+    justify-self: start;
+  }
+
   .lp-service-plan-grid,
   .lp-review-grid,
   .lp-about-principles-grid,
@@ -4935,6 +5006,16 @@ summary.no-marker::marker {
 
   .lp-services-intro-trust {
     gap: 0.44rem;
+  }
+
+  .lp-service-promo {
+    padding: 0.8rem;
+  }
+
+  .lp-service-promo-cta {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
   }
 
   .lp-service-plan-grid {

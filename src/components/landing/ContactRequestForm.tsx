@@ -49,10 +49,10 @@ const FORM_COPY: Record<
     },
     notesPlaceholder: "Tell us your pool condition, goals, or equipment concerns.",
     serviceOptions: [
-      { value: "Weekly Signature Care", label: "Weekly Signature Care" },
-      { value: "Pool Cleaning", label: "Pool Cleaning" },
+      { value: "One-Month Pool Cleaning", label: "One-Month Pool Cleaning" },
+      { value: "Regular Maintenance", label: "Regular Maintenance" },
+      { value: "Pool Cleaning + Leak Detection", label: "Pool Cleaning + Leak Detection" },
       { value: "Equipment Repair", label: "Equipment Repair" },
-      { value: "Water Testing Service", label: "Water Testing Service" },
     ],
     frequencyOptions: [
       { value: "Weekly", label: "Weekly" },
@@ -83,10 +83,13 @@ const FORM_COPY: Record<
     },
     notesPlaceholder: "Comparte condicion de la piscina, objetivos o preocupaciones de equipos.",
     serviceOptions: [
-      { value: "Weekly Signature Care", label: "Cuidado semanal premium" },
-      { value: "Pool Cleaning", label: "Limpieza de piscina" },
+      { value: "One-Month Pool Cleaning", label: "Limpieza de piscina por un mes" },
+      { value: "Regular Maintenance", label: "Mantenimiento regular" },
+      {
+        value: "Pool Cleaning + Leak Detection",
+        label: "Limpieza de piscina y deteccion de fugas",
+      },
       { value: "Equipment Repair", label: "Reparacion de equipos" },
-      { value: "Water Testing Service", label: "Pruebas de quimica" },
     ],
     frequencyOptions: [
       { value: "Weekly", label: "Semanal" },
@@ -124,7 +127,7 @@ function getInitialState(language: LandingLocale): ContactFormState {
     email: "",
     phone: "",
     city: "",
-    service: copy.serviceOptions[0]?.value ?? "Weekly Signature Care",
+    service: copy.serviceOptions[0]?.value ?? "One-Month Pool Cleaning",
     frequency: copy.frequencyOptions[0]?.value ?? "Weekly",
     notes: "",
   };

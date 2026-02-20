@@ -166,6 +166,34 @@ const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIco
   },
 ];
 
+const SERVICE_PROMO_COPY: Record<
+  LandingLocale,
+  {
+    badge: string;
+    title: string;
+    detail: string;
+    note: string;
+    cta: string;
+  }
+> = {
+  en: {
+    badge: "Limited-time offer",
+    title: "First service is free for new clients",
+    detail:
+      "Try your first pool service at no cost, feel what a truly clean pool is like, and verify our quality before committing.",
+    note: "Applies to first-time residential visits.",
+    cta: "Claim free first service",
+  },
+  es: {
+    badge: "Promocion activa",
+    title: "Primer servicio gratis para clientes nuevos",
+    detail:
+      "Prueba tu primer servicio sin costo, siente la diferencia de una piscina limpia y comprueba la calidad de nuestro trabajo.",
+    note: "Aplica en la primera visita residencial.",
+    cta: "Quiero mi servicio gratis",
+  },
+};
+
 const SERVICE_PILLARS: Array<{
   title: string;
   subtitle: string;
@@ -174,51 +202,53 @@ const SERVICE_PILLARS: Array<{
   points: string[];
 }> = [
   {
-    title: "Weekly Signature Care",
-    subtitle: "Weekly cleaning and chemistry balancing for stable, polished water.",
+    title: "One-Month Pool Cleaning",
+    subtitle: "A one-month reset to bring your pool back to clear, comfortable condition.",
     image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
-    icon: "spark",
+    icon: "clean",
     points: [
-      "Surface skimming and brushing",
-      "Vacuum and basket cleaning",
-      "Water chemistry balance",
-      "Equipment status review",
+      "Deep cleaning visit",
+      "Debris and algae removal",
+      "Full vacuum and brushing",
+      "Filter system check",
+      "Perfect for events or a seasonal reset",
     ],
   },
   {
-    title: "Pool Cleaning",
-    subtitle: "Debris removal, wall brushing, and filter care for crystal-clear water.",
+    title: "Regular Maintenance",
+    subtitle: "Consistent weekly care that keeps water balanced and equipment performing right.",
     image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
-    icon: "clean",
+    icon: "spark",
     points: [
-      "Filter cleaning routine",
-      "Wall and tile brushing",
-      "Vacuuming service",
-      "Clarity-focused finish",
+      "Full cleaning and vacuum",
+      "Water chemistry balancing",
+      "Equipment inspection",
+      "Basket and surface cleaning",
+      "Ongoing maintenance plan",
+    ],
+  },
+  {
+    title: "Pool Cleaning + Leak Detection",
+    subtitle: "Detailed cleaning with early leak diagnostics to protect pool structure and flow.",
+    image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+    icon: "chemistry",
+    points: [
+      "Leak diagnostics and targeted repair",
+      "Filter wash and flow optimization",
+      "Wall and tile scrubbing",
+      "Precision vacuum service",
     ],
   },
   {
     title: "Equipment Repair",
-    subtitle: "Troubleshooting and repair for pumps, filters, and circulation components.",
+    subtitle: "Diagnosis and repair support for pumps, filters, heaters, and circulation systems.",
     image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
     icon: "repair",
     points: [
-      "Leak and pressure checks",
-      "Pump and motor service",
-      "Filter replacement support",
-      "Heater maintenance review",
-    ],
-  },
-  {
-    title: "Water Testing Service",
-    subtitle: "Balanced chemistry with preventive checks to keep swimmers safe.",
-    image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
-    icon: "chemistry",
-    points: [
-      "pH and chlorine testing",
-      "Alkalinity monitoring",
-      "Imbalance detection",
-      "Clear treatment guidance",
+      "Leak and pressure diagnostics",
+      "Pump and motor troubleshooting",
+      "Filter and circulation repairs",
+      "Heater and control system review",
     ],
   },
 ];
@@ -226,7 +256,7 @@ const SERVICE_PILLARS: Array<{
 const SERVICES_BACKGROUND_IMAGE = "/landing/media/curated/images/pool-home-services-hero-technician.jpg";
 const SERVICES_BACKGROUND_VIDEO =
   process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC?.trim() ||
-  "/landing/media/curated/videos/pool-background-water-loop.mp4";
+  "/landing/media/curated/videos/pool-services-clean-water-promo.mp4";
 const SERVICES_BACKGROUND_VIDEO_ENABLED =
   (process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED ?? "true").toLowerCase() !==
   "false";
@@ -259,7 +289,7 @@ const REVIEWS = [
     author: "R. Martinez",
     zone: "Coral Gables",
     rating: 5,
-    plan: "Weekly Signature Care",
+    plan: "Regular Maintenance",
     quote:
       "Consistent service quality every week. The team keeps communication clean and direct.",
   },
@@ -267,7 +297,7 @@ const REVIEWS = [
     author: "S. Henderson",
     zone: "Kendall",
     rating: 5,
-    plan: "Pool Cleaning",
+    plan: "Pool Cleaning + Leak Detection",
     quote:
       "They solved recurring water issues fast and documented every recommendation clearly.",
   },
@@ -384,6 +414,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const [pressedNav, setPressedNav] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const copy = LANDING_COPY[language];
+  const promoCopy = SERVICE_PROMO_COPY[language];
 
   const cityParam = (searchParams.get("city") ?? "").trim();
   const servingLine = cityParam ? `${cityParam} and South Florida` : "South Florida";
@@ -727,6 +758,18 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 </div>
               </div>
             </div>
+
+            <aside className="lp-service-promo lp-surface" data-lp-reveal>
+              <div className="lp-service-promo-copy">
+                <p className="lp-service-promo-badge">{promoCopy.badge}</p>
+                <h3>{promoCopy.title}</h3>
+                <p>{promoCopy.detail}</p>
+                <p className="lp-service-promo-note">{promoCopy.note}</p>
+              </div>
+              <a href={whatsappLink} className="lp-btn lp-btn-primary lp-service-promo-cta">
+                {promoCopy.cta}
+              </a>
+            </aside>
 
             <div className="lp-service-plan-grid" data-lp-reveal>
               {SERVICE_PILLARS.map((pillar) => (
