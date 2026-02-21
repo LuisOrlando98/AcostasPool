@@ -173,6 +173,7 @@ const SERVICE_PROMO_COPY: Record<
     title: string;
     detail: string;
     note: string;
+    action: string;
     cta: string;
   }
 > = {
@@ -182,6 +183,7 @@ const SERVICE_PROMO_COPY: Record<
     detail:
       "Contact us on WhatsApp to start today. Send your pool details and we will confirm your first free visit.",
     note: "New residential clients only. Share your city and one pool photo for faster scheduling.",
+    action: "WhatsApp direct line",
     cta: "Start on WhatsApp",
   },
   es: {
@@ -190,6 +192,7 @@ const SERVICE_PROMO_COPY: Record<
     detail:
       "Contactanos por WhatsApp para empezar hoy. Envia los datos de tu piscina y confirmamos tu primera visita gratis.",
     note: "Solo para clientes residenciales nuevos. Comparte tu ciudad y una foto para agendar mas rapido.",
+    action: "Linea directa por WhatsApp",
     cta: "Comenzar por WhatsApp",
   },
 };
@@ -766,9 +769,12 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
                 <p className="lp-service-promo-detail">{promoCopy.detail}</p>
                 <p className="lp-service-promo-note">{promoCopy.note}</p>
               </div>
-              <a href={whatsappLink} className="lp-btn lp-btn-primary lp-service-promo-cta">
-                {promoCopy.cta}
-              </a>
+              <div className="lp-service-promo-action">
+                <p>{promoCopy.action}</p>
+                <a href={whatsappLink} className="lp-btn lp-btn-primary lp-service-promo-cta">
+                  {promoCopy.cta}
+                </a>
+              </div>
             </aside>
 
             <div className="lp-service-plan-grid" data-lp-reveal>
