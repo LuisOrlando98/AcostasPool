@@ -229,81 +229,83 @@ export default function LandingFooter({
   return (
     <footer className="lp-footer">
       <div className="lp-container">
-        {socialItems.length > 0 ? (
-          <div className="lp-footer-follow">
-            <div className="lp-footer-follow-copy">
-              <h3>{copy.headline}</h3>
-              <p>{copy.summary}</p>
+        <div className="lp-footer-top" data-has-social={socialItems.length > 0}>
+          {socialItems.length > 0 ? (
+            <div className="lp-footer-follow">
+              <div className="lp-footer-follow-copy">
+                <h3>{copy.headline}</h3>
+                <p>{copy.summary}</p>
+              </div>
+              <p>{copy.follow}</p>
+              <div className="lp-footer-social-icons">
+                {socialItems.map((social) => (
+                  <a
+                    key={social.id}
+                    href={social.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="lp-social-icon-link"
+                    aria-label={social.label}
+                    title={social.label}
+                  >
+                    <SocialIcon id={social.id} />
+                  </a>
+                ))}
+              </div>
             </div>
-            <p>{copy.follow}</p>
-            <div className="lp-footer-social-icons">
-              {socialItems.map((social) => (
-                <a
-                  key={social.id}
-                  href={social.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="lp-social-icon-link"
-                  aria-label={social.label}
-                  title={social.label}
+          ) : null}
+
+          <div className="lp-footer-preferences">
+            <div className="lp-footer-preference-group">
+              <p>{copy.languageLabel}</p>
+              <div className="lp-lang-switch" role="group" aria-label={copy.languageLabel}>
+                <button
+                  type="button"
+                  className="lp-lang-btn"
+                  data-active={language === "en"}
+                  onClick={() => onLanguageChange?.("en")}
+                  aria-label="English"
+                  title="English"
                 >
-                  <SocialIcon id={social.id} />
-                </a>
-              ))}
+                  EN
+                </button>
+                <button
+                  type="button"
+                  className="lp-lang-btn"
+                  data-active={language === "es"}
+                  onClick={() => onLanguageChange?.("es")}
+                  aria-label="Espanol"
+                  title="Espanol"
+                >
+                  ES
+                </button>
+              </div>
             </div>
-          </div>
-        ) : null}
 
-        <div className="lp-footer-preferences">
-          <div className="lp-footer-preference-group">
-            <p>{copy.languageLabel}</p>
-            <div className="lp-lang-switch" role="group" aria-label={copy.languageLabel}>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "en"}
-                onClick={() => onLanguageChange?.("en")}
-                aria-label="English"
-                title="English"
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "es"}
-                onClick={() => onLanguageChange?.("es")}
-                aria-label="Espanol"
-                title="Espanol"
-              >
-                ES
-              </button>
-            </div>
-          </div>
-
-          <div className="lp-footer-preference-group">
-            <p>{copy.themeLabel}</p>
-            <div className="lp-theme-switch" role="group" aria-label={copy.themeLabel}>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "ocean"}
-                onClick={() => onThemeChange?.("ocean")}
-                aria-label={copy.light}
-                title={copy.light}
-              >
-                <SunIcon />
-              </button>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "night"}
-                onClick={() => onThemeChange?.("night")}
-                aria-label={copy.dark}
-                title={copy.dark}
-              >
-                <MoonIcon />
-              </button>
+            <div className="lp-footer-preference-group">
+              <p>{copy.themeLabel}</p>
+              <div className="lp-theme-switch" role="group" aria-label={copy.themeLabel}>
+                <button
+                  type="button"
+                  className="lp-theme-btn"
+                  data-active={theme === "ocean"}
+                  onClick={() => onThemeChange?.("ocean")}
+                  aria-label={copy.light}
+                  title={copy.light}
+                >
+                  <SunIcon />
+                </button>
+                <button
+                  type="button"
+                  className="lp-theme-btn"
+                  data-active={theme === "night"}
+                  onClick={() => onThemeChange?.("night")}
+                  aria-label={copy.dark}
+                  title={copy.dark}
+                >
+                  <MoonIcon />
+                </button>
+              </div>
             </div>
           </div>
         </div>

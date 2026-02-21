@@ -177,20 +177,20 @@ const SERVICE_PROMO_COPY: Record<
   }
 > = {
   en: {
-    badge: "Promotion: First service free",
-    title: "FIRST SERVICE FREE on WhatsApp",
+    badge: "Limited-time offer",
+    title: "FIRST VISIT FREE",
     detail:
-      "Tap the WhatsApp button now and send your pool details. New clients get the first service free.",
-    note: "Share your city and one pool photo to claim the promotion faster.",
-    cta: "Claim first free service",
+      "Contact us on WhatsApp to start today. Send your pool details and we will confirm your first free visit.",
+    note: "New residential clients only. Share your city and one pool photo for faster scheduling.",
+    cta: "Start on WhatsApp",
   },
   es: {
-    badge: "Promocion: primer servicio gratis",
-    title: "PRIMER SERVICIO GRATIS por WhatsApp",
+    badge: "Oferta por tiempo limitado",
+    title: "FIRST VISIT FREE",
     detail:
-      "Toca el boton de WhatsApp ahora y envianos los datos de tu piscina. Clientes nuevos reciben el primer servicio gratis.",
-    note: "Comparte tu ciudad y una foto de la piscina para reclamar la promocion mas rapido.",
-    cta: "Reclamar servicio gratis",
+      "Contactanos por WhatsApp para empezar hoy. Envia los datos de tu piscina y confirmamos tu primera visita gratis.",
+    note: "Solo para clientes residenciales nuevos. Comparte tu ciudad y una foto para agendar mas rapido.",
+    cta: "Comenzar por WhatsApp",
   },
 };
 
@@ -763,7 +763,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
               <div className="lp-service-promo-copy">
                 <p className="lp-service-promo-badge">{promoCopy.badge}</p>
                 <h3>{promoCopy.title}</h3>
-                <p>{promoCopy.detail}</p>
+                <p className="lp-service-promo-detail">{promoCopy.detail}</p>
                 <p className="lp-service-promo-note">{promoCopy.note}</p>
               </div>
               <a href={whatsappLink} className="lp-btn lp-btn-primary lp-service-promo-cta">
