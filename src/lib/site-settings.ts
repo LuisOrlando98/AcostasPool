@@ -12,6 +12,10 @@ import {
   normalizeLandingPromoCopy,
   type LandingPromoCopyByLocale,
 } from "@/lib/landing-config";
+import {
+  normalizeInvoiceTemplateConfig,
+  type InvoiceTemplateConfig,
+} from "@/lib/invoice-template";
 
 export type SiteSocialLinks = {
   instagramUrl: string | null;
@@ -26,6 +30,8 @@ export type SiteLandingConfig = {
   youtubeUrl: string | null;
   promo: LandingPromoCopyByLocale;
 };
+
+export type SiteInvoiceTemplateConfig = InvoiceTemplateConfig;
 
 const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   instagramUrl: null,
@@ -48,6 +54,7 @@ type SiteSettingsData = {
   landingYoutubeUrl?: string | null;
   landingPromoCopy?: Prisma.InputJsonValue | null;
   emailTemplates?: Prisma.InputJsonValue | null;
+  invoiceTemplate?: Prisma.InputJsonValue | null;
 };
 
 function normalizeUrl(value: string) {
@@ -103,6 +110,7 @@ const getSiteSettingsCached = unstable_cache(
         landingYoutubeUrl: true,
         landingPromoCopy: true,
         emailTemplates: true,
+        invoiceTemplate: true,
       },
     });
   },
@@ -120,7 +128,7 @@ async function saveSiteSettings(data: SiteSettingsData) {
     update: data,
   });
 
-  revalidateTag(SITE_SETTINGS_TAG);
+  revalidateTag(SITE_SETTINGS_TAG, "max");
   return saved;
 }
 
@@ -188,5 +196,17 @@ export async function saveEmailTemplateConfig(
 
   return saveSiteSettings({
     emailTemplates: next as Prisma.InputJsonValue,
+  });
+}
+
+export async function getInvoiceTemplateConfig(): Promise<SiteInvoiceTemplateConfig> {
+  const settings = await getSiteSettingsCached();
+  return normalizeInvoiceTemplateConfig(settings?.invoiceTemplate);
+}
+
+export async function saveInvoiceTemplateConfig(template: SiteInvoiceTemplateConfig) {
+  const normalized = normalizeInvoiceTemplateConfig(template);
+  return saveSiteSettings({
+    invoiceTemplate: normalized as Prisma.InputJsonValue,
   });
 }

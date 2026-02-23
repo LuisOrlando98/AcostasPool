@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
@@ -8,6 +9,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
+import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 async function createInvoice(formData: FormData) {
@@ -46,6 +48,7 @@ async function createInvoice(formData: FormData) {
   }
 
   const customerName = formatCustomerName(customer);
+  const invoiceTemplate = await getInvoiceTemplateConfig();
 
   const invoice = await prisma.invoice.create({
     data: {
@@ -74,6 +77,7 @@ async function createInvoice(formData: FormData) {
     total,
     notes: notes || null,
     theme,
+    template: invoiceTemplate,
   });
 
   await prisma.invoice.update({
@@ -284,6 +288,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                     </div>
 
                     <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <Link
+                        href={`/admin/invoices/${invoice.id}`}
+                        className="text-xs font-semibold text-sky-700 underline"
+                      >
+                        Editar invoice
+                      </Link>
                       {invoice.pdfUrl ? (
                         <a
                           href={getAssetUrl(invoice.pdfUrl)}

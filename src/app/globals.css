@@ -615,47 +615,97 @@ h3 {
 }
 
 .pool-login-shell {
-  background-color: #07182b;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-  background-size: 46px 46px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 10% -10%, rgba(29, 211, 176, 0.28), transparent 40%),
+    radial-gradient(circle at 88% 12%, rgba(48, 188, 237, 0.34), transparent 44%),
+    radial-gradient(circle at 54% 120%, rgba(249, 115, 22, 0.22), transparent 48%),
+    linear-gradient(145deg, #04111f 0%, #09213a 48%, #0a2441 100%);
   color: #ffffff;
 }
 
+.pool-login-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.55;
+  z-index: -1;
+}
+
+.pool-login-shell::after {
+  content: "";
+  position: absolute;
+  width: 38rem;
+  height: 38rem;
+  right: -11rem;
+  top: -17rem;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(125, 211, 252, 0.36), transparent 64%);
+  filter: blur(22px);
+  z-index: -1;
+}
+
 .pool-login-card {
-  border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0e223b;
-  box-shadow: 0 30px 70px rgba(4, 10, 20, 0.55);
+  border-radius: 30px;
+  border: 1px solid rgba(166, 219, 255, 0.28);
+  background:
+    linear-gradient(160deg, rgba(11, 33, 56, 0.94), rgba(6, 25, 44, 0.9)),
+    radial-gradient(circle at top right, rgba(48, 188, 237, 0.24), transparent 44%);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 34px 70px rgba(2, 8, 19, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 .pool-login-badge {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.4rem 0.9rem;
+  border: 1px solid rgba(105, 190, 237, 0.42);
+  background: rgba(48, 188, 237, 0.16);
+  padding: 0.45rem 0.95rem;
   font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
+  font-weight: 700;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(224, 246, 255, 0.95);
+  box-shadow: 0 10px 24px rgba(35, 148, 212, 0.22);
 }
 
 .pool-login-metric {
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.9rem;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 197, 230, 0.25);
+  background:
+    linear-gradient(148deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04)),
+    radial-gradient(circle at top right, rgba(48, 188, 237, 0.2), transparent 54%);
+  padding: 1rem;
+  box-shadow: 0 16px 30px rgba(4, 13, 26, 0.26);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.pool-login-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(148, 216, 255, 0.46);
+  box-shadow: 0 20px 34px rgba(4, 13, 26, 0.32);
 }
 
 .pool-login-link {
-  color: rgba(255, 255, 255, 0.75);
-  transition: color 150ms ease;
+  color: rgba(208, 238, 255, 0.86);
+  transition: color 150ms ease, text-decoration-color 150ms ease;
+  text-decoration: underline;
+  text-decoration-color: rgba(208, 238, 255, 0.28);
+  text-underline-offset: 3px;
 }
 
 .pool-login-link:hover {
   color: #ffffff;
+  text-decoration-color: rgba(255, 255, 255, 0.74);
 }
 
 .stat-card {

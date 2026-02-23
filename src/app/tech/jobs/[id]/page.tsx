@@ -98,6 +98,7 @@ export default async function TechJobUploadPage({
       <TechJobUploadForm
         job={{
           id: job.id,
+          customerId: job.customerId,
           customerName: formatCustomerName(job.customer),
           propertyAddress: job.property.address,
           scheduledTime: job.scheduledDate.toLocaleTimeString(locale),

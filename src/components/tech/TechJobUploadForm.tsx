@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/client";
+import CustomerDocumentUploader from "@/components/customers/CustomerDocumentUploader";
 
 type ChecklistItem = { label?: string; completed?: boolean };
 
 type TechJobUploadData = {
   id: string;
+  customerId: string;
   customerName: string;
   propertyAddress: string;
   scheduledTime: string;
@@ -259,6 +261,17 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
             ) : null}
           </div>
         </div>
+
+        <CustomerDocumentUploader
+          customerId={job.customerId}
+          title="Repositorio del cliente"
+          subtitle="Sube documentos para este cliente (admin y tecnico)."
+          buttonLabel="Subir documento"
+          compact
+          onUploaded={() => {
+            // Keep the current job form state after upload.
+          }}
+        />
 
         <div className="app-card p-6 shadow-contrast">
           {message ? (

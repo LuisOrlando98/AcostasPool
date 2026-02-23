@@ -78,3 +78,13 @@ export function buildInvoicePdfAssetPath(
   const safeInvoice = sanitizeSegment(invoiceNumber, "invoice");
   return `invoices/${toYearMonth(issueDate)}/${safeCustomer}/${safeInvoice}.pdf`;
 }
+
+export function buildCustomerDocumentAssetPath(
+  customerId: string,
+  originalName: string
+) {
+  const now = new Date();
+  const safeCustomer = sanitizeSegment(customerId, "customer");
+  const fileName = buildFileName(originalName, now);
+  return `uploads/customers/${safeCustomer}/documents/${toYearMonth(now)}/${fileName}`;
+}

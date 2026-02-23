@@ -7,6 +7,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
 import CustomerPlansTable from "@/components/customers/CustomerPlansTable";
+import CustomerDocumentUploader from "@/components/customers/CustomerDocumentUploader";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
@@ -613,6 +614,17 @@ export default async function CustomerDetailPage({
           },
         },
       },
+      documents: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          uploadedBy: {
+            select: {
+              fullName: true,
+              role: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -698,6 +710,21 @@ export default async function CustomerDetailPage({
     notes: plan.notes,
     customerId: customer.id,
   }));
+  const repositoryFilesCount =
+    customer.documents.length +
+    customer.invoices.filter((invoice) => Boolean(invoice.pdfUrl)).length;
+  const formatBytes = (value: number | null) => {
+    if (!value || value <= 0) {
+      return "Size N/A";
+    }
+    if (value < 1024) {
+      return `${value} B`;
+    }
+    if (value < 1024 * 1024) {
+      return `${(value / 1024).toFixed(1)} KB`;
+    }
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  };
 
   return (
     <AppShell
@@ -1450,6 +1477,12 @@ export default async function CustomerDetailPage({
                             {t("admin.invoices.list.viewPdf")}
                           </a>
                         ) : null}
+                        <Link
+                          href={`/admin/invoices/${invoice.id}`}
+                          className="ml-2 text-xs font-semibold text-sky-700 underline"
+                        >
+                          Editar
+                        </Link>
                       </div>
                     </div>
                   );
@@ -1548,11 +1581,114 @@ export default async function CustomerDetailPage({
                         {t("admin.invoices.list.viewPdf")}
                       </a>
                     ) : null}
+                    <Link
+                      href={`/admin/invoices/${invoice.id}`}
+                      className="ml-2 text-xs font-semibold text-sky-700 underline"
+                    >
+                      Editar
+                    </Link>
                   </div>
                 </div>
               );
             })
           )}
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              Repositorio del cliente
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Archivos por cliente: invoices PDF y documentos subidos por admin o tecnico.
+            </p>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">
+            {repositoryFilesCount} archivos
+          </span>
+        </div>
+
+        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+          <CustomerDocumentUploader
+            customerId={customer.id}
+            title="Subir documento al repositorio"
+            subtitle="Disponible para este cliente desde la vista admin."
+            buttonLabel="Subir al repositorio"
+          />
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Invoices guardadas
+              </h3>
+              {customer.invoices.filter((invoice) => invoice.pdfUrl).length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  No hay PDFs de invoice para este cliente.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {customer.invoices
+                    .filter((invoice) => invoice.pdfUrl)
+                    .map((invoice) => (
+                      <a
+                        key={invoice.id}
+                        href={getAssetUrl(invoice.pdfUrl ?? "")}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-sky-200"
+                      >
+                        <span className="font-medium">{invoice.number}</span>
+                        <span className="text-xs text-slate-500">
+                          {invoice.createdAt.toLocaleDateString(locale)}
+                        </span>
+                      </a>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Documentos subidos
+              </h3>
+              {customer.documents.length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500">
+                  Aun no hay documentos en el repositorio.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {customer.documents.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={getAssetUrl(doc.fileUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block rounded-xl border border-slate-200 bg-white px-3 py-2 transition hover:border-sky-200"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-slate-800">{doc.title}</p>
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                          {doc.category}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {doc.createdAt.toLocaleDateString(locale)} - {formatBytes(doc.sizeBytes)}
+                      </p>
+                      {doc.description ? (
+                        <p className="mt-1 text-xs text-slate-500">{doc.description}</p>
+                      ) : null}
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        Subido por: {doc.uploadedBy?.fullName ?? "Usuario"} (
+                        {doc.uploadedBy?.role ?? "N/A"})
+                      </p>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

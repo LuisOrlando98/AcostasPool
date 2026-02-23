@@ -1,6 +1,11 @@
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
+import {
+  normalizeInvoiceTemplateConfig,
+  toPdfRgbTuple,
+  type InvoiceTemplateConfig,
+} from "@/lib/invoice-template";
 
 export type InvoiceLineItem = {
   label: string;
@@ -19,6 +24,7 @@ type InvoicePdfInput = {
   total: number;
   notes?: string | null;
   theme?: "STANDARD" | "SPECIAL" | "ESTIMATE";
+  template?: InvoiceTemplateConfig;
 };
 
 export async function generateInvoicePdf(input: InvoicePdfInput) {
@@ -29,27 +35,15 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   const { height } = page.getSize();
   const theme = input.theme ?? "STANDARD";
-  const themeStyles = {
-    STANDARD: {
-      brand: rgb(0.05, 0.2, 0.3),
-      accent: rgb(0.05, 0.48, 0.65),
-      light: rgb(0.95, 0.97, 0.99),
-      label: "INVOICE",
-    },
-    SPECIAL: {
-      brand: rgb(0.16, 0.12, 0.08),
-      accent: rgb(0.86, 0.7, 0.2),
-      light: rgb(0.98, 0.96, 0.92),
-      label: "SPECIAL INVOICE",
-    },
-    ESTIMATE: {
-      brand: rgb(0.3, 0.35, 0.4),
-      accent: rgb(0.45, 0.52, 0.6),
-      light: rgb(0.96, 0.97, 0.98),
-      label: "ESTIMATE",
-    },
-  } as const;
-  const { brand, accent, light, label } = themeStyles[theme];
+  const template = normalizeInvoiceTemplateConfig(input.template);
+  const themeConfig = template.themes[theme];
+  const label = themeConfig.label;
+  const [brandR, brandG, brandB] = toPdfRgbTuple(themeConfig.brandHex);
+  const [accentR, accentG, accentB] = toPdfRgbTuple(themeConfig.accentHex);
+  const [lightR, lightG, lightB] = toPdfRgbTuple(themeConfig.lightHex);
+  const brand = rgb(brandR, brandG, brandB);
+  const accent = rgb(accentR, accentG, accentB);
+  const light = rgb(lightR, lightG, lightB);
 
   page.drawRectangle({
     x: 0,
@@ -66,7 +60,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     color: accent,
   });
 
-  page.drawText("ACOSTASPOOL", {
+  page.drawText(template.companyName, {
     x: 50,
     y: height - 60,
     size: 18,
@@ -74,7 +68,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     color: brand,
   });
 
-  page.drawText("Service Administration System", {
+  page.drawText(template.headerSubtitle, {
     x: 50,
     y: height - 78,
     size: 10,
@@ -106,8 +100,9 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     color: rgb(0.4, 0.45, 0.5),
   });
 
-  if (theme === "ESTIMATE") {
-    page.drawText("ESTIMATE", {
+  if (theme === "ESTIMATE" && template.showEstimateWatermark) {
+    const watermark = themeConfig.watermarkText?.trim() || "ESTIMATE";
+    page.drawText(watermark, {
       x: 140,
       y: height / 2,
       size: 64,
@@ -119,7 +114,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   let cursorY = height - 150;
 
-  page.drawText("Bill To", {
+  page.drawText(template.billToLabel, {
     x: 50,
     y: cursorY,
     size: 11,
@@ -153,14 +148,14 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     color: light,
   });
 
-  page.drawText("Description", {
+  page.drawText(template.tableDescriptionLabel, {
     x: 60,
     y: cursorY + 7,
     size: 10,
     font: fontBold,
     color: brand,
   });
-  page.drawText("Amount", {
+  page.drawText(template.tableAmountLabel, {
     x: 470,
     y: cursorY + 7,
     size: 10,
@@ -188,21 +183,21 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   cursorY -= 10;
 
-  page.drawText(`Subtotal: $${input.subtotal.toFixed(2)}`, {
+  page.drawText(`${template.subtotalLabel}: $${input.subtotal.toFixed(2)}`, {
     x: 400,
     y: cursorY,
     size: 10,
     font,
   });
   cursorY -= 16;
-  page.drawText(`Tax: $${input.tax.toFixed(2)}`, {
+  page.drawText(`${template.taxLabel}: $${input.tax.toFixed(2)}`, {
     x: 400,
     y: cursorY,
     size: 10,
     font,
   });
   cursorY -= 20;
-  page.drawText(`Total: $${input.total.toFixed(2)}`, {
+  page.drawText(`${template.totalLabel}: $${input.total.toFixed(2)}`, {
     x: 400,
     y: cursorY,
     size: 12,
@@ -211,7 +206,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   if (input.notes) {
     cursorY -= 40;
-    page.drawText("Notes:", {
+    page.drawText(`${template.notesLabel}:`, {
       x: 50,
       y: cursorY,
       size: 10,
@@ -227,6 +222,16 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       lineHeight: 12,
     });
   }
+
+  page.drawText(template.footerNote, {
+    x: 50,
+    y: 34,
+    size: 9,
+    font,
+    color: rgb(0.45, 0.5, 0.56),
+    maxWidth: 500,
+    lineHeight: 11,
+  });
 
   const pdfBytes = await pdfDoc.save();
   return storePublicAsset({
