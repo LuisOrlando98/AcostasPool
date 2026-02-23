@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useI18n } from "@/i18n/client";
@@ -12,23 +13,28 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<"success" | "error" | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     if (!token) {
       setMessage(t("auth.reset.errors.token"));
+      setMessageTone("error");
       return;
     }
     if (password.length < 6) {
       setMessage(t("auth.reset.errors.length"));
+      setMessageTone("error");
       return;
     }
     if (password !== confirm) {
       setMessage(t("auth.reset.errors.mismatch"));
+      setMessageTone("error");
       return;
     }
     setLoading(true);
     setMessage(null);
+    setMessageTone(null);
     const res = await fetch("/api/auth/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,24 +43,62 @@ export default function ResetPasswordPage() {
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setMessage(data.error ?? t("auth.reset.errors.generic"));
+      setMessageTone("error");
       setLoading(false);
       return;
     }
     setMessage(t("auth.reset.success"));
+    setMessageTone("success");
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <div className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 py-12">
-        <div className="app-card w-full p-8 shadow-contrast">
-          <h1 className="text-2xl font-semibold">{t("auth.reset.title")}</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {t("auth.reset.subtitle")}
+    <div className="pool-login-shell min-h-screen">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between">
+        <section className="w-full max-w-xl space-y-6">
+          <div className="pool-login-badge inline-flex items-center gap-2">
+            {t("auth.login.kicker")}
+          </div>
+          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+            {t("auth.reset.title")}{" "}
+            <span className="text-[#30bced]">{t("app.name")}</span>.
+          </h1>
+          <p className="text-sm text-white/70 sm:text-base">{t("auth.reset.subtitle")}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="pool-login-metric">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                {t("auth.login.metrics.security.kicker")}
+              </p>
+              <p className="mt-2 text-sm font-semibold">{t("auth.login.metrics.security.title")}</p>
+              <p className="mt-1 text-xs text-white/60">{t("auth.login.metrics.security.desc")}</p>
+            </div>
+            <div className="pool-login-metric">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                {t("auth.login.metrics.quality.kicker")}
+              </p>
+              <p className="mt-2 text-sm font-semibold">{t("auth.login.metrics.quality.title")}</p>
+              <p className="mt-1 text-xs text-white/60">{t("auth.login.metrics.quality.desc")}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+            <Link href="/login" className="pool-login-link">
+              {t("auth.login.title")}
+            </Link>
+            <Link href="/" className="pool-login-link">
+              {t("auth.login.publicLink")}
+            </Link>
+          </div>
+        </section>
+
+        <section className="pool-login-card w-full max-w-md p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
+            {t("app.name")}
           </p>
+          <h2 className="mt-2 text-xl font-semibold text-[#30bced]">{t("auth.reset.title")}</h2>
+
           <div className="mt-6 space-y-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                 {t("auth.reset.token")}
               </label>
               <input
@@ -65,7 +109,7 @@ export default function ResetPasswordPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                 {t("auth.reset.newPassword")}
               </label>
               <input
@@ -76,7 +120,7 @@ export default function ResetPasswordPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                 {t("auth.reset.confirmPassword")}
               </label>
               <input
@@ -87,7 +131,13 @@ export default function ResetPasswordPage() {
               />
             </div>
             {message ? (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <div
+                className={`rounded-xl border px-4 py-3 text-sm ${
+                  messageTone === "success"
+                    ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                    : "border-rose-400/40 bg-rose-500/15 text-rose-100"
+                }`}
+              >
                 {message}
               </div>
             ) : null}
@@ -95,12 +145,12 @@ export default function ResetPasswordPage() {
               type="button"
               onClick={handleSubmit}
               disabled={loading}
-              className="app-button-primary w-full px-4 py-3 text-sm font-semibold disabled:opacity-70"
+              className="w-full rounded-full bg-[#30bced] px-4 py-3 text-sm font-semibold text-[#07182b] transition hover:bg-[#52d6ff] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? t("auth.reset.loading") : t("auth.reset.submit")}
             </button>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

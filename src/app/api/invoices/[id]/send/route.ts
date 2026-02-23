@@ -3,7 +3,9 @@ import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { formatCustomerName } from "@/lib/customers/format";
+import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { createNotification } from "@/lib/notifications/create";
+import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { readStoredAsset } from "@/lib/storage/object-store";
 
 export const runtime = "nodejs";
@@ -49,6 +51,12 @@ export async function POST(
   }
 
   const customerName = formatCustomerName(invoice.customer);
+  const templates = await getEmailTemplatesConfig();
+  const rendered = renderEmailTemplate(templates.INVOICE_SENT, {
+    customer_name: customerName,
+    customer_name_html: escapeHtml(customerName),
+    invoice_number: invoice.number,
+  });
 
   try {
     const transporter = nodemailer.createTransport({
@@ -63,8 +71,9 @@ export async function POST(
     await transporter.sendMail({
       from,
       to: invoice.customer.email,
-      subject: `Invoice ${invoice.number}`,
-      text: `Hola ${customerName}, adjunto tu invoice ${invoice.number}.`,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
       attachments: [
         {
           filename: `${invoice.number}.pdf`,

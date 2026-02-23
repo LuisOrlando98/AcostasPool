@@ -7,6 +7,146 @@ const prisma = new PrismaClient();
 
 const TZ = "America/New_York";
 const CUSTOMER_EVENTS = ["SERVICE_SCHEDULED", "SERVICE_RESCHEDULED"];
+const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
+const TEMPLATE_CACHE_MS = 60 * 1000;
+
+const EMAIL_TEMPLATE_DEFAULTS = {
+  CUSTOMER_SERVICE_SCHEDULED: {
+    subject: "Servicio programado - {{scheduled_label}}",
+    text: [
+      "Hola {{customer_name}},",
+      "",
+      "Tu servicio esta programado para {{scheduled_label}}.",
+      "Si necesitas cambiar la fecha, por favor contactanos.",
+      "",
+      "Direccion: {{job_address}}",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Servicio programado</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hola {{customer_name_html}}, tu servicio esta programado para <strong>{{scheduled_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Direccion: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+  CUSTOMER_SERVICE_RESCHEDULED: {
+    subject: "Servicio reprogramado - {{scheduled_label}}",
+    text: [
+      "Hola {{customer_name}},",
+      "",
+      "Tu servicio ha sido reprogramado para {{scheduled_label}}.",
+      "Lamentamos el inconveniente y agradecemos tu comprension.",
+      "Si tienes dudas, por favor responde a este correo.",
+      "",
+      "Direccion: {{job_address}}",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Servicio reprogramado</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hola {{customer_name_html}}, tu servicio ha sido reprogramado para <strong>{{scheduled_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Direccion: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+  TECH_DAILY_DIGEST: {
+    subject: "Ruta - {{tech_name}} - {{route_date}}",
+    text: [
+      "Hola {{tech_name}},",
+      "",
+      "Esta es tu ruta para hoy ({{route_date}}):",
+      "{{lines_text}}",
+      "",
+      "Recibiras actualizaciones a las 12:00pm y 9:00pm si hay cambios.",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Ruta diaria</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hola {{tech_name_html}}, esta es tu ruta para hoy ({{route_date}}):</p>',
+      '<ol style="margin:0 0 12px;padding-left:20px;color:#334155;">{{lines_html}}</ol>',
+      '<p style="margin:0;color:#64748b;">Recibiras actualizaciones a las 12:00pm y 9:00pm si hay cambios.</p>',
+      "</div>",
+    ].join(""),
+  },
+  TECH_CHANGE_DIGEST: {
+    subject: "Cambios de ruta - {{tech_name}} - {{route_date}}",
+    text: [
+      "Hola {{tech_name}},",
+      "",
+      "Cambios detectados en tu ruta del {{route_date}}:",
+      "{{lines_text}}",
+      "",
+      "Si necesitas aclaraciones, contacta al administrador.",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:620px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Cambios de ruta</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hola {{tech_name_html}}, estos son los cambios detectados en tu ruta del {{route_date}}:</p>',
+      '<ol style="margin:0 0 12px;padding-left:20px;color:#334155;">{{lines_html}}</ol>',
+      '<p style="margin:0;color:#64748b;">Si necesitas aclaraciones, contacta al administrador.</p>',
+      "</div>",
+    ].join(""),
+  },
+};
+
+let emailTemplateCache = EMAIL_TEMPLATE_DEFAULTS;
+let emailTemplateCacheAt = 0;
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+const interpolateTemplate = (content, variables) =>
+  String(content ?? "").replace(TEMPLATE_TOKEN, (_match, token) => variables[token] ?? "");
+
+const normalizeTemplateContent = (value, fallback) => {
+  const input = value && typeof value === "object" ? value : {};
+  return {
+    subject: String(input.subject ?? fallback.subject),
+    text: String(input.text ?? fallback.text),
+    html: String(input.html ?? fallback.html),
+  };
+};
+
+const normalizeTemplateConfig = (value) => {
+  const input = value && typeof value === "object" ? value : {};
+  const normalized = {};
+
+  for (const [templateId, fallback] of Object.entries(EMAIL_TEMPLATE_DEFAULTS)) {
+    normalized[templateId] = normalizeTemplateContent(input[templateId], fallback);
+  }
+
+  return normalized;
+};
+
+const getEmailTemplates = async () => {
+  if (Date.now() - emailTemplateCacheAt < TEMPLATE_CACHE_MS) {
+    return emailTemplateCache;
+  }
+
+  const settings = await prisma.siteSettings.findUnique({
+    where: { id: "default" },
+    select: { emailTemplates: true },
+  });
+
+  emailTemplateCache = normalizeTemplateConfig(settings?.emailTemplates);
+  emailTemplateCacheAt = Date.now();
+  return emailTemplateCache;
+};
+
+const renderTemplateById = async (templateId, variables) => {
+  const templates = await getEmailTemplates();
+  const template = templates[templateId] ?? EMAIL_TEMPLATE_DEFAULTS[templateId];
+
+  return {
+    subject: interpolateTemplate(template.subject, variables),
+    text: interpolateTemplate(template.text, variables),
+    html: interpolateTemplate(template.html, variables),
+  };
+};
 
 const getTransporter = () => {
   const host = process.env.SMTP_HOST;
@@ -34,37 +174,94 @@ const formatDateTime = (date) =>
     .setZone(TZ)
     .toFormat("MMM dd, yyyy hh:mm a");
 
-const formatDate = (date) =>
-  DateTime.fromJSDate(date, { zone: "utc" }).setZone(TZ).toFormat("MM/dd/yyyy");
-
-const buildCustomerEmail = (notification, job) => {
-  const scheduledLabel = formatDateTime(job.scheduledDate);
-  if (notification.eventType === "SERVICE_RESCHEDULED") {
-    return {
-      subject: `Servicio reprogramado - ${formatDate(job.scheduledDate)}`,
-      text: [
-        `Hola ${job.customer.name},`,
-        "",
-        `Tu servicio ha sido reprogramado para ${scheduledLabel}.`,
-        "Lamentamos el inconveniente y agradecemos tu comprension.",
-        "Si tienes dudas, por favor responde a este correo.",
-        "",
-        `Direccion: ${job.property.address}`,
-      ].join("\n"),
-    };
+const getCustomerName = (customer) => {
+  if (!customer) {
+    return "Cliente";
   }
-  return {
-    subject: `Servicio programado - ${formatDate(job.scheduledDate)}`,
-    text: [
-      `Hola ${job.customer.name},`,
-      "",
-      `Tu servicio esta programado para ${scheduledLabel}.`,
-      "Si necesitas cambiar la fecha, por favor contactanos.",
-      "",
-      `Direccion: ${job.property.address}`,
-    ].join("\n"),
-  };
+
+  const fullName = [customer.nombre, customer.apellidos].filter(Boolean).join(" ").trim();
+  if (fullName) {
+    return fullName;
+  }
+
+  return customer.name || customer.email || "Cliente";
 };
+
+const buildCustomerEmail = async (notification, job) => {
+  const scheduledLabel = formatDateTime(job.scheduledDate);
+  const customerName = getCustomerName(job.customer);
+  const templateId =
+    notification.eventType === "SERVICE_RESCHEDULED"
+      ? "CUSTOMER_SERVICE_RESCHEDULED"
+      : "CUSTOMER_SERVICE_SCHEDULED";
+
+  return renderTemplateById(templateId, {
+    customer_name: customerName,
+    customer_name_html: escapeHtml(customerName),
+    scheduled_label: scheduledLabel,
+    scheduled_label_html: escapeHtml(scheduledLabel),
+    job_address: job.property.address,
+    job_address_html: escapeHtml(job.property.address),
+  });
+};
+
+const buildRouteLine = (job) => {
+  const timeLabel = formatDateTime(job.scheduledDate);
+  return `${timeLabel} - ${getCustomerName(job.customer)} - ${job.property.address}`;
+};
+
+const buildIndexedLinesText = (lines) => lines.map((line, index) => `${index + 1}. ${line}`).join("\n");
+
+const buildIndexedLinesHtml = (lines) =>
+  lines.map((line) => `<li>${escapeHtml(`${line}`)}</li>`).join("");
+
+const buildChangeLine = (item) => {
+  const job = item.job;
+  const customerName = getCustomerName(job?.customer);
+  const address = job?.property?.address || "Direccion pendiente";
+  const payload = item.payload || {};
+  const from = payload.fromScheduledDate
+    ? formatDateTime(new Date(payload.fromScheduledDate))
+    : null;
+  const to = payload.toScheduledDate
+    ? formatDateTime(new Date(payload.toScheduledDate))
+    : job
+      ? formatDateTime(job.scheduledDate)
+      : null;
+
+  switch (item.changeType) {
+    case "ROUTE_ASSIGNED":
+      return `Nueva ruta asignada: ${customerName} - ${address} (${to})`;
+    case "JOB_ASSIGNED":
+      return `Trabajo asignado: ${customerName} - ${address} (${to})`;
+    case "JOB_UNASSIGNED":
+      return `Trabajo removido: ${customerName} - ${address}`;
+    case "ROUTE_REORDERED":
+      return `Orden ajustado: ${customerName} - ${address}`;
+    case "JOB_RESCHEDULED":
+      return `Reprogramado: ${customerName} - ${address} (${from} -> ${to})`;
+    default:
+      return `Actualizado: ${customerName} - ${address} (${to || "hora pendiente"})`;
+  }
+};
+
+const buildTechDailyDigest = async ({ techName, label, lines }) =>
+  renderTemplateById("TECH_DAILY_DIGEST", {
+    tech_name: techName,
+    tech_name_html: escapeHtml(techName),
+    route_date: label,
+    lines_text: buildIndexedLinesText(lines) || "-",
+    lines_html: buildIndexedLinesHtml(lines) || "<li>Sin servicios asignados.</li>",
+  });
+
+const buildTechChangeDigest = async ({ techName, label, changes }) =>
+  renderTemplateById("TECH_CHANGE_DIGEST", {
+    tech_name: techName,
+    tech_name_html: escapeHtml(techName),
+    route_date: label,
+    lines_text: buildIndexedLinesText(changes) || "-",
+    lines_html: buildIndexedLinesHtml(changes) || "<li>Sin cambios detectados.</li>",
+  });
 
 const sendAndLogEmail = async ({
   to,
@@ -159,13 +356,14 @@ const processCustomerNotifications = async () => {
       continue;
     }
 
-    const message = buildCustomerEmail(notification, job);
+    const message = await buildCustomerEmail(notification, job);
     const ok = await sendAndLogEmail({
       to: job.customer.email,
-      toName: job.customer.name,
+      toName: getCustomerName(job.customer),
       role: "CUSTOMER",
       subject: message.subject,
       text: message.text,
+      html: message.html,
       customerId: job.customerId,
       jobId: job.id,
       metadata: { notificationId: notification.id, eventType: notification.eventType },
@@ -176,11 +374,6 @@ const processCustomerNotifications = async () => {
       data: { status: ok ? "SENT" : "FAILED", sentAt: ok ? new Date() : null },
     });
   }
-};
-
-const buildRouteLine = (job) => {
-  const timeLabel = formatDateTime(job.scheduledDate);
-  return `${timeLabel} - ${job.customer.name} - ${job.property.address}`;
 };
 
 const sendDailyPlan = async () => {
@@ -223,15 +416,7 @@ const sendDailyPlan = async () => {
     }
 
     const lines = data.jobs.map(buildRouteLine);
-    const subject = `Ruta - ${techName} - ${label}`;
-    const text = [
-      `Hola ${techName},`,
-      "",
-      `Esta es tu ruta para hoy (${label}):`,
-      ...lines.map((line, index) => `${index + 1}. ${line}`),
-      "",
-      "Recibiras actualizaciones a las 12:00pm y 9:00pm si hay cambios.",
-    ].join("\n");
+    const message = await buildTechDailyDigest({ techName, label, lines });
 
     const digest = await prisma.techDigest.create({
       data: {
@@ -247,8 +432,9 @@ const sendDailyPlan = async () => {
       to: techEmail,
       toName: techName,
       role: "TECH",
-      subject,
-      text,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
       technicianId: data.technician.id,
       digestId: digest.id,
     });
@@ -257,36 +443,6 @@ const sendDailyPlan = async () => {
       where: { id: digest.id },
       data: { status: ok ? "SENT" : "FAILED", sentAt: ok ? new Date() : null },
     });
-  }
-};
-
-const buildChangeLine = (item) => {
-  const job = item.job;
-  const customerName = job?.customer?.name || "Cliente";
-  const address = job?.property?.address || "Direccion pendiente";
-  const payload = item.payload || {};
-  const from = payload.fromScheduledDate
-    ? formatDateTime(new Date(payload.fromScheduledDate))
-    : null;
-  const to = payload.toScheduledDate
-    ? formatDateTime(new Date(payload.toScheduledDate))
-    : job
-      ? formatDateTime(job.scheduledDate)
-      : null;
-
-  switch (item.changeType) {
-    case "ROUTE_ASSIGNED":
-      return `Nueva ruta asignada: ${customerName} - ${address} (${to})`;
-    case "JOB_ASSIGNED":
-      return `Trabajo asignado: ${customerName} - ${address} (${to})`;
-    case "JOB_UNASSIGNED":
-      return `Trabajo removido: ${customerName} - ${address}`;
-    case "ROUTE_REORDERED":
-      return `Orden ajustado: ${customerName} - ${address}`;
-    case "JOB_RESCHEDULED":
-      return `Reprogramado: ${customerName} - ${address} (${from} -> ${to})`;
-    default:
-      return `Actualizado: ${customerName} - ${address} (${to || "hora pendiente"})`;
   }
 };
 
@@ -329,15 +485,7 @@ const sendChangeDigest = async (window) => {
     }
 
     const changes = data.items.map(buildChangeLine);
-    const subject = `Cambios de ruta - ${techName} - ${label}`;
-    const text = [
-      `Hola ${techName},`,
-      "",
-      `Cambios detectados en tu ruta del ${label}:`,
-      ...changes.map((line, index) => `${index + 1}. ${line}`),
-      "",
-      "Si necesitas aclaraciones, contacta al administrador.",
-    ].join("\n");
+    const message = await buildTechChangeDigest({ techName, label, changes });
 
     const digest = await prisma.techDigest.create({
       data: {
@@ -353,8 +501,9 @@ const sendChangeDigest = async (window) => {
       to: techEmail,
       toName: techName,
       role: "TECH",
-      subject,
-      text,
+      subject: message.subject,
+      text: message.text,
+      html: message.html,
       technicianId: data.technician.id,
       digestId: digest.id,
       metadata: { window },

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ClientLanding from "@/components/landing/ClientLanding";
-import { getSiteSocialLinks } from "@/lib/site-settings";
+import { getSiteLandingConfig, getSiteSocialLinks } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Luxury Pool Maintenance in South Florida | AcostasPool",
@@ -39,7 +39,10 @@ const localBusinessSchema = {
 };
 
 export default async function Home() {
-  const socialLinks = await getSiteSocialLinks();
+  const [socialLinks, landingConfig] = await Promise.all([
+    getSiteSocialLinks(),
+    getSiteLandingConfig(),
+  ]);
 
   return (
     <>
@@ -47,7 +50,7 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
       />
-      <ClientLanding socialLinks={socialLinks} />
+      <ClientLanding socialLinks={socialLinks} landingConfig={landingConfig} />
     </>
   );
 }

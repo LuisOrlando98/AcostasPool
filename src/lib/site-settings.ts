@@ -1,5 +1,17 @@
+import type { Prisma } from "@prisma/client";
 import { revalidateTag, unstable_cache } from "next/cache";
+import {
+  normalizeEmailTemplateContent,
+  normalizeEmailTemplates,
+  type EmailTemplateContent,
+  type EmailTemplateId,
+  type EmailTemplatesConfig,
+} from "@/lib/email-templates";
 import { prisma } from "@/lib/db";
+import {
+  normalizeLandingPromoCopy,
+  type LandingPromoCopyByLocale,
+} from "@/lib/landing-config";
 
 export type SiteSocialLinks = {
   instagramUrl: string | null;
@@ -8,6 +20,11 @@ export type SiteSocialLinks = {
   xUrl: string | null;
   youtubeUrl: string | null;
   tiktokUrl: string | null;
+};
+
+export type SiteLandingConfig = {
+  youtubeUrl: string | null;
+  promo: LandingPromoCopyByLocale;
 };
 
 const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
@@ -20,6 +37,18 @@ const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
 };
 
 const SITE_SETTINGS_TAG = "site-settings";
+
+type SiteSettingsData = {
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+  whatsappUrl?: string | null;
+  xUrl?: string | null;
+  youtubeUrl?: string | null;
+  tiktokUrl?: string | null;
+  landingYoutubeUrl?: string | null;
+  landingPromoCopy?: Prisma.InputJsonValue | null;
+  emailTemplates?: Prisma.InputJsonValue | null;
+};
 
 function normalizeUrl(value: string) {
   const trimmed = value.trim();
@@ -60,9 +89,9 @@ function normalizeWhatsApp(value: string) {
   return `https://wa.me/${digits}`;
 }
 
-const getSiteSocialLinksCached = unstable_cache(
+const getSiteSettingsCached = unstable_cache(
   async () => {
-    const settings = await prisma.siteSettings.findUnique({
+    return prisma.siteSettings.findUnique({
       where: { id: "default" },
       select: {
         instagramUrl: true,
@@ -71,21 +100,44 @@ const getSiteSocialLinksCached = unstable_cache(
         xUrl: true,
         youtubeUrl: true,
         tiktokUrl: true,
+        landingYoutubeUrl: true,
+        landingPromoCopy: true,
+        emailTemplates: true,
       },
     });
-
-    if (!settings) {
-      return EMPTY_SOCIAL_LINKS;
-    }
-
-    return settings;
   },
-  ["site-settings-social-links"],
+  ["site-settings"],
   { revalidate: 300, tags: [SITE_SETTINGS_TAG] }
 );
 
+async function saveSiteSettings(data: SiteSettingsData) {
+  const saved = await prisma.siteSettings.upsert({
+    where: { id: "default" },
+    create: {
+      id: "default",
+      ...data,
+    },
+    update: data,
+  });
+
+  revalidateTag(SITE_SETTINGS_TAG);
+  return saved;
+}
+
 export async function getSiteSocialLinks() {
-  return getSiteSocialLinksCached();
+  const settings = await getSiteSettingsCached();
+  if (!settings) {
+    return EMPTY_SOCIAL_LINKS;
+  }
+
+  return {
+    instagramUrl: settings.instagramUrl,
+    facebookUrl: settings.facebookUrl,
+    whatsappUrl: settings.whatsappUrl,
+    xUrl: settings.xUrl,
+    youtubeUrl: settings.youtubeUrl,
+    tiktokUrl: settings.tiktokUrl,
+  };
 }
 
 export async function saveSiteSocialLinks(input: SiteSocialLinks) {
@@ -98,15 +150,43 @@ export async function saveSiteSocialLinks(input: SiteSocialLinks) {
     tiktokUrl: normalizeUrl(input.tiktokUrl ?? "") ?? null,
   };
 
-  const saved = await prisma.siteSettings.upsert({
-    where: { id: "default" },
-    create: {
-      id: "default",
-      ...data,
-    },
-    update: data,
-  });
+  return saveSiteSettings(data);
+}
 
-  revalidateTag(SITE_SETTINGS_TAG);
-  return saved;
+export async function getSiteLandingConfig(): Promise<SiteLandingConfig> {
+  const settings = await getSiteSettingsCached();
+
+  return {
+    youtubeUrl: settings?.landingYoutubeUrl ?? null,
+    promo: normalizeLandingPromoCopy(settings?.landingPromoCopy),
+  };
+}
+
+export async function saveSiteLandingConfig(input: SiteLandingConfig) {
+  const data = {
+    landingYoutubeUrl: normalizeUrl(input.youtubeUrl ?? "") ?? null,
+    landingPromoCopy: normalizeLandingPromoCopy(input.promo) as Prisma.InputJsonValue,
+  };
+
+  return saveSiteSettings(data);
+}
+
+export async function getEmailTemplatesConfig(): Promise<EmailTemplatesConfig> {
+  const settings = await getSiteSettingsCached();
+  return normalizeEmailTemplates(settings?.emailTemplates);
+}
+
+export async function saveEmailTemplateConfig(
+  templateId: EmailTemplateId,
+  template: EmailTemplateContent
+) {
+  const current = await getEmailTemplatesConfig();
+  const next = {
+    ...current,
+    [templateId]: normalizeEmailTemplateContent(template, current[templateId]),
+  };
+
+  return saveSiteSettings({
+    emailTemplates: next as Prisma.InputJsonValue,
+  });
 }

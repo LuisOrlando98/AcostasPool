@@ -3,6 +3,8 @@ import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { formatCustomerName } from "@/lib/customers/format";
+import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import { getEmailTemplatesConfig } from "@/lib/site-settings";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -121,14 +123,13 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
 
   const customerName = formatCustomerName(customer);
-  const subject = "Completa tu perfil en AcostasPool";
-  const text = `Hola ${customerName},\n\nTe invitamos a completar tu perfil y crear tu contrasena para acceder al portal de clientes.\n\nIngresa aqui: ${inviteLink}\n\nEste enlace expira en ${DEFAULT_INVITE_HOURS} horas.`;
-  const html = `
-    <p>Hola ${customerName},</p>
-    <p>Te invitamos a completar tu perfil y crear tu contrasena para acceder al portal de clientes.</p>
-    <p><a href="${inviteLink}">Completar perfil</a></p>
-    <p>Este enlace expira en ${DEFAULT_INVITE_HOURS} horas.</p>
-  `;
+  const templates = await getEmailTemplatesConfig();
+  const rendered = renderEmailTemplate(templates.CUSTOMER_INVITE, {
+    customer_name: customerName,
+    customer_name_html: escapeHtml(customerName),
+    invite_link: inviteLink,
+    invite_hours: String(DEFAULT_INVITE_HOURS),
+  });
 
   const transporter = nodemailer.createTransport({
     host,
@@ -140,9 +141,9 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   await transporter.sendMail({
     from,
     to: customer.email,
-    subject,
-    text,
-    html,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 
   return { ok: true };

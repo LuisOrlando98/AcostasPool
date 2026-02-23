@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
@@ -137,24 +138,62 @@ export default function CompleteProfilePage() {
     setSubmitting(false);
   };
 
+  const isSuccessMessage = message === t("auth.complete.success");
+
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <div className="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-12">
-        <div className="app-card w-full p-8 shadow-contrast">
-          <h1 className="text-2xl font-semibold">{t("auth.complete.title")}</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {t("auth.complete.subtitle")}
-          </p>
+    <div className="pool-login-shell min-h-screen">
+      <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between">
+        <section className="w-full max-w-xl space-y-6">
+          <div className="pool-login-badge inline-flex items-center gap-2">
+            {t("auth.login.kicker")}
+          </div>
+          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+            {t("auth.complete.title")} <span className="text-[#30bced]">{t("app.name")}</span>.
+          </h1>
+          <p className="text-sm text-white/70 sm:text-base">{t("auth.complete.subtitle")}</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="pool-login-metric">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                {t("auth.login.metrics.quality.kicker")}
+              </p>
+              <p className="mt-2 text-sm font-semibold">{t("auth.login.metrics.quality.title")}</p>
+              <p className="mt-1 text-xs text-white/60">{t("auth.login.metrics.quality.desc")}</p>
+            </div>
+            <div className="pool-login-metric">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                {t("auth.login.metrics.routes.kicker")}
+              </p>
+              <p className="mt-2 text-sm font-semibold">{t("auth.login.metrics.routes.title")}</p>
+              <p className="mt-1 text-xs text-white/60">{t("auth.login.metrics.routes.desc")}</p>
+            </div>
+            <div className="pool-login-metric">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                {t("auth.login.metrics.security.kicker")}
+              </p>
+              <p className="mt-2 text-sm font-semibold">{t("auth.login.metrics.security.title")}</p>
+              <p className="mt-1 text-xs text-white/60">{t("auth.login.metrics.security.desc")}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4 text-xs font-semibold uppercase tracking-[0.16em] text-white/70">
+            <Link href="/login" className="pool-login-link">
+              {t("auth.login.title")}
+            </Link>
+            <Link href="/" className="pool-login-link">
+              {t("auth.login.publicLink")}
+            </Link>
+          </div>
+        </section>
+
+        <section className="pool-login-card w-full max-w-3xl p-8">
+          <h2 className="text-xl font-semibold text-[#30bced]">{t("auth.complete.title")}</h2>
 
           {loadingProfile ? (
-            <p className="mt-6 text-sm text-slate-500">
-              {t("auth.complete.loading")}
-            </p>
+            <p className="mt-6 text-sm text-white/70">{t("auth.complete.loading")}</p>
           ) : profile ? (
             <form ref={formRef} className="mt-6 space-y-5">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.firstName")}
                   </label>
                   <input
@@ -165,7 +204,7 @@ export default function CompleteProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.lastName")}
                   </label>
                   <input
@@ -179,17 +218,17 @@ export default function CompleteProfilePage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.email")}
                   </label>
                   <input
                     value={profile.email}
                     readOnly
-                    className="app-input mt-2 w-full px-4 py-3 text-sm text-slate-400"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.language")}
                   </label>
                   <select
@@ -205,7 +244,7 @@ export default function CompleteProfilePage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.phone")}
                   </label>
                   <input
@@ -216,7 +255,7 @@ export default function CompleteProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.phoneSecondary")}
                   </label>
                   <input
@@ -227,10 +266,8 @@ export default function CompleteProfilePage() {
                 </div>
               </div>
 
-              <div className="app-card border border-[var(--border)] bg-[var(--surface-2)] p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-slate-700">
-                  {t("address.sectionTitle")}
-                </h2>
+              <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
+                <h3 className="text-sm font-semibold text-white/80">{t("address.sectionTitle")}</h3>
                 <div className="mt-4">
                   <AddressAutocomplete
                     defaultValue={{
@@ -246,7 +283,7 @@ export default function CompleteProfilePage() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("auth.complete.password")}
                   </label>
                   <input
@@ -258,7 +295,7 @@ export default function CompleteProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("auth.complete.passwordConfirm")}
                   </label>
                   <input
@@ -272,7 +309,13 @@ export default function CompleteProfilePage() {
               </div>
 
               {message ? (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <div
+                  className={`rounded-xl border px-4 py-3 text-sm ${
+                    isSuccessMessage
+                      ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-100"
+                      : "border-rose-400/40 bg-rose-500/15 text-rose-100"
+                  }`}
+                >
                   {message}
                 </div>
               ) : null}
@@ -281,19 +324,15 @@ export default function CompleteProfilePage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="app-button-primary w-full px-4 py-3 text-sm font-semibold disabled:opacity-70"
+                className="w-full rounded-full bg-[#30bced] px-4 py-3 text-sm font-semibold text-[#07182b] transition hover:bg-[#52d6ff] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {submitting
-                  ? t("auth.complete.loadingSubmit")
-                  : t("auth.complete.submit")}
+                {submitting ? t("auth.complete.loadingSubmit") : t("auth.complete.submit")}
               </button>
             </form>
           ) : (
-            <p className="mt-6 text-sm text-slate-500">
-              {message ?? t("auth.complete.notFound")}
-            </p>
+            <p className="mt-6 text-sm text-white/70">{message ?? t("auth.complete.notFound")}</p>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

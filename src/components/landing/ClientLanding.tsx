@@ -6,11 +6,20 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
+import {
+  DEFAULT_LANDING_PROMO_COPY,
+  getLandingYoutubeEmbedSrc,
+  type LandingPromoCopyByLocale,
+} from "@/lib/landing-config";
 
 type TrustSignalIconName = "shield" | "camera" | "route";
 type ServicePillarIconName = "spark" | "clean" | "repair" | "chemistry";
 
 type SocialLinks = LandingSocialLinks;
+type LandingConfig = {
+  youtubeUrl: string | null;
+  promo: LandingPromoCopyByLocale;
+};
 
 const LANDING_COPY: Record<
   LandingLocale,
@@ -165,37 +174,6 @@ const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIco
     icon: "route",
   },
 ];
-
-const SERVICE_PROMO_COPY: Record<
-  LandingLocale,
-  {
-    badge: string;
-    title: string;
-    detail: string;
-    note: string;
-    action: string;
-    cta: string;
-  }
-> = {
-  en: {
-    badge: "Limited-time offer",
-    title: "FIRST VISIT FREE",
-    detail:
-      "Contact us on WhatsApp to start today. Send your pool details and we will confirm your first free visit.",
-    note: "New residential clients only. Share your city and one pool photo for faster scheduling.",
-    action: "WhatsApp direct line",
-    cta: "Start on WhatsApp",
-  },
-  es: {
-    badge: "Oferta por tiempo limitado",
-    title: "FIRST VISIT FREE",
-    detail:
-      "Contactanos por WhatsApp para empezar hoy. Envia los datos de tu piscina y confirmamos tu primera visita gratis.",
-    note: "Solo para clientes residenciales nuevos. Comparte tu ciudad y una foto para agendar mas rapido.",
-    action: "Linea directa por WhatsApp",
-    cta: "Comenzar por WhatsApp",
-  },
-};
 
 const SERVICE_PILLARS: Array<{
   title: string;
@@ -405,7 +383,13 @@ function ServicePillarIcon({ id }: { id: ServicePillarIconName }) {
   );
 }
 
-export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLinks }) {
+export default function ClientLanding({
+  socialLinks,
+  landingConfig,
+}: {
+  socialLinks?: SocialLinks;
+  landingConfig?: LandingConfig;
+}) {
   const searchParams = useSearchParams();
   const navPressTimer = useRef<number | null>(null);
 
@@ -417,7 +401,7 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   const [pressedNav, setPressedNav] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const copy = LANDING_COPY[language];
-  const promoCopy = SERVICE_PROMO_COPY[language];
+  const promoCopy = landingConfig?.promo[language] ?? DEFAULT_LANDING_PROMO_COPY[language];
 
   const cityParam = (searchParams.get("city") ?? "").trim();
   const servingLine = cityParam ? `${cityParam} and South Florida` : "South Florida";
@@ -430,10 +414,10 @@ export default function ClientLanding({ socialLinks }: { socialLinks?: SocialLin
   }, []);
   const whatsappLink = socialLinks?.whatsappUrl || defaultWhatsAppLink;
 
-  const youtubeVideoId = (process.env.NEXT_PUBLIC_LANDING_YOUTUBE_ID ?? "").trim();
-  const youtubeSrc = `https://www.youtube-nocookie.com/embed/${
-    youtubeVideoId || "M7lc1UVf-VE"
-  }?rel=0&modestbranding=1`;
+  const youtubeSrc = getLandingYoutubeEmbedSrc(
+    landingConfig?.youtubeUrl,
+    process.env.NEXT_PUBLIC_LANDING_YOUTUBE_ID
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(

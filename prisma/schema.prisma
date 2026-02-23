@@ -426,13 +426,16 @@ model PasswordResetToken {
 }
 
 model SiteSettings {
-  id           String   @id @default("default")
-  instagramUrl String?
-  facebookUrl  String?
-  whatsappUrl  String?
-  xUrl         String?
-  youtubeUrl   String?
-  tiktokUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default("default")
+  instagramUrl     String?
+  facebookUrl      String?
+  whatsappUrl      String?
+  xUrl             String?
+  youtubeUrl       String?
+  tiktokUrl        String?
+  landingYoutubeUrl String?
+  landingPromoCopy Json?
+  emailTemplates   Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import { getEmailTemplatesConfig } from "@/lib/site-settings";
 
 export const runtime = "nodejs";
 
@@ -15,15 +17,6 @@ const quoteSchema = z.object({
   notes: z.string().trim().max(2000).optional(),
   source: z.string().trim().max(40).optional(),
 });
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -45,34 +38,31 @@ export async function POST(request: Request) {
   }
 
   const { name, email, phone, city, service, frequency, notes, source } = parsed.data;
-  const subject = `New quote request - ${city || "South Florida"} - ${name}`;
+  const safePhone = phone || "-";
+  const safeCity = city || "-";
+  const safeSource = source || "landing";
+  const safeNotes = notes || "-";
+  const safeNotesHtml = escapeHtml(safeNotes).replaceAll("\n", "<br/>");
 
-  const text = [
-    "New quote request received",
-    "",
-    `Name: ${name}`,
-    `Email: ${email}`,
-    `Phone: ${phone || "-"}`,
-    `City: ${city || "-"}`,
-    `Service: ${service}`,
-    `Frequency: ${frequency}`,
-    `Source: ${source || "landing"}`,
-    "",
-    "Notes:",
-    notes || "-",
-  ].join("\n");
-
-  const html = `
-    <h2>New quote request received</h2>
-    <p><strong>Name:</strong> ${escapeHtml(name)}</p>
-    <p><strong>Email:</strong> ${escapeHtml(email)}</p>
-    <p><strong>Phone:</strong> ${escapeHtml(phone || "-")}</p>
-    <p><strong>City:</strong> ${escapeHtml(city || "-")}</p>
-    <p><strong>Service:</strong> ${escapeHtml(service)}</p>
-    <p><strong>Frequency:</strong> ${escapeHtml(frequency)}</p>
-    <p><strong>Source:</strong> ${escapeHtml(source || "landing")}</p>
-    <p><strong>Notes:</strong><br/>${escapeHtml(notes || "-").replaceAll("\n", "<br/>")}</p>
-  `;
+  const templates = await getEmailTemplatesConfig();
+  const rendered = renderEmailTemplate(templates.QUOTE_REQUEST, {
+    name,
+    name_html: escapeHtml(name),
+    email,
+    email_html: escapeHtml(email),
+    phone: safePhone,
+    phone_html: escapeHtml(safePhone),
+    city: safeCity,
+    city_html: escapeHtml(safeCity),
+    service,
+    service_html: escapeHtml(service),
+    frequency,
+    frequency_html: escapeHtml(frequency),
+    source: safeSource,
+    source_html: escapeHtml(safeSource),
+    notes: safeNotes,
+    notes_html: safeNotesHtml,
+  });
 
   try {
     const transporter = nodemailer.createTransport({
@@ -86,9 +76,9 @@ export async function POST(request: Request) {
       from,
       to,
       replyTo: email,
-      subject,
-      text,
-      html,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
     });
 
     await prisma.emailLog.create({
@@ -96,9 +86,9 @@ export async function POST(request: Request) {
         recipientEmail: to,
         recipientName: "Quote inbox",
         recipientRole: "ADMIN",
-        subject,
-        bodyText: text,
-        bodyHtml: html,
+        subject: rendered.subject,
+        bodyText: rendered.text,
+        bodyHtml: rendered.html,
         status: "SENT",
         sentAt: new Date(),
       },
@@ -113,9 +103,9 @@ export async function POST(request: Request) {
         recipientEmail: to,
         recipientName: "Quote inbox",
         recipientRole: "ADMIN",
-        subject,
-        bodyText: text,
-        bodyHtml: html,
+        subject: rendered.subject,
+        bodyText: rendered.text,
+        bodyHtml: rendered.html,
         status: "FAILED",
         errorMessage: message,
       },
