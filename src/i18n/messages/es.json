@@ -206,6 +206,26 @@
     "serviceRescheduled": "Servicio reprogramado",
     "routeUpdated": "Ruta actualizada",
     "invoiceSent": "Factura enviada",
+    "preferences": {
+      "helper": "Elige que alertas quieres recibir en esta cuenta.",
+      "enabledCount": "{{enabled}} de {{total}} activas",
+      "statusOn": "Activa",
+      "statusOff": "Pausada",
+      "saving": "Guardando preferencia...",
+      "loadError": "No se pudieron cargar las preferencias de notificacion.",
+      "saveError": "No se pudo guardar esta preferencia.",
+      "emptyTitle": "Esta cuenta no tiene alertas configurables",
+      "emptyBody": "Cuando se agreguen nuevos flujos para tu rol, apareceran aqui.",
+      "defaultDescription": "Recibe actualizaciones de este evento en un formato claro y facil de leer.",
+      "descriptions": {
+        "JOB_COMPLETED": "Avisa cuando un tecnico marque un trabajo como completado.",
+        "CUSTOMER_REQUEST": "Avisa cuando un cliente envie una solicitud rapida de servicio.",
+        "SERVICE_SCHEDULED": "Avisa cuando se programe una fecha de servicio.",
+        "SERVICE_RESCHEDULED": "Avisa cuando un servicio programado cambie de fecha.",
+        "ROUTE_UPDATED": "Avisa cuando un cambio de ruta pueda afectar tu visita.",
+        "INVOICE_SENT": "Avisa cuando se envie una factura nueva a este cliente."
+      }
+    },
     "group": {
       "today": "Hoy",
       "yesterday": "Ayer",
@@ -1252,6 +1272,18 @@
       "formTitle": "Detalle de la solicitud",
       "formSubtitle": "Elige disponibilidad real o envia una solicitud urgente para revision manual.",
       "leadTime": "Anticipacion minima: {{days}} dias",
+      "calendar": {
+        "stepDate": "Paso 1 - Selecciona fecha",
+        "stepTime": "Paso 2 - Selecciona hora",
+        "previousMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente",
+        "prev": "Ant",
+        "next": "Sig",
+        "selectDateHint": "Selecciona una fecha para ver horarios disponibles.",
+        "slotsShort": "{{count}} cupos",
+        "slotRemaining": "{{count}} cupos libres",
+        "selection": "Seleccionado: {{date}} a las {{time}}"
+      },
       "fields": {
         "property": "Propiedad",
         "noProperty": "Sin propiedades registradas",

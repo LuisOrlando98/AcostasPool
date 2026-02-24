@@ -311,6 +311,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     });
     return `/admin/settings?${params.toString()}`;
   };
+  const showInvoiceEditor = templateMode !== "web";
+  const showInvoicePreview = templateMode !== "code";
+  const invoiceLayoutClass =
+    showInvoiceEditor && showInvoicePreview
+      ? "grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+      : "space-y-6";
 
   return (
     <AppShell
@@ -697,15 +703,22 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </div>
               </div>
             ) : (
-              <div className="grid gap-6 xl:grid-cols-2">
-                {templateMode !== "web" ? (
+              <div className={invoiceLayoutClass}>
+                {showInvoiceEditor ? (
                   <div className="app-card p-6 shadow-contrast">
                     <h2 className="text-lg font-semibold">Invoice template (admin-friendly)</h2>
                     <p className="mt-2 text-sm text-slate-600">
                       Configura datos de empresa, etiquetas y clausulas sin editar codigo.
                     </p>
-                    <form action={saveInvoiceTemplate} className="mt-5 space-y-4">
-                      <div className="grid gap-3 sm:grid-cols-2">
+                    <form action={saveInvoiceTemplate} className="mt-5 space-y-5">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-slate-900">Empresa</h3>
+                          <p className="text-[11px] text-slate-500">
+                            Datos que se muestran en el encabezado del invoice.
+                          </p>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Company name
@@ -786,9 +799,17 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                             className="app-input mt-2 w-full px-4 py-3 text-sm"
                           />
                         </label>
+                        </div>
                       </div>
 
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-slate-900">Etiquetas del documento</h3>
+                          <p className="text-[11px] text-slate-500">
+                            Nombres visibles dentro de la factura.
+                          </p>
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Bill to label
@@ -879,44 +900,53 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                             className="app-input mt-2 w-full px-4 py-3 text-sm"
                           />
                         </label>
+                        </div>
                       </div>
 
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Footer note
-                        </span>
-                        <input
-                          name="footerNote"
-                          defaultValue={invoiceTemplate.footerNote}
-                          className="app-input mt-2 w-full px-4 py-3 text-sm"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Clauses title
-                        </span>
-                        <input
-                          name="clausesTitle"
-                          defaultValue={invoiceTemplate.clausesTitle}
-                          className="app-input mt-2 w-full px-4 py-3 text-sm"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Legal clauses (one per line, small footer text)
-                        </span>
-                        <textarea
-                          name="legalClauses"
-                          defaultValue={invoiceTemplate.legalClauses.join("\n")}
-                          rows={4}
-                          className="app-input mt-2 w-full px-4 py-3 text-sm"
-                        />
-                      </label>
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Footer y clausulas</h3>
+                        <div className="mt-3 space-y-3">
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                              Footer note
+                            </span>
+                            <input
+                              name="footerNote"
+                              defaultValue={invoiceTemplate.footerNote}
+                              className="app-input mt-2 w-full px-4 py-3 text-sm"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                              Clauses title
+                            </span>
+                            <input
+                              name="clausesTitle"
+                              defaultValue={invoiceTemplate.clausesTitle}
+                              className="app-input mt-2 w-full px-4 py-3 text-sm"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                              Legal clauses (one per line, small footer text)
+                            </span>
+                            <textarea
+                              name="legalClauses"
+                              defaultValue={invoiceTemplate.legalClauses.join("\n")}
+                              rows={4}
+                              className="app-input mt-2 w-full px-4 py-3 text-sm"
+                            />
+                          </label>
+                        </div>
+                      </div>
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Theme colors
-                        </p>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-slate-900">Tema visual</h3>
+                          <p className="text-[11px] text-slate-500">
+                            Colores y labels por tipo de invoice.
+                          </p>
+                        </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                           {(["STANDARD", "SPECIAL", "ESTIMATE"] as const).map((theme) => (
                             <div
@@ -987,18 +1017,24 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           Show estimate watermark
                         </label>
                       </div>
-                      <FormSubmitButton
-                        idleLabel="Save invoice template"
-                        pendingLabel={t("common.feedback.saving")}
-                        successLabel={t("common.feedback.saved")}
-                        className="px-5 py-2.5"
-                      />
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <p className="text-xs text-slate-500">
+                          Los line items se mantienen en el editor de invoices y no se modifican aqui.
+                        </p>
+                        <FormSubmitButton
+                          idleLabel="Guardar template de invoice"
+                          pendingLabel={t("common.feedback.saving")}
+                          successLabel={t("common.feedback.saved")}
+                          className="px-5 py-2.5"
+                        />
+                      </div>
                     </form>
                   </div>
                 ) : null}
 
-                {templateMode !== "code" ? (
-                  <div className="app-card p-6 shadow-contrast">
+                {showInvoicePreview ? (
+                  <div className="app-card p-6 shadow-contrast xl:sticky xl:top-24 xl:h-fit">
                     <h3 className="text-base font-semibold">Vista final del invoice</h3>
                     <p className="mt-2 text-sm text-slate-600">
                       Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.
@@ -1027,14 +1063,17 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : null}
 
         {currentTab === "notifications" ? (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="app-card p-6 shadow-contrast">
+          <div className="app-card p-6 shadow-contrast">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">{t("admin.settings.notifications.title")}</h2>
-              <p className="mt-3 text-sm text-slate-600">
-                {t("admin.settings.notifications.subtitle")}
-              </p>
-              <NotificationPreferences />
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                Sin codigo
+              </span>
             </div>
+            <p className="mt-3 text-sm text-slate-600">
+              {t("admin.settings.notifications.subtitle")}
+            </p>
+            <NotificationPreferences />
           </div>
         ) : null}
       </section>

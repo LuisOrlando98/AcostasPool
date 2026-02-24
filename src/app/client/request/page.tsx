@@ -25,8 +25,33 @@ type AvailabilityResponse = {
   availability: AvailabilityDay[];
 };
 
+function parseDateKey(value: string) {
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toDateKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(
+    value.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function startOfMonth(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth(), 1);
+}
+
+function addMonths(value: Date, months: number) {
+  return new Date(value.getFullYear(), value.getMonth() + months, 1);
+}
+
+function isSameMonth(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
 export default function ClientRequestPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const localeTag = locale === "es" ? "es-US" : "en-US";
+
   const [description, setDescription] = useState("");
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
@@ -36,6 +61,10 @@ export default function ClientRequestPage() {
   const [urgentOverride, setUrgentOverride] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [leadDays, setLeadDays] = useState(2);
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    startOfMonth(new Date())
+  );
+
   const serviceOptions = useMemo(
     () => [
       t("client.request.reasons.emergency"),
@@ -45,6 +74,7 @@ export default function ClientRequestPage() {
     ],
     [t]
   );
+
   const [reason, setReason] = useState(serviceOptions[0]);
   const [propertyId, setPropertyId] = useState("");
   const [properties, setProperties] = useState<PropertyOption[]>([]);
@@ -84,10 +114,15 @@ export default function ClientRequestPage() {
           ? availabilityData.availability
           : [];
         setAvailability(nextAvailability);
+
         if (nextAvailability.length > 0) {
           const firstDay = nextAvailability[0];
           setPreferredDate(firstDay.date);
           setPreferredTime(firstDay.slots[0]?.value ?? "");
+          const firstDate = parseDateKey(firstDay.date);
+          if (firstDate) {
+            setCalendarMonth(startOfMonth(firstDate));
+          }
         }
       }
     };
@@ -99,13 +134,92 @@ export default function ClientRequestPage() {
     };
   }, []);
 
+  const availabilityByDate = useMemo(() => {
+    const map = new Map<string, AvailabilityDay>();
+    for (const day of availability) {
+      map.set(day.date, day);
+    }
+    return map;
+  }, [availability]);
+
   const selectedDay = useMemo(
-    () => availability.find((day) => day.date === preferredDate) ?? null,
-    [availability, preferredDate]
+    () => availabilityByDate.get(preferredDate) ?? null,
+    [availabilityByDate, preferredDate]
   );
+
+  const monthBounds = useMemo(() => {
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+
+    for (const day of availability) {
+      const parsed = parseDateKey(day.date);
+      if (!parsed) {
+        continue;
+      }
+      if (!minDate || parsed < minDate) {
+        minDate = parsed;
+      }
+      if (!maxDate || parsed > maxDate) {
+        maxDate = parsed;
+      }
+    }
+
+    if (!minDate || !maxDate) {
+      return null;
+    }
+
+    return {
+      min: startOfMonth(minDate),
+      max: startOfMonth(maxDate),
+    };
+  }, [availability]);
+
+  const canGoPrevMonth = monthBounds
+    ? addMonths(calendarMonth, -1) >= monthBounds.min
+    : false;
+  const canGoNextMonth = monthBounds
+    ? addMonths(calendarMonth, 1) <= monthBounds.max
+    : false;
+
+  const weekdayLabels = useMemo(() => {
+    const monday = new Date(2024, 0, 1);
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(monday);
+      day.setDate(monday.getDate() + index);
+      return day.toLocaleDateString(localeTag, { weekday: "short" });
+    });
+  }, [localeTag]);
+
+  const calendarDays = useMemo(() => {
+    const monthStart = startOfMonth(calendarMonth);
+    const monthEnd = new Date(
+      calendarMonth.getFullYear(),
+      calendarMonth.getMonth() + 1,
+      0
+    );
+
+    const startOffset = (monthStart.getDay() + 6) % 7;
+    const gridStart = new Date(monthStart);
+    gridStart.setDate(monthStart.getDate() - startOffset);
+
+    const endOffset = 6 - ((monthEnd.getDay() + 6) % 7);
+    const gridEnd = new Date(monthEnd);
+    gridEnd.setDate(monthEnd.getDate() + endOffset);
+
+    const days: Date[] = [];
+    const cursor = new Date(gridStart);
+    while (cursor <= gridEnd) {
+      days.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return days;
+  }, [calendarMonth]);
+
   const resolvedReason = serviceOptions.includes(reason)
     ? reason
     : serviceOptions[0];
+
   const resolvedPreferredTime =
     !urgentOverride && selectedDay
       ? selectedDay.slots.some((slot) => slot.value === preferredTime)
@@ -114,16 +228,44 @@ export default function ClientRequestPage() {
       : preferredTime;
 
   const formatAvailabilityDate = (value: string) => {
-    const date = new Date(`${value}T00:00:00`);
-    if (Number.isNaN(date.getTime())) {
+    const date = parseDateKey(value);
+    if (!date) {
       return value;
     }
-    return date.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
+
+    return date.toLocaleDateString(localeTag, {
+      weekday: "long",
+      month: "long",
       day: "numeric",
       year: "numeric",
     });
+  };
+
+  const formatTime = (value: string) => {
+    const [hourRaw, minuteRaw] = value.split(":");
+    const hour = Number(hourRaw);
+    const minute = Number(minuteRaw);
+
+    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+      return value;
+    }
+
+    const date = new Date();
+    date.setHours(hour, minute, 0, 0);
+    return date.toLocaleTimeString(localeTag, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const handleSelectDate = (dateKey: string) => {
+    const day = availabilityByDate.get(dateKey);
+    if (!day || day.remainingCapacity <= 0) {
+      return;
+    }
+    setPreferredDate(dateKey);
+    setPreferredTime(day.slots[0]?.value ?? "");
+    setMessage(null);
   };
 
   const handleSubmit = async () => {
@@ -198,8 +340,8 @@ export default function ClientRequestPage() {
     messageTone === "error"
       ? "border-rose-200 bg-rose-50 text-rose-700"
       : messageTone === "warning"
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700";
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-emerald-200 bg-emerald-50 text-emerald-700";
 
   return (
     <AppShell
@@ -320,75 +462,183 @@ export default function ClientRequestPage() {
             <span>{t("client.request.fields.urgentOverride")}</span>
           </label>
 
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {urgentOverride
-                ? t("client.request.fields.preferredDate")
-                : t("client.request.fields.availableDate")}
-            </label>
-            {urgentOverride ? (
-              <input
-                type="date"
-                value={preferredDate}
-                onChange={(event) => setPreferredDate(event.target.value)}
-                className="app-input mt-2 w-full px-4 py-3 text-sm text-slate-700"
-              />
-            ) : (
-              <select
-                value={preferredDate}
-                onChange={(event) => setPreferredDate(event.target.value)}
-                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
-              >
-                {availability.length === 0 ? (
-                  <option value="">{t("client.request.fields.noAvailability")}</option>
-                ) : (
-                  availability.map((day) => (
-                    <option key={day.date} value={day.date}>
-                      {t("client.request.options.dayCapacity", {
-                        date: formatAvailabilityDate(day.date),
-                        count: String(day.remainingCapacity),
-                      })}
-                    </option>
-                  ))
-                )}
-              </select>
-            )}
-          </div>
+          {urgentOverride ? (
+            <>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("client.request.fields.preferredDate")}
+                </label>
+                <input
+                  type="date"
+                  value={preferredDate}
+                  onChange={(event) => {
+                    const nextDate = event.target.value;
+                    setPreferredDate(nextDate);
+                    const parsed = parseDateKey(nextDate);
+                    if (parsed) {
+                      setCalendarMonth(startOfMonth(parsed));
+                    }
+                  }}
+                  className="app-input mt-2 w-full px-4 py-3 text-sm text-slate-700"
+                />
+              </div>
 
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {urgentOverride
-                ? t("client.request.fields.preferredTime")
-                : t("client.request.fields.availableTime")}
-            </label>
-            {urgentOverride ? (
-              <input
-                type="time"
-                value={preferredTime}
-                onChange={(event) => setPreferredTime(event.target.value)}
-                className="app-input mt-2 w-full px-4 py-3 text-sm text-slate-700"
-              />
-            ) : (
-              <select
-                value={resolvedPreferredTime}
-                onChange={(event) => setPreferredTime(event.target.value)}
-                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
-              >
-                {selectedDay?.slots.length ? (
-                  selectedDay.slots.map((slot) => (
-                    <option key={slot.value} value={slot.value}>
-                      {t("client.request.options.timeCapacity", {
-                        time: slot.value,
-                        count: String(slot.remaining),
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("client.request.fields.preferredTime")}
+                </label>
+                <input
+                  type="time"
+                  value={preferredTime}
+                  onChange={(event) => setPreferredTime(event.target.value)}
+                  className="app-input mt-2 w-full px-4 py-3 text-sm text-slate-700"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("client.request.calendar.stepDate")}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                        {calendarMonth.toLocaleDateString(localeTag, {
+                          month: "long",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCalendarMonth((current) => addMonths(current, -1))}
+                        disabled={!canGoPrevMonth}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={t("client.request.calendar.previousMonth")}
+                      >
+                        {t("client.request.calendar.prev")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCalendarMonth((current) => addMonths(current, 1))}
+                        disabled={!canGoNextMonth}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-600 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={t("client.request.calendar.nextMonth")}
+                      >
+                        {t("client.request.calendar.next")}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-7 gap-1">
+                    {weekdayLabels.map((label) => (
+                      <div
+                        key={label}
+                        className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+                      >
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-7 gap-1">
+                    {calendarDays.map((date) => {
+                      const dateKey = toDateKey(date);
+                      const day = availabilityByDate.get(dateKey);
+                      const inMonth = isSameMonth(date, calendarMonth);
+                      const isAvailable = Boolean(day && day.remainingCapacity > 0);
+                      const isSelected = preferredDate === dateKey;
+
+                      return (
+                        <button
+                          key={dateKey}
+                          type="button"
+                          onClick={() => handleSelectDate(dateKey)}
+                          disabled={!isAvailable}
+                          className={`min-h-14 rounded-xl border px-1.5 py-1 text-left transition ${
+                            !inMonth
+                              ? "border-transparent bg-transparent text-slate-300"
+                              : !isAvailable
+                                ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+                                : isSelected
+                                  ? "border-sky-500 bg-sky-50 text-sky-900 shadow-sm"
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/60"
+                          }`}
+                        >
+                          <span className="block text-sm font-semibold">{date.getDate()}</span>
+                          <span className="mt-1 block text-[10px] leading-3">
+                            {isAvailable
+                              ? t("client.request.calendar.slotsShort", {
+                                  count: String(day?.remainingCapacity ?? 0),
+                                })
+                              : ""}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("client.request.calendar.stepTime")}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {preferredDate
+                      ? formatAvailabilityDate(preferredDate)
+                      : t("client.request.calendar.selectDateHint")}
+                  </p>
+
+                  {selectedDay?.slots.length ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                      {selectedDay.slots.map((slot) => {
+                        const isSelected = slot.value === resolvedPreferredTime;
+                        return (
+                          <button
+                            key={slot.value}
+                            type="button"
+                            onClick={() => setPreferredTime(slot.value)}
+                            className={`rounded-xl border px-3 py-2 text-left transition ${
+                              isSelected
+                                ? "border-sky-500 bg-sky-50 text-sky-800"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/50"
+                            }`}
+                          >
+                            <span className="block text-sm font-semibold">
+                              {formatTime(slot.value)}
+                            </span>
+                            <span className="block text-[11px] text-slate-500">
+                              {t("client.request.calendar.slotRemaining", {
+                                count: String(slot.remaining),
+                              })}
+                            </span>
+                          </button>
+                        );
                       })}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">{t("client.request.fields.noAvailability")}</option>
-                )}
-              </select>
-            )}
-          </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+                      {preferredDate
+                        ? t("client.request.fields.noAvailability")
+                        : t("client.request.calendar.selectDateHint")}
+                    </div>
+                  )}
+
+                  {preferredDate && resolvedPreferredTime ? (
+                    <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-700">
+                      {t("client.request.calendar.selection", {
+                        date: formatAvailabilityDate(preferredDate),
+                        time: formatTime(resolvedPreferredTime),
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="md:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">

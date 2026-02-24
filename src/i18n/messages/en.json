@@ -206,6 +206,26 @@
     "serviceRescheduled": "Service rescheduled",
     "routeUpdated": "Route updated",
     "invoiceSent": "Invoice sent",
+    "preferences": {
+      "helper": "Choose the alerts this account should receive.",
+      "enabledCount": "{{enabled}} of {{total}} active",
+      "statusOn": "Active",
+      "statusOff": "Paused",
+      "saving": "Saving preference...",
+      "loadError": "Unable to load notification settings.",
+      "saveError": "Unable to save this preference.",
+      "emptyTitle": "No configurable alerts for this account",
+      "emptyBody": "When new notification flows are added for your role, they will appear here.",
+      "defaultDescription": "Receive updates for this event in a clear and concise format.",
+      "descriptions": {
+        "JOB_COMPLETED": "Notify when a technician marks a job as completed.",
+        "CUSTOMER_REQUEST": "Notify when a customer sends a new quick service request.",
+        "SERVICE_SCHEDULED": "Notify when a service date has been scheduled.",
+        "SERVICE_RESCHEDULED": "Notify when a scheduled service has been moved.",
+        "ROUTE_UPDATED": "Notify when route timing changes may affect your visit.",
+        "INVOICE_SENT": "Notify when a new invoice is sent to this customer."
+      }
+    },
     "group": {
       "today": "Today",
       "yesterday": "Yesterday",
@@ -1252,6 +1272,18 @@
       "formTitle": "Request details",
       "formSubtitle": "Choose available slots or send an urgent request for manual review.",
       "leadTime": "Minimum lead time: {{days}} days",
+      "calendar": {
+        "stepDate": "Step 1 - Select date",
+        "stepTime": "Step 2 - Select time",
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month",
+        "prev": "Prev",
+        "next": "Next",
+        "selectDateHint": "Select a date to see available times.",
+        "slotsShort": "{{count}} slots",
+        "slotRemaining": "{{count}} spots left",
+        "selection": "Selected: {{date}} at {{time}}"
+      },
       "fields": {
         "property": "Property",
         "noProperty": "No properties registered",
