@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { revalidateTag, unstable_cache } from "next/cache";
 import {
+  buildPremiumEmailTemplateHtml,
   normalizeEmailTemplateContent,
   normalizeEmailTemplates,
   type EmailTemplateContent,
@@ -189,9 +190,18 @@ export async function saveEmailTemplateConfig(
   template: EmailTemplateContent
 ) {
   const current = await getEmailTemplatesConfig();
+  const normalized = normalizeEmailTemplateContent(template, current[templateId]);
   const next = {
     ...current,
-    [templateId]: normalizeEmailTemplateContent(template, current[templateId]),
+    [templateId]: {
+      subject: normalized.subject,
+      text: normalized.text,
+      html: buildPremiumEmailTemplateHtml(
+        templateId,
+        normalized.subject,
+        normalized.text
+      ),
+    },
   };
 
   return saveSiteSettings({

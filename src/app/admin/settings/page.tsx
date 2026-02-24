@@ -67,8 +67,11 @@ function resolveTemplateKind(value: string | undefined): TemplatesKind {
 }
 
 function resolveTemplateMode(value: string | undefined): TemplateViewMode {
-  if (value === "code" || value === "web") {
-    return value;
+  if (value === "code" || value === "editor") {
+    return "code";
+  }
+  if (value === "web" || value === "preview") {
+    return "web";
   }
   return "split";
 }
@@ -141,7 +144,7 @@ async function saveEmailTemplate(formData: FormData) {
   await saveEmailTemplateConfig(templateId, {
     subject: String(formData.get("subject") ?? ""),
     text: String(formData.get("text") ?? ""),
-    html: String(formData.get("html") ?? ""),
+    html: "",
   });
 
   revalidatePath("/admin/settings");
@@ -151,18 +154,51 @@ async function saveInvoiceTemplate(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
 
-  const templateJson = String(formData.get("templateJson") ?? "");
-  if (!templateJson.trim()) {
-    return;
-  }
+  const read = (key: string) => String(formData.get(key) ?? "").trim();
+  const readBool = (key: string) => String(formData.get(key) ?? "") === "on";
+  const readTheme = (theme: "STANDARD" | "SPECIAL" | "ESTIMATE") => ({
+    label: read(`${theme}_label`),
+    brandHex: read(`${theme}_brandHex`),
+    accentHex: read(`${theme}_accentHex`),
+    lightHex: read(`${theme}_lightHex`),
+    watermarkText: read(`${theme}_watermarkText`),
+  });
 
-  try {
-    const parsed = JSON.parse(templateJson);
-    const normalized = normalizeInvoiceTemplateConfig(parsed);
-    await saveInvoiceTemplateConfig(normalized);
-  } catch {
-    return;
-  }
+  const legalClauses = read("legalClauses")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const normalized = normalizeInvoiceTemplateConfig({
+    companyName: read("companyName"),
+    companyPhone: read("companyPhone"),
+    companyEmail: read("companyEmail"),
+    companyWebsite: read("companyWebsite"),
+    companyAddressLine1: read("companyAddressLine1"),
+    companyAddressLine2: read("companyAddressLine2"),
+    companyTaxId: read("companyTaxId"),
+    headerSubtitle: read("headerSubtitle"),
+    footerNote: read("footerNote"),
+    invoiceNumberLabel: read("invoiceNumberLabel"),
+    issueDateLabel: read("issueDateLabel"),
+    billToLabel: read("billToLabel"),
+    notesLabel: read("notesLabel"),
+    tableDescriptionLabel: read("tableDescriptionLabel"),
+    tableAmountLabel: read("tableAmountLabel"),
+    subtotalLabel: read("subtotalLabel"),
+    taxLabel: read("taxLabel"),
+    totalLabel: read("totalLabel"),
+    clausesTitle: read("clausesTitle"),
+    legalClauses,
+    showEstimateWatermark: readBool("showEstimateWatermark"),
+    themes: {
+      STANDARD: readTheme("STANDARD"),
+      SPECIAL: readTheme("SPECIAL"),
+      ESTIMATE: readTheme("ESTIMATE"),
+    },
+  });
+
+  await saveInvoiceTemplateConfig(normalized);
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin/invoices");
@@ -204,7 +240,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     invoiceTemplate,
     invoiceThemePreview
   );
-  const invoiceTemplateJson = JSON.stringify(invoiceTemplate, null, 2);
 
   const socialFields = [
     {
@@ -489,22 +524,26 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     href={buildTemplateHref({ mode: "code" })}
                     className={`ui-segment-item ${templateMode === "code" ? "is-active" : ""}`}
                   >
-                    Code
+                    Editor
                   </Link>
                   <Link
                     href={buildTemplateHref({ mode: "web" })}
                     className={`ui-segment-item ${templateMode === "web" ? "is-active" : ""}`}
                   >
-                    Web
+                    Vista final
                   </Link>
                   <Link
                     href={buildTemplateHref({ mode: "split" })}
                     className={`ui-segment-item ${templateMode === "split" ? "is-active" : ""}`}
                   >
-                    Split
+                    Ambas
                   </Link>
                 </div>
               </div>
+
+              <p className="mt-3 text-xs text-slate-500">
+                No necesitas programar: edita texto/campos y el sistema genera el diseno final.
+              </p>
 
               {templateKind === "invoice" ? (
                 <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
@@ -607,27 +646,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Text body
+                            Mensaje del email (texto)
                           </span>
                           <textarea
                             name="text"
                             defaultValue={selectedTemplate.text}
                             rows={10}
-                            className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
                           />
                         </label>
-
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            HTML body
-                          </span>
-                          <textarea
-                            name="html"
-                            defaultValue={selectedTemplate.html}
-                            rows={12}
-                            className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
-                          />
-                        </label>
+                        <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                          El diseno HTML se genera automaticamente con estilo premium.
+                        </p>
 
                         <div className="flex items-center justify-end">
                           <FormSubmitButton
@@ -643,41 +673,25 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                   {templateMode !== "code" ? (
                     <div className="app-card p-6 shadow-contrast">
-                      <h3 className="text-base font-semibold">Web preview</h3>
+                      <h3 className="text-base font-semibold">Vista final del email</h3>
                       <p className="mt-2 text-sm text-slate-600">
-                        Vista en pagina web del template seleccionado.
+                        Asi se vera exactamente en la bandeja y el contenido del correo.
                       </p>
-                      <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                        <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              Subject preview
-                            </p>
-                            <p className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                              {selectedTemplatePreview.subject}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              Text preview
-                            </p>
-                            <pre className="mt-2 overflow-auto rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs text-slate-700 whitespace-pre-wrap">
-                              {selectedTemplatePreview.text}
-                            </pre>
-                          </div>
-                        </div>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            HTML preview
-                          </p>
-                          <iframe
-                            title={`preview-${selectedTemplateId}`}
-                            className="mt-2 h-96 w-full rounded-xl border border-slate-200 bg-white"
-                            sandbox=""
-                            srcDoc={`<!doctype html><html><body style="margin:0;padding:16px;background:#f8fafc;">${selectedTemplatePreview.html}</body></html>`}
-                          />
+                      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Inbox preview
+                        </p>
+                        <div className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
+                          <p className="font-semibold">From: AcostasPool &lt;no-reply@acostaspool.com&gt;</p>
+                          <p className="mt-1">Subject: {selectedTemplatePreview.subject}</p>
                         </div>
                       </div>
+                      <iframe
+                        title={`preview-${selectedTemplateId}`}
+                        className="mt-4 h-[620px] w-full rounded-xl border border-slate-200 bg-white"
+                        sandbox=""
+                        srcDoc={`<!doctype html><html><body style="margin:0;padding:16px;background:#f8fafc;">${selectedTemplatePreview.html}</body></html>`}
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -686,22 +700,293 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div className="grid gap-6 xl:grid-cols-2">
                 {templateMode !== "web" ? (
                   <div className="app-card p-6 shadow-contrast">
-                    <h2 className="text-lg font-semibold">Invoice template editor</h2>
+                    <h2 className="text-lg font-semibold">Invoice template (admin-friendly)</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                      Complete customization and code-level editing for invoice rendering.
+                      Configura datos de empresa, etiquetas y clausulas sin editar codigo.
                     </p>
                     <form action={saveInvoiceTemplate} className="mt-5 space-y-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Company name
+                          </span>
+                          <input
+                            name="companyName"
+                            defaultValue={invoiceTemplate.companyName}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Header subtitle
+                          </span>
+                          <input
+                            name="headerSubtitle"
+                            defaultValue={invoiceTemplate.headerSubtitle}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Phone
+                          </span>
+                          <input
+                            name="companyPhone"
+                            defaultValue={invoiceTemplate.companyPhone}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Email
+                          </span>
+                          <input
+                            name="companyEmail"
+                            defaultValue={invoiceTemplate.companyEmail}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Website
+                          </span>
+                          <input
+                            name="companyWebsite"
+                            defaultValue={invoiceTemplate.companyWebsite}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Tax ID
+                          </span>
+                          <input
+                            name="companyTaxId"
+                            defaultValue={invoiceTemplate.companyTaxId}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Address line 1
+                          </span>
+                          <input
+                            name="companyAddressLine1"
+                            defaultValue={invoiceTemplate.companyAddressLine1}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block sm:col-span-2">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Address line 2
+                          </span>
+                          <input
+                            name="companyAddressLine2"
+                            defaultValue={invoiceTemplate.companyAddressLine2}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Bill to label
+                          </span>
+                          <input
+                            name="billToLabel"
+                            defaultValue={invoiceTemplate.billToLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Description column label
+                          </span>
+                          <input
+                            name="tableDescriptionLabel"
+                            defaultValue={invoiceTemplate.tableDescriptionLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Amount column label
+                          </span>
+                          <input
+                            name="tableAmountLabel"
+                            defaultValue={invoiceTemplate.tableAmountLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Invoice number label
+                          </span>
+                          <input
+                            name="invoiceNumberLabel"
+                            defaultValue={invoiceTemplate.invoiceNumberLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Issue date label
+                          </span>
+                          <input
+                            name="issueDateLabel"
+                            defaultValue={invoiceTemplate.issueDateLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Subtotal label
+                          </span>
+                          <input
+                            name="subtotalLabel"
+                            defaultValue={invoiceTemplate.subtotalLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Tax label
+                          </span>
+                          <input
+                            name="taxLabel"
+                            defaultValue={invoiceTemplate.taxLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Total label
+                          </span>
+                          <input
+                            name="totalLabel"
+                            defaultValue={invoiceTemplate.totalLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Notes label
+                          </span>
+                          <input
+                            name="notesLabel"
+                            defaultValue={invoiceTemplate.notesLabel}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                      </div>
+
                       <label className="block">
                         <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Template JSON
+                          Footer note
                         </span>
-                        <textarea
-                          name="templateJson"
-                          rows={22}
-                          defaultValue={invoiceTemplateJson}
-                          className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
+                        <input
+                          name="footerNote"
+                          defaultValue={invoiceTemplate.footerNote}
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
                         />
                       </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Clauses title
+                        </span>
+                        <input
+                          name="clausesTitle"
+                          defaultValue={invoiceTemplate.clausesTitle}
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Legal clauses (one per line, small footer text)
+                        </span>
+                        <textarea
+                          name="legalClauses"
+                          defaultValue={invoiceTemplate.legalClauses.join("\n")}
+                          rows={4}
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
+                        />
+                      </label>
+
+                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Theme colors
+                        </p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {(["STANDARD", "SPECIAL", "ESTIMATE"] as const).map((theme) => (
+                            <div
+                              key={theme}
+                              className="rounded-xl border border-slate-200 bg-white p-3"
+                            >
+                              <p className="text-xs font-semibold text-slate-700">{theme}</p>
+                              <label className="mt-2 block">
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  Label
+                                </span>
+                                <input
+                                  name={`${theme}_label`}
+                                  defaultValue={invoiceTemplate.themes[theme].label}
+                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
+                                />
+                              </label>
+                              <label className="mt-2 block">
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  Brand color
+                                </span>
+                                <input
+                                  name={`${theme}_brandHex`}
+                                  defaultValue={invoiceTemplate.themes[theme].brandHex}
+                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
+                                />
+                              </label>
+                              <label className="mt-2 block">
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  Accent color
+                                </span>
+                                <input
+                                  name={`${theme}_accentHex`}
+                                  defaultValue={invoiceTemplate.themes[theme].accentHex}
+                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
+                                />
+                              </label>
+                              <label className="mt-2 block">
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  Light background
+                                </span>
+                                <input
+                                  name={`${theme}_lightHex`}
+                                  defaultValue={invoiceTemplate.themes[theme].lightHex}
+                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
+                                />
+                              </label>
+                              <label className="mt-2 block">
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                  Watermark text
+                                </span>
+                                <input
+                                  name={`${theme}_watermarkText`}
+                                  defaultValue={invoiceTemplate.themes[theme].watermarkText ?? ""}
+                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
+                                />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <label className="mt-3 inline-flex items-center gap-2 text-xs text-slate-600">
+                          <input
+                            type="checkbox"
+                            name="showEstimateWatermark"
+                            defaultChecked={invoiceTemplate.showEstimateWatermark}
+                            className="h-4 w-4 rounded border-slate-300"
+                          />
+                          Show estimate watermark
+                        </label>
+                      </div>
                       <FormSubmitButton
                         idleLabel="Save invoice template"
                         pendingLabel={t("common.feedback.saving")}
@@ -714,9 +999,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                 {templateMode !== "code" ? (
                   <div className="app-card p-6 shadow-contrast">
-                    <h3 className="text-base font-semibold">Web preview</h3>
+                    <h3 className="text-base font-semibold">Vista final del invoice</h3>
                     <p className="mt-2 text-sm text-slate-600">
-                      This preview shows how the invoice template renders in page mode.
+                      Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.
                     </p>
                     <iframe
                       title={`invoice-template-preview-${invoiceThemePreview}`}

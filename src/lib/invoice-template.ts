@@ -10,8 +10,16 @@ export type InvoiceTemplateThemeConfig = {
 
 export type InvoiceTemplateConfig = {
   companyName: string;
+  companyPhone: string;
+  companyEmail: string;
+  companyWebsite: string;
+  companyAddressLine1: string;
+  companyAddressLine2: string;
+  companyTaxId: string;
   headerSubtitle: string;
   footerNote: string;
+  invoiceNumberLabel: string;
+  issueDateLabel: string;
   billToLabel: string;
   notesLabel: string;
   tableDescriptionLabel: string;
@@ -19,6 +27,8 @@ export type InvoiceTemplateConfig = {
   subtotalLabel: string;
   taxLabel: string;
   totalLabel: string;
+  clausesTitle: string;
+  legalClauses: string[];
   showEstimateWatermark: boolean;
   themes: Record<InvoiceTemplateTheme, InvoiceTemplateThemeConfig>;
 };
@@ -27,8 +37,16 @@ const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   companyName: "ACOSTASPOOL",
+  companyPhone: "+1 (305) 555-0199",
+  companyEmail: "support@acostaspool.com",
+  companyWebsite: "www.acostaspool.com",
+  companyAddressLine1: "Miami, Florida",
+  companyAddressLine2: "United States",
+  companyTaxId: "Tax ID: 00-0000000",
   headerSubtitle: "Service Administration System",
-  footerNote: "Thank you for your business.",
+  footerNote: "Thank you for trusting AcostasPool.",
+  invoiceNumberLabel: "Invoice #",
+  issueDateLabel: "Issue date",
   billToLabel: "Bill To",
   notesLabel: "Notes",
   tableDescriptionLabel: "Description",
@@ -36,6 +54,12 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   subtotalLabel: "Subtotal",
   taxLabel: "Tax",
   totalLabel: "Total",
+  clausesTitle: "Terms and clauses",
+  legalClauses: [
+    "Payment is due upon receipt unless otherwise agreed in writing.",
+    "Late balances may incur service hold and applicable fees.",
+    "This document reflects services rendered and approved.",
+  ],
   showEstimateWatermark: true,
   themes: {
     STANDARD: {
@@ -64,6 +88,32 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
 
 function normalizeText(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function normalizeOptionalText(value: unknown, fallback: string) {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  return value.trim();
+}
+
+function normalizeClauses(value: unknown, fallback: string[]) {
+  if (Array.isArray(value)) {
+    const cleaned = value
+      .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+      .filter(Boolean);
+    return cleaned.length > 0 ? cleaned : fallback;
+  }
+
+  if (typeof value === "string") {
+    const cleaned = value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+    return cleaned.length > 0 ? cleaned : fallback;
+  }
+
+  return fallback;
 }
 
 function normalizeHex(value: unknown, fallback: string) {
@@ -107,11 +157,43 @@ export function normalizeInvoiceTemplateConfig(value: unknown): InvoiceTemplateC
 
   return {
     companyName: normalizeText(source.companyName, DEFAULT_INVOICE_TEMPLATE.companyName),
+    companyPhone: normalizeOptionalText(
+      source.companyPhone,
+      DEFAULT_INVOICE_TEMPLATE.companyPhone
+    ),
+    companyEmail: normalizeOptionalText(
+      source.companyEmail,
+      DEFAULT_INVOICE_TEMPLATE.companyEmail
+    ),
+    companyWebsite: normalizeOptionalText(
+      source.companyWebsite,
+      DEFAULT_INVOICE_TEMPLATE.companyWebsite
+    ),
+    companyAddressLine1: normalizeOptionalText(
+      source.companyAddressLine1,
+      DEFAULT_INVOICE_TEMPLATE.companyAddressLine1
+    ),
+    companyAddressLine2: normalizeOptionalText(
+      source.companyAddressLine2,
+      DEFAULT_INVOICE_TEMPLATE.companyAddressLine2
+    ),
+    companyTaxId: normalizeOptionalText(
+      source.companyTaxId,
+      DEFAULT_INVOICE_TEMPLATE.companyTaxId
+    ),
     headerSubtitle: normalizeText(
       source.headerSubtitle,
       DEFAULT_INVOICE_TEMPLATE.headerSubtitle
     ),
     footerNote: normalizeText(source.footerNote, DEFAULT_INVOICE_TEMPLATE.footerNote),
+    invoiceNumberLabel: normalizeText(
+      source.invoiceNumberLabel,
+      DEFAULT_INVOICE_TEMPLATE.invoiceNumberLabel
+    ),
+    issueDateLabel: normalizeText(
+      source.issueDateLabel,
+      DEFAULT_INVOICE_TEMPLATE.issueDateLabel
+    ),
     billToLabel: normalizeText(source.billToLabel, DEFAULT_INVOICE_TEMPLATE.billToLabel),
     notesLabel: normalizeText(source.notesLabel, DEFAULT_INVOICE_TEMPLATE.notesLabel),
     tableDescriptionLabel: normalizeText(
@@ -125,6 +207,11 @@ export function normalizeInvoiceTemplateConfig(value: unknown): InvoiceTemplateC
     subtotalLabel: normalizeText(source.subtotalLabel, DEFAULT_INVOICE_TEMPLATE.subtotalLabel),
     taxLabel: normalizeText(source.taxLabel, DEFAULT_INVOICE_TEMPLATE.taxLabel),
     totalLabel: normalizeText(source.totalLabel, DEFAULT_INVOICE_TEMPLATE.totalLabel),
+    clausesTitle: normalizeText(source.clausesTitle, DEFAULT_INVOICE_TEMPLATE.clausesTitle),
+    legalClauses: normalizeClauses(
+      source.legalClauses,
+      DEFAULT_INVOICE_TEMPLATE.legalClauses
+    ),
     showEstimateWatermark:
       typeof source.showEstimateWatermark === "boolean"
         ? source.showEstimateWatermark
@@ -202,11 +289,25 @@ export function renderInvoiceTemplatePreview(
           <div>
             <p style="margin:0;color:${resolvedTheme.brandHex};font:700 24px/1.2 Arial,sans-serif;">${escapeHtml(template.companyName)}</p>
             <p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.headerSubtitle)}</p>
+            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+              template.companyPhone
+            )} • ${escapeHtml(template.companyEmail)}</p>
+            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+              template.companyAddressLine1
+            )} ${template.companyAddressLine2 ? `• ${escapeHtml(template.companyAddressLine2)}` : ""}</p>
+            ${template.companyWebsite ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(template.companyWebsite)}</p>` : ""}
           </div>
           <div style="text-align:right;">
             <p style="margin:0;color:${resolvedTheme.brandHex};font:700 16px/1.2 Arial,sans-serif;">${escapeHtml(resolvedTheme.label)}</p>
-            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">INV-2026-1042</p>
-            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">02/23/2026</p>
+            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+              template.invoiceNumberLabel
+            )}: INV-2026-1042</p>
+            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+              template.issueDateLabel
+            )}: 02/23/2026</p>
+            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+              template.companyTaxId
+            )}</p>
           </div>
         </div>
       </header>
@@ -239,7 +340,18 @@ export function renderInvoiceTemplatePreview(
         </div>
       </section>
       <footer style="padding:14px 28px;border-top:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:12px;">
-        ${escapeHtml(template.footerNote)}
+        <p style="margin:0 0 6px;font-size:12px;color:#5c6e83;">${escapeHtml(template.footerNote)}</p>
+        <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#718096;">${escapeHtml(
+          template.clausesTitle
+        )}</p>
+        ${template.legalClauses
+          .map(
+            (clause) =>
+              `<p style="margin:0 0 2px;font-size:9px;line-height:1.4;color:#8a97a8;">${escapeHtml(
+                clause
+              )}</p>`
+          )
+          .join("")}
       </footer>
       <div style="position:absolute;top:0;left:0;width:8px;height:100%;background:${resolvedTheme.accentHex};"></div>
       ${watermark}

@@ -44,19 +44,20 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
   const brand = rgb(brandR, brandG, brandB);
   const accent = rgb(accentR, accentG, accentB);
   const light = rgb(lightR, lightG, lightB);
+  const bottomBaseY = 30;
 
   page.drawRectangle({
     x: 0,
-    y: height - 120,
+    y: height - 140,
     width: 612,
-    height: 120,
+    height: 140,
     color: light,
   });
   page.drawRectangle({
     x: 0,
-    y: height - 120,
+    y: height - 140,
     width: 8,
-    height: 120,
+    height: 140,
     color: accent,
   });
 
@@ -75,6 +76,34 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     font,
     color: rgb(0.4, 0.45, 0.5),
   });
+  page.drawText(`${template.companyPhone}  |  ${template.companyEmail}`, {
+    x: 50,
+    y: height - 95,
+    size: 9,
+    font,
+    color: rgb(0.4, 0.45, 0.5),
+  });
+  page.drawText(
+    `${template.companyAddressLine1}${
+      template.companyAddressLine2 ? ` | ${template.companyAddressLine2}` : ""
+    }`,
+    {
+      x: 50,
+      y: height - 108,
+      size: 8.5,
+      font,
+      color: rgb(0.45, 0.5, 0.56),
+    }
+  );
+  if (template.companyWebsite) {
+    page.drawText(template.companyWebsite, {
+      x: 50,
+      y: height - 121,
+      size: 8.5,
+      font,
+      color: rgb(0.45, 0.5, 0.56),
+    });
+  }
 
   page.drawText(label, {
     x: 420,
@@ -84,21 +113,32 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     color: brand,
   });
 
-  page.drawText(input.invoiceNumber, {
-    x: 420,
-    y: height - 72,
+  page.drawText(`${template.invoiceNumberLabel}: ${input.invoiceNumber}`, {
+    x: 360,
+    y: height - 74,
     size: 10,
     font,
     color: rgb(0.4, 0.45, 0.5),
   });
-
-  page.drawText(`Date: ${input.issueDate.toLocaleDateString()}`, {
-    x: 420,
-    y: height - 88,
-    size: 10,
-    font,
-    color: rgb(0.4, 0.45, 0.5),
-  });
+  page.drawText(
+    `${template.issueDateLabel}: ${input.issueDate.toLocaleDateString()}`,
+    {
+      x: 360,
+      y: height - 89,
+      size: 10,
+      font,
+      color: rgb(0.4, 0.45, 0.5),
+    }
+  );
+  if (template.companyTaxId) {
+    page.drawText(template.companyTaxId, {
+      x: 360,
+      y: height - 104,
+      size: 8.5,
+      font,
+      color: rgb(0.45, 0.5, 0.56),
+    });
+  }
 
   if (theme === "ESTIMATE" && template.showEstimateWatermark) {
     const watermark = themeConfig.watermarkText?.trim() || "ESTIMATE";
@@ -112,7 +152,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     });
   }
 
-  let cursorY = height - 150;
+  let cursorY = height - 170;
 
   page.drawText(template.billToLabel, {
     x: 50,
@@ -225,12 +265,32 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
 
   page.drawText(template.footerNote, {
     x: 50,
-    y: 34,
-    size: 9,
+    y: bottomBaseY + 22,
+    size: 8.5,
     font,
     color: rgb(0.45, 0.5, 0.56),
     maxWidth: 500,
     lineHeight: 11,
+  });
+
+  page.drawText(template.clausesTitle, {
+    x: 50,
+    y: bottomBaseY + 12,
+    size: 7.5,
+    font: fontBold,
+    color: rgb(0.5, 0.56, 0.63),
+  });
+
+  template.legalClauses.slice(0, 4).forEach((clause, index) => {
+    page.drawText(clause, {
+      x: 50,
+      y: bottomBaseY + 3 - index * 8,
+      size: 6.4,
+      font,
+      color: rgb(0.56, 0.62, 0.69),
+      maxWidth: 520,
+      lineHeight: 7,
+    });
   });
 
   const pdfBytes = await pdfDoc.save();
