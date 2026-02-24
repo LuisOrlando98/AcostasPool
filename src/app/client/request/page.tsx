@@ -118,7 +118,9 @@ export default function ClientRequestPage() {
         if (nextAvailability.length > 0) {
           const firstDay = nextAvailability[0];
           setPreferredDate(firstDay.date);
-          setPreferredTime(firstDay.slots[0]?.value ?? "");
+          setPreferredTime(
+            firstDay.slots.find((slot) => slot.remaining > 0)?.value ?? ""
+          );
           const firstDate = parseDateKey(firstDay.date);
           if (firstDate) {
             setCalendarMonth(startOfMonth(firstDate));
@@ -222,9 +224,11 @@ export default function ClientRequestPage() {
 
   const resolvedPreferredTime =
     !urgentOverride && selectedDay
-      ? selectedDay.slots.some((slot) => slot.value === preferredTime)
+      ? selectedDay.slots.some(
+          (slot) => slot.value === preferredTime && slot.remaining > 0
+        )
         ? preferredTime
-        : selectedDay.slots[0]?.value ?? ""
+        : selectedDay.slots.find((slot) => slot.remaining > 0)?.value ?? ""
       : preferredTime;
 
   const formatAvailabilityDate = (value: string) => {
@@ -264,7 +268,7 @@ export default function ClientRequestPage() {
       return;
     }
     setPreferredDate(dateKey);
-    setPreferredTime(day.slots[0]?.value ?? "");
+    setPreferredTime(day.slots.find((slot) => slot.remaining > 0)?.value ?? "");
     setMessage(null);
   };
 
@@ -551,6 +555,11 @@ export default function ClientRequestPage() {
                       const inMonth = isSameMonth(date, calendarMonth);
                       const isAvailable = Boolean(day && day.remainingCapacity > 0);
                       const isSelected = preferredDate === dateKey;
+                      const availabilityLabel = !inMonth
+                        ? ""
+                        : isAvailable
+                          ? t("client.request.calendar.availableShort")
+                          : t("client.request.calendar.unavailableShort");
 
                       return (
                         <button
@@ -570,11 +579,7 @@ export default function ClientRequestPage() {
                         >
                           <span className="block text-sm font-semibold">{date.getDate()}</span>
                           <span className="mt-1 block text-[10px] leading-3">
-                            {isAvailable
-                              ? t("client.request.calendar.slotsShort", {
-                                  count: String(day?.remainingCapacity ?? 0),
-                                })
-                              : ""}
+                            {availabilityLabel}
                           </span>
                         </button>
                       );
@@ -596,13 +601,17 @@ export default function ClientRequestPage() {
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
                       {selectedDay.slots.map((slot) => {
                         const isSelected = slot.value === resolvedPreferredTime;
+                        const isSlotAvailable = slot.remaining > 0;
                         return (
                           <button
                             key={slot.value}
                             type="button"
+                            disabled={!isSlotAvailable}
                             onClick={() => setPreferredTime(slot.value)}
                             className={`rounded-xl border px-3 py-2 text-left transition ${
-                              isSelected
+                              !isSlotAvailable
+                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+                                : isSelected
                                 ? "border-sky-500 bg-sky-50 text-sky-800"
                                 : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/50"
                             }`}
@@ -611,9 +620,9 @@ export default function ClientRequestPage() {
                               {formatTime(slot.value)}
                             </span>
                             <span className="block text-[11px] text-slate-500">
-                              {t("client.request.calendar.slotRemaining", {
-                                count: String(slot.remaining),
-                              })}
+                              {isSlotAvailable
+                                ? t("client.request.calendar.available")
+                                : t("client.request.calendar.unavailable")}
                             </span>
                           </button>
                         );

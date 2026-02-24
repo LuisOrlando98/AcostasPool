@@ -1280,8 +1280,10 @@
         "prev": "Prev",
         "next": "Next",
         "selectDateHint": "Select a date to see available times.",
-        "slotsShort": "{{count}} slots",
-        "slotRemaining": "{{count}} spots left",
+        "availableShort": "Available",
+        "unavailableShort": "Unavailable",
+        "available": "Available",
+        "unavailable": "Not available",
         "selection": "Selected: {{date}} at {{time}}"
       },
       "fields": {

@@ -1280,8 +1280,10 @@
         "prev": "Ant",
         "next": "Sig",
         "selectDateHint": "Selecciona una fecha para ver horarios disponibles.",
-        "slotsShort": "{{count}} cupos",
-        "slotRemaining": "{{count}} cupos libres",
+        "availableShort": "Disponible",
+        "unavailableShort": "No disponible",
+        "available": "Disponible",
+        "unavailable": "No disponible",
         "selection": "Seleccionado: {{date}} a las {{time}}"
       },
       "fields": {
