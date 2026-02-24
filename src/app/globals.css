@@ -3314,8 +3314,9 @@ summary.no-marker::marker {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  margin: 0 0 0.72rem;
-  padding: 1.18rem;
+  margin: 0 auto 0.92rem;
+  padding: clamp(1.05rem, 1.8vw, 1.45rem);
+  border-radius: 1.35rem;
   border: 1px solid color-mix(in srgb, var(--lp-brand) 52%, var(--lp-border));
   background: linear-gradient(
     114deg,
@@ -3324,9 +3325,9 @@ summary.no-marker::marker {
     color-mix(in srgb, #f2fbff 90%, var(--lp-surface)) 100%
   );
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(15rem, 18rem);
-  gap: 1rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1.12fr) minmax(14rem, 17rem);
+  gap: clamp(0.8rem, 1.6vw, 1.2rem);
+  align-items: stretch;
   box-shadow:
     0 20px 36px rgba(10, 29, 47, 0.2),
     0 0 0 1px color-mix(in srgb, #ffffff 24%, transparent) inset;
@@ -3375,7 +3376,8 @@ summary.no-marker::marker {
 
 .lp-service-promo-copy {
   display: grid;
-  gap: 0.52rem;
+  gap: 0.54rem;
+  align-content: center;
 }
 
 .lp-service-promo-badge {
@@ -3398,20 +3400,22 @@ summary.no-marker::marker {
 .lp-service-promo h3 {
   margin: 0;
   font-size: clamp(1.42rem, 3.5vw, 2.3rem);
-  line-height: 1.02;
+  line-height: 1.06;
   font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: #f8fdff;
   text-shadow: 0 6px 16px rgba(7, 21, 37, 0.34);
+  text-wrap: balance;
 }
 
 .lp-service-promo p {
   margin: 0;
   color: #e5f7ff;
   line-height: 1.55;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   max-width: 72ch;
+  text-wrap: pretty;
 }
 
 .lp-service-promo-detail {
@@ -3421,13 +3425,13 @@ summary.no-marker::marker {
 
 .lp-service-promo-note {
   color: #d3eef8;
-  font-size: 0.77rem;
+  font-size: 0.78rem;
 }
 
 .lp-service-promo-action {
   display: grid;
-  gap: 0.54rem;
-  padding: 0.84rem;
+  gap: 0.62rem;
+  padding: 0.92rem;
   border-radius: 1.04rem;
   border: 1px solid color-mix(in srgb, #ffffff 36%, transparent);
   background: linear-gradient(
@@ -3438,6 +3442,7 @@ summary.no-marker::marker {
   box-shadow:
     0 12px 24px rgba(6, 29, 48, 0.26),
     inset 0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent);
+  align-content: center;
 }
 
 .lp-service-promo-action p {
@@ -3453,7 +3458,7 @@ summary.no-marker::marker {
   width: 100%;
   justify-content: center;
   white-space: normal;
-  min-height: 3.08rem;
+  min-height: 3rem;
   padding: 0 1.28rem;
   background: linear-gradient(132deg, #1395d2, #19c2ab);
   color: #f6fcff;
@@ -4988,11 +4993,33 @@ summary.no-marker::marker {
 
   .lp-service-promo {
     grid-template-columns: 1fr;
-    align-items: start;
+    align-items: center;
+    text-align: center;
+  }
+
+  .lp-service-promo-copy {
+    justify-items: center;
+  }
+
+  .lp-service-promo-badge {
+    justify-self: center;
+  }
+
+  .lp-service-promo p {
+    margin-inline: auto;
+    max-width: 42ch;
+  }
+
+  .lp-service-promo-action {
+    width: min(100%, 24rem);
+    margin-inline: auto;
+    justify-items: center;
+    text-align: center;
   }
 
   .lp-service-promo-cta {
-    justify-self: start;
+    justify-self: center;
+    width: min(100%, 22rem);
   }
 
   .lp-service-plan-grid,
@@ -5208,22 +5235,30 @@ summary.no-marker::marker {
   }
 
   .lp-service-promo {
-    padding: 0.8rem;
+    padding: 0.92rem;
   }
 
   .lp-service-promo-action {
-    width: min(100%, 20rem);
+    width: 100%;
+    padding: 0.78rem;
   }
 
   .lp-service-promo h3 {
-    font-size: clamp(1.14rem, 4.4vw, 1.6rem);
-    letter-spacing: 0.06em;
+    font-size: clamp(1.2rem, 6vw, 1.7rem);
+    letter-spacing: 0.01em;
+    text-align: center;
+  }
+
+  .lp-service-promo p {
+    font-size: 0.86rem;
   }
 
   .lp-service-promo-cta {
     width: 100%;
     justify-content: center;
     white-space: normal;
+    min-height: 2.88rem;
+    font-size: 0.7rem;
   }
 
   .lp-service-plan-grid {

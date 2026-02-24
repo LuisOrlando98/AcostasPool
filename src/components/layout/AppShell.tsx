@@ -506,7 +506,7 @@ export default function AppShell({
 
         <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-white/80 backdrop-blur-xl lg:col-start-2 lg:row-start-1">
           <div
-            className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-4 px-6`}
+            className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6`}
           >
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
@@ -557,7 +557,7 @@ export default function AppShell({
         </header>
 
         <main
-          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-8 px-6 py-10 animate-fade lg:col-start-2 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto`}
+          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:gap-8 lg:py-10`}
         >
           {children}
         </main>

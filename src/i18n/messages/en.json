@@ -1250,8 +1250,10 @@
       "stats": {
         "nextService": "Next service",
         "notScheduled": "Not scheduled",
+        "notScheduledHelper": "No upcoming visit assigned yet.",
         "openInvoices": "Open invoices",
         "latestInvoice": "Latest: {{number}}",
+        "noneOpenInvoices": "No pending invoices right now.",
         "totalServices": "Total services",
         "history": "Full history"
       },
@@ -1262,8 +1264,17 @@
       },
       "recent": {
         "title": "Recent history",
+        "subtitle": "Latest completed services in your account.",
         "evidence": "Evidence: {{count}}",
-        "empty": "No services yet."
+        "empty": "No completed services yet.",
+        "columns": {
+          "date": "Date",
+          "property": "Property",
+          "type": "Type",
+          "evidence": "Evidence",
+          "status": "Status",
+          "details": "Details"
+        }
       }
     },
     "request": {

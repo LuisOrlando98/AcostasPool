@@ -1,5 +1,4 @@
 import AppShell from "@/components/layout/AppShell";
-import StatCard from "@/components/ui/StatCard";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
@@ -32,18 +31,32 @@ export default async function ClientPage() {
         role="CUSTOMER"
       >
         <section className="app-card p-6 shadow-contrast">
-          <p className="text-sm text-slate-500">
-            {t("client.home.noProfile")}
-          </p>
+          <p className="text-sm text-slate-500">{t("client.home.noProfile")}</p>
         </section>
       </AppShell>
     );
   }
 
-  const upcomingJob = customer.jobs.find((job) => job.status !== "COMPLETED");
+  const now = new Date();
+  const upcomingJob =
+    customer.jobs
+      .filter((job) => job.status !== "COMPLETED" && job.scheduledDate >= now)
+      .sort((a, b) => a.scheduledDate.getTime() - b.scheduledDate.getTime())[0] ??
+    customer.jobs.find((job) => job.status !== "COMPLETED");
+
   const openInvoices = customer.invoices.filter(
     (invoice) => invoice.status !== "PAID"
   );
+
+  const completedJobs = customer.jobs
+    .filter((job) => job.status === "COMPLETED")
+    .sort(
+      (a, b) =>
+        (b.completedAt ?? b.scheduledDate).getTime() -
+        (a.completedAt ?? a.scheduledDate).getTime()
+    );
+
+  const recentCompletedJobs = completedJobs.slice(0, 8);
 
   return (
     <AppShell
@@ -51,85 +64,134 @@ export default async function ClientPage() {
       subtitle={t("client.home.subtitle")}
       role="CUSTOMER"
     >
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          label={t("client.home.stats.nextService")}
-          value={
-            upcomingJob
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <article className="relative overflow-hidden rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 via-cyan-50 to-white p-4 shadow-[0_10px_24px_rgba(14,165,233,0.12)] sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {t("client.home.stats.nextService")}
+          </p>
+          <p className="mt-2 break-words text-2xl font-semibold leading-tight text-slate-900 sm:text-[1.8rem]">
+            {upcomingJob
               ? upcomingJob.scheduledDate.toLocaleDateString(locale)
-              : t("client.home.stats.notScheduled")
-          }
-          helper={upcomingJob ? upcomingJob.property.address : ""}
-          tone="info"
-        />
-        <StatCard
-          label={t("client.home.stats.openInvoices")}
-          value={`${openInvoices.length}`}
-          helper={
-            openInvoices.length > 0
+              : t("client.home.stats.notScheduled")}
+          </p>
+          <p className="mt-2 break-words text-xs text-slate-600">
+            {upcomingJob?.property.address ?? t("client.home.stats.notScheduledHelper")}
+          </p>
+        </article>
+
+        <article className="relative overflow-hidden rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50 via-orange-50 to-white p-4 shadow-[0_10px_24px_rgba(249,115,22,0.12)] sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {t("client.home.stats.openInvoices")}
+          </p>
+          <p className="mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-[1.8rem]">
+            {openInvoices.length}
+          </p>
+          <p className="mt-2 break-words text-xs text-slate-600">
+            {openInvoices.length > 0
               ? t("client.home.stats.latestInvoice", {
                   number: openInvoices[0].number,
                 })
-              : ""
-          }
-          tone="warning"
-        />
-        <StatCard
-          label={t("client.home.stats.totalServices")}
-          value={`${customer.jobs.length}`}
-          helper={t("client.home.stats.history")}
-          tone="success"
-        />
+              : t("client.home.stats.noneOpenInvoices")}
+          </p>
+        </article>
+
+        <article className="relative col-span-2 overflow-hidden rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-teal-50 to-white p-4 shadow-[0_10px_24px_rgba(16,185,129,0.12)] sm:p-5 lg:col-span-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {t("client.home.stats.totalServices")}
+          </p>
+          <p className="mt-2 text-2xl font-semibold leading-tight text-slate-900 sm:text-[1.8rem]">
+            {customer.jobs.length}
+          </p>
+          <p className="mt-2 text-xs text-slate-600">{t("client.home.stats.history")}</p>
+        </article>
       </section>
 
-      <section className="app-card p-6 shadow-contrast">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {t("client.home.request.title")}
-            </h2>
-            <p className="text-sm text-slate-500">
-              {t("client.home.request.subtitle")}
-            </p>
-          </div>
-          <a
-            href="/client/request"
-            className="app-button-primary px-4 py-2 text-sm font-semibold"
-          >
-            {t("client.home.request.action")}
-          </a>
-        </div>
-      </section>
-
-      <section className="app-card p-6 shadow-contrast">
-        <h2 className="text-lg font-semibold">
-          {t("client.home.recent.title")}
-        </h2>
-        <div className="mt-4 space-y-3 text-sm text-slate-600">
-          {customer.jobs.slice(0, 3).map((job) => (
-            <Link
-              key={job.id}
-              href={`/client/jobs/${job.id}`}
-              className="ui-link-card block px-4 py-3"
+      <section className="app-card p-4 shadow-contrast sm:p-5">
+        <div className="rounded-2xl border border-sky-100 bg-[linear-gradient(120deg,rgba(14,165,233,0.08),rgba(34,197,94,0.04),rgba(255,255,255,0.9))] p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold text-slate-900">
+                {t("client.home.request.title")}
+              </h2>
+              <p className="text-sm text-slate-600">
+                {t("client.home.request.subtitle")}
+              </p>
+            </div>
+            <a
+              href="/client/request"
+              className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold sm:w-auto"
             >
-              <p className="text-xs text-slate-500">
-                {job.scheduledDate.toLocaleDateString(locale)} ·{" "}
-                {getJobStatusLabel(job.status, t)}
-              </p>
-              <p className="font-medium text-slate-900">
-                {job.property.address}
-              </p>
-              <p className="text-xs text-slate-500">
-                {t("client.home.recent.evidence", { count: job.photos.length })}
-              </p>
-            </Link>
-          ))}
-          {customer.jobs.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              {t("client.home.recent.empty")}
-            </p>
-          ) : null}
+              {t("client.home.request.action")}
+            </a>
+          </div>
         </div>
+      </section>
+
+      <section className="app-card p-4 shadow-contrast sm:p-5">
+        <div>
+          <h2 className="text-lg font-semibold">{t("client.home.recent.title")}</h2>
+          <p className="text-sm text-slate-500">{t("client.home.recent.subtitle")}</p>
+        </div>
+
+        {recentCompletedJobs.length > 0 ? (
+          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.date")}</th>
+                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.property")}</th>
+                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.type")}</th>
+                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.evidence")}</th>
+                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.status")}</th>
+                  <th className="px-3 py-2 text-right font-semibold">
+                    {t("client.home.recent.columns.details")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                {recentCompletedJobs.map((job) => (
+                  <tr key={job.id}>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {(job.completedAt ?? job.scheduledDate).toLocaleDateString(locale)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="block max-w-[16rem] truncate" title={job.property.address}>
+                        {job.property.address}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      {job.type === "ON_DEMAND"
+                        ? t("jobs.type.onDemand")
+                        : t("jobs.type.routine")}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-3">{job.photos.length}</td>
+                    <td className="whitespace-nowrap px-3 py-3">
+                      <span
+                        className="app-chip inline-flex items-center px-2 py-1 text-[11px]"
+                        data-tone="success"
+                      >
+                        {getJobStatusLabel(job.status, t)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <Link
+                        href={`/client/jobs/${job.id}`}
+                        className="inline-flex rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                      >
+                        {t("common.actions.view")}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+            {t("client.home.recent.empty")}
+          </div>
+        )}
+
       </section>
     </AppShell>
   );

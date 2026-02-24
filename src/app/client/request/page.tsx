@@ -188,7 +188,7 @@ export default function ClientRequestPage() {
     return Array.from({ length: 7 }, (_, index) => {
       const day = new Date(monday);
       day.setDate(monday.getDate() + index);
-      return day.toLocaleDateString(localeTag, { weekday: "short" });
+      return day.toLocaleDateString(localeTag, { weekday: "narrow" });
     });
   }, [localeTag]);
 
@@ -353,10 +353,10 @@ export default function ClientRequestPage() {
       subtitle={t("client.request.subtitle")}
       role="CUSTOMER"
     >
-      <section className="app-card p-6 shadow-contrast">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <section className="app-card p-4 shadow-contrast sm:p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{t("client.request.formTitle")}</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t("client.request.formTitle")}</h2>
             <p className="text-sm text-slate-500">{t("client.request.formSubtitle")}</p>
           </div>
           <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700">
@@ -364,7 +364,7 @@ export default function ClientRequestPage() {
           </span>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="mt-5 grid gap-3.5 md:grid-cols-2">
           <div className="md:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("client.request.fields.property")}
@@ -500,15 +500,15 @@ export default function ClientRequestPage() {
               </div>
             </>
           ) : (
-            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-[linear-gradient(130deg,rgba(241,245,249,0.92),rgba(248,250,252,0.98))] p-3 sm:p-4">
+              <div className="grid gap-3 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,0.82fr)]">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                         {t("client.request.calendar.stepDate")}
                       </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">
+                      <p className="mt-1 break-words pr-2 text-sm font-semibold text-slate-900">
                         {calendarMonth.toLocaleDateString(localeTag, {
                           month: "long",
                           year: "numeric",
@@ -541,7 +541,7 @@ export default function ClientRequestPage() {
                     {weekdayLabels.map((label) => (
                       <div
                         key={label}
-                        className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"
+                        className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500"
                       >
                         {label}
                       </div>
@@ -555,11 +555,7 @@ export default function ClientRequestPage() {
                       const inMonth = isSameMonth(date, calendarMonth);
                       const isAvailable = Boolean(day && day.remainingCapacity > 0);
                       const isSelected = preferredDate === dateKey;
-                      const availabilityLabel = !inMonth
-                        ? ""
-                        : isAvailable
-                          ? t("client.request.calendar.availableShort")
-                          : t("client.request.calendar.unavailableShort");
+                      const showUnavailableMarker = inMonth && !isAvailable;
 
                       return (
                         <button
@@ -567,38 +563,45 @@ export default function ClientRequestPage() {
                           type="button"
                           onClick={() => handleSelectDate(dateKey)}
                           disabled={!isAvailable}
-                          className={`min-h-14 rounded-xl border px-1.5 py-1 text-left transition ${
+                          className={`aspect-square min-h-[2.9rem] rounded-lg border px-1 py-1 text-center transition sm:min-h-[3.2rem] ${
                             !inMonth
                               ? "border-transparent bg-transparent text-slate-300"
                               : !isAvailable
-                                ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+                                ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-300"
                                 : isSelected
                                   ? "border-sky-500 bg-sky-50 text-sky-900 shadow-sm"
                                   : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/60"
                           }`}
                         >
-                          <span className="block text-sm font-semibold">{date.getDate()}</span>
-                          <span className="mt-1 block text-[10px] leading-3">
-                            {availabilityLabel}
-                          </span>
+                          <span className="block text-sm font-semibold leading-none">{date.getDate()}</span>
+                          {showUnavailableMarker ? (
+                            <>
+                              <span className="sr-only">
+                                {t("client.request.calendar.unavailableShort")}
+                              </span>
+                              <span aria-hidden className="mt-1 block text-xs text-rose-500">
+                                x
+                              </span>
+                            </>
+                          ) : null}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                     {t("client.request.calendar.stepTime")}
                   </p>
-                  <p className="mt-1 text-sm text-slate-700">
+                  <p className="mt-1 break-words text-sm text-slate-700">
                     {preferredDate
                       ? formatAvailabilityDate(preferredDate)
                       : t("client.request.calendar.selectDateHint")}
                   </p>
 
                   {selectedDay?.slots.length ? (
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="mt-3 grid grid-cols-1 gap-2 min-[460px]:grid-cols-2 xl:grid-cols-1">
                       {selectedDay.slots.map((slot) => {
                         const isSelected = slot.value === resolvedPreferredTime;
                         const isSlotAvailable = slot.remaining > 0;
@@ -610,16 +613,20 @@ export default function ClientRequestPage() {
                             onClick={() => setPreferredTime(slot.value)}
                             className={`rounded-xl border px-3 py-2 text-left transition ${
                               !isSlotAvailable
-                                ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+                                ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-500"
                                 : isSelected
                                 ? "border-sky-500 bg-sky-50 text-sky-800"
                                 : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/50"
                             }`}
                           >
-                            <span className="block text-sm font-semibold">
+                            <span className="block text-sm font-semibold leading-tight">
                               {formatTime(slot.value)}
                             </span>
-                            <span className="block text-[11px] text-slate-500">
+                            <span
+                              className={`block text-[11px] ${
+                                isSlotAvailable ? "text-slate-500" : "text-rose-600"
+                              }`}
+                            >
                               {isSlotAvailable
                                 ? t("client.request.calendar.available")
                                 : t("client.request.calendar.unavailable")}
