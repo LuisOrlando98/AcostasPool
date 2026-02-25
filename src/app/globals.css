@@ -4084,8 +4084,9 @@ summary.no-marker::marker {
 .lp-footer-grid {
   padding: 1.2rem 0;
   display: grid;
-  grid-template-columns: 1.2fr repeat(3, 1fr);
-  gap: 0.8rem;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.8rem 1rem;
 }
 
 .lp-footer-brand {
@@ -4110,6 +4111,12 @@ summary.no-marker::marker {
   list-style: none;
   display: grid;
   gap: 0.42rem;
+}
+
+.lp-footer-col-legal ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 0.9rem;
+  row-gap: 0.42rem;
 }
 
 .lp-footer-col li {
@@ -5029,6 +5036,11 @@ summary.no-marker::marker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .lp-footer-grid {
+    grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
   .lp-video-copy-lists,
   .lp-contact-form-grid {
     grid-template-columns: 1fr;
@@ -5452,6 +5464,15 @@ summary.no-marker::marker {
     border: 0;
     border-bottom: 1px solid var(--lp-border);
     background: transparent;
+  }
+
+  .lp-footer-col-legal {
+    grid-column: auto;
+  }
+
+  .lp-footer-col-legal ul {
+    grid-template-columns: 1fr;
+    column-gap: 0;
   }
 
   .lp-footer-col h3 {

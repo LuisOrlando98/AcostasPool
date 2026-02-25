@@ -234,22 +234,7 @@ export default function LandingFooter({
 
   const groups = [
     {
-      title: copy.company,
-      items: [
-        { label: copy.aboutUs, href: "/about" },
-        { label: copy.reviews, href: "/#reviews" },
-        { label: copy.gallery, href: "/#gallery" },
-      ],
-    },
-    {
-      title: copy.services,
-      items: [
-        { label: copy.weeklyCare, href: "/#services" },
-        { label: copy.repairRecovery, href: "/#services" },
-        { label: copy.premiumStandard, href: "/#services" },
-      ],
-    },
-    {
+      id: "contact",
       title: copy.contact,
       items: [
         { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },
@@ -258,6 +243,7 @@ export default function LandingFooter({
       ],
     },
     {
+      id: "legal",
       title: copy.legal,
       items: [
         { label: copy.legalCenter, href: "/legal" },
@@ -373,7 +359,10 @@ export default function LandingFooter({
           </div>
 
           {groups.map((group) => (
-            <div key={group.title} className="lp-footer-col">
+            <div
+              key={group.title}
+              className={`lp-footer-col${group.id === "legal" ? " lp-footer-col-legal" : ""}`}
+            >
               <h3>{group.title}</h3>
               <ul>
                 {group.items.map((item) => {
