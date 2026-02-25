@@ -11,10 +11,11 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { logAuditEvent } from "@/lib/audit/log";
 
 async function createInvoice(formData: FormData) {
   "use server";
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
 
   const customerId = String(formData.get("customerId"));
   const jobId = String(formData.get("jobId") ?? "");
@@ -48,12 +49,22 @@ async function createInvoice(formData: FormData) {
   }
 
   const customerName = formatCustomerName(customer);
+  const linkedJobId = jobId || null;
+  if (linkedJobId) {
+    const linkedJob = await prisma.job.findUnique({
+      where: { id: linkedJobId },
+      select: { customerId: true },
+    });
+    if (!linkedJob || linkedJob.customerId !== customerId) {
+      return;
+    }
+  }
   const invoiceTemplate = await getInvoiceTemplateConfig();
 
   const invoice = await prisma.invoice.create({
     data: {
       customerId,
-      jobId: jobId || null,
+      jobId: linkedJobId,
       number,
       status: "DRAFT",
       theme,
@@ -83,6 +94,21 @@ async function createInvoice(formData: FormData) {
   await prisma.invoice.update({
     where: { id: invoice.id },
     data: { pdfUrl },
+  });
+
+  await logAuditEvent({
+    userId: session.sub,
+    action: "INVOICE_CREATED",
+    entity: "Invoice",
+    entityId: invoice.id,
+    metadata: {
+      customerId,
+      jobId: linkedJobId,
+      subtotal: amount,
+      tax,
+      total,
+      theme,
+    },
   });
 
   revalidatePath("/admin/invoices");

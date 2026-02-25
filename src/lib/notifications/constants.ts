@@ -10,7 +10,7 @@ export const CUSTOMER_NOTIFICATION_TYPES = [
   "INVOICE_SENT",
 ] as const;
 
-export const TECH_NOTIFICATION_TYPES = [] as const;
+export const TECH_NOTIFICATION_TYPES = ["ROUTE_UPDATED"] as const;
 
 export type AdminNotificationType = (typeof ADMIN_NOTIFICATION_TYPES)[number];
 export type CustomerNotificationType =

@@ -4,6 +4,7 @@ export type NotificationEventPayload = {
   id: string;
   eventType: string;
   recipientRole: Role;
+  recipientUserId?: string | null;
   actorUserId?: string | null;
   customerId?: string | null;
   severity: NotificationSeverity;
@@ -31,6 +32,12 @@ export function subscribe(subscriber: Subscriber) {
 export function broadcastNotification(event: NotificationEventPayload) {
   for (const subscriber of subscribers.values()) {
     if (subscriber.role !== event.recipientRole) {
+      continue;
+    }
+    if (
+      event.recipientUserId &&
+      subscriber.userId !== event.recipientUserId
+    ) {
       continue;
     }
     if (

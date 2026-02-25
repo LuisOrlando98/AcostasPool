@@ -54,5 +54,31 @@ export async function GET() {
     return NextResponse.json({ unread });
   }
 
+  if (session.role === "TECH") {
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+    const { disabled } = await getNotificationPreferences(
+      session.sub,
+      session.role
+    );
+    const candidates = await prisma.notification.findMany({
+      where: {
+        recipientRole: "TECH",
+        readAt: null,
+        createdAt: { gte: since },
+        ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+      },
+      select: { payload: true },
+    });
+    const unread = candidates.filter((item) => {
+      const payload =
+        item.payload && typeof item.payload === "object"
+          ? (item.payload as Record<string, unknown>)
+          : null;
+      return payload?.recipientUserId === session.sub;
+    }).length;
+    return NextResponse.json({ unread });
+  }
+
   return NextResponse.json({ unread: 0 });
 }

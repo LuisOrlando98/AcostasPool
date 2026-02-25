@@ -94,6 +94,11 @@ enum DigestWindow {
   EVENING
 }
 
+enum ResetTokenPurpose {
+  INVITE
+  PASSWORD_RESET
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -102,6 +107,7 @@ model User {
   role         Role
   locale       Locale   @default(EN)
   isActive     Boolean  @default(true)
+  isDeveloper  Boolean  @default(false)
   avatarUrl    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -114,6 +120,8 @@ model User {
   notificationPreferences NotificationPreference[]
   actedNotifications Notification[] @relation("NotificationActor")
   customerDocuments CustomerDocument[] @relation("CustomerDocumentUploader")
+
+  @@index([isDeveloper])
 }
 
 model Technician {
@@ -434,17 +442,35 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
+  purpose   ResetTokenPurpose @default(PASSWORD_RESET)
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([purpose, userId, createdAt])
+  @@index([expiresAt, usedAt])
+}
+
+model RateLimitBucket {
+  key       String   @id
+  count     Int
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 model SiteSettings {
@@ -459,6 +485,7 @@ model SiteSettings {
   landingPromoCopy Json?
   emailTemplates   Json?
   invoiceTemplate  Json?
+  complianceContent Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

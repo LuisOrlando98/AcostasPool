@@ -17,6 +17,13 @@ import {
   normalizeInvoiceTemplateConfig,
   type InvoiceTemplateConfig,
 } from "@/lib/invoice-template";
+import {
+  normalizeComplianceContent,
+  normalizeComplianceDocContent,
+  type ComplianceContentConfig,
+  type ComplianceDocContent,
+  type ComplianceDocId,
+} from "@/lib/compliance-config";
 
 export type SiteSocialLinks = {
   instagramUrl: string | null;
@@ -56,6 +63,7 @@ type SiteSettingsData = {
   landingPromoCopy?: Prisma.InputJsonValue | null;
   emailTemplates?: Prisma.InputJsonValue | null;
   invoiceTemplate?: Prisma.InputJsonValue | null;
+  complianceContent?: Prisma.InputJsonValue | null;
 };
 
 function normalizeUrl(value: string) {
@@ -112,6 +120,7 @@ const getSiteSettingsCached = unstable_cache(
         landingPromoCopy: true,
         emailTemplates: true,
         invoiceTemplate: true,
+        complianceContent: true,
       },
     });
   },
@@ -218,5 +227,28 @@ export async function saveInvoiceTemplateConfig(template: SiteInvoiceTemplateCon
   const normalized = normalizeInvoiceTemplateConfig(template);
   return saveSiteSettings({
     invoiceTemplate: normalized as Prisma.InputJsonValue,
+  });
+}
+
+export async function getComplianceContentConfig(): Promise<ComplianceContentConfig> {
+  const settings = await getSiteSettingsCached();
+  return normalizeComplianceContent(settings?.complianceContent);
+}
+
+export async function saveComplianceDocLocalesConfig(
+  docId: ComplianceDocId,
+  content: { en: ComplianceDocContent; es: ComplianceDocContent }
+) {
+  const current = await getComplianceContentConfig();
+  const next = {
+    ...current,
+    [docId]: {
+      en: normalizeComplianceDocContent(content.en, current[docId].en),
+      es: normalizeComplianceDocContent(content.es, current[docId].es),
+    },
+  };
+
+  return saveSiteSettings({
+    complianceContent: next as Prisma.InputJsonValue,
   });
 }

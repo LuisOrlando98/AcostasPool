@@ -79,7 +79,7 @@ export default function CompleteProfilePage() {
       setMessage(t("auth.complete.errors.token"));
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 10) {
       setMessage(t("auth.complete.errors.length"));
       return;
     }

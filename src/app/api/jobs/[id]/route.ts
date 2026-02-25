@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { JobPriority, JobStatus, ServiceType } from "@prisma/client";
-import { prisma } from "@/lib/db";
+import { JobPriority, JobStatus, ServiceType, type Prisma } from "@prisma/client";
 import { getSession } from "@/lib/auth/session";
 import { getServiceTierChecklist } from "@/lib/service-tiers";
+import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -23,7 +23,7 @@ export async function PATCH(
   if (!jobId) {
     return NextResponse.json({ error: "Missing job id" }, { status: 400 });
   }
-  const data: Record<string, unknown> = {};
+  const data: Prisma.JobUpdateInput = {};
 
   if (body.scheduledDate) {
     const date = new Date(String(body.scheduledDate));
@@ -79,10 +79,14 @@ export async function PATCH(
     data.checklist = body.checklist;
   }
 
-  const updated = await prisma.job.update({
-    where: { id: jobId },
+  const updated = await applyJobLifecycleUpdate({
+    jobId,
     data,
+    actorUserId: session.sub,
   });
+  if (!updated) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
 
   return NextResponse.json({ job: updated });
 }

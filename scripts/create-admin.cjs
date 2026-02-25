@@ -59,6 +59,10 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function normalizeEmail(value) {
+  return value.trim().toLowerCase();
+}
+
 async function main() {
   const rl = readline.createInterface({
     input: process.stdin,
@@ -69,7 +73,8 @@ async function main() {
     console.log("Create Admin User");
     console.log("-----------------");
 
-    const email = await promptText(rl, "Email admin");
+    const rawEmail = await promptText(rl, "Email admin");
+    const email = normalizeEmail(rawEmail);
     if (!isValidEmail(email)) {
       throw new Error("Email invalido.");
     }
@@ -92,9 +97,9 @@ async function main() {
       throw new Error("Las passwords no coinciden.");
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, role: true },
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true, role: true, email: true },
     });
 
     if (existing) {
@@ -111,23 +116,27 @@ async function main() {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.upsert({
-      where: { email },
-      create: {
-        email,
-        fullName,
-        passwordHash,
-        role: "ADMIN",
-        locale: "ES",
-        isActive: true,
-      },
-      update: {
-        fullName,
-        passwordHash,
-        role: "ADMIN",
-        isActive: true,
-      },
-    });
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            email,
+            fullName,
+            passwordHash,
+            role: "ADMIN",
+            isActive: true,
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            email,
+            fullName,
+            passwordHash,
+            role: "ADMIN",
+            locale: "ES",
+            isActive: true,
+          },
+        });
 
     console.log(`Admin creado/actualizado: ${user.email}`);
     console.log(`User ID: ${user.id}`);

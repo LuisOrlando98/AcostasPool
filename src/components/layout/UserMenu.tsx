@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
+import {
+  getNotificationDetail,
+  getNotificationTitle,
+} from "@/lib/notifications/view";
 
 type UserInfo = {
   id: string;
@@ -10,6 +14,7 @@ type UserInfo = {
   email: string;
   role: string;
   avatarUrl?: string | null;
+  isDeveloper?: boolean;
 };
 
 type NotificationItem = {
@@ -117,17 +122,18 @@ export default function UserMenu() {
     }
 
     if (!usePusher) {
-      const source = new EventSource("/api/notifications/stream");
-      const onNotification = () => {
+      const intervalId = window.setInterval(() => {
         load();
+      }, 20000);
+      const onVisibilityChange = () => {
+        if (!document.hidden) {
+          load();
+        }
       };
-      source.addEventListener("notification", onNotification);
-      source.addEventListener("error", () => {
-        // Browser will retry.
-      });
+      document.addEventListener("visibilitychange", onVisibilityChange);
       return () => {
-        source.removeEventListener("notification", onNotification);
-        source.close();
+        window.clearInterval(intervalId);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
       };
     }
 
@@ -251,66 +257,9 @@ export default function UserMenu() {
                         </div>
                         <div className="divide-y divide-slate-100">
                           {grouped[groupKey].map((item) => {
-                            const payload =
-                              item.payload && typeof item.payload === "object"
-                                ? (item.payload as Record<string, unknown>)
-                                : {};
                             const isRead = Boolean(item.readAt);
-                            const titleMap: Record<string, string> = {
-                              JOB_COMPLETED: t("notifications.jobCompleted"),
-                              CUSTOMER_REQUEST: t(
-                                "notifications.customerRequest"
-                              ),
-                              SERVICE_SCHEDULED: t(
-                                "notifications.serviceScheduled"
-                              ),
-                              SERVICE_RESCHEDULED: t(
-                                "notifications.serviceRescheduled"
-                              ),
-                              ROUTE_UPDATED: t("notifications.routeUpdated"),
-                              INVOICE_SENT: t("notifications.invoiceSent"),
-                            };
-                            const title =
-                              titleMap[item.eventType] ??
-                              item.eventType.replaceAll("_", " ");
-                            const techName =
-                              typeof payload.technicianName === "string"
-                                ? payload.technicianName
-                                : null;
-                            const completedAt =
-                              typeof payload.completedAt === "string"
-                                ? payload.completedAt
-                                : null;
-                            const requestedAt =
-                              typeof payload.requestedAt === "string"
-                                ? payload.requestedAt
-                                : null;
-                            const reason =
-                              typeof payload.reason === "string"
-                                ? payload.reason
-                                : null;
-                            const detail =
-                              item.eventType === "JOB_COMPLETED"
-                                ? `${techName ?? t("userMenu.system")} - ${new Date(
-                                    completedAt ?? item.createdAt
-                                  ).toLocaleTimeString(locale, {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}`
-                                : item.eventType === "CUSTOMER_REQUEST"
-                                  ? `${t("notifications.requested")} - ${new Date(
-                                      requestedAt ?? item.createdAt
-                                    ).toLocaleString(locale, {
-                                      dateStyle: "short",
-                                      timeStyle: "short",
-                                    })}${reason ? ` - ${reason}` : ""}`
-                                  : new Date(item.createdAt).toLocaleString(
-                                      locale,
-                                      {
-                                        dateStyle: "short",
-                                        timeStyle: "short",
-                                      }
-                                    );
+                            const title = getNotificationTitle(item.eventType, t);
+                            const detail = getNotificationDetail(item, locale, t);
                             return (
                               <button
                                 key={item.id}
@@ -429,6 +378,14 @@ export default function UserMenu() {
             >
               {t("userMenu.updates")}
             </a>
+            {user?.isDeveloper ? (
+              <a
+                href="/admin/developer"
+                className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
+              >
+                Developer Console
+              </a>
+            ) : null}
             <button
               type="button"
               onClick={handleLogout}

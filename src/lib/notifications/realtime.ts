@@ -74,7 +74,10 @@ export async function publishNotification(payload: NotificationEventPayload) {
   }
 
   if (payload.recipientRole === "TECH") {
-    // Placeholder for future tech notifications.
+    if (payload.recipientUserId) {
+      await triggerForUser(payload.recipientUserId, payload);
+      return;
+    }
     if (payload.actorUserId) {
       await triggerForUser(payload.actorUserId, payload);
     }

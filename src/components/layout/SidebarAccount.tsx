@@ -9,6 +9,7 @@ type UserInfo = {
   email: string;
   role: string;
   avatarUrl?: string | null;
+  isDeveloper?: boolean;
 };
 
 export default function SidebarAccount() {
@@ -103,6 +104,26 @@ export default function SidebarAccount() {
           </span>
           <span className="sidebar-account-label">{t("userMenu.updates")}</span>
         </a>
+        {user?.isDeveloper ? (
+          <a href="/admin/developer" className="sidebar-account-link">
+            <span className="sidebar-account-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7h8M8 12h8M8 17h8M4 7h.01M4 12h.01M4 17h.01"
+                />
+              </svg>
+            </span>
+            <span className="sidebar-account-label">Developer Console</span>
+          </a>
+        ) : null}
         <button
           type="button"
           onClick={handleLogout}

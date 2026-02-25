@@ -15,12 +15,19 @@ import {
   renderInvoiceTemplatePreview,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
+import {
+  COMPLIANCE_DOC_DEFINITIONS,
+  COMPLIANCE_DOC_IDS,
+  isComplianceDocId,
+} from "@/lib/compliance-config";
 import { requireRole } from "@/lib/auth/guards";
 import {
+  getComplianceContentConfig,
   getEmailTemplatesConfig,
   getInvoiceTemplateConfig,
   getSiteLandingConfig,
   getSiteSocialLinks,
+  saveComplianceDocLocalesConfig,
   saveEmailTemplateConfig,
   saveInvoiceTemplateConfig,
   saveSiteLandingConfig,
@@ -32,6 +39,7 @@ type SettingsTabId =
   | "social"
   | "landing"
   | "email-templates"
+  | "compliance"
   | "tiers"
   | "notifications";
 type TemplatesKind = "email" | "invoice";
@@ -45,6 +53,7 @@ const SETTINGS_TABS: Array<{ id: SettingsTabId; label: string }> = [
   { id: "social", label: "Social links" },
   { id: "landing", label: "Landing page config" },
   { id: "email-templates", label: "Templates" },
+  { id: "compliance", label: "Compliance" },
   { id: "tiers", label: "Service tiers" },
   { id: "notifications", label: "Notifications" },
 ];
@@ -57,6 +66,7 @@ function resolveTab(value: string | undefined): SettingsTabId {
   if (value === "social") return "social";
   if (value === "landing") return "landing";
   if (value === "email-templates") return "email-templates";
+  if (value === "compliance") return "compliance";
   if (value === "tiers") return "tiers";
   if (value === "notifications") return "notifications";
   return "social";
@@ -204,6 +214,35 @@ async function saveInvoiceTemplate(formData: FormData) {
   revalidatePath("/admin/invoices");
 }
 
+async function saveComplianceDoc(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const docId = String(formData.get("docId") ?? "");
+  if (!isComplianceDocId(docId)) {
+    return;
+  }
+
+  await saveComplianceDocLocalesConfig(docId, {
+    en: {
+      title: String(formData.get("titleEn") ?? ""),
+      summary: String(formData.get("summaryEn") ?? ""),
+      body: String(formData.get("bodyEn") ?? ""),
+      effectiveDate: String(formData.get("effectiveDateEn") ?? ""),
+    },
+    es: {
+      title: String(formData.get("titleEs") ?? ""),
+      summary: String(formData.get("summaryEs") ?? ""),
+      body: String(formData.get("bodyEs") ?? ""),
+      effectiveDate: String(formData.get("effectiveDateEs") ?? ""),
+    },
+  });
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/legal");
+  revalidatePath("/");
+}
+
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   await requireRole("ADMIN");
   const resolvedSearchParams = await Promise.resolve(searchParams);
@@ -218,14 +257,17 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const invoiceThemePreview = resolveInvoiceTheme(
     getFirstSearchValue(resolvedSearchParams?.invoiceTheme)
   );
+  const complianceDocQuery = getFirstSearchValue(resolvedSearchParams?.complianceDoc);
 
-  const [t, socialLinks, landingConfig, emailTemplates, invoiceTemplate] = await Promise.all([
+  const [t, socialLinks, landingConfig, emailTemplates, invoiceTemplate, complianceContent] =
+    await Promise.all([
     getTranslations(),
     getSiteSocialLinks(),
     getSiteLandingConfig(),
     getEmailTemplatesConfig(),
     getInvoiceTemplateConfig(),
-  ]);
+    getComplianceContentConfig(),
+    ]);
 
   const selectedTemplateId = isEmailTemplateId(templateQuery)
     ? templateQuery
@@ -240,6 +282,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     invoiceTemplate,
     invoiceThemePreview
   );
+  const selectedComplianceDocId = isComplianceDocId(complianceDocQuery)
+    ? complianceDocQuery
+    : COMPLIANCE_DOC_IDS[0];
+  const selectedComplianceMeta = COMPLIANCE_DOC_DEFINITIONS[selectedComplianceDocId];
+  const selectedCompliance = complianceContent[selectedComplianceDocId];
 
   const socialFields = [
     {
@@ -334,6 +381,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 params.set("kind", templateKind);
                 params.set("mode", templateMode);
                 params.set("invoiceTheme", invoiceThemePreview);
+              }
+              if (tab.id === "compliance") {
+                params.set("complianceDoc", selectedComplianceDocId);
               }
               const isActive = currentTab === tab.id;
 
@@ -1049,6 +1099,184 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 ) : null}
               </div>
             )}
+          </div>
+        ) : null}
+
+        {currentTab === "compliance" ? (
+          <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+            <div className="app-card p-4 shadow-contrast">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Compliance documents
+              </h2>
+              <div className="mt-3 space-y-2">
+                {COMPLIANCE_DOC_IDS.map((docId) => {
+                  const definition = COMPLIANCE_DOC_DEFINITIONS[docId];
+                  const isActive = selectedComplianceDocId === docId;
+                  return (
+                    <Link
+                      key={docId}
+                      href={`/admin/settings?tab=compliance&complianceDoc=${docId}`}
+                      className={`block rounded-xl border px-3 py-3 text-left transition ${
+                        isActive
+                          ? "border-sky-300 bg-sky-50 shadow-sm"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+                        {definition.label}
+                      </p>
+                      <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                        {definition.description}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="app-card p-6 shadow-contrast">
+                <h2 className="text-lg font-semibold">
+                  Compliance editor: {selectedComplianceMeta.label}
+                </h2>
+                <p className="mt-2 text-sm text-slate-600">
+                  Edit public legal pages shown in landing footer and under /legal.
+                </p>
+
+                <form action={saveComplianceDoc} className="mt-5 space-y-6">
+                  <input type="hidden" name="docId" value={selectedComplianceDocId} />
+
+                  <div className="grid gap-5 lg:grid-cols-2">
+                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <h3 className="text-sm font-semibold text-slate-900">English</h3>
+                      <div className="mt-3 space-y-3">
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Title
+                          </span>
+                          <input
+                            name="titleEn"
+                            defaultValue={selectedCompliance.en.title}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Summary
+                          </span>
+                          <textarea
+                            name="summaryEn"
+                            defaultValue={selectedCompliance.en.summary}
+                            rows={3}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Effective date
+                          </span>
+                          <input
+                            name="effectiveDateEn"
+                            defaultValue={selectedCompliance.en.effectiveDate}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                            placeholder="YYYY-MM-DD"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Body
+                          </span>
+                          <textarea
+                            name="bodyEn"
+                            defaultValue={selectedCompliance.en.body}
+                            rows={18}
+                            className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
+                          />
+                        </label>
+                      </div>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <h3 className="text-sm font-semibold text-slate-900">Spanish</h3>
+                      <div className="mt-3 space-y-3">
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Title
+                          </span>
+                          <input
+                            name="titleEs"
+                            defaultValue={selectedCompliance.es.title}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Summary
+                          </span>
+                          <textarea
+                            name="summaryEs"
+                            defaultValue={selectedCompliance.es.summary}
+                            rows={3}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Effective date
+                          </span>
+                          <input
+                            name="effectiveDateEs"
+                            defaultValue={selectedCompliance.es.effectiveDate}
+                            className="app-input mt-2 w-full px-4 py-3 text-sm"
+                            placeholder="YYYY-MM-DD"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Body
+                          </span>
+                          <textarea
+                            name="bodyEs"
+                            defaultValue={selectedCompliance.es.body}
+                            rows={18}
+                            className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
+                          />
+                        </label>
+                      </div>
+                    </section>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-xs text-slate-500">
+                      Public pages:
+                      <a
+                        href="/legal"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-1 font-semibold text-sky-700 hover:text-sky-800"
+                      >
+                        /legal
+                      </a>
+                      <span className="mx-1">|</span>
+                      <a
+                        href={`/legal/${selectedComplianceMeta.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-semibold text-sky-700 hover:text-sky-800"
+                      >
+                        /legal/{selectedComplianceMeta.slug}
+                      </a>
+                    </div>
+                    <FormSubmitButton
+                      idleLabel="Save compliance document"
+                      pendingLabel={t("common.feedback.saving")}
+                      successLabel={t("common.feedback.saved")}
+                      className="px-5 py-2.5"
+                    />
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         ) : null}
 

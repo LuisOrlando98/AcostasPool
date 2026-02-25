@@ -1,5 +1,19 @@
+import { DateTime } from "luxon";
+import { BUSINESS_TIMEZONE } from "@/lib/jobs/capacity";
+
 export function combineDateAndTime(dateValue: string, timeValue: string) {
-  return new Date(`${dateValue}T${timeValue}:00`);
+  const normalizedTime = /^(\d{1,2}):(\d{2})$/.exec(timeValue);
+  if (!normalizedTime) {
+    return new Date(Number.NaN);
+  }
+  const hours = normalizedTime[1].padStart(2, "0");
+  const minutes = normalizedTime[2];
+  const dateTime = DateTime.fromFormat(
+    `${dateValue} ${hours}:${minutes}`,
+    "yyyy-MM-dd HH:mm",
+    { zone: BUSINESS_TIMEZONE }
+  );
+  return dateTime.isValid ? dateTime.toJSDate() : new Date(Number.NaN);
 }
 
 export function addPlanFrequency(date: Date, frequency: string) {

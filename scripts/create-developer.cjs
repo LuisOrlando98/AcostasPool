@@ -1,0 +1,129 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+const readline = require("readline");
+const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
+
+const prisma = new PrismaClient();
+const DEVELOPER_EMAIL = "luiso.rodriguezcabrera@gmail.com";
+
+function promptText(rl, question, { required = true, defaultValue = "" } = {}) {
+  return new Promise((resolve) => {
+    const ask = () => {
+      const suffix = defaultValue ? ` [${defaultValue}]` : "";
+      rl.question(`${question}${suffix}: `, (raw) => {
+        const value = raw.trim() || defaultValue;
+        if (required && !value) {
+          console.log("Este campo es obligatorio.");
+          ask();
+          return;
+        }
+        resolve(value);
+      });
+    };
+    ask();
+  });
+}
+
+function promptHidden(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
+
+  return new Promise((resolve) => {
+    const originalWrite = rl._writeToOutput;
+    rl.stdoutMuted = true;
+    rl._writeToOutput = function _writeToOutput(stringToWrite) {
+      if (!rl.stdoutMuted) {
+        originalWrite.call(rl, stringToWrite);
+        return;
+      }
+      if (stringToWrite.startsWith(`${question}:`)) {
+        originalWrite.call(rl, stringToWrite);
+        return;
+      }
+      originalWrite.call(rl, "*");
+    };
+
+    rl.question(`${question}: `, (value) => {
+      rl.stdoutMuted = false;
+      rl._writeToOutput = originalWrite;
+      rl.close();
+      console.log("");
+      resolve(value.trim());
+    });
+  });
+}
+
+async function main() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  try {
+    console.log("Create Developer User");
+    console.log("---------------------");
+    console.log(`Email bloqueado: ${DEVELOPER_EMAIL}`);
+
+    const fullName = await promptText(rl, "Nombre completo", {
+      required: false,
+      defaultValue: "Luis Developer",
+    });
+    const password = await promptHidden("Password");
+    const passwordConfirm = await promptHidden("Confirmar password");
+
+    if (!password) {
+      throw new Error("Password requerido.");
+    }
+    if (password.length < 10) {
+      throw new Error("Password debe tener al menos 10 caracteres.");
+    }
+    if (password !== passwordConfirm) {
+      throw new Error("Las passwords no coinciden.");
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: DEVELOPER_EMAIL, mode: "insensitive" } },
+      select: { id: true },
+    });
+
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            email: DEVELOPER_EMAIL,
+            fullName,
+            passwordHash,
+            role: "ADMIN",
+            isDeveloper: true,
+            isActive: true,
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            email: DEVELOPER_EMAIL,
+            fullName,
+            passwordHash,
+            role: "ADMIN",
+            isDeveloper: true,
+            locale: "ES",
+            isActive: true,
+          },
+        });
+
+    console.log(`Developer creado/actualizado: ${user.email}`);
+    console.log(`User ID: ${user.id}`);
+  } finally {
+    rl.close();
+    await prisma.$disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error("Error:", error.message ?? error);
+  process.exit(1);
+});

@@ -9,20 +9,22 @@ export default function ResetPasswordPage() {
   const { t } = useI18n();
   const searchParams = useSearchParams();
   const initialToken = searchParams.get("token") ?? "";
+  const [email, setEmail] = useState("");
   const [token, setToken] = useState(initialToken);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error" | null>(null);
   const [loading, setLoading] = useState(false);
+  const hasToken = token.trim().length > 0;
 
-  const handleSubmit = async () => {
+  const handleResetPassword = async () => {
     if (!token) {
       setMessage(t("auth.reset.errors.token"));
       setMessageTone("error");
       return;
     }
-    if (password.length < 6) {
+    if (password.length < 10) {
       setMessage(t("auth.reset.errors.length"));
       setMessageTone("error");
       return;
@@ -52,6 +54,35 @@ export default function ResetPasswordPage() {
     setLoading(false);
   };
 
+  const handleRequestReset = async () => {
+    if (!email.trim()) {
+      setMessage(t("auth.reset.errors.email"));
+      setMessageTone("error");
+      return;
+    }
+    setLoading(true);
+    setMessage(null);
+    setMessageTone(null);
+
+    const res = await fetch("/api/auth/forgot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.error ?? t("auth.reset.errors.generic"));
+      setMessageTone("error");
+      setLoading(false);
+      return;
+    }
+
+    setMessage(t("auth.reset.requestSent"));
+    setMessageTone("success");
+    setLoading(false);
+  };
+
   return (
     <div className="pool-login-shell min-h-screen">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between">
@@ -63,7 +94,9 @@ export default function ResetPasswordPage() {
             {t("auth.reset.title")}{" "}
             <span className="text-[#30bced]">{t("app.name")}</span>.
           </h1>
-          <p className="text-sm text-white/70 sm:text-base">{t("auth.reset.subtitle")}</p>
+          <p className="text-sm text-white/70 sm:text-base">
+            {hasToken ? t("auth.reset.subtitle") : t("auth.reset.requestSubtitle")}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="pool-login-metric">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
@@ -97,39 +130,56 @@ export default function ResetPasswordPage() {
           <h2 className="mt-2 text-xl font-semibold text-[#30bced]">{t("auth.reset.title")}</h2>
 
           <div className="mt-6 space-y-4">
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                {t("auth.reset.token")}
-              </label>
-              <input
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-                className="app-input mt-2 w-full px-4 py-3 text-sm"
-                placeholder={t("auth.reset.tokenPlaceholder")}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                {t("auth.reset.newPassword")}
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="app-input mt-2 w-full px-4 py-3 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                {t("auth.reset.confirmPassword")}
-              </label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={(event) => setConfirm(event.target.value)}
-                className="app-input mt-2 w-full px-4 py-3 text-sm"
-              />
-            </div>
+            {hasToken ? (
+              <>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                    {t("auth.reset.token")}
+                  </label>
+                  <input
+                    value={token}
+                    onChange={(event) => setToken(event.target.value)}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("auth.reset.tokenPlaceholder")}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                    {t("auth.reset.newPassword")}
+                  </label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                    {t("auth.reset.confirmPassword")}
+                  </label>
+                  <input
+                    type="password"
+                    value={confirm}
+                    onChange={(event) => setConfirm(event.target.value)}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                  {t("common.labels.email")}
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  placeholder={t("auth.login.emailPlaceholder")}
+                />
+              </div>
+            )}
             {message ? (
               <div
                 className={`rounded-xl border px-4 py-3 text-sm ${
@@ -143,11 +193,15 @@ export default function ResetPasswordPage() {
             ) : null}
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={hasToken ? handleResetPassword : handleRequestReset}
               disabled={loading}
               className="w-full rounded-full bg-[#30bced] px-4 py-3 text-sm font-semibold text-[#07182b] transition hover:bg-[#52d6ff] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {loading ? t("auth.reset.loading") : t("auth.reset.submit")}
+              {loading
+                ? t("auth.reset.loading")
+                : hasToken
+                  ? t("auth.reset.submit")
+                  : t("auth.reset.requestSubmit")}
             </button>
           </div>
         </section>

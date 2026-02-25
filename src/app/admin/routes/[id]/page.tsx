@@ -12,10 +12,11 @@ import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
 
 async function updateJobStatus(formData: FormData) {
   "use server";
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
 
   const jobId = String(formData.get("jobId"));
   const status = String(formData.get("status"));
@@ -34,8 +35,9 @@ async function updateJobStatus(formData: FormData) {
     return;
   }
 
-  await prisma.job.update({
-    where: { id: jobId },
+  await applyJobLifecycleUpdate({
+    jobId,
+    actorUserId: session.sub,
     data: { status: normalizedStatus },
   });
 
@@ -44,7 +46,7 @@ async function updateJobStatus(formData: FormData) {
 
 async function updateJobTechnician(formData: FormData) {
   "use server";
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
 
   const jobId = String(formData.get("jobId"));
   const technicianId = String(formData.get("technicianId") ?? "");
@@ -53,8 +55,9 @@ async function updateJobTechnician(formData: FormData) {
     return;
   }
 
-  await prisma.job.update({
-    where: { id: jobId },
+  await applyJobLifecycleUpdate({
+    jobId,
+    actorUserId: session.sub,
     data: { technicianId: technicianId || null },
   });
 

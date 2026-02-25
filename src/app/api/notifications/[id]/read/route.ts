@@ -29,11 +29,25 @@ export async function POST(
   }
 
   if (session.role !== "ADMIN") {
+    if (session.role === "TECH") {
+      const payload =
+        notification.payload && typeof notification.payload === "object"
+          ? (notification.payload as Record<string, unknown>)
+          : null;
+      const recipientUserId =
+        payload && typeof payload.recipientUserId === "string"
+          ? payload.recipientUserId
+          : null;
+      if (recipientUserId !== session.sub) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    } else {
     const customer = await prisma.customer.findUnique({
       where: { userId: session.sub },
     });
     if (!customer || customer.id !== notification.customerId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     }
   }
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
+import { logAuditEvent } from "@/lib/audit/log";
 import {
   getDefaultServiceTierId,
   getServiceTierChecklist,
@@ -14,6 +15,7 @@ import {
   getLeadStartDate,
   getWeekStartKey,
   parseDateOnly,
+  toDateKey,
   timeValueToMinutes,
 } from "@/lib/jobs/capacity";
 
@@ -98,6 +100,13 @@ export async function POST(request: Request) {
   if (!customer) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, customerId: true },
+  });
+  if (!property || property.customerId !== customer.id) {
+    return NextResponse.json({ error: "Invalid property" }, { status: 403 });
+  }
 
   const parsedPreferredDate = preferredDate ? parseDateOnly(preferredDate) : null;
   if (preferredDate && !parsedPreferredDate) {
@@ -131,7 +140,7 @@ export async function POST(request: Request) {
 
   if (isUrgentRequest) {
     const urgentDate = combineDateAndTime(
-      preferredDate ?? leadStartDate.toLocaleDateString("en-CA"),
+      preferredDate ?? toDateKey(leadStartDate),
       normalizedPreferredTime ?? "09:00"
     );
     const urgentSortOrder =
@@ -204,7 +213,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const preferredDateKey = preferredStartDate.toLocaleDateString("en-CA");
+    const preferredDateKey = toDateKey(preferredStartDate);
     const targetVisits = mode === "RECURRING" ? weeks * visitsPerWeek : 1;
     const scheduledDates: Date[] = [];
     const weekCounters = new Map<string, number>();
@@ -317,6 +326,23 @@ export async function POST(request: Request) {
       visitsPerWeek: mode === "RECURRING" ? visitsPerWeek : 1,
       reviewRequired: isUrgentRequest,
       partial: partialAutoSchedule,
+    },
+  });
+
+  await logAuditEvent({
+    userId: session.sub,
+    action: "CUSTOMER_REQUEST_CREATED",
+    entity: "Job",
+    metadata: {
+      customerId: customer.id,
+      propertyId,
+      jobIds: createdJobs.map((job) => job.id),
+      mode,
+      reviewRequired: isUrgentRequest,
+      partial: partialAutoSchedule,
+      reason,
+      preferredDate: preferredDate ?? null,
+      preferredTime: normalizedPreferredTime ?? null,
     },
   });
 

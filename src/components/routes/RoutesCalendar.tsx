@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
-import { TECH_DAILY_CAPACITY } from "@/lib/jobs/capacity";
+import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
@@ -162,7 +162,6 @@ const normalizeChecklist = (value?: { label?: string; completed?: boolean }[] | 
         .filter((item) => item.label)
     : [];
 
-const toDateKey = (value: Date) => value.toLocaleDateString("en-CA");
 const toRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace("#", "");
   const full =

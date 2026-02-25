@@ -18,3 +18,11 @@ export async function requireRole(role: UserRole) {
   }
   return session;
 }
+
+export async function requireDeveloper() {
+  const session = await requireRole("ADMIN");
+  if (!session.isDeveloper) {
+    redirect("/unauthorized?next=/admin");
+  }
+  return session;
+}

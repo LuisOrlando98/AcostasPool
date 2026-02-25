@@ -257,13 +257,13 @@
     },
     "credentials": {
       "title": "Credenciales",
-      "subtitle": "Genera un link temporal para cambiar tu contrasena."
+      "subtitle": "Envia un enlace seguro de cambio a tu correo."
     },
     "resetLink": {
-      "submit": "Generar link de cambio",
-      "loading": "Generando...",
-      "copy": "Copiar link",
-      "error": "No se pudo generar el link."
+      "submit": "Enviar correo de cambio",
+      "loading": "Enviando...",
+      "sent": "Enviamos un enlace de cambio a tu correo.",
+      "error": "No se pudo enviar el correo de cambio."
     },
     "avatar": {
       "alt": "Avatar",
@@ -323,16 +323,20 @@
     "reset": {
       "title": "Restablecer contrasena",
       "subtitle": "Ingresa el token y tu nueva contrasena.",
+      "requestSubtitle": "Ingresa tu correo y te enviaremos un enlace seguro de cambio.",
       "token": "Token",
       "tokenPlaceholder": "Token",
       "newPassword": "Nueva contrasena",
       "confirmPassword": "Confirmar contrasena",
       "submit": "Cambiar contrasena",
+      "requestSubmit": "Enviar enlace de cambio",
+      "requestSent": "Si la cuenta existe, enviamos un enlace de cambio a ese correo.",
       "loading": "Guardando...",
       "success": "Contrasena actualizada. Ya puedes iniciar sesion.",
       "errors": {
         "token": "Token requerido.",
-        "length": "La contrasena debe tener al menos 6 caracteres.",
+        "email": "El correo es obligatorio.",
+        "length": "La contrasena debe tener al menos 10 caracteres.",
         "mismatch": "Las contrasenas no coinciden.",
         "generic": "No se pudo cambiar la contrasena."
       }
@@ -350,7 +354,7 @@
       "errors": {
         "token": "Token requerido.",
         "load": "No se pudo cargar el perfil.",
-        "length": "La contrasena debe tener al menos 6 caracteres.",
+        "length": "La contrasena debe tener al menos 10 caracteres.",
         "mismatch": "Las contrasenas no coinciden.",
         "required": "Nombre, apellidos y telefono son obligatorios.",
         "submit": "No se pudo completar el perfil."

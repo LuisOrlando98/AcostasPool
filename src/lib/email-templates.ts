@@ -1,5 +1,6 @@
 export const EMAIL_TEMPLATE_IDS = [
   "CUSTOMER_INVITE",
+  "PASSWORD_RESET",
   "INVOICE_SENT",
   "QUOTE_REQUEST",
   "CUSTOMER_SERVICE_SCHEDULED",
@@ -62,6 +63,42 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
       customer_name_html: "Alex Rivera",
       invite_link: "https://app.example.com/complete-profile?token=abc123",
       invite_hours: "48",
+    },
+  },
+  PASSWORD_RESET: {
+    label: "Password reset",
+    description: "Email sent when a user requests to reset the account password.",
+    placeholders: [
+      "{{recipient_name}}",
+      "{{recipient_name_html}}",
+      "{{reset_link}}",
+      "{{reset_hours}}",
+    ],
+    defaults: {
+      subject: "Reset your AcostasPool password",
+      text: [
+        "Hi {{recipient_name}},",
+        "",
+        "We received a request to reset your password.",
+        "Use this secure link: {{reset_link}}",
+        "",
+        "This link expires in {{reset_hours}} hours.",
+        "If you didn't request this, you can ignore this message.",
+      ].join("\n"),
+      html: [
+        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+        '<h3 style="margin:0 0 10px;color:#0b1f35;">Password reset request</h3>',
+        '<p style="margin:0 0 12px;color:#334155;">Hi {{recipient_name_html}}, we received a request to reset your password.</p>',
+        '<p style="margin:0 0 14px;"><a href="{{reset_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Reset password</a></p>',
+        '<p style="margin:0;color:#64748b;font-size:13px;">This link expires in {{reset_hours}} hours. If this was not you, ignore this email.</p>',
+        "</div>",
+      ].join(""),
+    },
+    previewValues: {
+      recipient_name: "Alex Rivera",
+      recipient_name_html: "Alex Rivera",
+      reset_link: "https://app.example.com/reset?token=abc123",
+      reset_hours: "2",
     },
   },
   INVOICE_SENT: {

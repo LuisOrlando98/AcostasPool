@@ -7,6 +7,7 @@ import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { createNotification } from "@/lib/notifications/create";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { readStoredAsset } from "@/lib/storage/object-store";
+import { logAuditEvent } from "@/lib/audit/log";
 
 export const runtime = "nodejs";
 
@@ -103,6 +104,17 @@ export async function POST(
       },
     });
 
+    await logAuditEvent({
+      userId: session.sub,
+      action: "INVOICE_SENT",
+      entity: "Invoice",
+      entityId: invoice.id,
+      metadata: {
+        customerId: invoice.customerId,
+        email: invoice.customer.email,
+      },
+    });
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Invoice send failed:", error);
@@ -115,6 +127,17 @@ export async function POST(
       actorUserId: session.sub,
       payload: {
         invoiceId: invoice.id,
+      },
+    });
+
+    await logAuditEvent({
+      userId: session.sub,
+      action: "INVOICE_SEND_FAILED",
+      entity: "Invoice",
+      entityId: invoice.id,
+      metadata: {
+        customerId: invoice.customerId,
+        error: error instanceof Error ? error.message : String(error),
       },
     });
 

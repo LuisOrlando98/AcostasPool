@@ -7,7 +7,7 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
 
 export default async function AdminPage() {
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
   const t = await getTranslations();
 
   const today = new Date();
@@ -87,6 +87,27 @@ export default async function AdminPage() {
           tone="info"
         />
       </section>
+
+      {session.isDeveloper ? (
+        <section className="app-card p-5 shadow-contrast">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                Developer Access
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900">
+                Consola de pruebas y auditoria
+              </h2>
+            </div>
+            <a
+              href="/admin/developer"
+              className="app-button-secondary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+            >
+              Abrir developer console
+            </a>
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="app-card p-6 shadow-contrast">

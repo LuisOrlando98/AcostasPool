@@ -7,7 +7,7 @@ import { normalizeUsPhone } from "@/lib/phones";
 
 const completeSchema = z.object({
   token: z.string().min(10),
-  password: z.string().min(6),
+  password: z.string().min(10),
   nombre: z.string().trim().min(1),
   apellidos: z.string().trim().min(1),
   telefono: z.string().trim().min(1),
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     include: { user: { include: { customer: true } } },
   });
 
-  if (!resetToken || resetToken.usedAt) {
+  if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
     return NextResponse.json({ error: "Token invalido" }, { status: 400 });
   }
 
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
     include: { user: { include: { customer: true } } },
   });
 
-  if (!resetToken || resetToken.usedAt) {
+  if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
     return NextResponse.json({ error: "Token invalido" }, { status: 400 });
   }
 
@@ -156,8 +156,8 @@ export async function POST(request: Request) {
         codigoPostal: codigoPostal?.trim() || null,
       },
     }),
-    prisma.passwordResetToken.update({
-      where: { id: resetToken.id },
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, purpose: "INVITE", usedAt: null },
       data: { usedAt: new Date() },
     }),
   ]);

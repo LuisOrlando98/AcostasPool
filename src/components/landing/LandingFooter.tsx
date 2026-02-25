@@ -46,9 +46,20 @@ const FOOTER_COPY: Record<
     repairRecovery: string;
     premiumStandard: string;
     contactPage: string;
+    legal: string;
+    legalCenter: string;
+    privacyPolicy: string;
+    termsOfService: string;
+    cookiePolicy: string;
+    dataRetention: string;
+    securityPolicy: string;
+    incidentResponse: string;
+    backupRecovery: string;
+    californiaNotice: string;
     rights: string;
     about: string;
     contactShort: string;
+    legalShort: string;
     login: string;
     languageLabel: string;
     themeLabel: string;
@@ -71,9 +82,20 @@ const FOOTER_COPY: Record<
     repairRecovery: "Regular Maintenance",
     premiumStandard: "Equipment Repair",
     contactPage: "Contact page",
+    legal: "Compliance",
+    legalCenter: "Compliance center",
+    privacyPolicy: "Privacy policy",
+    termsOfService: "Terms of service",
+    cookiePolicy: "Cookie policy",
+    dataRetention: "Data retention",
+    securityPolicy: "Security policy",
+    incidentResponse: "Incident response",
+    backupRecovery: "Backup and recovery",
+    californiaNotice: "California privacy notice",
     rights: "All rights reserved.",
     about: "About",
     contactShort: "Contact",
+    legalShort: "Legal",
     login: "Log in",
     languageLabel: "Language",
     themeLabel: "Theme",
@@ -95,9 +117,20 @@ const FOOTER_COPY: Record<
     repairRecovery: "Mantenimiento regular",
     premiumStandard: "Reparacion de equipos",
     contactPage: "Pagina de contacto",
+    legal: "Cumplimiento",
+    legalCenter: "Centro de cumplimiento",
+    privacyPolicy: "Politica de privacidad",
+    termsOfService: "Terminos de servicio",
+    cookiePolicy: "Politica de cookies",
+    dataRetention: "Retencion de datos",
+    securityPolicy: "Politica de seguridad",
+    incidentResponse: "Respuesta a incidentes",
+    backupRecovery: "Backup y recuperacion",
+    californiaNotice: "Aviso de privacidad de California",
     rights: "Todos los derechos reservados.",
     about: "Nosotros",
     contactShort: "Contacto",
+    legalShort: "Legal",
     login: "Acceso",
     languageLabel: "Idioma",
     themeLabel: "Tema",
@@ -222,6 +255,23 @@ export default function LandingFooter({
         { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },
         { label: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
         { label: copy.contactPage, href: "/contact" },
+      ],
+    },
+    {
+      title: copy.legal,
+      items: [
+        { label: copy.legalCenter, href: "/legal" },
+        { label: copy.privacyPolicy, href: "/legal/privacy-policy" },
+        { label: copy.termsOfService, href: "/legal/terms-of-service" },
+        { label: copy.cookiePolicy, href: "/legal/cookie-policy" },
+        { label: copy.dataRetention, href: "/legal/data-retention" },
+        { label: copy.securityPolicy, href: "/legal/security-policy" },
+        { label: copy.incidentResponse, href: "/legal/incident-response" },
+        { label: copy.backupRecovery, href: "/legal/backup-recovery" },
+        {
+          label: copy.californiaNotice,
+          href: "/legal/california-privacy-notice",
+        },
       ],
     },
   ];
@@ -350,6 +400,7 @@ export default function LandingFooter({
           <div className="lp-footer-meta-links">
             <Link href="/about">{copy.about}</Link>
             <Link href="/contact">{copy.contactShort}</Link>
+            <Link href="/legal">{copy.legalShort}</Link>
             <Link href="/login">{copy.login}</Link>
           </div>
         </div>

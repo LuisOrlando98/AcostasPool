@@ -6,19 +6,28 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { getTranslations } from "@/i18n/server";
+import { normalizeEmail } from "@/lib/auth/email";
 
 async function createTechnician(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
 
   const fullName = String(formData.get("fullName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
   const phone = String(formData.get("phone") ?? "").trim();
   const password = String(formData.get("password") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   const colorHex = String(formData.get("colorHex") ?? "").trim();
 
   if (!fullName || !email || !password) {
+    return;
+  }
+
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (existingUser) {
     return;
   }
 

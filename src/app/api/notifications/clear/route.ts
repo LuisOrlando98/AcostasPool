@@ -53,5 +53,37 @@ export async function POST() {
     return NextResponse.json({ ok: true, count: result.count });
   }
 
+  if (session.role === "TECH") {
+    const { disabled } = await getNotificationPreferences(
+      session.sub,
+      session.role
+    );
+    const candidates = await prisma.notification.findMany({
+      where: {
+        recipientRole: "TECH",
+        readAt: null,
+        ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+      },
+      select: { id: true, payload: true },
+    });
+    const ids = candidates
+      .filter((item) => {
+        const payload =
+          item.payload && typeof item.payload === "object"
+            ? (item.payload as Record<string, unknown>)
+            : null;
+        return payload?.recipientUserId === session.sub;
+      })
+      .map((item) => item.id);
+    if (ids.length === 0) {
+      return NextResponse.json({ ok: true, count: 0 });
+    }
+    const result = await prisma.notification.updateMany({
+      where: { id: { in: ids } },
+      data: { readAt: new Date() },
+    });
+    return NextResponse.json({ ok: true, count: result.count });
+  }
+
   return NextResponse.json({ ok: true, count: 0 });
 }

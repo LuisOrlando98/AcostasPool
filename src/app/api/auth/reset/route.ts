@@ -2,13 +2,30 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const resetSchema = z.object({
   token: z.string().min(10),
-  password: z.string().min(6),
+  password: z.string().min(10),
 });
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const rate = await checkRateLimit({
+    key: `auth:reset:ip:${ip}`,
+    limit: 12,
+    windowMs: 15 * 60_000,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rate.retryAfterSeconds) },
+      }
+    );
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = resetSchema.safeParse(body);
   if (!parsed.success) {
@@ -21,7 +38,11 @@ export async function POST(request: Request) {
     include: { user: { include: { customer: true } } },
   });
 
-  if (!resetToken || resetToken.usedAt) {
+  if (
+    !resetToken ||
+    resetToken.purpose !== "PASSWORD_RESET" ||
+    resetToken.usedAt
+  ) {
     return NextResponse.json({ error: "Token invalido" }, { status: 400 });
   }
 
@@ -40,8 +61,12 @@ export async function POST(request: Request) {
     data: { passwordHash, isActive },
   });
 
-  await prisma.passwordResetToken.update({
-    where: { id: resetToken.id },
+  await prisma.passwordResetToken.updateMany({
+    where: {
+      userId: resetToken.userId,
+      purpose: "PASSWORD_RESET",
+      usedAt: null,
+    },
     data: { usedAt: new Date() },
   });
 

@@ -20,11 +20,13 @@ import {
 } from "@/lib/service-tiers";
 import { getJobStatusLabel } from "@/lib/constants";
 import { getRouteDayRange, queueTechDigestItem } from "@/lib/notifications/techDigest";
+import { createNotification } from "@/lib/notifications/create";
 import { formatCustomerName } from "@/lib/customers/format";
 import { sendCustomerInvite } from "@/lib/customers/invite";
 import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { normalizeEmail } from "@/lib/auth/email";
 
 async function createProperty(formData: FormData) {
   "use server";
@@ -72,7 +74,7 @@ async function updateCustomer(formData: FormData) {
   const customerId = String(formData.get("customerId"));
   const nombre = String(formData.get("nombre") ?? "").trim();
   const apellidos = String(formData.get("apellidos") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
   const telefonoRaw = String(formData.get("telefono") ?? "").trim();
   const telefonoSecundarioRaw = String(
     formData.get("telefonoSecundario") ?? ""
@@ -111,6 +113,26 @@ async function updateCustomer(formData: FormData) {
     return;
   }
 
+  const existingCustomer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { userId: true },
+  });
+  if (!existingCustomer) {
+    return;
+  }
+  if (existingCustomer.userId) {
+    const duplicate = await prisma.user.findFirst({
+      where: {
+        id: { not: existingCustomer.userId },
+        email: { equals: email, mode: "insensitive" },
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
+      return;
+    }
+  }
+
   const customer = await prisma.customer.update({
     where: { id: customerId },
     data: {
@@ -136,6 +158,7 @@ async function updateCustomer(formData: FormData) {
     await prisma.user.update({
       where: { id: customer.userId },
       data: {
+        email,
         fullName,
         locale: customer.idiomaPreferencia,
         isActive: customer.estadoCuenta === "ACTIVE",
@@ -281,6 +304,13 @@ async function createJob(formData: FormData) {
   if (!customerId || !propertyId || !scheduledDateRaw) {
     return;
   }
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { customerId: true },
+  });
+  if (!property || property.customerId !== customerId) {
+    return;
+  }
 
   const scheduledDate = combineDateAndTime(
     scheduledDateRaw,
@@ -344,17 +374,15 @@ async function createJob(formData: FormData) {
     });
   }
 
-  await prisma.notification.create({
-    data: {
-      customerId,
-      channel: "EMAIL",
-      eventType: "SERVICE_SCHEDULED",
-      status: "QUEUED",
-      payload: {
-        jobId: job.id,
-        technicianId: job.technicianId,
-        scheduledDate: job.scheduledDate,
-      },
+  await createNotification({
+    customerId,
+    recipientRole: "CUSTOMER",
+    eventType: "SERVICE_SCHEDULED",
+    severity: "INFO",
+    payload: {
+      jobId: job.id,
+      technicianId: job.technicianId,
+      scheduledDate: job.scheduledDate.toISOString(),
     },
   });
 
@@ -381,6 +409,13 @@ async function createServicePlan(formData: FormData) {
   const notes = String(formData.get("notes") ?? "").trim();
 
   if (!customerId || !propertyId || !name || !nextDateRaw) {
+    return;
+  }
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { customerId: true },
+  });
+  if (!property || property.customerId !== customerId) {
     return;
   }
 
@@ -522,17 +557,15 @@ async function createJobFromPlan(formData: FormData) {
     });
   }
 
-  await prisma.notification.create({
-    data: {
-      customerId: plan.customerId,
-      channel: "EMAIL",
-      eventType: "SERVICE_SCHEDULED",
-      status: "QUEUED",
-      payload: {
-        jobId: job.id,
-        technicianId: job.technicianId,
-        scheduledDate: job.scheduledDate,
-      },
+  await createNotification({
+    customerId: plan.customerId,
+    recipientRole: "CUSTOMER",
+    eventType: "SERVICE_SCHEDULED",
+    severity: "INFO",
+    payload: {
+      jobId: job.id,
+      technicianId: job.technicianId,
+      scheduledDate: job.scheduledDate.toISOString(),
     },
   });
 
@@ -578,6 +611,7 @@ export default async function CustomerDetailPage({
           id: true,
           createdAt: true,
           passwordResetTokens: {
+            where: { purpose: "INVITE" },
             orderBy: { createdAt: "desc" },
             take: 5,
             select: {

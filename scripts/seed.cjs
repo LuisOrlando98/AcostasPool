@@ -4,11 +4,30 @@ const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 async function upsertUser({ email, password, fullName, role }) {
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await prisma.user.upsert({
-    where: { email },
-    create: {
+  const existing = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
+  });
+  if (existing) {
+    return prisma.user.update({
+      where: { id: existing.id },
+      data: {
+        email,
+        fullName,
+        role,
+        passwordHash,
+        isActive: true,
+      },
+    });
+  }
+  return prisma.user.create({
+    data: {
       email,
       passwordHash,
       fullName,
@@ -16,23 +35,21 @@ async function upsertUser({ email, password, fullName, role }) {
       locale: "ES",
       isActive: true,
     },
-    update: {
-      fullName,
-      role,
-      passwordHash,
-      isActive: true,
-    },
   });
-  return user;
 }
 
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@acostaspool.com";
+  const adminEmail = normalizeEmail(
+    process.env.SEED_ADMIN_EMAIL || "admin@acostaspool.com"
+  );
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || "Admin123!";
-  const techEmail = process.env.SEED_TECH_EMAIL || "tech@acostaspool.com";
+  const techEmail = normalizeEmail(
+    process.env.SEED_TECH_EMAIL || "tech@acostaspool.com"
+  );
   const techPassword = process.env.SEED_TECH_PASSWORD || "Tech123!";
-  const customerEmail =
-    process.env.SEED_CUSTOMER_EMAIL || "cliente@acostaspool.com";
+  const customerEmail = normalizeEmail(
+    process.env.SEED_CUSTOMER_EMAIL || "cliente@acostaspool.com"
+  );
   const customerPassword =
     process.env.SEED_CUSTOMER_PASSWORD || "Client123!";
 

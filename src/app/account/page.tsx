@@ -8,24 +8,48 @@ import { requireAuth } from "@/lib/auth/guards";
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
 import { getTranslations } from "@/i18n/server";
+import { normalizeEmail } from "@/lib/auth/email";
 
 async function updateProfile(formData: FormData) {
   "use server";
   const session = await requireAuth();
 
   const fullName = String(formData.get("fullName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
   const locale = String(formData.get("locale") ?? "EN");
 
   if (!fullName || !email) {
     return;
   }
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.sub },
+    select: { id: true, email: true, isDeveloper: true },
+  });
+  if (!currentUser) {
+    return;
+  }
+
+  const resolvedEmail = currentUser.isDeveloper ? currentUser.email : email;
+
+  if (!currentUser.isDeveloper) {
+    const duplicate = await prisma.user.findFirst({
+      where: {
+        id: { not: session.sub },
+        email: { equals: resolvedEmail, mode: "insensitive" },
+      },
+      select: { id: true },
+    });
+    if (duplicate) {
+      return;
+    }
+  }
+
   await prisma.user.update({
     where: { id: session.sub },
     data: {
       fullName,
-      email,
+      email: resolvedEmail,
       locale: locale === "EN" ? "EN" : "ES",
     },
   });
@@ -86,6 +110,7 @@ export default async function AccountPage() {
                   name="email"
                   type="email"
                   defaultValue={user.email}
+                  disabled={user.isDeveloper}
                   className="app-input mt-2 w-full px-4 py-3 text-sm"
                 />
               </div>

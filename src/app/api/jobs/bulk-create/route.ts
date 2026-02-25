@@ -9,6 +9,7 @@ import {
 import { getRouteDayRange, queueTechDigestItem } from "@/lib/notifications/techDigest";
 import { formatCustomerName } from "@/lib/customers/format";
 import { createNotification } from "@/lib/notifications/create";
+import { logAuditEvent } from "@/lib/audit/log";
 
 type DraftPayload = {
   customerId: string;
@@ -36,6 +37,21 @@ export async function POST(request: Request) {
   if (!date || drafts.length === 0) {
     return NextResponse.json({ error: "Invalid data" }, { status: 400 });
   }
+
+  const propertyIds = [
+    ...new Set(
+      drafts
+        .map((draft: DraftPayload) => draft.propertyId)
+        .filter((value): value is string => typeof value === "string" && value)
+    ),
+  ];
+  const properties = await prisma.property.findMany({
+    where: { id: { in: propertyIds } },
+    select: { id: true, customerId: true },
+  });
+  const propertyCustomerById = new Map(
+    properties.map((property) => [property.id, property.customerId])
+  );
 
   const endOfToday = new Date();
   endOfToday.setHours(23, 59, 59, 999);
@@ -78,6 +94,13 @@ export async function POST(request: Request) {
   for (const draft of drafts as DraftPayload[]) {
     if (!draft.customerId || !draft.propertyId) {
       continue;
+    }
+    const propertyCustomerId = propertyCustomerById.get(draft.propertyId);
+    if (!propertyCustomerId || propertyCustomerId !== draft.customerId) {
+      return NextResponse.json(
+        { error: `Invalid property for customer in draft: ${draft.propertyId}` },
+        { status: 400 }
+      );
     }
     const scheduledDate = combineDateAndTime(
       date,
@@ -196,6 +219,19 @@ export async function POST(request: Request) {
       technician: job.technician
         ? { id: job.technician.id, name: job.technician.user.fullName }
         : null,
+    });
+  }
+
+  if (created.length > 0) {
+    await logAuditEvent({
+      userId: session.sub,
+      action: "JOBS_BULK_CREATED",
+      entity: "Job",
+      metadata: {
+        count: created.length,
+        jobIds: created.map((item) => item.id),
+        date,
+      },
     });
   }
 

@@ -61,7 +61,7 @@ const getReportSnapshot = (filtersKey: string, filters: ReportFilters) =>
         prisma.notification.count({
           where: {
             eventType: "SERVICE_RESCHEDULED",
-            recipientRole: "ADMIN",
+            recipientRole: "CUSTOMER",
             createdAt: { gte: filters.from, lte: filters.to },
           },
         }),

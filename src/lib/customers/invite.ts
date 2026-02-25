@@ -5,6 +5,7 @@ import { hashPassword } from "@/lib/auth/password";
 import { formatCustomerName } from "@/lib/customers/format";
 import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
+import { normalizeEmail } from "@/lib/auth/email";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -20,8 +21,15 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     return { ok: false, error: "Cliente no encontrado" };
   }
 
-  if (!customer.email) {
+  const normalizedCustomerEmail = normalizeEmail(customer.email ?? "");
+  if (!normalizedCustomerEmail) {
     return { ok: false, error: "Cliente sin email" };
+  }
+  if (customer.email !== normalizedCustomerEmail) {
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: { email: normalizedCustomerEmail },
+    });
   }
 
   let user = customer.user ?? null;
@@ -31,8 +39,8 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
 
   if (!user) {
-    const existing = await prisma.user.findUnique({
-      where: { email: customer.email },
+    const existing = await prisma.user.findFirst({
+      where: { email: { equals: normalizedCustomerEmail, mode: "insensitive" } },
       include: { customer: true },
     });
 
@@ -56,7 +64,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
       const fullName = formatCustomerName(customer);
       user = await prisma.user.create({
         data: {
-          email: customer.email,
+          email: normalizedCustomerEmail,
           passwordHash,
           fullName,
           role: "CUSTOMER",
@@ -91,6 +99,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   await prisma.passwordResetToken.updateMany({
     where: {
       userId: user.id,
+      purpose: "INVITE",
       usedAt: null,
     },
     data: {
@@ -102,6 +111,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     data: {
       userId: user.id,
       token,
+      purpose: "INVITE",
       expiresAt,
     },
   });
@@ -134,13 +144,13 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   const transporter = nodemailer.createTransport({
     host,
     port,
-    secure: false,
+    secure: port === 465,
     auth: { user: smtpUser, pass },
   });
 
   await transporter.sendMail({
     from,
-    to: customer.email,
+    to: normalizedCustomerEmail,
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,

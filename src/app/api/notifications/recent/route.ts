@@ -26,7 +26,7 @@ export async function GET() {
         OR: [{ actorUserId: null }, { actorUserId: { not: session.sub } }],
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 20,
       include: { customer: true },
     });
     return NextResponse.json({
@@ -63,8 +63,46 @@ export async function GET() {
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 20,
     });
+    return NextResponse.json({
+      notifications: notifications.map((item) => ({
+        id: item.id,
+        eventType: item.eventType,
+        status: item.status,
+        createdAt: item.createdAt.toISOString(),
+        readAt: item.readAt ? item.readAt.toISOString() : null,
+        severity: item.severity,
+        actorUserId: item.actorUserId,
+        payload: item.payload ?? null,
+        customerName: null,
+        link: getNotificationLink(item.eventType, item.payload, session.role),
+      })),
+    });
+  }
+
+  if (session.role === "TECH") {
+    const { disabled } = await getNotificationPreferences(
+      session.sub,
+      session.role
+    );
+    const candidates = await prisma.notification.findMany({
+      where: {
+        recipientRole: "TECH",
+        ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 120,
+    });
+    const notifications = candidates
+      .filter((item) => {
+        const payload =
+          item.payload && typeof item.payload === "object"
+            ? (item.payload as Record<string, unknown>)
+            : null;
+        return payload?.recipientUserId === session.sub;
+      })
+      .slice(0, 20);
     return NextResponse.json({
       notifications: notifications.map((item) => ({
         id: item.id,
@@ -100,11 +138,20 @@ function getNotificationLink(
   if (jobId && role === "CUSTOMER") {
     return `/client/jobs/${jobId}`;
   }
+  if (jobId && role === "TECH") {
+    return `/tech/jobs/${jobId}`;
+  }
   if (invoiceId && role === "ADMIN") {
     return `/admin/invoices?highlight=${invoiceId}`;
   }
   if (eventType === "INVOICE_SENT" && role === "CUSTOMER") {
     return "/client/invoices";
+  }
+  if (role === "TECH") {
+    return "/tech";
+  }
+  if (role === "CUSTOMER") {
+    return "/client";
   }
   return "/admin/notifications";
 }

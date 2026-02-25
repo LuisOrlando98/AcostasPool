@@ -8,6 +8,7 @@ import { sendCustomerInvite } from "@/lib/customers/invite";
 import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
+import { normalizeEmail } from "@/lib/auth/email";
 
 async function createCustomer(formData: FormData) {
   "use server";
@@ -15,7 +16,7 @@ async function createCustomer(formData: FormData) {
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   const apellidos = String(formData.get("apellidos") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
   const telefonoRaw = String(formData.get("telefono") ?? "").trim();
   const telefonoSecundarioRaw = String(
     formData.get("telefonoSecundario") ?? ""
@@ -47,6 +48,23 @@ async function createCustomer(formData: FormData) {
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
     return;
+  }
+
+  const existingUser = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true, role: true },
+  });
+  if (existingUser && existingUser.role !== "CUSTOMER") {
+    return;
+  }
+  if (existingUser) {
+    const linkedCustomer = await prisma.customer.findFirst({
+      where: { userId: existingUser.id },
+      select: { id: true },
+    });
+    if (linkedCustomer) {
+      return;
+    }
   }
 
   const hasAddress =

@@ -257,13 +257,13 @@
     },
     "credentials": {
       "title": "Credentials",
-      "subtitle": "Generate a temporary link to change your password."
+      "subtitle": "Send a secure reset link to your email."
     },
     "resetLink": {
-      "submit": "Generate reset link",
-      "loading": "Generating...",
-      "copy": "Copy link",
-      "error": "Unable to generate the link."
+      "submit": "Send reset email",
+      "loading": "Sending...",
+      "sent": "We sent a reset link to your email.",
+      "error": "Unable to send the reset email."
     },
     "avatar": {
       "alt": "Avatar",
@@ -323,16 +323,20 @@
     "reset": {
       "title": "Reset password",
       "subtitle": "Enter the token and your new password.",
+      "requestSubtitle": "Enter your email and we'll send a secure reset link.",
       "token": "Token",
       "tokenPlaceholder": "Token",
       "newPassword": "New password",
       "confirmPassword": "Confirm password",
       "submit": "Update password",
+      "requestSubmit": "Send reset link",
+      "requestSent": "If the account exists, we sent a reset link to that email.",
       "loading": "Saving...",
       "success": "Password updated. You can sign in now.",
       "errors": {
         "token": "Token required.",
-        "length": "Password must be at least 6 characters.",
+        "email": "Email is required.",
+        "length": "Password must be at least 10 characters.",
         "mismatch": "Passwords do not match.",
         "generic": "Unable to update password."
       }
@@ -350,7 +354,7 @@
       "errors": {
         "token": "Token required.",
         "load": "Unable to load profile.",
-        "length": "Password must be at least 6 characters.",
+        "length": "Password must be at least 10 characters.",
         "mismatch": "Passwords do not match.",
         "required": "First name, last name, and phone are required.",
         "submit": "Unable to complete profile."
