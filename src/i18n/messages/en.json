@@ -186,6 +186,11 @@
     "role": "Role",
     "account": "My account",
     "updates": "Updates",
+    "installApp": "Install app",
+    "installingApp": "Preparing...",
+    "iosInstallHint": "On iPhone: open Share and tap Add to Home Screen.",
+    "androidInstallHint": "On Android: open the browser menu and tap Install app.",
+    "installError": "Unable to open the install prompt. Reload and try again.",
     "signOut": "Sign out",
     "signingOut": "Signing out..."
   },

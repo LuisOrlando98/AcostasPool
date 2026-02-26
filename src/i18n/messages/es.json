@@ -186,6 +186,11 @@
     "role": "Rol",
     "account": "Mi cuenta",
     "updates": "Actualizaciones",
+    "installApp": "Instalar app",
+    "installingApp": "Preparando...",
+    "iosInstallHint": "En iPhone: abre Compartir y toca Agregar a pantalla de inicio.",
+    "androidInstallHint": "En Android: abre el menu del navegador y toca Instalar app.",
+    "installError": "No se pudo abrir la instalacion. Recarga e intenta de nuevo.",
     "signOut": "Cerrar sesion",
     "signingOut": "Cerrando..."
   },

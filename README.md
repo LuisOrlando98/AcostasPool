@@ -22,6 +22,14 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
    - `GET /api/health`
    - `GET /api/health/db`
 
+## Instalacion como app (PWA)
+1. Publica la app en HTTPS (por ejemplo Render).
+2. Abre la URL desde el telefono del tecnico.
+3. Instala:
+   - Android (Chrome): menu > `Instalar app`.
+   - iPhone (Safari): compartir > `Agregar a pantalla de inicio`.
+4. Si no aparece la opcion de instalar, abre la app una vez y recarga.
+
 ## Flujo de migraciones
 1. Sube los cambios con la carpeta `prisma/migrations` al repositorio.
 2. Haz deploy en Render.

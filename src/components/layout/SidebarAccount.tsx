@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
+import InstallAppAction from "@/components/pwa/InstallAppAction";
 
 type UserInfo = {
   name: string;
@@ -104,6 +105,7 @@ export default function SidebarAccount() {
           </span>
           <span className="sidebar-account-label">{t("userMenu.updates")}</span>
         </a>
+        <InstallAppAction variant="sidebar" />
         {user?.isDeveloper ? (
           <a href="/admin/developer" className="sidebar-account-link">
             <span className="sidebar-account-icon" aria-hidden="true">

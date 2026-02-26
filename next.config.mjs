@@ -12,6 +12,15 @@ const nextConfig = {
   },
   headers: async () => [
     {
+      source: "/sw.js",
+      headers: [
+        {
+          key: "Cache-Control",
+          value: "no-store, no-cache, must-revalidate",
+        },
+      ],
+    },
+    {
       source: "/uploads/:path*",
       headers: [
         {

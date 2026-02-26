@@ -4,15 +4,33 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "AcostasPool Service Administration System",
     short_name: "AcostasPool",
-    start_url: "/",
+    description:
+      "Plataforma para administrar servicios de mantenimiento de piscinas, rutas, evidencias e invoices.",
+    start_url: "/login",
+    scope: "/",
     display: "standalone",
+    orientation: "portrait",
     background_color: "#f8fafc",
     theme_color: "#0f172a",
+    lang: "es-US",
     icons: [
       {
-        src: "/favicon.ico",
-        sizes: "64x64",
-        type: "image/x-icon",
+        src: "/pwa/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/pwa/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/pwa/icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   };

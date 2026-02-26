@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
+import InstallAppAction from "@/components/pwa/InstallAppAction";
 import {
   getNotificationDetail,
   getNotificationTitle,
@@ -378,6 +379,7 @@ export default function UserMenu() {
             >
               {t("userMenu.updates")}
             </a>
+            <InstallAppAction variant="menu" />
             {user?.isDeveloper ? (
               <a
                 href="/admin/developer"
