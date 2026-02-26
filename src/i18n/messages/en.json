@@ -191,6 +191,55 @@
     "iosInstallHint": "On iPhone: open Share and tap Add to Home Screen.",
     "androidInstallHint": "On Android: open the browser menu and tap Install app.",
     "installError": "Unable to open the install prompt. Reload and try again.",
+    "installGuide": {
+      "title": "Install the app on your phone",
+      "subtitleIos": "Follow these Safari steps to add AcostasPool to your Home Screen.",
+      "subtitleAndroid": "Follow this step-by-step guide to install AcostasPool on Android.",
+      "platform": {
+        "ios": "iPhone guide",
+        "android": "Android guide"
+      },
+      "iosNoteTitle": "Important on iPhone",
+      "iosNoteBody": "This only works in Safari. If you opened the app in Chrome, switch to Safari and try again.",
+      "androidNoteTitle": "Android installation",
+      "androidNoteBodyPrompt": "You can install now using the button below or follow the manual steps.",
+      "androidNoteBodyManual": "If the install button does not appear, follow these manual browser steps.",
+      "installNow": "Install now",
+      "done": "Done",
+      "steps": {
+        "openShare": {
+          "title": "Tap the Share button",
+          "body": "In Safari, find the Share icon (square with an upward arrow) in the bottom bar.",
+          "imageAlt": "Example of the Safari Share button"
+        },
+        "tapAddHome": {
+          "title": "Select Add to Home Screen",
+          "body": "Scroll through the options list until you find Add to Home Screen, then tap it.",
+          "imageAlt": "Example of Add to Home Screen option"
+        },
+        "confirmAdd": {
+          "title": "Confirm with Add",
+          "body": "You will see an icon preview. Tap Add in the top-right corner.",
+          "imageAlt": "Example of confirming app install on iPhone"
+        },
+        "openFromHome": {
+          "title": "Open the app from your Home Screen",
+          "body": "Find the AcostasPool icon on your Home Screen and open it like any other app."
+        },
+        "openMenu": {
+          "title": "Open the browser menu",
+          "body": "Tap the three-dot browser menu to open the main options."
+        },
+        "tapInstall": {
+          "title": "Tap Install app or Add to Home Screen",
+          "body": "Select whichever install option your browser shows."
+        },
+        "confirmInstall": {
+          "title": "Confirm installation",
+          "body": "Accept the prompt and open the app from the new Home Screen icon."
+        }
+      }
+    },
     "signOut": "Sign out",
     "signingOut": "Signing out..."
   },

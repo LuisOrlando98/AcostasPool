@@ -191,6 +191,55 @@
     "iosInstallHint": "En iPhone: abre Compartir y toca Agregar a pantalla de inicio.",
     "androidInstallHint": "En Android: abre el menu del navegador y toca Instalar app.",
     "installError": "No se pudo abrir la instalacion. Recarga e intenta de nuevo.",
+    "installGuide": {
+      "title": "Instalar la app en tu celular",
+      "subtitleIos": "Sigue estos pasos en Safari para anadir AcostasPool a tu pantalla de inicio.",
+      "subtitleAndroid": "Te guiamos paso a paso para instalar AcostasPool en Android.",
+      "platform": {
+        "ios": "Guia iPhone",
+        "android": "Guia Android"
+      },
+      "iosNoteTitle": "Importante en iPhone",
+      "iosNoteBody": "Solo funciona desde Safari. Si abriste la app en Chrome, cambia a Safari y vuelve a intentar.",
+      "androidNoteTitle": "Instalacion en Android",
+      "androidNoteBodyPrompt": "Puedes instalarla ahora con el boton de abajo o seguir los pasos manuales.",
+      "androidNoteBodyManual": "Si no aparece el boton de instalacion, sigue estos pasos manuales desde el navegador.",
+      "installNow": "Instalar ahora",
+      "done": "Entendido",
+      "steps": {
+        "openShare": {
+          "title": "Toca el boton Compartir",
+          "body": "En Safari, busca el icono de compartir (cuadro con flecha hacia arriba) en la barra inferior.",
+          "imageAlt": "Ejemplo del boton Compartir en Safari"
+        },
+        "tapAddHome": {
+          "title": "Selecciona Agregar a pantalla de inicio",
+          "body": "Desliza la lista de opciones hasta encontrar Agregar a pantalla de inicio y tocala.",
+          "imageAlt": "Ejemplo de la opcion Agregar a pantalla de inicio"
+        },
+        "confirmAdd": {
+          "title": "Confirma con Agregar",
+          "body": "Veras una vista previa del icono. Toca Agregar en la esquina superior derecha.",
+          "imageAlt": "Ejemplo de confirmacion para agregar la app"
+        },
+        "openFromHome": {
+          "title": "Abre la app desde tu pantalla",
+          "body": "Busca el icono de AcostasPool en tu pantalla de inicio y abrelo como cualquier app."
+        },
+        "openMenu": {
+          "title": "Abre el menu del navegador",
+          "body": "Toca los tres puntos del navegador para abrir el menu principal."
+        },
+        "tapInstall": {
+          "title": "Toca Instalar app o Agregar a pantalla",
+          "body": "Selecciona la opcion de instalacion que aparezca en tu navegador."
+        },
+        "confirmInstall": {
+          "title": "Confirma la instalacion",
+          "body": "Acepta el mensaje y abre la app desde el nuevo icono en tu pantalla de inicio."
+        }
+      }
+    },
     "signOut": "Cerrar sesion",
     "signingOut": "Cerrando..."
   },
