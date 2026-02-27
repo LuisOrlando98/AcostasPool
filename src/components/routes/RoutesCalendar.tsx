@@ -379,10 +379,7 @@ export default function RoutesCalendar({
   });
   const monthLabel =
     monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
-  const nextMonthJobsLabel =
-    locale === "es"
-      ? "Trabajos programados para el proximo mes:"
-      : "Jobs scheduled for next month:";
+  const nextMonthJobsLabel = "Next Month:";
 
   const moveMonth = (offset: number) => {
     const nextMonth = new Date(
@@ -1043,16 +1040,22 @@ export default function RoutesCalendar({
     setSaveSuccess(false);
     setEditMode(true);
   };
+  const todayActive =
+    rangeFilter === "CUSTOM" &&
+    customStart === todayKey &&
+    customEnd === todayKey;
+  const urgentActive = priorityFilter === "URGENT";
+  const unassignedActive = techFilter === "UNASSIGNED";
 
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-[250px] flex-1 flex-col gap-3">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
+          <div className="min-w-0 space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => moveMonth(-1)}
@@ -1074,7 +1077,7 @@ export default function RoutesCalendar({
                   />
                 </svg>
               </button>
-              <h2 className="text-2xl font-semibold leading-none text-slate-900 sm:text-3xl">
+              <h2 className="text-[clamp(1.75rem,6vw,2.4rem)] font-semibold leading-none text-slate-900">
                 {monthLabel}
               </h2>
               <button
@@ -1107,224 +1110,204 @@ export default function RoutesCalendar({
                 {locale === "es" ? "Este mes" : "Current month"}
               </button>
             </div>
-            <p className="text-sm text-slate-500">{t("admin.routes.subtitle")}</p>
             <p className="text-sm text-slate-600">
               {nextMonthJobsLabel}{" "}
               <span className="font-bold text-slate-900">{nextMonthJobsCount}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <span className="h-2 w-2 rounded-full bg-sky-500" />
-            <div className="leading-tight">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {locale === "es" ? "Trabajos hoy" : "Jobs today"}
-              </p>
-              <p className="text-sm font-semibold text-slate-900">{summary.todayJobs}</p>
+          <div className="min-w-0">
+            <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 sm:grid-cols-4 sm:divide-y-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (todayActive) {
+                    setRangeFilter("WEEK");
+                    return;
+                  }
+                  setRangeFilter("CUSTOM");
+                  setCustomStart(todayKey);
+                  setCustomEnd(todayKey);
+                }}
+                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
+                  todayActive
+                    ? "bg-sky-50 text-sky-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                    todayActive
+                      ? "border-sky-200 bg-sky-500 text-white"
+                      : "border-sky-100 bg-sky-100 text-sky-600"
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <rect x="4" y="5" width="16" height="14" rx="2" />
+                    <path d="M8 3.5v3M16 3.5v3M4 9h16" />
+                  </svg>
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
+                    {locale === "es" ? "Trabajos hoy" : "Jobs today"}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-900">
+                    {summary.todayJobs}
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setPriorityFilter((current) =>
+                    current === "URGENT" ? "ALL" : "URGENT"
+                  )
+                }
+                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
+                  urgentActive
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                    urgentActive
+                      ? "border-indigo-200 bg-indigo-500 text-white"
+                      : "border-indigo-100 bg-indigo-100 text-indigo-600"
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <path d="M12 4l8 14H4l8-14z" />
+                    <path d="M12 9v4m0 3h.01" />
+                  </svg>
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
+                    {t("admin.routes.labels.urgent")}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-900">
+                    {summary.urgent}
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setTechFilter((current) =>
+                    current === "UNASSIGNED" ? "ALL" : "UNASSIGNED"
+                  )
+                }
+                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
+                  unassignedActive
+                    ? "bg-rose-50 text-rose-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                    unassignedActive
+                      ? "border-rose-200 bg-rose-500 text-white"
+                      : "border-rose-100 bg-rose-100 text-rose-600"
+                  }`}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path d="M5 19a7 7 0 0114 0" />
+                    <path d="M4 4l16 16" />
+                  </svg>
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
+                    {t("jobs.detail.noTech")}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-900">
+                    {summary.unassigned}
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleEditMode}
+                disabled={saving}
+                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
+                  editMode
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
+              >
+                <span
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                    editMode
+                      ? "border-white/30 bg-white text-slate-900"
+                      : "border-slate-200 bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {saveSuccess ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
+                      />
+                    </svg>
+                  )}
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
+                    {editMode
+                      ? t("common.actions.save")
+                      : t("common.actions.edit")}
+                  </span>
+                  <span
+                    className={`text-xs font-semibold ${
+                      editMode ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    {editMode ? "Cambios" : "Calendario"}
+                  </span>
+                </span>
+              </button>
             </div>
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            {(() => {
-              const todayActive =
-                rangeFilter === "CUSTOM" &&
-                customStart === todayKey &&
-                customEnd === todayKey;
-              const urgentActive = priorityFilter === "URGENT";
-              const unassignedActive = techFilter === "UNASSIGNED";
-              return (
-                <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 sm:w-auto sm:min-w-[360px] sm:grid-cols-4 sm:divide-y-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (todayActive) {
-                        setRangeFilter("WEEK");
-                        return;
-                      }
-                      setRangeFilter("CUSTOM");
-                      setCustomStart(todayKey);
-                      setCustomEnd(todayKey);
-                    }}
-                    className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                      todayActive
-                        ? "bg-sky-50 text-sky-700"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                        todayActive
-                          ? "border-sky-200 bg-sky-500 text-white"
-                          : "border-sky-100 bg-sky-100 text-sky-600"
-                      }`}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-4 w-4"
-                      >
-                        <rect x="4" y="5" width="16" height="14" rx="2" />
-                        <path d="M8 3.5v3M16 3.5v3M4 9h16" />
-                      </svg>
-                    </span>
-                    <span className="flex flex-col leading-tight">
-                      <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                        Hoy
-                      </span>
-                      <span className="text-xs font-semibold text-slate-900">
-                        {summary.todayJobs}
-                      </span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setPriorityFilter((current) =>
-                        current === "URGENT" ? "ALL" : "URGENT"
-                      )
-                    }
-                    className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                      urgentActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                        urgentActive
-                          ? "border-indigo-200 bg-indigo-500 text-white"
-                          : "border-indigo-100 bg-indigo-100 text-indigo-600"
-                      }`}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-4 w-4"
-                      >
-                        <path d="M12 4l8 14H4l8-14z" />
-                        <path d="M12 9v4m0 3h.01" />
-                      </svg>
-                    </span>
-                    <span className="flex flex-col leading-tight">
-                      <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                        {t("admin.routes.labels.urgent")}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-900">
-                        {summary.urgent}
-                      </span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setTechFilter((current) =>
-                        current === "UNASSIGNED" ? "ALL" : "UNASSIGNED"
-                      )
-                    }
-                    className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                      unassignedActive
-                        ? "bg-rose-50 text-rose-700"
-                        : "text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                        unassignedActive
-                          ? "border-rose-200 bg-rose-500 text-white"
-                          : "border-rose-100 bg-rose-100 text-rose-600"
-                      }`}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-4 w-4"
-                      >
-                        <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path d="M5 19a7 7 0 0114 0" />
-                        <path d="M4 4l16 16" />
-                      </svg>
-                    </span>
-                    <span className="flex flex-col leading-tight">
-                      <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                        {t("jobs.detail.noTech")}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-900">
-                        {summary.unassigned}
-                      </span>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={toggleEditMode}
-                    disabled={saving}
-                    className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                      editMode
-                        ? "bg-slate-900 text-white"
-                        : "text-slate-600 hover:bg-slate-50"
-                    } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                        editMode
-                          ? "border-white/30 bg-white text-slate-900"
-                          : "border-slate-200 bg-slate-100 text-slate-600"
-                      }`}
-                    >
-                      {saveSuccess ? (
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          className="h-4 w-4"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                      ) : (
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          className="h-4 w-4"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
-                          />
-                        </svg>
-                      )}
-                    </span>
-                    <span className="flex flex-col leading-tight">
-                      <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                        {editMode
-                          ? t("common.actions.save")
-                          : t("common.actions.edit")}
-                      </span>
-                      <span
-                        className={`text-xs font-semibold ${
-                          editMode ? "text-white" : "text-slate-900"
-                        }`}
-                      >
-                        {editMode ? "Cambios" : "Calendario"}
-                      </span>
-                    </span>
-                  </button>
-                </div>
-              );
-            })()}
           </div>
         </div>
         {errorMessage ? (
@@ -1333,7 +1316,8 @@ export default function RoutesCalendar({
           </div>
         ) : null}
 
-        <div className="mt-6 grid grid-cols-7 gap-2">
+        <div className="mt-6 overflow-x-auto pb-2">
+          <div className="grid min-w-[720px] grid-cols-7 gap-2">
           {(() => {
             const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
             return calendarDays.map((day) => {
@@ -1396,7 +1380,7 @@ export default function RoutesCalendar({
                   setDraggingJobId(null);
                   setDragOverTarget(null);
                 }}
-                className={`group relative flex min-h-[260px] flex-col gap-2.5 rounded-[22px] border px-3 py-3 text-xs transition ${dayTone} ${dayHover} ${
+                className={`group relative flex min-h-[220px] flex-col gap-2.5 rounded-[22px] border px-3 py-3 text-xs transition sm:min-h-[260px] ${dayTone} ${dayHover} ${
                   isToday ? "ring-1 ring-sky-400" : ""
                 } ${editMode ? "cursor-pointer" : "cursor-default"}`}
               >
@@ -1719,6 +1703,7 @@ export default function RoutesCalendar({
             );
           });
         })()}
+          </div>
         </div>
       </section>
 

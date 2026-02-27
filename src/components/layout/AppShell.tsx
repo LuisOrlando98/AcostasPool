@@ -520,9 +520,9 @@ export default function AppShell({
           <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-5">
             <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden ring-1 ring-white/20">
               <img
-                src="/newlogo.png"
+                src="/pwa/app-logo-source.png"
                 alt={`${t("app.name")} logo`}
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover"
               />
             </div>
             <div className="brand-text max-w-[12rem] overflow-hidden transition-all duration-300">

@@ -29,11 +29,9 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/newlogo.png", type: "image/png" },
       { url: "/pwa/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/pwa/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: ["/newlogo.png"],
     apple: [{ url: "/pwa/apple-touch-icon.png", sizes: "180x180" }],
   },
   appleWebApp: {

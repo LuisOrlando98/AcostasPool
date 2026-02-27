@@ -79,9 +79,10 @@ export default function RouteAssistant({
   initialDate,
   technicians,
 }: RouteAssistantProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [date, setDate] = useState(initialDate);
+  const [ignoreDate, setIgnoreDate] = useState(false);
   const [addressQuery, setAddressQuery] = useState("");
   const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>(
     technicians.map((technician) => technician.id)
@@ -119,6 +120,7 @@ export default function RouteAssistant({
     try {
       const payload = {
         date,
+        ignoreDate,
         addressQuery,
         technicianIds: hasAllTechniciansSelected ? [] : selectedTechnicians,
       };
@@ -217,7 +219,8 @@ export default function RouteAssistant({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                  disabled={ignoreDate}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
                 />
               </label>
               <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -231,6 +234,19 @@ export default function RouteAssistant({
                 />
               </label>
             </div>
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={ignoreDate}
+                onChange={(event) => setIgnoreDate(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              <span>
+                {locale === "es"
+                  ? "Generar rutas sin fecha especifica (usar todos los trabajos pendientes)"
+                  : "Generate routes without specific date (use all pending jobs)"}
+              </span>
+            </label>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">

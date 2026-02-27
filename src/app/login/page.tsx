@@ -19,6 +19,7 @@ export default function LoginPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentYear = new Date().getFullYear();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -99,8 +100,8 @@ export default function LoginPage() {
       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(2,132,199,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(2,132,199,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 py-12">
-        <div className="mb-5 flex items-center justify-between gap-3 overflow-hidden sm:mb-6">
-          <div className="app-chip inline-flex min-w-0 flex-1 items-center truncate whitespace-nowrap px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
+        <div className="mb-5 flex flex-nowrap items-center justify-between gap-2 sm:mb-6">
+          <div className="app-chip inline-flex min-w-0 flex-1 items-center truncate whitespace-nowrap px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] sm:px-4 sm:text-[11px] sm:tracking-[0.18em]">
             {t("auth.login.kicker")}
           </div>
           <div className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-white/90 p-1 text-[11px] font-semibold uppercase tracking-[0.18em] shadow-sm backdrop-blur">
@@ -179,9 +180,9 @@ export default function LoginPage() {
               </div>
               <span className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-sky-100 bg-white">
                 <img
-                  src="/newlogo.png"
+                  src="/pwa/app-logo-source.png"
                   alt={`${t("app.name")} logo`}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-cover"
                 />
               </span>
             </div>
@@ -292,17 +293,20 @@ export default function LoginPage() {
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             Legal
           </p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
             {legalLinks.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:border-sky-200 hover:text-sky-700"
+                className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 underline-offset-4 transition hover:text-sky-700 hover:underline"
               >
                 {locale === "es" ? item.es : item.en}
               </a>
             ))}
           </div>
+          <p className="mt-4 text-center text-[11px] text-slate-500">
+            Copyright {currentYear} AcostasPool. {locale === "es" ? "Todos los derechos reservados." : "All rights reserved."}
+          </p>
         </div>
       </div>
     </div>

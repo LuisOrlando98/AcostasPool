@@ -12,6 +12,7 @@ const statusValues = ["SCHEDULED", "PENDING", "ON_THE_WAY", "IN_PROGRESS"] as co
 
 const bodySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  ignoreDate: z.boolean().optional().default(false),
   technicianIds: z.array(z.string().min(1)).max(100).optional().default([]),
   addressQuery: z.string().max(120).optional().default(""),
   statuses: z.array(z.enum(statusValues)).optional().default(statusValues),
@@ -28,18 +29,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
   }
 
-  const { date, technicianIds, addressQuery, statuses } = parsed.data;
+  const { date, ignoreDate, technicianIds, addressQuery, statuses } = parsed.data;
   const routeDate = parseDateOnly(date);
-  if (!routeDate) {
+  if (!routeDate && !ignoreDate) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
 
-  const searchStart = new Date(routeDate);
-  searchStart.setUTCDate(searchStart.getUTCDate() - 1);
-  searchStart.setUTCHours(0, 0, 0, 0);
-  const searchEnd = new Date(routeDate);
-  searchEnd.setUTCDate(searchEnd.getUTCDate() + 1);
-  searchEnd.setUTCHours(23, 59, 59, 999);
+  let scheduledDateFilter: { gte: Date; lte?: Date } | undefined;
+  if (ignoreDate) {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    scheduledDateFilter = { gte: startOfToday };
+  } else if (routeDate) {
+    const searchStart = new Date(routeDate);
+    searchStart.setUTCDate(searchStart.getUTCDate() - 1);
+    searchStart.setUTCHours(0, 0, 0, 0);
+    const searchEnd = new Date(routeDate);
+    searchEnd.setUTCDate(searchEnd.getUTCDate() + 1);
+    searchEnd.setUTCHours(23, 59, 59, 999);
+    scheduledDateFilter = {
+      gte: searchStart,
+      lte: searchEnd,
+    };
+  }
 
   const [technicians, jobs] = await Promise.all([
     prisma.technician.findMany({
@@ -56,10 +68,7 @@ export async function POST(request: Request) {
     prisma.job.findMany({
       where: {
         status: { in: statuses as JobStatus[] },
-        scheduledDate: {
-          gte: searchStart,
-          lte: searchEnd,
-        },
+        ...(scheduledDateFilter ? { scheduledDate: scheduledDateFilter } : {}),
       },
       orderBy: [{ scheduledDate: "asc" }, { sortOrder: "asc" }],
       select: {
@@ -97,8 +106,10 @@ export async function POST(request: Request) {
   }
 
   const normalizedQuery = addressQuery.trim().toLowerCase();
-  const jobsForDate = jobs.filter((job) => toDateKey(job.scheduledDate) === date);
-  const filteredJobs = jobsForDate.filter((job) => {
+  const jobsForPlanning = ignoreDate
+    ? jobs
+    : jobs.filter((job) => toDateKey(job.scheduledDate) === date);
+  const filteredJobs = jobsForPlanning.filter((job) => {
     if (normalizedQuery.length === 0) {
       return true;
     }
