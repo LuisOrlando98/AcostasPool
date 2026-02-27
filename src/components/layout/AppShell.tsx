@@ -427,26 +427,22 @@ export default function AppShell({
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const [sidebarPrefReady, setSidebarPrefReady] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem("ap:sidebar-collapsed") === "true";
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") {
-      return;
-    }
-    setCollapsed(window.localStorage.getItem("ap:sidebar-collapsed") === "true");
-    setSidebarPrefReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !sidebarPrefReady) {
       return;
     }
     window.localStorage.setItem(
       "ap:sidebar-collapsed",
       collapsed ? "true" : "false"
     );
-  }, [collapsed, sidebarPrefReady]);
+  }, [collapsed]);
 
   useEffect(() => {
     setMobileNavOpen(false);
