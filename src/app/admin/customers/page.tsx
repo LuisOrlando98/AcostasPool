@@ -195,7 +195,6 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       title={t("admin.customers.title")}
       subtitle={t("admin.customers.subtitle")}
       role="ADMIN"
-      wide
     >
       <CustomersClient
         rows={customers.map((customer) => ({
