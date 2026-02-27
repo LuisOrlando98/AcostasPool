@@ -1055,11 +1055,11 @@ export default function RoutesCalendar({
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
             </p>
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => moveMonth(-1)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
                 aria-label={t("client.request.calendar.previousMonth")}
                 title={t("client.request.calendar.previousMonth")}
               >
@@ -1077,13 +1077,13 @@ export default function RoutesCalendar({
                   />
                 </svg>
               </button>
-              <h2 className="text-[clamp(1.75rem,6vw,2.4rem)] font-semibold leading-none text-slate-900">
+              <h2 className="text-[clamp(1.5rem,5.3vw,2.3rem)] font-semibold leading-none text-slate-900">
                 {monthLabel}
               </h2>
               <button
                 type="button"
                 onClick={() => moveMonth(1)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
                 aria-label={t("client.request.calendar.nextMonth")}
                 title={t("client.request.calendar.nextMonth")}
               >
@@ -1105,15 +1105,17 @@ export default function RoutesCalendar({
                 type="button"
                 onClick={goToCurrentMonth}
                 disabled={isCurrentMonthViewed}
-                className="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
               >
                 {locale === "es" ? "Este mes" : "Current month"}
               </button>
             </div>
-            <p className="text-sm text-slate-600">
-              {nextMonthJobsLabel}{" "}
-              <span className="font-bold text-slate-900">{nextMonthJobsCount}</span>
-            </p>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {nextMonthJobsLabel}
+              </span>
+              <span className="text-sm font-bold text-slate-900">{nextMonthJobsCount}</span>
+            </div>
           </div>
           <div className="min-w-0">
             <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 sm:grid-cols-4 sm:divide-y-0">
