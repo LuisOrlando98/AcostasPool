@@ -547,6 +547,74 @@
     "routes": {
       "title": "Rutas y calendario",
       "subtitle": "Planificacion diaria y control operativo.",
+      "tabs": {
+        "calendar": "Calendario",
+        "assistant": "Route assistant"
+      },
+      "assistant": {
+        "pageTitle": "Route assistant",
+        "pageSubtitle": "Propuestas asistidas por AI con tiempos estimados entre paradas.",
+        "kicker": "Route assistant",
+        "title": "Construye rutas de tecnicos por zona y tiempo de traslado",
+        "subtitle": "Genera propuestas de ruta, comparalas, aplica una y sigue editando en calendario.",
+        "fields": {
+          "date": "Fecha de ruta",
+          "addressFilter": "Filtro por direccion",
+          "technicians": "Tecnicos incluidos"
+        },
+        "placeholders": {
+          "addressFilter": "Filtrar por ciudad, ZIP, calle o cliente..."
+        },
+        "rules": {
+          "title": "Reglas de agenda respetadas",
+          "bookingWindows": "Mantiene la fecha y ventana horaria reservada.",
+          "weekendPolicy": "Las restricciones de fin de semana siguen ligadas al cliente.",
+          "noReschedule": "Aplica tecnico + orden solamente (sin cambiar fecha)."
+        },
+        "actions": {
+          "generate": "Generar propuestas",
+          "generating": "Generando...",
+          "apply": "Aplicar propuesta seleccionada",
+          "applying": "Aplicando..."
+        },
+        "messages": {
+          "failed": "No se pudieron generar propuestas de ruta.",
+          "applyFailed": "No se pudo aplicar la propuesta seleccionada.",
+          "empty": "No se generaron propuestas con los filtros seleccionados."
+        },
+        "metrics": {
+          "jobs": "Trabajos en alcance",
+          "technicians": "Tecnicos",
+          "unresolved": "Direcciones sin geocodificacion"
+        },
+        "strategies": {
+          "BALANCED": {
+            "name": "Balanceada",
+            "hint": "Prioriza repartir carga de trabajo por tecnico."
+          },
+          "SHORT_DRIVE": {
+            "name": "Menor traslado",
+            "hint": "Prioriza reducir tiempo total de manejo."
+          },
+          "KEEP_ASSIGNMENTS": {
+            "name": "Mantener asignaciones",
+            "hint": "Conserva tecnico actual cuando sea posible."
+          }
+        },
+        "summary": {
+          "stops": "{{count}} paradas",
+          "drive": "Traslado: {{value}}",
+          "service": "Servicio: {{value}}",
+          "conflicts": "Conflictos: {{count}}"
+        },
+        "table": {
+          "customer": "Cliente",
+          "address": "Direccion",
+          "drive": "Traslado desde anterior",
+          "eta": "Llegada estimada",
+          "scheduled": "Programado"
+        }
+      },
       "errors": {
         "needCustomers": "Necesitas clientes para asignar trabajos.",
         "selectCustomerProperty": "Selecciona cliente y propiedad para cada trabajo.",

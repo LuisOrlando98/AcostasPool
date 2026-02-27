@@ -547,6 +547,74 @@
     "routes": {
       "title": "Routes & calendar",
       "subtitle": "Daily planning and operational control.",
+      "tabs": {
+        "calendar": "Calendar",
+        "assistant": "Route assistant"
+      },
+      "assistant": {
+        "pageTitle": "Route assistant",
+        "pageSubtitle": "AI-assisted route proposals with travel-time estimates.",
+        "kicker": "Route assistant",
+        "title": "Build technician routes by area and travel time",
+        "subtitle": "Generate route proposals, compare them, apply one, and continue editing in calendar.",
+        "fields": {
+          "date": "Route date",
+          "addressFilter": "Address filter",
+          "technicians": "Technicians in scope"
+        },
+        "placeholders": {
+          "addressFilter": "Filter by city, ZIP, street, or customer..."
+        },
+        "rules": {
+          "title": "Scheduling rules respected",
+          "bookingWindows": "Keeps booked date and time windows.",
+          "weekendPolicy": "Weekend restrictions stay tied to customer booking rules.",
+          "noReschedule": "Applies technician + order only (no forced re-date)."
+        },
+        "actions": {
+          "generate": "Generate proposals",
+          "generating": "Generating...",
+          "apply": "Apply selected proposal",
+          "applying": "Applying..."
+        },
+        "messages": {
+          "failed": "Unable to generate route proposals.",
+          "applyFailed": "Unable to apply selected proposal.",
+          "empty": "No route proposals were generated for the selected filters."
+        },
+        "metrics": {
+          "jobs": "Jobs in scope",
+          "technicians": "Technicians",
+          "unresolved": "Addresses without geocode"
+        },
+        "strategies": {
+          "BALANCED": {
+            "name": "Balanced",
+            "hint": "Prioritizes workload distribution by technician."
+          },
+          "SHORT_DRIVE": {
+            "name": "Shortest drive",
+            "hint": "Prioritizes lower total travel time."
+          },
+          "KEEP_ASSIGNMENTS": {
+            "name": "Keep assignments",
+            "hint": "Preserves current technician ownership where possible."
+          }
+        },
+        "summary": {
+          "stops": "{{count}} stops",
+          "drive": "Drive: {{value}}",
+          "service": "Service: {{value}}",
+          "conflicts": "Conflicts: {{count}}"
+        },
+        "table": {
+          "customer": "Customer",
+          "address": "Address",
+          "drive": "Drive from prev.",
+          "eta": "ETA",
+          "scheduled": "Scheduled"
+        }
+      },
       "errors": {
         "needCustomers": "You need customers to assign jobs.",
         "selectCustomerProperty": "Select a customer and property for each job.",

@@ -38,6 +38,10 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 ## Variables de entorno
 - `DATABASE_URL`
 - `AUTH_SECRET`
+- `APP_URL`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+- `GOOGLE_MAPS_SERVER_API_KEY`
+- `GOOGLE_MAPS_API_KEY` (alias opcional)
 - `STORAGE_DRIVER` (`local` o `s3`)
 - `NEXT_PUBLIC_CDN_URL`
 - `AWS_REGION`
@@ -50,6 +54,29 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 - `SEED_TECH_PASSWORD`
 - `SEED_CUSTOMER_EMAIL`
 - `SEED_CUSTOMER_PASSWORD`
+
+## Google Maps keys (importante)
+El proyecto usa **dos contextos** para Google Maps:
+1. Frontend (autocomplete de direcciones):
+   - Variable: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+   - Restriccion recomendada: **Websites**
+   - Origenes recomendados:
+     - `http://localhost:3000/*`
+     - `https://tu-dominio.com/*`
+     - `https://www.tu-dominio.com/*`
+2. Backend (Route Assistant / geocoding server-side):
+   - Variable: `GOOGLE_MAPS_SERVER_API_KEY` (o `GOOGLE_MAPS_API_KEY` como alias)
+   - Restriccion recomendada: **IP addresses** (solo si tu hosting tiene IP(s) de salida fijas)
+   - Si tu hosting cambia IP de salida, usa temporalmente `None` + **API restrictions** estrictas.
+
+### APIs que debes habilitar en Google Cloud
+- Maps JavaScript API (frontend autocomplete)
+- Places API (frontend autocomplete)
+- Geocoding API (Route Assistant backend)
+
+### Seguridad
+- No reutilices la misma key para frontend y backend.
+- Si una key fue compartida por captura o chat, **rotala**.
 
 ## Scripts utiles
 - `npm run db:generate`

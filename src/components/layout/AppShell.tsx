@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
+import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
@@ -778,6 +779,9 @@ export default function AppShell({
                     <span className="sidebar-account-label">{t("userMenu.updates")}</span>
                   </Link>
                 ) : null}
+                <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
+                  <InstallAppAction variant="sidebar" />
+                </div>
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
