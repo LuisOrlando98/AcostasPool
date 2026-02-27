@@ -19,6 +19,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const customer = await prisma.customer.findUnique({
+    where: { userId: session.sub },
+    select: { id: true, allowWeekendBooking: true },
+  });
+  if (!customer) {
+    return NextResponse.json({
+      leadDays: MIN_BOOKING_LEAD_DAYS,
+      slotIntervalMinutes: SLOT_INTERVAL_MINUTES,
+      slotStartHour: SLOT_START_HOUR,
+      jobsPerTechnicianPerDay: TECH_DAILY_CAPACITY,
+      techniciansCount: 0,
+      availability: [],
+    });
+  }
+
   const { searchParams } = new URL(request.url);
   const daysParam = Number(searchParams.get("days") ?? DEFAULT_DAYS);
   const days =
@@ -51,6 +66,8 @@ export async function GET(request: Request) {
     days,
     techniciansCount,
     scheduledDates: jobs.map((job) => job.scheduledDate),
+    includeSaturday: customer.allowWeekendBooking,
+    includeSunday: customer.allowWeekendBooking,
   })
     .filter((day) => day.remainingCapacity > 0)
     .map((day) => ({

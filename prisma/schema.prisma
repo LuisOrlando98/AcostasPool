@@ -150,6 +150,7 @@ model Customer {
   idiomaPreferencia Locale        @default(EN)
   estadoCuenta  AccountStatus @default(ACTIVE)
   tipoCliente   CustomerType @default(RESIDENTIAL)
+  allowWeekendBooking Boolean @default(false)
   direccionLinea1 String?
   direccionLinea2 String?
   ciudad        String?

@@ -24,6 +24,7 @@ async function createCustomer(formData: FormData) {
   const idiomaPreferencia = String(formData.get("idiomaPreferencia") ?? "EN");
   const estadoCuenta = String(formData.get("estadoCuenta") ?? "ACTIVE");
   const tipoCliente = String(formData.get("tipoCliente") ?? "RESIDENTIAL");
+  const allowWeekendBooking = formData.get("allowWeekendBooking") === "on";
   const direccionLinea1 = String(
     formData.get("direccionLinea1") ?? ""
   ).trim();
@@ -83,6 +84,7 @@ async function createCustomer(formData: FormData) {
       idiomaPreferencia: idiomaPreferencia === "EN" ? "EN" : "ES",
       estadoCuenta: estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE",
       tipoCliente: tipoCliente === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL",
+      allowWeekendBooking,
       direccionLinea1: direccionLinea1 || null,
       direccionLinea2: direccionLinea2 || null,
       ciudad: ciudad || null,

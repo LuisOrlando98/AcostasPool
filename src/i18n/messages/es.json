@@ -847,6 +847,7 @@
         "fields": {
           "status": "Estado de cuenta",
           "type": "Tipo de cliente",
+          "allowWeekendBooking": "Cliente especial: permitir citas sabado y domingo",
           "sendInvite": "Enviar invitacion por email ahora",
           "inviteHint": "No se crea usuario de portal hasta que envies la invitacion."
         },

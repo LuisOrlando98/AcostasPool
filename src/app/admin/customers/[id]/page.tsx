@@ -82,6 +82,7 @@ async function updateCustomer(formData: FormData) {
   const estadoCuenta = String(formData.get("estadoCuenta") ?? "ACTIVE");
   const idiomaPreferencia = String(formData.get("idiomaPreferencia") ?? "EN");
   const tipoCliente = String(formData.get("tipoCliente") ?? "RESIDENTIAL");
+  const allowWeekendBooking = formData.get("allowWeekendBooking") === "on";
   const direccionLinea1 = String(
     formData.get("direccionLinea1") ?? ""
   ).trim();
@@ -144,6 +145,7 @@ async function updateCustomer(formData: FormData) {
       estadoCuenta: estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE",
       idiomaPreferencia: idiomaPreferencia === "EN" ? "EN" : "ES",
       tipoCliente: tipoCliente === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL",
+      allowWeekendBooking,
       direccionLinea1: direccionLinea1 || null,
       direccionLinea2: direccionLinea2 || null,
       ciudad: ciudad || null,
@@ -1008,6 +1010,18 @@ export default async function CustomerDetailPage({
                     </select>
                   </div>
                 </div>
+
+                <label className="flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                  <input
+                    type="checkbox"
+                    name="allowWeekendBooking"
+                    defaultChecked={Boolean(customer.allowWeekendBooking)}
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <span>
+                    {t("admin.customers.new.fields.allowWeekendBooking")}
+                  </span>
+                </label>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <h3 className="text-sm font-semibold text-slate-800">

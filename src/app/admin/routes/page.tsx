@@ -6,24 +6,43 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
 import { getServiceTiers } from "@/lib/service-tiers";
 
-export default async function RoutesPage() {
+function toMonthKey(value: Date) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function resolveMonthStart(rawMonth?: string) {
+  if (rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth)) {
+    const [yearPart, monthPart] = rawMonth.split("-");
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+    if (Number.isFinite(year) && Number.isFinite(month)) {
+      return new Date(year, month - 1, 1);
+    }
+  }
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), 1);
+}
+
+type RoutesPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function RoutesPage({ searchParams }: RoutesPageProps) {
   await requireRole("ADMIN");
   const t = await getTranslations();
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const monthRaw = resolvedSearchParams?.month;
+  const monthParam = Array.isArray(monthRaw) ? monthRaw[0] : monthRaw;
 
-  const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const monthStart = resolveMonthStart(monthParam);
+  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
   const calendarStart = new Date(monthStart);
-  const startDay = calendarStart.getDay();
-  calendarStart.setDate(
-    calendarStart.getDate() + (startDay === 0 ? 1 : 1 - startDay)
-  );
+  const startOffset = calendarStart.getDay();
+  calendarStart.setDate(calendarStart.getDate() - startOffset);
   calendarStart.setHours(0, 0, 0, 0);
   const calendarEnd = new Date(monthEnd);
-  const endDay = calendarEnd.getDay();
-  calendarEnd.setDate(
-    calendarEnd.getDate() + (endDay === 0 ? -1 : 6 - endDay)
-  );
+  const endOffset = 6 - calendarEnd.getDay();
+  calendarEnd.setDate(calendarEnd.getDate() + endOffset);
   calendarEnd.setHours(23, 59, 59, 999);
 
   const [jobs, technicians, customers, serviceTiers] = await Promise.all([
@@ -180,6 +199,7 @@ export default async function RoutesPage() {
         technicians={techniciansData}
         customers={customersData}
         serviceTiers={serviceTiersData}
+        monthKey={toMonthKey(monthStart)}
       />
     </AppShell>
   );

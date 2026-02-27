@@ -194,6 +194,8 @@ export async function POST(request: Request) {
       days: planningDays,
       techniciansCount,
       scheduledDates: existingJobs.map((job) => job.scheduledDate),
+      includeSaturday: customer.allowWeekendBooking,
+      includeSunday: customer.allowWeekendBooking,
     });
 
     const dayKeys = availability

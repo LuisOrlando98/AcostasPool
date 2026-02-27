@@ -847,6 +847,7 @@
         "fields": {
           "status": "Account status",
           "type": "Customer type",
+          "allowWeekendBooking": "Special customer: allow Saturday and Sunday booking",
           "sendInvite": "Send email invitation now",
           "inviteHint": "No portal user is created until you send an invitation."
         },

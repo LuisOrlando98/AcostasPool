@@ -175,11 +175,15 @@ export function buildAvailabilityDays({
   days,
   techniciansCount,
   scheduledDates,
+  includeSaturday = false,
+  includeSunday = false,
 }: {
   startDate: Date;
   days: number;
   techniciansCount: number;
   scheduledDates: Date[];
+  includeSaturday?: boolean;
+  includeSunday?: boolean;
 }) {
   const slots = getTimeSlots();
   const slotValues = slots.map((slot) => slot.value);
@@ -213,7 +217,8 @@ export function buildAvailabilityDays({
   for (let offset = 0; offset < safeDays; offset += 1) {
     const date = new Date(start);
     date.setUTCDate(start.getUTCDate() + offset);
-    if (isSunday(date)) {
+    const weekDay = date.getUTCDay();
+    if ((weekDay === 6 && !includeSaturday) || (weekDay === 0 && !includeSunday)) {
       continue;
     }
 

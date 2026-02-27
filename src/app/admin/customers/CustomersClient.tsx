@@ -253,6 +253,16 @@ export default function CustomersClient({
                         </select>
                       </div>
                     </div>
+                    <label className="mt-3 flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                      <input
+                        type="checkbox"
+                        name="allowWeekendBooking"
+                        className="mt-0.5 h-4 w-4"
+                      />
+                      <span>
+                        {t("admin.customers.new.fields.allowWeekendBooking")}
+                      </span>
+                    </label>
                   </div>
                 </div>
 

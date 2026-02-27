@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
@@ -120,17 +120,34 @@ type RoutesCalendarProps = {
   technicians: Technician[];
   customers: Customer[];
   serviceTiers: ServiceTier[];
+  monthKey: string;
 };
 
 const buildDaysShort = (locale: string) => {
-  const base = new Date(2024, 0, 1); // Monday
-  return Array.from({ length: 6 }, (_, index) =>
+  const base = new Date(2024, 0, 7); // Sunday
+  return Array.from({ length: 7 }, (_, index) =>
     new Intl.DateTimeFormat(locale, { weekday: "short" })
       .format(new Date(base.getTime() + index * 86400000))
       .replace(".", "")
       .toUpperCase()
   );
 };
+
+const parseMonthKey = (value: string) => {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return null;
+  }
+  return new Date(year, month - 1, 1);
+};
+
+const toMonthKey = (value: Date) =>
+  `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
 
 const createDraft = (
   customers: Customer[],
@@ -185,6 +202,7 @@ export default function RoutesCalendar({
   technicians,
   customers,
   serviceTiers,
+  monthKey,
 }: RoutesCalendarProps) {
   const { t, locale } = useI18n();
   const [jobsState, setJobsState] = useState(() =>
@@ -224,6 +242,8 @@ export default function RoutesCalendar({
   );
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const daysShort = useMemo(() => buildDaysShort(locale), [locale]);
   const techniciansById = useMemo(
@@ -275,31 +295,49 @@ export default function RoutesCalendar({
     }
   }, [editMode]);
 
+  useEffect(() => {
+    setJobsState(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })));
+    setPendingChanges({});
+    setEditMode(false);
+    setSelectedDate(null);
+    setDrafts([]);
+    setErrorMessage(null);
+    setSaveSuccess(false);
+    setJobModal(null);
+    setActiveTechJobId(null);
+    setDraggingJobId(null);
+    setDragOverTarget(null);
+  }, [jobs, monthKey]);
+
   const today = new Date();
   const todayKey = toDateKey(today);
   const startOfToday = new Date(today);
   startOfToday.setHours(0, 0, 0, 0);
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const calendarStart = new Date(monthStart);
-  const startDay = calendarStart.getDay();
-  calendarStart.setDate(
-    calendarStart.getDate() + (startDay === 0 ? 1 : 1 - startDay)
+  const viewedMonthStart =
+    parseMonthKey(monthKey) ?? new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthStart = new Date(
+    viewedMonthStart.getFullYear(),
+    viewedMonthStart.getMonth(),
+    1
   );
+  const monthEnd = new Date(
+    viewedMonthStart.getFullYear(),
+    viewedMonthStart.getMonth() + 1,
+    0
+  );
+  const calendarStart = new Date(monthStart);
+  const startOffset = calendarStart.getDay();
+  calendarStart.setDate(calendarStart.getDate() - startOffset);
   calendarStart.setHours(0, 0, 0, 0);
   const calendarEnd = new Date(monthEnd);
-  const endDay = calendarEnd.getDay();
-  calendarEnd.setDate(
-    calendarEnd.getDate() + (endDay === 0 ? -1 : 6 - endDay)
-  );
+  const endOffset = 6 - calendarEnd.getDay();
+  calendarEnd.setDate(calendarEnd.getDate() + endOffset);
   calendarEnd.setHours(23, 59, 59, 999);
 
   const calendarDays: Date[] = [];
   const cursor = new Date(calendarStart);
   while (cursor <= calendarEnd) {
-    if (cursor.getDay() !== 0) {
-      calendarDays.push(new Date(cursor));
-    }
+    calendarDays.push(new Date(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }
 
@@ -340,6 +378,17 @@ export default function RoutesCalendar({
   const monthLabel =
     monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
 
+  const moveMonth = (offset: number) => {
+    const nextMonth = new Date(
+      monthStart.getFullYear(),
+      monthStart.getMonth() + offset,
+      1
+    );
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", toMonthKey(nextMonth));
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const summary = useMemo(() => {
     const todayJobs = jobsState.filter(
       (job) => toDateKey(new Date(job.scheduledDate)) === todayKey
@@ -350,11 +399,10 @@ export default function RoutesCalendar({
   }, [jobsState, todayKey]);
 
   const weekStart = new Date(today);
-  const mondayOffset = (today.getDay() + 6) % 7;
-  weekStart.setDate(today.getDate() - mondayOffset);
+  weekStart.setDate(today.getDate() - today.getDay());
   weekStart.setHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 5);
+  weekEnd.setDate(weekStart.getDate() + 6);
   weekEnd.setHours(23, 59, 59, 999);
 
   useEffect(() => {
@@ -399,9 +447,6 @@ export default function RoutesCalendar({
 
   const rangeJobs = jobsState.filter((job) => {
     const date = new Date(job.scheduledDate);
-    if (date.getDay() === 0) {
-      return false;
-    }
     return date >= rangeStart && date <= rangeEnd;
   });
 
@@ -989,13 +1034,33 @@ export default function RoutesCalendar({
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
               Calendario operativo
             </p>
-            <h2 className="text-xl font-semibold text-slate-900">
-              {monthLabel}
-            </h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-semibold text-slate-900">
+                {monthLabel}
+              </h2>
+              <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1">
+                <button
+                  type="button"
+                  onClick={() => moveMonth(-1)}
+                  className="rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  aria-label={t("client.request.calendar.previousMonth")}
+                >
+                  {t("client.request.calendar.prev")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveMonth(1)}
+                  className="rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  aria-label={t("client.request.calendar.nextMonth")}
+                >
+                  {t("client.request.calendar.next")}
+                </button>
+              </div>
+            </div>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {(() => {
@@ -1208,12 +1273,14 @@ export default function RoutesCalendar({
           </div>
         ) : null}
 
-        <div className="mt-6 grid grid-cols-6 gap-2">
+        <div className="mt-6 grid grid-cols-7 gap-2">
           {(() => {
             const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
             return calendarDays.map((day) => {
               const key = toDateKey(day);
-              const isCurrentMonth = day.getMonth() === monthStart.getMonth();
+              const isCurrentMonth =
+                day.getMonth() === monthStart.getMonth() &&
+                day.getFullYear() === monthStart.getFullYear();
               const isPastDay = day < startOfToday;
               const jobsForDay = sortJobsForDay(jobsByDate.get(key) ?? []);
               const timeOrder = [...jobsForDay].sort(
@@ -1230,7 +1297,7 @@ export default function RoutesCalendar({
               const fillPct = Math.round((jobsForDay.length / dayCapacity) * 100);
               const fillWidth =
                 jobsForDay.length === 0 ? 0 : Math.max(10, fillPct);
-              const dayIndex = (day.getDay() + 6) % 7;
+              const dayIndex = day.getDay();
               const dayLabel = daysShort[dayIndex];
               const isToday = key === toDateKey(startOfToday);
               const dayTone = isCurrentMonth

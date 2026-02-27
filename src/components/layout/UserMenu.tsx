@@ -8,6 +8,7 @@ import {
   getNotificationDetail,
   getNotificationTitle,
 } from "@/lib/notifications/view";
+import { emitNotificationSignal } from "@/lib/notifications/client-alert";
 
 type UserInfo = {
   id: string;
@@ -40,6 +41,8 @@ export default function UserMenu() {
   const [openUserMenu, setOpenUserMenu] = useState(false);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
   const userRef = useRef<HTMLDivElement | null>(null);
+  const previousUnreadRef = useRef(0);
+  const initializedRef = useRef(false);
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
@@ -174,6 +177,27 @@ export default function UserMenu() {
     return groups;
   }, [notifications]);
 
+  useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      previousUnreadRef.current = unreadCount;
+      return;
+    }
+
+    if (unreadCount > previousUnreadRef.current) {
+      const latestUnread = notifications.find((item) => !item.readAt);
+      const title = latestUnread
+        ? getNotificationTitle(latestUnread.eventType, t)
+        : t("userMenu.notifications");
+      const body = latestUnread
+        ? getNotificationDetail(latestUnread, locale, t)
+        : t("userMenu.recent");
+      emitNotificationSignal({ title, body });
+    }
+
+    previousUnreadRef.current = unreadCount;
+  }, [locale, notifications, t, unreadCount]);
+
   const handleLogout = async () => {
     setLoading(true);
     await fetch("/api/auth/logout", { method: "POST" });
@@ -197,6 +221,12 @@ export default function UserMenu() {
           onClick={() => {
             setOpenNotifications((value) => !value);
             setOpenUserMenu(false);
+            if (
+              typeof Notification !== "undefined" &&
+              Notification.permission === "default"
+            ) {
+              void Notification.requestPermission();
+            }
           }}
           className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-slate-600 transition hover:border-[var(--border-strong)]"
           aria-label={t("userMenu.notifications")}

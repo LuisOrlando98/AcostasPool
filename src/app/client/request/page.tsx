@@ -184,11 +184,15 @@ export default function ClientRequestPage() {
     : false;
 
   const weekdayLabels = useMemo(() => {
-    const monday = new Date(2024, 0, 1);
+    const sunday = new Date(2024, 0, 7);
     return Array.from({ length: 7 }, (_, index) => {
-      const day = new Date(monday);
-      day.setDate(monday.getDate() + index);
-      return day.toLocaleDateString(localeTag, { weekday: "narrow" });
+      const day = new Date(sunday);
+      day.setDate(sunday.getDate() + index);
+      return day
+        .toLocaleDateString(localeTag, { weekday: "short" })
+        .replace(".", "")
+        .slice(0, 2)
+        .toUpperCase();
     });
   }, [localeTag]);
 
@@ -200,11 +204,11 @@ export default function ClientRequestPage() {
       0
     );
 
-    const startOffset = (monthStart.getDay() + 6) % 7;
+    const startOffset = monthStart.getDay();
     const gridStart = new Date(monthStart);
     gridStart.setDate(monthStart.getDate() - startOffset);
 
-    const endOffset = 6 - ((monthEnd.getDay() + 6) % 7);
+    const endOffset = 6 - monthEnd.getDay();
     const gridEnd = new Date(monthEnd);
     gridEnd.setDate(monthEnd.getDate() + endOffset);
 
@@ -541,7 +545,7 @@ export default function ClientRequestPage() {
                     {weekdayLabels.map((label) => (
                       <div
                         key={label}
-                        className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500"
+                        className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500"
                       >
                         {label}
                       </div>
@@ -555,7 +559,11 @@ export default function ClientRequestPage() {
                       const inMonth = isSameMonth(date, calendarMonth);
                       const isAvailable = Boolean(day && day.remainingCapacity > 0);
                       const isSelected = preferredDate === dateKey;
+                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
                       const showUnavailableMarker = inMonth && !isAvailable;
+                      const unavailableStyle = isWeekend
+                        ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
+                        : "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-300";
 
                       return (
                         <button
@@ -563,25 +571,30 @@ export default function ClientRequestPage() {
                           type="button"
                           onClick={() => handleSelectDate(dateKey)}
                           disabled={!isAvailable}
-                          className={`aspect-square min-h-[2.9rem] rounded-lg border px-1 py-1 text-center transition sm:min-h-[3.2rem] ${
+                          className={`relative h-11 overflow-hidden rounded-lg border px-1 py-1 text-center transition sm:h-12 ${
                             !inMonth
                               ? "border-transparent bg-transparent text-slate-300"
                               : !isAvailable
-                                ? "cursor-not-allowed border-rose-200 bg-rose-50 text-rose-300"
+                                ? unavailableStyle
                                 : isSelected
                                   ? "border-sky-500 bg-sky-50 text-sky-900 shadow-sm"
                                   : "border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50/60"
                           }`}
                         >
-                          <span className="block text-sm font-semibold leading-none">{date.getDate()}</span>
+                          <span className="block text-sm font-semibold leading-none">
+                            {date.getDate()}
+                          </span>
                           {showUnavailableMarker ? (
                             <>
                               <span className="sr-only">
                                 {t("client.request.calendar.unavailableShort")}
                               </span>
-                              <span aria-hidden className="mt-1 block text-xs text-rose-500">
-                                x
-                              </span>
+                              <span
+                                aria-hidden
+                                className={`absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full ${
+                                  isWeekend ? "bg-slate-400" : "bg-rose-500"
+                                }`}
+                              />
                             </>
                           ) : null}
                         </button>
