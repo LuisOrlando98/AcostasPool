@@ -388,6 +388,14 @@ export default function RoutesCalendar({
     params.set("month", toMonthKey(nextMonth));
     router.push(`${pathname}?${params.toString()}`);
   };
+  const isCurrentMonthViewed =
+    monthStart.getFullYear() === today.getFullYear() &&
+    monthStart.getMonth() === today.getMonth();
+  const goToCurrentMonth = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("month", toMonthKey(new Date(today.getFullYear(), today.getMonth(), 1)));
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   const summary = useMemo(() => {
     const todayJobs = jobsState.filter(
@@ -1033,24 +1041,20 @@ export default function RoutesCalendar({
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-[250px] flex-1 flex-col gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
-            </div>
+            </p>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-semibold text-slate-900">
+              <h2 className="text-3xl font-semibold leading-none text-slate-900">
                 {monthLabel}
               </h2>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                {summary.todayJobs} {locale === "es" ? "hoy" : "today"}
-              </span>
-              <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
                 <button
                   type="button"
                   onClick={() => moveMonth(-1)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
                   aria-label={t("client.request.calendar.previousMonth")}
                   title={t("client.request.calendar.previousMonth")}
                 >
@@ -1071,7 +1075,7 @@ export default function RoutesCalendar({
                 <button
                   type="button"
                   onClick={() => moveMonth(1)}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
                   aria-label={t("client.request.calendar.nextMonth")}
                   title={t("client.request.calendar.nextMonth")}
                 >
@@ -1090,8 +1094,25 @@ export default function RoutesCalendar({
                   </svg>
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={goToCurrentMonth}
+                disabled={isCurrentMonthViewed}
+                className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+              >
+                {locale === "es" ? "Este mes" : "Current month"}
+              </button>
             </div>
             <p className="text-sm text-slate-500">{t("admin.routes.subtitle")}</p>
+          </div>
+          <div className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <span className="h-2 w-2 rounded-full bg-sky-500" />
+            <div className="leading-tight">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                {locale === "es" ? "Trabajos hoy" : "Jobs today"}
+              </p>
+              <p className="text-sm font-semibold text-slate-900">{summary.todayJobs}</p>
+            </div>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {(() => {
