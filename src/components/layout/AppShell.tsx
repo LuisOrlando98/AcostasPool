@@ -498,8 +498,8 @@ export default function AppShell({
   }, []);
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.08),_transparent_40%),radial-gradient(circle_at_88%_14%,_rgba(34,197,94,0.08),_transparent_45%),radial-gradient(circle_at_84%_86%,_rgba(249,115,22,0.08),_transparent_45%)]" />
+    <div className="app-shell-v2 relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_8%,_rgba(37,99,235,0.14),_transparent_38%),radial-gradient(circle_at_88%_10%,_rgba(59,130,246,0.14),_transparent_42%),radial-gradient(circle_at_84%_90%,_rgba(125,211,252,0.18),_transparent_48%)]" />
       <input
         id="sidebar-toggle"
         type="checkbox"
@@ -508,16 +508,16 @@ export default function AppShell({
         onChange={(event) => setCollapsed(event.target.checked)}
       />
       <div
-        className={`relative min-h-screen lg:grid lg:h-screen lg:overflow-hidden lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
+        className={`relative min-h-screen lg:grid lg:h-screen lg:overflow-hidden lg:grid-cols-[17.25rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5.25rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
       >
-        <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
+        <aside className="app-shell-sidebar sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -right-28 -top-36 h-80 w-80 rounded-full bg-cyan-300/12 blur-3xl" />
             <div className="absolute left-[-6rem] top-24 h-72 w-72 rounded-full bg-sky-500/12 blur-3xl" />
             <div className="absolute -bottom-40 right-[-6rem] h-96 w-96 rounded-full bg-blue-700/25 blur-3xl" />
             <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,_rgba(255,255,255,0.04),_transparent)]" />
           </div>
-          <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-5">
+          <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-4">
             <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden ring-1 ring-white/20">
               <img
                 src="/pwa/app-logo-source.png"
@@ -553,7 +553,7 @@ export default function AppShell({
             </svg>
             <span className="pointer-events-none absolute inset-0 rounded-full border border-white/10" />
           </label>
-          <nav className="nav-list relative z-10 flex-1 space-y-1 overflow-y-auto px-4 py-5 text-sm">
+          <nav className="nav-list relative z-10 flex-1 space-y-1.5 overflow-y-auto px-3 py-5 text-sm">
             {items.map((item) => {
               const isRoot =
                 item.href === "/admin" ||
@@ -567,7 +567,7 @@ export default function AppShell({
                   key={item.href}
                   href={item.href}
                   title={item.label}
-                  className="nav-item sidebar-item group relative flex items-center gap-3 px-4 py-2.5"
+                  className="nav-item sidebar-item group relative flex items-center gap-3 px-3 py-2.5"
                   data-active={isActive}
                 >
                   <span
@@ -586,12 +586,12 @@ export default function AppShell({
               );
             })}
           </nav>
-          <div className="sidebar-account relative z-10 px-5 pt-4">
+          <div className="sidebar-account relative z-10 px-4 pb-4 pt-4">
             <SidebarAccount />
           </div>
         </aside>
 
-        <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-white/80 backdrop-blur-xl lg:col-start-2 lg:row-start-1">
+        <header className="app-shell-header sticky top-0 z-20 border-b border-[var(--border)] bg-white/82 backdrop-blur-xl lg:col-start-2 lg:row-start-1">
           <div
             className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6`}
           >
@@ -621,8 +621,8 @@ export default function AppShell({
                 <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                   {resolvedRoleLabel}
                 </p>
-                <div className="mt-1 flex items-center gap-3">
-                  <span className="h-2 w-2 rounded-full bg-[var(--brand)]" />
+                <div className="mt-1 flex items-center gap-2.5">
+                  <span className="h-2 w-2 rounded-full bg-[var(--brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.14)]" />
                   <h1 className="truncate text-xl font-semibold">{title}</h1>
                 </div>
                 {subtitle ? (
@@ -645,7 +645,7 @@ export default function AppShell({
               className="absolute inset-0 bg-slate-900/55"
               onClick={() => setMobileNavOpen(false)}
             />
-            <div className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)]">
+            <div className="app-shell-sidebar sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)]">
               <div className="sidebar-brand relative z-10 px-4 pb-5 pt-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -697,7 +697,7 @@ export default function AppShell({
                 </div>
               </div>
 
-              <nav className="nav-list relative z-10 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm">
+              <nav className="nav-list relative z-10 flex-1 space-y-1.5 overflow-y-auto px-3 py-3 text-sm">
                 {items.map((item) => {
                   const isRoot =
                     item.href === "/admin" ||
@@ -712,7 +712,7 @@ export default function AppShell({
                       href={item.href}
                       onClick={() => setMobileNavOpen(false)}
                       data-active={isActive}
-                      className="nav-item sidebar-item group relative flex items-center gap-3 px-3 py-2.5"
+                    className="nav-item sidebar-item group relative flex items-center gap-3 px-3 py-2.5"
                     >
                       <span className="nav-icon sidebar-icon flex h-9 w-9 shrink-0 items-center justify-center transition">
                         {item.icon ?? (
@@ -791,9 +791,7 @@ export default function AppShell({
           </div>
         ) : null}
 
-        <main
-          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:gap-8 lg:py-10`}
-        >
+        <main className={`app-shell-main app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:gap-8 lg:py-10`}>
           {children}
         </main>
       </div>

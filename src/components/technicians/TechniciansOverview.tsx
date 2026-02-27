@@ -104,7 +104,7 @@ export default function TechniciansOverview({ rows }: Props) {
             {t("admin.technicians.overview.cards.total")}
           </p>
         </div>
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5 shadow-sm">
+        <div className="stat-card p-5" data-tone="success">
           <p className="text-[11px] uppercase tracking-[0.35em] text-teal-700">
             {t("admin.technicians.overview.cards.active")}
           </p>
@@ -115,7 +115,7 @@ export default function TechniciansOverview({ rows }: Props) {
             {t("admin.technicians.overview.cards.activeHint")}
           </p>
         </div>
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 shadow-sm">
+        <div className="stat-card p-5" data-tone="warning">
           <p className="text-[11px] uppercase tracking-[0.35em] text-indigo-700">
             {t("admin.technicians.overview.cards.pending")}
           </p>
@@ -126,7 +126,7 @@ export default function TechniciansOverview({ rows }: Props) {
             {t("admin.technicians.overview.cards.pendingHint")}
           </p>
         </div>
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5 shadow-sm">
+        <div className="stat-card p-5" data-tone="info">
           <p className="text-[11px] uppercase tracking-[0.35em] text-sky-700">
             {t("admin.technicians.overview.cards.completed")}
           </p>
@@ -151,64 +151,68 @@ export default function TechniciansOverview({ rows }: Props) {
               })}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="ui-search flex items-center gap-2 px-3 py-2">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                className="ui-search-icon h-4 w-4"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M20 20l-3-3"
-                />
-              </svg>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={t("admin.technicians.overview.placeholders.search")}
-                className="ui-search-input w-56"
-              />
-            </div>
-            <div className="ui-segment flex items-center gap-1">
-              {(
-                [
-                  { id: "ALL", label: t("admin.technicians.overview.filters.all") },
-                  { id: "ACTIVE", label: t("common.status.active") },
-                  { id: "INACTIVE", label: t("admin.technicians.overview.filters.inactive") },
-                ] as const
-              ).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setStatusFilter(item.id)}
-                  className={`ui-segment-item ${statusFilter === item.id ? "is-active" : ""}`}
+          <div className="w-full">
+            <div className="ui-filter-bar mt-4 p-3">
+              <div className="grid w-full gap-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+                <div className="ui-search flex items-center gap-2 px-3 py-2">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    className="ui-search-icon h-4 w-4"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M20 20l-3-3"
+                    />
+                  </svg>
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder={t("admin.technicians.overview.placeholders.search")}
+                    className="ui-search-input w-full xl:w-64"
+                  />
+                </div>
+                <div className="ui-segment flex items-center gap-1">
+                  {(
+                    [
+                      { id: "ALL", label: t("admin.technicians.overview.filters.all") },
+                      { id: "ACTIVE", label: t("common.status.active") },
+                      { id: "INACTIVE", label: t("admin.technicians.overview.filters.inactive") },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setStatusFilter(item.id)}
+                      className={`ui-segment-item ${statusFilter === item.id ? "is-active" : ""}`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+                <select
+                  value={sortKey}
+                  onChange={(event) =>
+                    setSortKey(event.target.value as "pending" | "completed" | "name")
+                  }
+                  className="ui-select px-3 py-2 text-xs"
                 >
-                  {item.label}
-                </button>
-              ))}
+                  <option value="pending">{t("admin.technicians.overview.sort.pending")}</option>
+                  <option value="completed">{t("admin.technicians.overview.sort.completed")}</option>
+                  <option value="name">{t("admin.technicians.overview.sort.name")}</option>
+                </select>
+                <label
+                  htmlFor="new-tech"
+                  className="app-button-primary inline-flex cursor-pointer items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+                >
+                  {t("admin.technicians.overview.actions.new")}
+                </label>
+              </div>
             </div>
-            <select
-              value={sortKey}
-              onChange={(event) =>
-                setSortKey(event.target.value as "pending" | "completed" | "name")
-              }
-              className="ui-select px-3 py-2 text-xs"
-            >
-              <option value="pending">{t("admin.technicians.overview.sort.pending")}</option>
-              <option value="completed">{t("admin.technicians.overview.sort.completed")}</option>
-              <option value="name">{t("admin.technicians.overview.sort.name")}</option>
-            </select>
-            <label
-              htmlFor="new-tech"
-              className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
-            >
-              {t("admin.technicians.overview.actions.new")}
-            </label>
           </div>
         </div>
 

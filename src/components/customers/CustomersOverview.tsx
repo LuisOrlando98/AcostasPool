@@ -100,7 +100,7 @@ export default function CustomersOverview({
   return (
     <section className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="app-card p-5">
+        <div className="stat-card p-5" data-tone="info">
           <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
             {t("admin.customers.overview.cards.customers")}
           </p>
@@ -111,7 +111,7 @@ export default function CustomersOverview({
             {t("admin.customers.overview.cards.total")}
           </p>
         </div>
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 p-5">
+        <div className="stat-card p-5" data-tone="success">
           <p className="text-[11px] uppercase tracking-[0.35em] text-teal-700">
             {t("admin.customers.overview.cards.active")}
           </p>
@@ -122,7 +122,7 @@ export default function CustomersOverview({
             {t("admin.customers.overview.cards.activeHint")}
           </p>
         </div>
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+        <div className="stat-card p-5" data-tone="warning">
           <p className="text-[11px] uppercase tracking-[0.35em] text-indigo-700">
             {t("admin.customers.overview.cards.inactive")}
           </p>
@@ -133,7 +133,7 @@ export default function CustomersOverview({
             {t("admin.customers.overview.cards.inactiveHint")}
           </p>
         </div>
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
+        <div className="stat-card p-5" data-tone="info">
           <p className="text-[11px] uppercase tracking-[0.35em] text-sky-700">
             {t("admin.customers.overview.cards.properties")}
           </p>
@@ -176,50 +176,53 @@ export default function CustomersOverview({
           ) : null}
         </div>
 
-        <div className="ui-filter-bar mt-4 flex flex-wrap items-center gap-2 px-3 py-3">
-          <label className="ui-search flex flex-1 items-center gap-2 px-3 py-2 text-xs">
-            <span className="ui-search-icon">
-              {t("common.actions.search")}
-            </span>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t("admin.customers.overview.placeholders.search")}
-              className="ui-search-input w-full"
-            />
-          </label>
-          <select
-            value={statusFilter}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              setStatusFilter(nextValue);
-              pushFilters({ status: nextValue, page: 1 });
-            }}
-            className="ui-select px-3 py-2 text-xs"
-          >
-            <option value="ALL">{t("admin.customers.overview.filters.status")}</option>
-            <option value="ACTIVE">{t("common.status.active")}</option>
-            <option value="INACTIVE">{t("common.status.inactive")}</option>
-          </select>
-          <select
-            value={sortKey}
-            onChange={(event) => {
-              const nextValue = event.target.value as "name" | "jobs" | "properties";
-              setSortKey(nextValue);
-              pushFilters({ sort: nextValue, page: 1 });
-            }}
-            className="ui-select px-3 py-2 text-xs"
-          >
-            <option value="name">{t("admin.customers.overview.sort.name")}</option>
-            <option value="jobs">{t("admin.customers.overview.sort.jobs")}</option>
-            <option value="properties">
-              {t("admin.customers.overview.sort.properties")}
-            </option>
-          </select>
+        <div className="ui-filter-bar mt-4 p-3">
+          <div className="grid w-full gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <label className="ui-search flex items-center gap-2 px-3 py-2 text-xs">
+              <span className="ui-search-icon">
+                {t("common.actions.search")}
+              </span>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t("admin.customers.overview.placeholders.search")}
+                className="ui-search-input w-full"
+              />
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                setStatusFilter(nextValue);
+                pushFilters({ status: nextValue, page: 1 });
+              }}
+              className="ui-select px-3 py-2 text-xs"
+            >
+              <option value="ALL">{t("admin.customers.overview.filters.status")}</option>
+              <option value="ACTIVE">{t("common.status.active")}</option>
+              <option value="INACTIVE">{t("common.status.inactive")}</option>
+            </select>
+            <select
+              value={sortKey}
+              onChange={(event) => {
+                const nextValue = event.target.value as "name" | "jobs" | "properties";
+                setSortKey(nextValue);
+                pushFilters({ sort: nextValue, page: 1 });
+              }}
+              className="ui-select px-3 py-2 text-xs"
+            >
+              <option value="name">{t("admin.customers.overview.sort.name")}</option>
+              <option value="jobs">{t("admin.customers.overview.sort.jobs")}</option>
+              <option value="properties">
+                {t("admin.customers.overview.sort.properties")}
+              </option>
+            </select>
+          </div>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-[720px] w-full text-left text-xs text-slate-600">
+        <div className="ui-table-shell mt-4 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-[720px] w-full text-left text-xs text-slate-600">
             <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
               <tr className="border-b border-slate-100">
                 <th className="pb-3">{t("admin.customers.overview.table.customer")}</th>
@@ -282,7 +285,8 @@ export default function CustomersOverview({
                 ))
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
 
         {pagination.totalPages > 1 ? (
