@@ -26,12 +26,21 @@ export default function NotificationsBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [revealedDeleteId, setRevealedDeleteId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [swipeState, setSwipeState] = useState<{ id: string; offset: number } | null>(
+    null
+  );
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousUnreadRef = useRef(0);
   const initializedRef = useRef(false);
+  const swipeStartRef = useRef<{ id: string; startX: number } | null>(null);
+  const swipedRef = useRef(false);
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
+  const SWIPE_ACTION_WIDTH = 88;
+  const SWIPE_OPEN_THRESHOLD = 56;
 
   const load = useCallback(async () => {
     const unreadRes = await fetch("/api/notifications/unread");
@@ -67,11 +76,22 @@ export default function NotificationsBell() {
       const target = event.target as Node;
       if (panelRef.current && !panelRef.current.contains(target)) {
         setOpen(false);
+        setRevealedDeleteId(null);
+        setConfirmDeleteId(null);
+        setSwipeState(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setRevealedDeleteId(null);
+      setConfirmDeleteId(null);
+      setSwipeState(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (usePusher && userId) {
@@ -178,6 +198,69 @@ export default function NotificationsBell() {
     previousUnreadRef.current = unreadCount;
   }, [locale, notifications, t, unreadCount]);
 
+  const handleDeleteNotification = useCallback(
+    async (item: NotificationItem) => {
+      if (confirmDeleteId !== item.id) {
+        setConfirmDeleteId(item.id);
+        return;
+      }
+      const response = await fetch(`/api/notifications/${item.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        return;
+      }
+      setNotifications((current) =>
+        current.filter((entry) => entry.id !== item.id)
+      );
+      if (!item.readAt) {
+        setUnreadCount((current) => (current > 0 ? current - 1 : 0));
+      }
+      setConfirmDeleteId(null);
+      setRevealedDeleteId(null);
+      setSwipeState(null);
+    },
+    [confirmDeleteId]
+  );
+
+  const handleSwipeStart = (itemId: string, clientX: number) => {
+    swipeStartRef.current = { id: itemId, startX: clientX };
+    swipedRef.current = false;
+    if (revealedDeleteId && revealedDeleteId !== itemId) {
+      setRevealedDeleteId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const handleSwipeMove = (itemId: string, clientX: number) => {
+    const start = swipeStartRef.current;
+    if (!start || start.id !== itemId) {
+      return;
+    }
+    const delta = Math.max(
+      0,
+      Math.min(SWIPE_ACTION_WIDTH, clientX - start.startX)
+    );
+    if (delta > 8) {
+      swipedRef.current = true;
+    }
+    setSwipeState({ id: itemId, offset: delta });
+  };
+
+  const handleSwipeEnd = (itemId: string) => {
+    const isActive = swipeState?.id === itemId;
+    const offset = isActive ? swipeState.offset : 0;
+    if (offset >= SWIPE_OPEN_THRESHOLD) {
+      setRevealedDeleteId(itemId);
+      setConfirmDeleteId(null);
+    } else if (revealedDeleteId === itemId) {
+      setRevealedDeleteId(null);
+      setConfirmDeleteId(null);
+    }
+    setSwipeState(null);
+    swipeStartRef.current = null;
+  };
+
   return (
     <div className="relative" ref={panelRef}>
       <button
@@ -214,7 +297,7 @@ export default function NotificationsBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast">
+        <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:z-auto sm:mt-3 sm:w-80 sm:max-h-[34rem]">
           <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500">
             <span>{t("userMenu.recent")}</span>
             <button
@@ -240,7 +323,7 @@ export default function NotificationsBell() {
               {t("userMenu.empty")}
             </div>
           ) : (
-            <div className="text-sm text-slate-600">
+            <div className="max-h-[calc(78vh-3.2rem)] overflow-y-auto text-sm text-slate-600 sm:max-h-[29rem]">
               {(["today", "yesterday", "week", "older"] as const).map(
                 (groupKey) =>
                   grouped[groupKey].length > 0 ? (
@@ -256,64 +339,129 @@ export default function NotificationsBell() {
                           const isRead = Boolean(item.readAt);
                           const title = getNotificationTitle(item.eventType, t);
                           const detail = getNotificationDetail(item, locale, t);
+                          const isSwiping = swipeState?.id === item.id;
+                          const translateX =
+                            swipeState?.id === item.id
+                              ? swipeState.offset
+                              : revealedDeleteId === item.id
+                                ? SWIPE_ACTION_WIDTH
+                                : 0;
                           return (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={async () => {
-                                if (!isRead) {
-                                  await fetch(`/api/notifications/${item.id}/read`, {
-                                    method: "POST",
-                                  });
-                                  setNotifications((current) =>
-                                    current.map((entry) =>
-                                      entry.id === item.id
-                                        ? {
-                                            ...entry,
-                                            readAt: new Date().toISOString(),
-                                          }
-                                        : entry
-                                    )
-                                  );
-                                  setUnreadCount((current) =>
-                                    current > 0 ? current - 1 : 0
-                                  );
-                                }
-                                setOpen(false);
-                                if (item.link) {
-                                  window.location.href = item.link;
-                                }
-                              }}
-                              data-severity={item.severity ?? "INFO"}
-                              className={`notification-item w-full px-4 py-3 text-left transition ${
-                                isRead
-                                  ? "bg-white hover:bg-slate-50"
-                                  : "bg-slate-50/80 hover:bg-slate-50"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-xs text-slate-400">
-                                <span className="font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                  {title}
-                                </span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                                    isRead
-                                      ? "bg-slate-100 text-slate-500"
-                                      : "bg-sky-100 text-sky-700"
-                                  }`}
+                            <div key={item.id} className="relative overflow-hidden">
+                              <div
+                                className={`absolute inset-y-0 left-0 flex w-[88px] items-center justify-center bg-rose-600 px-2 text-white transition ${
+                                  translateX > 0 ? "opacity-100" : "opacity-0"
+                                }`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteNotification(item)}
+                                  className="inline-flex items-center gap-1 rounded-full border border-white/30 bg-white/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] transition hover:bg-white/20"
+                                  aria-label={
+                                    confirmDeleteId === item.id
+                                      ? t("notifications.deleteConfirm")
+                                      : t("common.actions.delete")
+                                  }
                                 >
-                                  {isRead
-                                    ? t("notifications.read")
-                                    : t("notifications.unread")}
-                                </span>
+                                  {confirmDeleteId === item.id
+                                    ? t("notifications.deleteConfirm")
+                                    : t("common.actions.delete")}
+                                </button>
                               </div>
-                              <div className="mt-2 text-sm font-semibold text-slate-700">
-                                {item.customerName ?? t("userMenu.system")}
-                              </div>
-                              <div className="mt-1 text-[11px] text-slate-500">
-                                {detail}
-                              </div>
-                            </button>
+                              <button
+                                type="button"
+                                onPointerDown={(event) => {
+                                  if (event.pointerType !== "touch") {
+                                    return;
+                                  }
+                                  handleSwipeStart(item.id, event.clientX);
+                                }}
+                                onPointerMove={(event) => {
+                                  if (event.pointerType !== "touch") {
+                                    return;
+                                  }
+                                  handleSwipeMove(item.id, event.clientX);
+                                }}
+                                onPointerUp={(event) => {
+                                  if (event.pointerType !== "touch") {
+                                    return;
+                                  }
+                                  handleSwipeEnd(item.id);
+                                }}
+                                onPointerCancel={() => {
+                                  handleSwipeEnd(item.id);
+                                }}
+                                onClick={async () => {
+                                  if (swipedRef.current) {
+                                    swipedRef.current = false;
+                                    return;
+                                  }
+                                  if (revealedDeleteId === item.id) {
+                                    setRevealedDeleteId(null);
+                                    setConfirmDeleteId(null);
+                                    return;
+                                  }
+                                  if (!isRead) {
+                                    await fetch(`/api/notifications/${item.id}/read`, {
+                                      method: "POST",
+                                    });
+                                    setNotifications((current) =>
+                                      current.map((entry) =>
+                                        entry.id === item.id
+                                          ? {
+                                              ...entry,
+                                              readAt: new Date().toISOString(),
+                                            }
+                                          : entry
+                                      )
+                                    );
+                                    setUnreadCount((current) =>
+                                      current > 0 ? current - 1 : 0
+                                    );
+                                  }
+                                  setOpen(false);
+                                  if (item.link) {
+                                    window.location.href = item.link;
+                                  }
+                                }}
+                                data-severity={item.severity ?? "INFO"}
+                                className={`notification-item w-full px-4 py-3 text-left transition ${
+                                  isRead
+                                    ? "bg-white hover:bg-slate-50"
+                                    : "bg-slate-50/80 hover:bg-slate-50"
+                                }`}
+                                style={{
+                                  transform: `translateX(${translateX}px)`,
+                                  transition: isSwiping
+                                    ? "none"
+                                    : "transform 180ms ease",
+                                  touchAction: "pan-y",
+                                }}
+                              >
+                                <div className="flex items-center justify-between text-xs text-slate-400">
+                                  <span className="font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    {title}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                                      isRead
+                                        ? "bg-slate-100 text-slate-500"
+                                        : "bg-sky-100 text-sky-700"
+                                    }`}
+                                  >
+                                    {isRead
+                                      ? t("notifications.read")
+                                      : t("notifications.unread")}
+                                  </span>
+                                </div>
+                                <div className="mt-2 text-sm font-semibold text-slate-700">
+                                  {item.customerName ?? t("userMenu.system")}
+                                </div>
+                                <div className="mt-1 text-[11px] text-slate-500">
+                                  {detail}
+                                </div>
+                              </button>
+                            </div>
                           );
                         })}
                       </div>

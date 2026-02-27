@@ -35,6 +35,7 @@ export default function SidebarAccount() {
         .slice(0, 2)
         .toUpperCase()
     : "AP";
+  const isAdmin = user?.role === "ADMIN";
 
   const handleLogout = async () => {
     setLoading(true);
@@ -87,24 +88,26 @@ export default function SidebarAccount() {
           </span>
           <span className="sidebar-account-label">{t("userMenu.account")}</span>
         </a>
-        <a href="/account/updates" className="sidebar-account-link">
-          <span className="sidebar-account-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 7h16M4 12h10M4 17h6"
-              />
-            </svg>
-          </span>
-          <span className="sidebar-account-label">{t("userMenu.updates")}</span>
-        </a>
+        {isAdmin ? (
+          <a href="/account/updates" className="sidebar-account-link">
+            <span className="sidebar-account-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 7h16M4 12h10M4 17h6"
+                />
+              </svg>
+            </span>
+            <span className="sidebar-account-label">{t("userMenu.updates")}</span>
+          </a>
+        ) : null}
         <InstallAppAction variant="sidebar" />
         {user?.isDeveloper ? (
           <a href="/admin/developer" className="sidebar-account-link">

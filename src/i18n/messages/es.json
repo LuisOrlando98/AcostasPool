@@ -252,6 +252,7 @@
     "clear": "Limpiar",
     "read": "Leido",
     "unread": "Nuevo",
+    "deleteConfirm": "Toca de nuevo",
     "none": "No hay preferencias de notificacion disponibles.",
     "requested": "Solicitado",
     "jobCompleted": "Trabajo completado",

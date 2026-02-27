@@ -349,18 +349,11 @@ h3 {
 
 .sidebar-logo {
   border-radius: 18px;
-  background: var(--sidebar-accent);
+  background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 12px 24px rgba(48, 188, 237, 0.35);
   position: relative;
-}
-
-.sidebar-logo::after {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  border-radius: 999px;
-  background: #ffffff;
-  opacity: 0.95;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  overflow: hidden;
 }
 
 .sidebar-item {

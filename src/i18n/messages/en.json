@@ -252,6 +252,7 @@
     "clear": "Clear",
     "read": "Read",
     "unread": "New",
+    "deleteConfirm": "Tap again",
     "none": "No notification preferences available.",
     "requested": "Requested",
     "jobCompleted": "Job completed",

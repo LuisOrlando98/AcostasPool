@@ -25,12 +25,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [switchingLocale, setSwitchingLocale] = useState(false);
   const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
 
   const handleLocaleChange = (nextLocale: "en" | "es") => {
     if (nextLocale === locale) {
       return;
     }
+
     setSwitchingLocale(true);
     window.localStorage.setItem(LANDING_LOCALE_STORAGE_KEY, nextLocale);
     document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=2592000`;
@@ -76,15 +78,35 @@ export default function LoginPage() {
     router.refresh();
   };
 
+  const legalLinks = [
+    { href: "/legal/terms-of-service", en: "Terms of Service", es: "Terminos de Servicio" },
+    { href: "/legal/privacy-policy", en: "Privacy Policy", es: "Politica de Privacidad" },
+    {
+      href: "/legal/payment-cancellation-policy",
+      en: "Payment & Cancellation",
+      es: "Pago y Cancelacion",
+    },
+    {
+      href: "/legal/disclaimer-limitation-of-liability",
+      en: "Disclaimer & Liability",
+      es: "Descargo y Responsabilidad",
+    },
+    { href: "/legal/cookie-notice", en: "Cookie Notice", es: "Aviso de Cookies" },
+  ] as const;
+
   return (
-    <div className="pool-login-shell relative min-h-screen">
-      <div className="absolute right-6 top-6">
-        <div className="flex items-center rounded-full border border-white/12 bg-white/5 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/70">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_#d9f2ff,_#f6f7fb_48%,_#ecf2f8)] text-slate-900">
+      <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(2,132,199,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(2,132,199,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
+
+      <div className="absolute right-5 top-5 z-20">
+        <div className="inline-flex items-center rounded-full border border-slate-200 bg-white/90 p-1 text-[11px] font-semibold uppercase tracking-[0.18em] shadow-sm backdrop-blur">
           <button
             type="button"
             onClick={() => handleLocaleChange("en")}
             className={`rounded-full px-3 py-1 transition ${
-              locale === "en" ? "bg-[#30bced] text-[#07182b]" : "hover:text-white"
+              locale === "en"
+                ? "bg-sky-500 text-white"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
             disabled={switchingLocale}
           >
@@ -94,7 +116,9 @@ export default function LoginPage() {
             type="button"
             onClick={() => handleLocaleChange("es")}
             className={`rounded-full px-3 py-1 transition ${
-              locale === "es" ? "bg-[#30bced] text-[#07182b]" : "hover:text-white"
+              locale === "es"
+                ? "bg-sky-500 text-white"
+                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             }`}
             disabled={switchingLocale}
           >
@@ -102,137 +126,59 @@ export default function LoginPage() {
           </button>
         </div>
       </div>
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-12 lg:flex-row lg:items-center lg:justify-between">
-        <section className="w-full max-w-xl space-y-6">
-          <div className="pool-login-badge inline-flex items-center gap-2">
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-5 py-12 lg:flex-row lg:items-center lg:justify-between">
+        <section className="w-full max-w-xl">
+          <div className="app-chip inline-flex items-center px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em]">
             {t("auth.login.kicker")}
           </div>
-          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-            {t("auth.login.headline")}{" "}
-            <span className="text-[#30bced]">
-              {t("auth.login.headlineAccent")}
-            </span>
-            .
+          <h1 className="mt-5 text-4xl font-semibold leading-tight text-slate-900 sm:text-5xl">
+            {t("auth.login.headline")} <span className="text-sky-600">{t("auth.login.headlineAccent")}</span>
           </h1>
-          <p className="text-sm text-white/70 sm:text-base">
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
             {t("auth.login.lede")}
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="pool-login-metric">
-              <div className="flex items-center gap-2 text-white/80">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#30bced]">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3s6 6.5 6 11a6 6 0 11-12 0c0-4.5 6-11 6-11z"
-                    />
-                  </svg>
-                </span>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                  {t("auth.login.metrics.quality.kicker")}
-                </p>
-              </div>
-              <p className="mt-3 text-sm font-semibold">
-                {t("auth.login.metrics.quality.title")}
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <article className="app-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("auth.login.metrics.quality.kicker")}
               </p>
-              <p className="mt-1 text-xs text-white/60">
-                {t("auth.login.metrics.quality.desc")}
+              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.quality.title")}</p>
+              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.quality.desc")}</p>
+            </article>
+            <article className="app-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("auth.login.metrics.routes.kicker")}
               </p>
-            </div>
-            <div className="pool-login-metric">
-              <div className="flex items-center gap-2 text-white/80">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#30bced]">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3.5 6.5l5-2 7 2 5-2v12l-5 2-7-2-5 2v-12z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.5 4.5v12M15.5 6.5v12"
-                    />
-                  </svg>
-                </span>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                  {t("auth.login.metrics.routes.kicker")}
-                </p>
-              </div>
-              <p className="mt-3 text-sm font-semibold">
-                {t("auth.login.metrics.routes.title")}
+              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.routes.title")}</p>
+              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.routes.desc")}</p>
+            </article>
+            <article className="app-card p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("auth.login.metrics.security.kicker")}
               </p>
-              <p className="mt-1 text-xs text-white/60">
-                {t("auth.login.metrics.routes.desc")}
-              </p>
-            </div>
-            <div className="pool-login-metric">
-              <div className="flex items-center gap-2 text-white/80">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#30bced]">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3l7 3v6c0 4.5-3.1 7.6-7 9-3.9-1.4-7-4.5-7-9V6l7-3z"
-                    />
-                  </svg>
-                </span>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                  {t("auth.login.metrics.security.kicker")}
-                </p>
-              </div>
-              <p className="mt-3 text-sm font-semibold">
-                {t("auth.login.metrics.security.title")}
-              </p>
-              <p className="mt-1 text-xs text-white/60">
-                {t("auth.login.metrics.security.desc")}
-              </p>
-            </div>
+              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.security.title")}</p>
+              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.security.desc")}</p>
+            </article>
           </div>
-          <a
-            href="/"
-            className="pool-login-link inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em]"
-          >
+
+          <a href="/" className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700 hover:text-sky-800">
             {t("auth.login.publicLink")}
-            <span className="text-base leading-none">→</span>
+            <span aria-hidden="true">&rarr;</span>
           </a>
         </section>
 
-        <section className="pool-login-card w-full max-w-md p-8">
-          <div className="flex items-center justify-between">
+        <section className="app-card w-full max-w-md p-6 sm:p-8">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/60">
-                {t("app.name")}
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-[#30bced]">
-                {t("auth.login.title")}
-              </h2>
-              <p className="mt-2 text-sm text-white/60">
-                {t("auth.login.cardSubtitle")}
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("app.name")}</p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">{t("auth.login.title")}</h2>
+              <p className="mt-1 text-sm text-slate-600">{t("auth.login.cardSubtitle")}</p>
             </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#30bced] text-[#07182b]">
-              <span className="text-sm font-semibold">AP</span>
-            </div>
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-500 text-sm font-semibold text-white">
+              AP
+            </span>
           </div>
 
           <form
@@ -244,10 +190,7 @@ export default function LoginPage() {
             action="/api/auth/login"
           >
             <div>
-              <label
-                htmlFor="login-email"
-                className="text-xs font-semibold uppercase tracking-wider text-white/60"
-              >
+              <label htmlFor="login-email" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 {t("common.labels.email")}
               </label>
               <input
@@ -265,58 +208,98 @@ export default function LoginPage() {
                 required
               />
             </div>
+
             <div>
-              <label
-                htmlFor="login-password"
-                className="text-xs font-semibold uppercase tracking-wider text-white/60"
-              >
+              <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                 {t("auth.login.password")}
               </label>
-              <input
-                id="login-password"
-                name="password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                className="app-input mt-2 w-full px-4 py-3 text-sm"
-                placeholder={t("auth.login.passwordPlaceholder")}
-                required
-              />
+              <div className="relative mt-2">
+                <input
+                  id="login-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  className="app-input w-full px-4 py-3 pr-16 text-sm"
+                  placeholder={t("auth.login.passwordPlaceholder")}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-2 my-2 inline-flex items-center rounded-md px-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                  aria-label={
+                    showPassword
+                      ? locale === "es"
+                        ? "Ocultar contrasena"
+                        : "Hide password"
+                      : locale === "es"
+                        ? "Mostrar contrasena"
+                        : "Show password"
+                  }
+                >
+                  {showPassword
+                    ? locale === "es"
+                      ? "Ocultar"
+                      : "Hide"
+                    : locale === "es"
+                      ? "Mostrar"
+                      : "Show"}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center justify-between text-xs text-white/60">
-              <label className="flex items-center gap-2">
+
+            <div className="flex items-center justify-between gap-3 text-xs text-slate-600">
+              <label className="inline-flex items-center gap-2">
                 <input
                   type="checkbox"
                   name="remember"
-                  className="h-4 w-4 rounded border-white/20 bg-white/10"
+                  className="h-4 w-4 rounded border-slate-300"
                   checked={remember}
                   onChange={(event) => setRemember(event.target.checked)}
                 />
                 {t("auth.login.keepSignedIn")}
               </label>
-              <a
-                href="/reset"
-                className="font-semibold text-white/80 hover:text-white"
-              >
+              <a href="/reset" className="font-semibold text-sky-700 hover:text-sky-800">
                 {t("auth.login.forgot")}
               </a>
             </div>
+
             {error ? (
-              <div className="rounded-xl border border-rose-400/40 bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
+              <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {error}
               </div>
             ) : null}
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-full bg-[#30bced] px-4 py-3 text-sm font-semibold text-[#07182b] transition hover:bg-[#52d6ff] disabled:cursor-not-allowed disabled:opacity-70"
+              className="app-button-primary w-full px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? t("auth.login.loading") : t("auth.login.submit")}
             </button>
           </form>
+
+          <div className="mt-5 border-t border-slate-200 pt-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {locale === "es" ? "Legal" : "Legal"}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {legalLinks.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 transition hover:border-sky-200 hover:text-sky-700"
+                >
+                  {locale === "es" ? item.es : item.en}
+                </a>
+              ))}
+            </div>
+          </div>
         </section>
       </div>
     </div>
   );
 }
+

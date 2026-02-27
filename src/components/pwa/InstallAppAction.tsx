@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -60,6 +61,7 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
   const [isIos, setIsIos] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isPortalReady, setIsPortalReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -120,6 +122,10 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
         mediaQuery.removeListener(onDisplayModeChange);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    setIsPortalReady(true);
   }, []);
 
   useEffect(() => {
@@ -209,138 +215,143 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
   return (
     <>
       {button}
-      {isGuideOpen ? (
-        <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="install-guide-title"
-        >
-          <button
-            type="button"
-            aria-label={t("common.actions.close")}
-            className="absolute inset-0 bg-slate-900/55"
-            onClick={() => setIsGuideOpen(false)}
-          />
-          <div className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-contrast">
-            <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {isIos
-                    ? t("userMenu.installGuide.platform.ios")
-                    : t("userMenu.installGuide.platform.android")}
-                </p>
-                <h2
-                  id="install-guide-title"
-                  className="mt-1 text-lg font-semibold text-slate-900"
-                >
-                  {t("userMenu.installGuide.title")}
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  {isIos
-                    ? t("userMenu.installGuide.subtitleIos")
-                    : t("userMenu.installGuide.subtitleAndroid")}
-                </p>
-              </div>
+      {isGuideOpen && isPortalReady
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[1200] overflow-y-auto p-4 sm:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="install-guide-title"
+            >
               <button
                 type="button"
-                onClick={() => setIsGuideOpen(false)}
-                className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
                 aria-label={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 6l12 12M18 6L6 18"
-                  />
-                </svg>
-              </button>
-            </div>
+                className="fixed inset-0 bg-slate-900/55"
+                onClick={() => setIsGuideOpen(false)}
+              />
+              <div className="relative flex min-h-full items-center justify-center">
+                <div className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-contrast">
+                  <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                        {isIos
+                          ? t("userMenu.installGuide.platform.ios")
+                          : t("userMenu.installGuide.platform.android")}
+                      </p>
+                      <h2
+                        id="install-guide-title"
+                        className="mt-1 text-lg font-semibold text-slate-900"
+                      >
+                        {t("userMenu.installGuide.title")}
+                      </h2>
+                      <p className="mt-1 text-sm text-slate-600">
+                        {isIos
+                          ? t("userMenu.installGuide.subtitleIos")
+                          : t("userMenu.installGuide.subtitleAndroid")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsGuideOpen(false)}
+                      className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                      aria-label={t("common.actions.close")}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-4 w-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 6l12 12M18 6L6 18"
+                        />
+                      </svg>
+                    </button>
+                  </div>
 
-            <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
-              {isIos ? (
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
-                  <p className="font-semibold">
-                    {t("userMenu.installGuide.iosNoteTitle")}
-                  </p>
-                  <p className="mt-1">{t("userMenu.installGuide.iosNoteBody")}</p>
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                  <p className="font-semibold">
-                    {t("userMenu.installGuide.androidNoteTitle")}
-                  </p>
-                  <p className="mt-1">
-                    {canUseInstallPrompt
-                      ? t("userMenu.installGuide.androidNoteBodyPrompt")
-                      : t("userMenu.installGuide.androidNoteBodyManual")}
-                  </p>
-                </div>
-              )}
-
-              <ol className="grid gap-3 md:grid-cols-2">
-                {installSteps.map((step, index) => (
-                  <li
-                    key={step.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                        {index + 1}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {t(`userMenu.installGuide.steps.${step.id}.title`)}
+                  <div className="space-y-4 px-5 py-5 sm:px-6 sm:py-6">
+                    {isIos ? (
+                      <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-800">
+                        <p className="font-semibold">
+                          {t("userMenu.installGuide.iosNoteTitle")}
                         </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {t(`userMenu.installGuide.steps.${step.id}.body`)}
+                        <p className="mt-1">{t("userMenu.installGuide.iosNoteBody")}</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        <p className="font-semibold">
+                          {t("userMenu.installGuide.androidNoteTitle")}
+                        </p>
+                        <p className="mt-1">
+                          {canUseInstallPrompt
+                            ? t("userMenu.installGuide.androidNoteBodyPrompt")
+                            : t("userMenu.installGuide.androidNoteBodyManual")}
                         </p>
                       </div>
-                    </div>
-                    {step.image ? (
-                      <img
-                        src={step.image}
-                        alt={t(`userMenu.installGuide.steps.${step.id}.imageAlt`)}
-                        className="mt-3 w-full rounded-xl border border-slate-200 bg-white"
-                        loading="lazy"
-                      />
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
+                    )}
 
-              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-                {canUseInstallPrompt ? (
-                  <button
-                    type="button"
-                    onClick={handleInstallPrompt}
-                    disabled={installing}
-                    className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {installing
-                      ? t("userMenu.installingApp")
-                      : t("userMenu.installGuide.installNow")}
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => setIsGuideOpen(false)}
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-                >
-                  {t("userMenu.installGuide.done")}
-                </button>
+                    <ol className="grid gap-3 md:grid-cols-2">
+                      {installSteps.map((step, index) => (
+                        <li
+                          key={step.id}
+                          className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {t(`userMenu.installGuide.steps.${step.id}.title`)}
+                              </p>
+                              <p className="mt-1 text-sm text-slate-600">
+                                {t(`userMenu.installGuide.steps.${step.id}.body`)}
+                              </p>
+                            </div>
+                          </div>
+                          {step.image ? (
+                            <img
+                              src={step.image}
+                              alt={t(`userMenu.installGuide.steps.${step.id}.imageAlt`)}
+                              className="mt-3 w-full rounded-xl border border-slate-200 bg-white"
+                              loading="lazy"
+                            />
+                          ) : null}
+                        </li>
+                      ))}
+                    </ol>
+
+                    <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+                      {canUseInstallPrompt ? (
+                        <button
+                          type="button"
+                          onClick={handleInstallPrompt}
+                          disabled={installing}
+                          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {installing
+                            ? t("userMenu.installingApp")
+                            : t("userMenu.installGuide.installNow")}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setIsGuideOpen(false)}
+                        className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+                      >
+                        {t("userMenu.installGuide.done")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+            </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }

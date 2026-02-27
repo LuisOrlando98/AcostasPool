@@ -50,12 +50,9 @@ const FOOTER_COPY: Record<
     legalCenter: string;
     privacyPolicy: string;
     termsOfService: string;
-    cookiePolicy: string;
-    dataRetention: string;
-    securityPolicy: string;
-    incidentResponse: string;
-    backupRecovery: string;
-    californiaNotice: string;
+    paymentCancellation: string;
+    disclaimerLiability: string;
+    cookieNotice: string;
     rights: string;
     about: string;
     contactShort: string;
@@ -82,16 +79,13 @@ const FOOTER_COPY: Record<
     repairRecovery: "Regular Maintenance",
     premiumStandard: "Equipment Repair",
     contactPage: "Contact page",
-    legal: "Compliance",
-    legalCenter: "Compliance center",
+    legal: "Legal",
+    legalCenter: "Legal center",
     privacyPolicy: "Privacy policy",
     termsOfService: "Terms of service",
-    cookiePolicy: "Cookie policy",
-    dataRetention: "Data retention",
-    securityPolicy: "Security policy",
-    incidentResponse: "Incident response",
-    backupRecovery: "Backup and recovery",
-    californiaNotice: "California privacy notice",
+    paymentCancellation: "Payment and cancellation",
+    disclaimerLiability: "Disclaimer and liability",
+    cookieNotice: "Cookie notice",
     rights: "All rights reserved.",
     about: "About",
     contactShort: "Contact",
@@ -117,16 +111,13 @@ const FOOTER_COPY: Record<
     repairRecovery: "Mantenimiento regular",
     premiumStandard: "Reparacion de equipos",
     contactPage: "Pagina de contacto",
-    legal: "Cumplimiento",
-    legalCenter: "Centro de cumplimiento",
+    legal: "Legal",
+    legalCenter: "Centro legal",
     privacyPolicy: "Politica de privacidad",
     termsOfService: "Terminos de servicio",
-    cookiePolicy: "Politica de cookies",
-    dataRetention: "Retencion de datos",
-    securityPolicy: "Politica de seguridad",
-    incidentResponse: "Respuesta a incidentes",
-    backupRecovery: "Backup y recuperacion",
-    californiaNotice: "Aviso de privacidad de California",
+    paymentCancellation: "Pago y cancelacion",
+    disclaimerLiability: "Descargo y responsabilidad",
+    cookieNotice: "Aviso de cookies",
     rights: "Todos los derechos reservados.",
     about: "Nosotros",
     contactShort: "Contacto",
@@ -249,15 +240,12 @@ export default function LandingFooter({
         { label: copy.legalCenter, href: "/legal" },
         { label: copy.privacyPolicy, href: "/legal/privacy-policy" },
         { label: copy.termsOfService, href: "/legal/terms-of-service" },
-        { label: copy.cookiePolicy, href: "/legal/cookie-policy" },
-        { label: copy.dataRetention, href: "/legal/data-retention" },
-        { label: copy.securityPolicy, href: "/legal/security-policy" },
-        { label: copy.incidentResponse, href: "/legal/incident-response" },
-        { label: copy.backupRecovery, href: "/legal/backup-recovery" },
+        { label: copy.paymentCancellation, href: "/legal/payment-cancellation-policy" },
         {
-          label: copy.californiaNotice,
-          href: "/legal/california-privacy-notice",
+          label: copy.disclaimerLiability,
+          href: "/legal/disclaimer-limitation-of-liability",
         },
+        { label: copy.cookieNotice, href: "/legal/cookie-notice" },
       ],
     },
   ];

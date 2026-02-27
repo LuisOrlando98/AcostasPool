@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import UserMenu from "@/components/layout/UserMenu";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
 import { useI18n } from "@/i18n/client";
@@ -427,22 +426,26 @@ export default function AppShell({
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
-    return window.localStorage.getItem("ap:sidebar-collapsed") === "true";
-  });
+  const [collapsed, setCollapsed] = useState(false);
+  const [sidebarPrefReady, setSidebarPrefReady] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
+      return;
+    }
+    setCollapsed(window.localStorage.getItem("ap:sidebar-collapsed") === "true");
+    setSidebarPrefReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !sidebarPrefReady) {
       return;
     }
     window.localStorage.setItem(
       "ap:sidebar-collapsed",
       collapsed ? "true" : "false"
     );
-  }, [collapsed]);
+  }, [collapsed, sidebarPrefReady]);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -514,7 +517,13 @@ export default function AppShell({
             <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,_rgba(255,255,255,0.04),_transparent)]" />
           </div>
           <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-5">
-            <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center ring-1 ring-white/20" />
+            <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden ring-1 ring-white/20">
+              <img
+                src="/pwa/app-logo-source.png"
+                alt={`${t("app.name")} logo`}
+                className="h-full w-full object-cover"
+              />
+            </div>
             <div className="brand-text max-w-[12rem] overflow-hidden transition-all duration-300">
               <p className="text-sm font-semibold uppercase tracking-[0.32em] text-[var(--sidebar-ink)]">
                 {t("app.name")}
@@ -585,33 +594,12 @@ export default function AppShell({
           <div
             className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6`}
           >
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                {resolvedRoleLabel}
-              </p>
-              <div className="mt-1 flex items-center gap-3">
-                <span className="h-2 w-2 rounded-full bg-[var(--brand)]" />
-                <h1 className="text-xl font-semibold">{title}</h1>
-              </div>
-              {subtitle ? (
-                <p className="text-sm text-slate-500">{subtitle}</p>
-              ) : null}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="hidden rounded-full border border-sky-100 bg-sky-50/80 px-3 py-1 text-xs text-slate-600 sm:inline">
-                {t("common.environment.local")}
-              </span>
-              <div className="hidden lg:block">
-                <NotificationsBell />
-              </div>
-              <div className="lg:hidden">
-                <UserMenu />
-              </div>
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 lg:hidden"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 lg:hidden"
+                aria-label={t("common.navigation.menu")}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -626,8 +614,24 @@ export default function AppShell({
                     d="M4 7h16M4 12h16M4 17h10"
                   />
                 </svg>
-                <span>{t("common.navigation.menu")}</span>
               </button>
+
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                  {resolvedRoleLabel}
+                </p>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="h-2 w-2 rounded-full bg-[var(--brand)]" />
+                  <h1 className="truncate text-xl font-semibold">{title}</h1>
+                </div>
+                {subtitle ? (
+                  <p className="truncate text-sm text-slate-500">{subtitle}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <NotificationsBell />
             </div>
           </div>
         </header>
@@ -640,12 +644,11 @@ export default function AppShell({
               className="absolute inset-0 bg-slate-900/55"
               onClick={() => setMobileNavOpen(false)}
             />
-            <div className="absolute left-0 top-0 h-[100dvh] w-[min(86vw,22rem)] overflow-y-auto border-r border-sky-100 bg-white shadow-2xl">
-              <div className="relative overflow-hidden bg-[linear-gradient(150deg,#1d4ed8,#1e40af,#0f172a)] px-4 pb-5 pt-4 text-white">
-                <div className="absolute -right-12 -top-14 h-40 w-40 rounded-full bg-cyan-300/25 blur-2xl" />
-                <div className="relative flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/35 bg-white/15 text-sm font-semibold">
+            <div className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)]">
+              <div className="sidebar-brand relative z-10 px-4 pb-5 pt-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/25 bg-white/10 text-sm font-semibold">
                       {mobileUser?.avatarUrl ? (
                         <img
                           src={getAssetUrl(mobileUser.avatarUrl)}
@@ -662,10 +665,10 @@ export default function AppShell({
                       )}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
+                      <p className="truncate text-sm font-semibold text-[var(--sidebar-ink)]">
                         {mobileUser?.name ?? t("app.name")}
                       </p>
-                      <p className="truncate text-xs text-sky-100/90">
+                      <p className="truncate text-xs text-[var(--sidebar-muted)]">
                         {mobileUser?.email ?? resolvedRoleLabel}
                       </p>
                     </div>
@@ -673,7 +676,7 @@ export default function AppShell({
                   <button
                     type="button"
                     onClick={() => setMobileNavOpen(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-white/10"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/[0.08] text-[var(--sidebar-ink)] transition hover:bg-white/[0.15]"
                     aria-label={t("common.actions.close")}
                   >
                     <svg
@@ -693,7 +696,7 @@ export default function AppShell({
                 </div>
               </div>
 
-              <nav className="space-y-1 px-3 py-3">
+              <nav className="nav-list relative z-10 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm">
                 {items.map((item) => {
                   const isRoot =
                     item.href === "/admin" ||
@@ -707,13 +710,10 @@ export default function AppShell({
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileNavOpen(false)}
-                      className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition ${
-                        isActive
-                          ? "border border-sky-200 bg-sky-50 text-sky-800"
-                          : "border border-transparent text-slate-700 hover:bg-slate-100"
-                      }`}
+                      data-active={isActive}
+                      className="nav-item sidebar-item group relative flex items-center gap-3 px-3 py-2.5"
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600">
+                      <span className="nav-icon sidebar-icon flex h-9 w-9 shrink-0 items-center justify-center transition">
                         {item.icon ?? (
                           <span className="text-[11px] font-semibold">
                             {item.label.slice(0, 1).toUpperCase()}
@@ -726,21 +726,62 @@ export default function AppShell({
                 })}
               </nav>
 
-              <div className="border-t border-slate-200 px-3 py-3">
+              <div className="relative z-10 border-t border-[var(--sidebar-border)] px-3 py-3">
                 <Link
                   href="/account"
                   onClick={() => setMobileNavOpen(false)}
-                  className="block rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
+                  className="sidebar-account-link w-full justify-start"
                 >
-                  {t("userMenu.account")}
+                  <span className="sidebar-account-icon" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6.5 18c0-2.6 2.6-4.5 5.5-4.5S17.5 15.4 17.5 18"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8.5 9.5a3.5 3.5 0 117 0 3.5 3.5 0 00-7 0z"
+                      />
+                    </svg>
+                  </span>
+                  <span className="sidebar-account-label">{t("userMenu.account")}</span>
                 </Link>
-                <Link
-                  href="/account/updates"
-                  onClick={() => setMobileNavOpen(false)}
-                  className="mt-1 block rounded-xl px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100"
-                >
-                  {t("userMenu.updates")}
-                </Link>
+                {role === "ADMIN" ? (
+                  <Link
+                    href="/account/updates"
+                    onClick={() => setMobileNavOpen(false)}
+                    className="sidebar-account-link mt-1 w-full justify-start"
+                  >
+                    <span className="sidebar-account-icon" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-4 w-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 7h16M4 12h10M4 17h6"
+                        />
+                      </svg>
+                    </span>
+                    <span className="sidebar-account-label">{t("userMenu.updates")}</span>
+                  </Link>
+                ) : null}
+              </div>
+
+              <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
+                AcostasPool v1.0
               </div>
             </div>
           </div>
