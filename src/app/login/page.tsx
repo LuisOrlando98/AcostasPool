@@ -179,9 +179,9 @@ export default function LoginPage() {
               </div>
               <span className="inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-sky-100 bg-white">
                 <img
-                  src="/pwa/app-logo-source.png"
+                  src="/newlogo.png"
                   alt={`${t("app.name")} logo`}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain"
                 />
               </span>
             </div>

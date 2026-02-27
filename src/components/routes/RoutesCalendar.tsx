@@ -121,6 +121,7 @@ type RoutesCalendarProps = {
   customers: Customer[];
   serviceTiers: ServiceTier[];
   monthKey: string;
+  nextMonthJobsCount: number;
 };
 
 const buildDaysShort = (locale: string) => {
@@ -203,6 +204,7 @@ export default function RoutesCalendar({
   customers,
   serviceTiers,
   monthKey,
+  nextMonthJobsCount,
 }: RoutesCalendarProps) {
   const { t, locale } = useI18n();
   const [jobsState, setJobsState] = useState(() =>
@@ -377,6 +379,10 @@ export default function RoutesCalendar({
   });
   const monthLabel =
     monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
+  const nextMonthJobsLabel =
+    locale === "es"
+      ? "Trabajos programados para el proximo mes:"
+      : "Jobs scheduled for next month:";
 
   const moveMonth = (offset: number) => {
     const nextMonth = new Date(
@@ -1040,72 +1046,74 @@ export default function RoutesCalendar({
 
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
-      <section className="rounded-3xl border border-slate-200 bg-white p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-[250px] flex-1 flex-col gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-3xl font-semibold leading-none text-slate-900">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => moveMonth(-1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+                aria-label={t("client.request.calendar.previousMonth")}
+                title={t("client.request.calendar.previousMonth")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 18l-6-6 6-6"
+                  />
+                </svg>
+              </button>
+              <h2 className="text-2xl font-semibold leading-none text-slate-900 sm:text-3xl">
                 {monthLabel}
               </h2>
-              <div className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => moveMonth(-1)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
-                  aria-label={t("client.request.calendar.previousMonth")}
-                  title={t("client.request.calendar.previousMonth")}
+              <button
+                type="button"
+                onClick={() => moveMonth(1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+                aria-label={t("client.request.calendar.nextMonth")}
+                title={t("client.request.calendar.nextMonth")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 18l-6-6 6-6"
-                    />
-                  </svg>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => moveMonth(1)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
-                  aria-label={t("client.request.calendar.nextMonth")}
-                  title={t("client.request.calendar.nextMonth")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 6l6 6-6 6"
-                    />
-                  </svg>
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 6l6 6-6 6"
+                  />
+                </svg>
+              </button>
               <button
                 type="button"
                 onClick={goToCurrentMonth}
                 disabled={isCurrentMonthViewed}
-                className="inline-flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
               >
                 {locale === "es" ? "Este mes" : "Current month"}
               </button>
             </div>
             <p className="text-sm text-slate-500">{t("admin.routes.subtitle")}</p>
+            <p className="text-sm text-slate-600">
+              {nextMonthJobsLabel}{" "}
+              <span className="font-bold text-slate-900">{nextMonthJobsCount}</span>
+            </p>
           </div>
-          <div className="flex items-center gap-2 self-start rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+          <div className="flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
             <span className="h-2 w-2 rounded-full bg-sky-500" />
             <div className="leading-tight">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -1123,7 +1131,7 @@ export default function RoutesCalendar({
               const urgentActive = priorityFilter === "URGENT";
               const unassignedActive = techFilter === "UNASSIGNED";
               return (
-                <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 shadow-sm sm:w-auto sm:min-w-[360px] sm:grid-cols-4 sm:divide-y-0">
+                <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 sm:w-auto sm:min-w-[360px] sm:grid-cols-4 sm:divide-y-0">
                   <button
                     type="button"
                     onClick={() => {
@@ -1714,7 +1722,7 @@ export default function RoutesCalendar({
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold">
@@ -1727,8 +1735,8 @@ export default function RoutesCalendar({
               })}
             </p>
           </div>
-          <div className="ui-filter-bar flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
-            <div className="ui-search flex items-center gap-2 px-3 py-2">
+          <div className="ui-filter-bar flex flex-wrap items-center gap-1.5 px-2 py-2 text-xs">
+            <div className="ui-search flex items-center gap-1.5 px-2 py-1.5">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -1747,7 +1755,7 @@ export default function RoutesCalendar({
                 value={searchFilter}
                 onChange={(event) => setSearchFilter(event.target.value)}
                 placeholder={t("admin.routes.filters.search")}
-                className="ui-search-input w-56"
+                className="ui-search-input w-44 sm:w-52"
               />
             </div>
             <select
@@ -1755,7 +1763,7 @@ export default function RoutesCalendar({
               onChange={(event) =>
                 setRangeFilter(event.target.value as "WEEK" | "MONTH" | "CUSTOM")
               }
-              className="ui-select px-3 py-2"
+              className="ui-select px-2.5 py-1.5 text-xs"
             >
               <option value="WEEK">{t("admin.routes.filters.rangeWeek")}</option>
               <option value="MONTH">{t("admin.routes.filters.rangeMonth")}</option>
@@ -1764,7 +1772,7 @@ export default function RoutesCalendar({
               </option>
             </select>
             {rangeFilter === "CUSTOM" ? (
-              <div className="ui-search flex items-center gap-2 px-3 py-1">
+              <div className="ui-search flex items-center gap-1.5 px-2 py-1">
                 <input
                   type="date"
                   value={customStart}
@@ -1783,7 +1791,7 @@ export default function RoutesCalendar({
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="ui-select px-3 py-2"
+              className="ui-select px-2.5 py-1.5 text-xs"
             >
               <option value="ALL">{t("admin.routes.filters.statusAll")}</option>
               <option value="SCHEDULED">{t("jobs.status.scheduled")}</option>
@@ -1795,7 +1803,7 @@ export default function RoutesCalendar({
             <select
               value={techFilter}
               onChange={(event) => setTechFilter(event.target.value)}
-              className="ui-select px-3 py-2"
+              className="ui-select px-2.5 py-1.5 text-xs"
             >
               <option value="ALL">{t("admin.routes.filters.techAll")}</option>
               <option value="UNASSIGNED">{t("jobs.detail.noTech")}</option>
@@ -1808,17 +1816,17 @@ export default function RoutesCalendar({
             <select
               value={priorityFilter}
               onChange={(event) => setPriorityFilter(event.target.value)}
-              className="rounded-full border border-slate-200 bg-white px-3 py-2"
+              className="ui-select px-2.5 py-1.5 text-xs"
             >
               <option value="ALL">{t("admin.routes.filters.priorityAll")}</option>
               <option value="NORMAL">{t("jobs.priority.normal")}</option>
               <option value="URGENT">{t("jobs.priority.urgent")}</option>
             </select>
-            <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1">
+            <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5">
               <button
                 type="button"
                 onClick={() => setDensity("comfortable")}
-                className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
                   density === "comfortable"
                     ? "bg-slate-900 text-white"
                     : "text-slate-500"
@@ -1829,7 +1837,7 @@ export default function RoutesCalendar({
               <button
                 type="button"
                 onClick={() => setDensity("compact")}
-                className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
                   density === "compact"
                     ? "bg-slate-900 text-white"
                     : "text-slate-500"
@@ -2346,7 +2354,7 @@ export default function RoutesCalendar({
             >
               <div className="flex min-h-screen items-start justify-center px-4 py-6 sm:items-center sm:px-6 sm:py-10">
                 <div
-                  className="relative w-full max-w-4xl max-h-[92vh] h-[92vh] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl sm:h-[90vh]"
+                  className="relative h-[92vh] max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white sm:h-[90vh]"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex h-full min-h-0 flex-col">
@@ -2367,14 +2375,14 @@ export default function RoutesCalendar({
                         <div className="flex flex-wrap items-center gap-2">
                           {modalStatus ? (
                             <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur ${modalStatus.className}`}
+                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalStatus.className}`}
                             >
                               {modalStatus.label}
                             </span>
                           ) : null}
                           {modalPriority ? (
                             <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold shadow-sm backdrop-blur ${modalPriority.className}`}
+                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalPriority.className}`}
                             >
                               {modalPriority.label}
                             </span>
@@ -2404,7 +2412,7 @@ export default function RoutesCalendar({
                       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
                         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                           <div className="space-y-6">
-                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                               <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-semibold text-slate-800">
                                   {t("admin.routes.labels.customer")}
@@ -2455,7 +2463,7 @@ export default function RoutesCalendar({
                               </div>
                             </div>
 
-                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                               <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-semibold text-slate-800">
                                   {t("admin.routes.sections.schedule")}
@@ -2477,7 +2485,7 @@ export default function RoutesCalendar({
                                         scheduledDate: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   />
                                 </div>
                                 <div>
@@ -2492,7 +2500,7 @@ export default function RoutesCalendar({
                                         scheduledTime: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   />
                                 </div>
                                 <div>
@@ -2506,7 +2514,7 @@ export default function RoutesCalendar({
                                         status: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   >
                                     <option value="SCHEDULED">
                                       {t("jobs.status.scheduled")}
@@ -2536,7 +2544,7 @@ export default function RoutesCalendar({
                                         priority: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   >
                                     <option value="NORMAL">
                                       {t("jobs.priority.normal")}
@@ -2555,7 +2563,7 @@ export default function RoutesCalendar({
                                         technicianId: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   >
                                     <option value="">
                                       {t("admin.routes.labels.unassigned")}
@@ -2580,7 +2588,7 @@ export default function RoutesCalendar({
                                         checklist: getTierChecklist(nextTier),
                                       });
                                     }}
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   >
                                     {serviceTiers.map((tier) => (
                                       <option key={tier.id} value={tier.id}>
@@ -2604,7 +2612,7 @@ export default function RoutesCalendar({
                                         serviceType: event.target.value,
                                       })
                                     }
-                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                                   >
                                     {serviceTypeOptions.map((option) => (
                                       <option key={option.value} value={option.value}>
@@ -2616,7 +2624,7 @@ export default function RoutesCalendar({
                               </div>
                             </div>
 
-                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                               <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-semibold text-slate-800">
                                   {t("common.labels.notes")}
@@ -2630,13 +2638,13 @@ export default function RoutesCalendar({
                                 onChange={(event) =>
                                   updateJobModal({ notes: event.target.value })
                                 }
-                                className="mt-3 min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                className="mt-3 min-h-[140px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                               />
                             </div>
                           </div>
 
                           <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-800">
                       {t("admin.routes.sections.propertyAccess")}
@@ -2714,7 +2722,7 @@ export default function RoutesCalendar({
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-slate-800">
                       {t("jobs.detail.checklist")}
@@ -2758,7 +2766,7 @@ export default function RoutesCalendar({
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-slate-800">
                               {t("jobs.detail.evidenceTitle")}
@@ -2805,7 +2813,7 @@ export default function RoutesCalendar({
               </div>
             </div>
 
-              <div className="flex shrink-0 flex-col-reverse gap-4 border-t border-slate-200 bg-white px-5 py-4 shadow-[0_-10px_30px_-24px_rgba(15,23,42,0.35)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div className="flex shrink-0 flex-col-reverse gap-4 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                 <p className="text-[11px] text-slate-500">
                   {t("admin.routes.labels.saveHint")}
                 </p>
@@ -2821,7 +2829,7 @@ export default function RoutesCalendar({
                     type="button"
                     onClick={handleJobModalSave}
                     disabled={saving}
-                    className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
+                    className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
                   >
                     {saving
                       ? t("admin.routes.actions.saving")

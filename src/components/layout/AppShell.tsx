@@ -499,7 +499,7 @@ export default function AppShell({
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.08),_transparent_40%),radial-gradient(circle_at_88%_14%,_rgba(34,197,94,0.08),_transparent_45%),radial-gradient(circle_at_84%_86%,_rgba(249,115,22,0.08),_transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.05),_transparent_42%)]" />
       <input
         id="sidebar-toggle"
         type="checkbox"
@@ -510,7 +510,7 @@ export default function AppShell({
       <div
         className={`relative min-h-screen lg:grid lg:h-screen lg:overflow-hidden lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
       >
-        <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
+        <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -right-28 -top-36 h-80 w-80 rounded-full bg-cyan-300/12 blur-3xl" />
             <div className="absolute left-[-6rem] top-24 h-72 w-72 rounded-full bg-sky-500/12 blur-3xl" />
@@ -520,9 +520,9 @@ export default function AppShell({
           <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-5">
             <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden ring-1 ring-white/20">
               <img
-                src="/pwa/app-logo-source.png"
+                src="/newlogo.png"
                 alt={`${t("app.name")} logo`}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
               />
             </div>
             <div className="brand-text max-w-[12rem] overflow-hidden transition-all duration-300">
@@ -536,7 +536,7 @@ export default function AppShell({
           </div>
           <label
             htmlFor="sidebar-toggle"
-            className="absolute -right-3.5 top-1/2 z-[80] hidden h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 opacity-0 transition shadow-[0_12px_26px_rgba(12,18,28,0.24)] pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:border-slate-300 hover:text-slate-900 lg:flex"
+            className="absolute -right-3.5 top-1/2 z-[80] hidden h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 opacity-0 transition pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:border-slate-300 hover:text-slate-900 lg:flex"
           >
             <svg
               viewBox="0 0 24 24"
@@ -599,7 +599,7 @@ export default function AppShell({
               <button
                 type="button"
                 onClick={() => setMobileNavOpen(true)}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-slate-300 lg:hidden"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 lg:hidden"
                 aria-label={t("common.navigation.menu")}
               >
                 <svg
@@ -645,7 +645,7 @@ export default function AppShell({
               className="absolute inset-0 bg-slate-900/55"
               onClick={() => setMobileNavOpen(false)}
             />
-            <div className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] shadow-[0_24px_60px_rgba(4,11,21,0.6)]">
+            <div className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)]">
               <div className="sidebar-brand relative z-10 px-4 pb-5 pt-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">

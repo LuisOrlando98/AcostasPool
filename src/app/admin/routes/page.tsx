@@ -37,6 +37,17 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
 
   const monthStart = resolveMonthStart(monthParam);
   const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+  const nextMonthStart = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 1,
+    1
+  );
+  const nextMonthEnd = new Date(
+    monthStart.getFullYear(),
+    monthStart.getMonth() + 2,
+    0
+  );
+  nextMonthEnd.setHours(23, 59, 59, 999);
   const calendarStart = new Date(monthStart);
   const startOffset = calendarStart.getDay();
   calendarStart.setDate(calendarStart.getDate() - startOffset);
@@ -46,7 +57,8 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
   calendarEnd.setDate(calendarEnd.getDate() + endOffset);
   calendarEnd.setHours(23, 59, 59, 999);
 
-  const [jobs, technicians, customers, serviceTiers] = await Promise.all([
+  const [jobs, technicians, customers, serviceTiers, nextMonthJobsCount] =
+    await Promise.all([
     prisma.job.findMany({
       where: {
         scheduledDate: {
@@ -111,6 +123,14 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       },
     }),
     getServiceTiers(),
+    prisma.job.count({
+      where: {
+        scheduledDate: {
+          gte: nextMonthStart,
+          lte: nextMonthEnd,
+        },
+      },
+    }),
   ]);
 
   const jobsData = jobs.map((job) => ({
@@ -203,6 +223,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
           customers={customersData}
           serviceTiers={serviceTiersData}
           monthKey={toMonthKey(monthStart)}
+          nextMonthJobsCount={nextMonthJobsCount}
         />
       </div>
     </AppShell>
