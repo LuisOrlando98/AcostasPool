@@ -1051,11 +1051,12 @@ export default function RoutesCalendar({
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
-          <div className="min-w-0 space-y-3">
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => moveMonth(-1)}
@@ -1109,12 +1110,13 @@ export default function RoutesCalendar({
               >
                 {locale === "es" ? "Este mes" : "Current month"}
               </button>
-            </div>
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {nextMonthJobsLabel}
-              </span>
-              <span className="text-sm font-bold text-slate-900">{nextMonthJobsCount}</span>
+              </div>
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {nextMonthJobsLabel}
+                </span>
+                <span className="text-sm font-bold text-slate-900">{nextMonthJobsCount}</span>
+              </div>
             </div>
           </div>
           <div className="min-w-0">
