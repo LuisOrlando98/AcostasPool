@@ -595,7 +595,7 @@ export default function RoutesCalendar({
     <button
       type="button"
       onClick={() => handleSort(key)}
-      className="group inline-flex items-center gap-1 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+      className="group flex w-full items-center justify-between gap-1 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400"
     >
       <span>{label}</span>
       {sortKey === key ? (
@@ -1035,32 +1035,63 @@ export default function RoutesCalendar({
       <section className="rounded-3xl border border-slate-200 bg-white p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-              Calendario operativo
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-semibold text-slate-900">
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+              {t("admin.routes.title")}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl font-semibold text-slate-900">
                 {monthLabel}
               </h2>
-              <div className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white p-1">
+              <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                {summary.todayJobs} {locale === "es" ? "hoy" : "today"}
+              </span>
+              <div className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
                 <button
                   type="button"
                   onClick={() => moveMonth(-1)}
-                  className="rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
                   aria-label={t("client.request.calendar.previousMonth")}
+                  title={t("client.request.calendar.previousMonth")}
                 >
-                  {t("client.request.calendar.prev")}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 18l-6-6 6-6"
+                    />
+                  </svg>
                 </button>
                 <button
                   type="button"
                   onClick={() => moveMonth(1)}
-                  className="rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
                   aria-label={t("client.request.calendar.nextMonth")}
+                  title={t("client.request.calendar.nextMonth")}
                 >
-                  {t("client.request.calendar.next")}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 6l6 6-6 6"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
+            <p className="text-sm text-slate-500">{t("admin.routes.subtitle")}</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {(() => {
@@ -1365,12 +1396,6 @@ export default function RoutesCalendar({
                           {t("admin.routes.labels.free")}
                         </span>
                       )}
-                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[8px] font-semibold text-sky-700">
-                        {t("admin.routes.labels.capacity", {
-                          used: String(jobsForDay.length),
-                          total: String(dayCapacity),
-                        })}
-                      </span>
                       {hasManualOrder && editMode ? (
                         <span className="text-[8px] font-semibold text-slate-400">
                           {t("admin.routes.labels.manualOrder")}
@@ -1378,7 +1403,13 @@ export default function RoutesCalendar({
                       ) : null}
                     </div>
                   </div>
-                  <div className="h-1 w-full rounded-full bg-slate-200/70">
+                  <div
+                    className="h-1 w-full rounded-full bg-slate-200/70"
+                    title={t("admin.routes.labels.capacity", {
+                      used: String(jobsForDay.length),
+                      total: String(dayCapacity),
+                    })}
+                  >
                     <div
                       className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-400 to-blue-500 transition"
                       style={{ width: `${fillWidth}%` }}
