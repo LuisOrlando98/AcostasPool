@@ -1057,7 +1057,7 @@ export default function RoutesCalendar({
           </p>
           <RoutesSectionTabs />
         </div>
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(20rem,34rem)]">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -1324,8 +1324,8 @@ export default function RoutesCalendar({
           </div>
         ) : null}
 
-        <div className="mt-6 overflow-x-auto pb-2">
-          <div className="grid min-w-[720px] grid-cols-7 gap-2">
+        <div className="mt-6 overflow-x-auto pb-2 lg:overflow-visible">
+          <div className="grid min-w-[700px] grid-cols-7 gap-2 md:min-w-[760px] xl:min-w-[820px] 2xl:min-w-0">
           {(() => {
             const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
             return calendarDays.map((day) => {
@@ -1388,7 +1388,7 @@ export default function RoutesCalendar({
                   setDraggingJobId(null);
                   setDragOverTarget(null);
                 }}
-                className={`group relative flex min-h-[220px] flex-col gap-2.5 rounded-[22px] border px-3 py-3 text-xs transition sm:min-h-[260px] ${dayTone} ${dayHover} ${
+                className={`group relative flex min-h-[210px] flex-col gap-2.5 rounded-[22px] border px-3 py-3 text-xs transition sm:min-h-[240px] 2xl:min-h-[260px] ${dayTone} ${dayHover} ${
                   isToday ? "ring-1 ring-sky-400" : ""
                 } ${editMode ? "cursor-pointer" : "cursor-default"}`}
               >

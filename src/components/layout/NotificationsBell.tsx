@@ -297,7 +297,19 @@ export default function NotificationsBell() {
       </button>
 
       {open ? (
-        <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:z-auto sm:mt-3 sm:w-80 sm:max-h-[34rem]">
+        <>
+          <button
+            type="button"
+            aria-label={t("common.actions.close")}
+            className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
+            onClick={() => {
+              setOpen(false);
+              setRevealedDeleteId(null);
+              setConfirmDeleteId(null);
+              setSwipeState(null);
+            }}
+          />
+          <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:z-[1150] sm:mt-3 sm:w-80 sm:max-h-[34rem]">
           <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500">
             <span>{t("userMenu.recent")}</span>
             <button
@@ -470,7 +482,8 @@ export default function NotificationsBell() {
               )}
             </div>
           )}
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

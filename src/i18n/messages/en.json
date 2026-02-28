@@ -185,7 +185,7 @@
     "fallbackUser": "User",
     "role": "Role",
     "account": "My account",
-    "updates": "Updates",
+    "updates": "Version log",
     "installApp": "Install app",
     "installingApp": "Preparing...",
     "iosInstallHint": "On iPhone: open Share and tap Add to Home Screen.",
@@ -244,8 +244,8 @@
     "signingOut": "Signing out..."
   },
   "updates": {
-    "title": "Product updates",
-    "subtitle": "A living log of every change we ship.",
+    "title": "Version log",
+    "subtitle": "Release notes for recent platform changes.",
     "empty": "No updates yet."
   },
   "notifications": {
@@ -1186,9 +1186,11 @@
       "filters": {
         "toolbar": "Filters",
         "range": "Range",
+        "rangeCustom": "Custom",
         "range7": "7 days",
         "range30": "30 days",
         "range90": "90 days",
+        "dateRange": "Dates",
         "from": "From",
         "to": "To",
         "technician": "Technician",

@@ -420,6 +420,7 @@ export default function AppShell({
         : role === "CUSTOMER"
           ? t("roles.client")
           : t("app.platform"));
+  const accountHref = role === "CUSTOMER" ? "/client/profile" : "/account";
   const contentMaxWidth = wide ? "max-w-[120rem]" : "max-w-[96rem]";
   const peerMaxWidth = wide
     ? "lg:peer-checked:[&_.app-content]:max-w-[120rem]"
@@ -427,6 +428,7 @@ export default function AppShell({
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -493,6 +495,15 @@ export default function AppShell({
     };
   }, []);
 
+  const handleLogout = async () => {
+    if (loggingOut) {
+      return;
+    }
+    setLoggingOut(true);
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  };
+
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.05),_transparent_42%)]" />
@@ -516,7 +527,7 @@ export default function AppShell({
           <div className="sidebar-brand brand-wrap relative z-10 flex h-20 items-center gap-3 px-5">
             <div className="sidebar-logo flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden ring-1 ring-white/20">
               <img
-                src="/pwa/app-logo-source.png"
+                src="/newlogo.png"
                 alt={`${t("app.name")} logo`}
                 className="h-full w-full object-cover"
               />
@@ -613,7 +624,15 @@ export default function AppShell({
                 </svg>
               </button>
 
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1">
+                  <img
+                    src="/newlogo.png"
+                    alt={`${t("app.name")} logo`}
+                    className="h-full w-full rounded-lg object-cover"
+                  />
+                </span>
+                <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                   {resolvedRoleLabel}
                 </p>
@@ -624,11 +643,40 @@ export default function AppShell({
                 {subtitle ? (
                   <p className="truncate text-sm text-slate-500">{subtitle}</p>
                 ) : null}
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <NotificationsBell />
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-rose-300 hover:text-rose-700 disabled:opacity-70"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 8V6.5A2.5 2.5 0 0111.5 4h6A2.5 2.5 0 0120 6.5v11A2.5 2.5 0 0117.5 20h-6A2.5 2.5 0 019 17.5V16"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13 12H4m0 0l3-3m-3 3l3 3"
+                  />
+                </svg>
+                <span className="hidden sm:inline">
+                  {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
+                </span>
+              </button>
             </div>
           </div>
         </header>
@@ -725,7 +773,7 @@ export default function AppShell({
 
               <div className="relative z-10 border-t border-[var(--sidebar-border)] px-3 py-3">
                 <Link
-                  href="/account"
+                  href={accountHref}
                   onClick={() => setMobileNavOpen(false)}
                   className="sidebar-account-link w-full justify-start"
                 >
@@ -778,6 +826,36 @@ export default function AppShell({
                 <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
                   <InstallAppAction variant="sidebar" />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  className="sidebar-account-link sidebar-account-danger mt-1 w-full justify-start"
+                >
+                  <span className="sidebar-account-icon" aria-hidden="true">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 8V6.5A2.5 2.5 0 0111.5 4h6A2.5 2.5 0 0120 6.5v11A2.5 2.5 0 0117.5 20h-6A2.5 2.5 0 019 17.5V16"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 12H4m0 0l3-3m-3 3l3 3"
+                      />
+                    </svg>
+                  </span>
+                  <span className="sidebar-account-label">
+                    {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
+                  </span>
+                </button>
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">

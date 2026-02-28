@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
 import { getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
+import { redirect } from "next/navigation";
 
 async function updateProfile(formData: FormData) {
   "use server";
@@ -72,6 +73,9 @@ async function updateProfile(formData: FormData) {
 
 export default async function AccountPage() {
   const session = await requireAuth();
+  if (session.role === "CUSTOMER") {
+    redirect("/client/profile");
+  }
   const t = await getTranslations();
   const user = await prisma.user.findUnique({
     where: { id: session.sub },

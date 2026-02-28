@@ -5,8 +5,6 @@ export type ReportFilters = {
   to: Date;
   range: string;
   technicianId?: string;
-  status?: string;
-  type?: string;
   serviceType?: string;
   priority?: string;
 };
@@ -68,8 +66,6 @@ export const getReportFilters = (
         : "30";
 
   const technicianId = param("technicianId") || undefined;
-  const status = param("status") || undefined;
-  const type = param("type") || undefined;
   const serviceType = param("serviceType") || undefined;
   const priority = param("priority") || undefined;
 
@@ -78,8 +74,6 @@ export const getReportFilters = (
     to: endOfDay(to ?? now),
     range,
     technicianId,
-    status,
-    type,
     serviceType,
     priority,
   };
@@ -92,8 +86,6 @@ export const buildJobWhere = (filters: ReportFilters): Prisma.JobWhereInput => {
   return {
     scheduledDate: { gte: filters.from, lte: filters.to },
     ...(filters.technicianId ? { technicianId: filters.technicianId } : {}),
-    ...(filters.status ? { status: filters.status as Prisma.JobWhereInput["status"] } : {}),
-    ...(filters.type ? { type: filters.type as Prisma.JobWhereInput["type"] } : {}),
     ...(filters.serviceType
       ? { serviceType: filters.serviceType as Prisma.JobWhereInput["serviceType"] }
       : {}),
@@ -120,12 +112,6 @@ export const buildQueryParams = (filters: ReportFilters) => {
   }
   if (filters.technicianId) {
     params.set("technicianId", filters.technicianId);
-  }
-  if (filters.status) {
-    params.set("status", filters.status);
-  }
-  if (filters.type) {
-    params.set("type", filters.type);
   }
   if (filters.serviceType) {
     params.set("serviceType", filters.serviceType);

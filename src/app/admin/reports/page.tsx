@@ -1,11 +1,11 @@
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
 import StatCard from "@/components/ui/StatCard";
+import ReportsFiltersBar from "@/components/reports/ReportsFiltersBar";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
-import { JOB_STATUSES, JOB_STATUS_KEYS, JOB_TYPES } from "@/lib/constants";
 import { unstable_cache } from "next/cache";
 import {
   buildJobWhere,
@@ -321,9 +321,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     return query ? `/admin/reports?${query}` : "/admin/reports";
   };
 
-  const statusLabel = (status: string) =>
-    t(JOB_STATUS_KEYS[status as keyof typeof JOB_STATUS_KEYS] ?? status);
-
   const serviceLabelMap: Record<string, string> = {
     WEEKLY_CLEANING: t("jobs.service.weeklyCleaning"),
     FILTER_CHECK: t("jobs.service.filterCheck"),
@@ -338,156 +335,20 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       subtitle={t("admin.reports.subtitle")}
       role="ADMIN"
     >
-      <section className="ui-panel p-5 shadow-contrast">
-        <form className="ui-filter-bar ui-filter-toolbar p-3 sm:p-4" method="get">
-          <div className="ui-filter-chip-label">
-            <span className="ui-filter-chip-dot" aria-hidden="true" />
-            {t("admin.reports.filters.toolbar")}
-          </div>
-
-          <div className="ui-segment">
-            <span className="mr-1 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-              {t("admin.reports.filters.range")}
-            </span>
-            {(["7", "30", "90"] as const).map((range) => (
-              <button
-                key={range}
-                type="submit"
-                name="range"
-                value={range}
-                className={`ui-segment-item ${
-                  filters.range === range ? "is-active" : ""
-                }`}
-              >
-                {t(`admin.reports.filters.range${range}`)}
-              </button>
-            ))}
-          </div>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.from")}</span>
-            <input
-              type="date"
-              name="from"
-              defaultValue={formatDateInput(filters.from)}
-              className="ui-filter-input"
-            />
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.to")}</span>
-            <input
-              type="date"
-              name="to"
-              defaultValue={formatDateInput(filters.to)}
-              className="ui-filter-input"
-            />
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.technician")}</span>
-            <select
-              name="technicianId"
-              defaultValue={filters.technicianId ?? ""}
-              className="ui-filter-select"
-            >
-              <option value="">{t("admin.reports.filters.allTechs")}</option>
-              {technicians.map((tech) => (
-                <option key={tech.id} value={tech.id}>
-                  {tech.user.fullName}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.status")}</span>
-            <select
-              name="status"
-              defaultValue={filters.status ?? ""}
-              className="ui-filter-select"
-            >
-              <option value="">{t("admin.reports.filters.allStatuses")}</option>
-              {JOB_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {statusLabel(status)}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.type")}</span>
-            <select
-              name="type"
-              defaultValue={filters.type ?? ""}
-              className="ui-filter-select"
-            >
-              <option value="">{t("admin.reports.filters.allTypes")}</option>
-              {JOB_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type === "ON_DEMAND"
-                    ? t("jobs.type.onDemand")
-                    : t("jobs.type.routine")}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.service")}</span>
-            <select
-              name="serviceType"
-              defaultValue={filters.serviceType ?? ""}
-              className="ui-filter-select"
-            >
-              <option value="">{t("admin.reports.filters.allServices")}</option>
-              <option value="WEEKLY_CLEANING">
-                {t("jobs.service.weeklyCleaning")}
-              </option>
-              <option value="FILTER_CHECK">
-                {t("jobs.service.filterCheck")}
-              </option>
-              <option value="CHEM_BALANCE">
-                {t("jobs.service.chemBalance")}
-              </option>
-              <option value="EQUIPMENT_CHECK">
-                {t("jobs.service.equipmentCheck")}
-              </option>
-            </select>
-          </label>
-
-          <label className="ui-filter-pill">
-            <span>{t("admin.reports.filters.priority")}</span>
-            <select
-              name="priority"
-              defaultValue={filters.priority ?? ""}
-              className="ui-filter-select"
-            >
-              <option value="">
-                {t("admin.reports.filters.allPriorities")}
-              </option>
-              <option value="NORMAL">{t("jobs.priority.normal")}</option>
-              <option value="URGENT">{t("jobs.priority.urgent")}</option>
-            </select>
-          </label>
-
-          <div className="ui-filter-actions">
-            <button
-              type="submit"
-              className="app-button-primary px-4 py-2 text-sm font-semibold"
-            >
-              {t("admin.reports.filters.apply")}
-            </button>
-            <a
-              href="/admin/reports"
-              className="app-button-secondary px-4 py-2 text-sm font-semibold"
-            >
-              {t("admin.reports.filters.reset")}
-            </a>
-          </div>
-        </form>
-      </section>
+      <ReportsFiltersBar
+        technicians={technicians.map((tech) => ({
+          id: tech.id,
+          name: tech.user.fullName,
+        }))}
+        defaults={{
+          range: filters.range,
+          from: formatDateInput(filters.from),
+          to: formatDateInput(filters.to),
+          technicianId: filters.technicianId,
+          serviceType: filters.serviceType,
+          priority: filters.priority,
+        }}
+      />
 
       <section className="grid gap-4 lg:grid-cols-4">
         <StatCard

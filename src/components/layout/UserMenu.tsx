@@ -203,6 +203,8 @@ export default function UserMenu() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
+  const accountHref = user?.role === "CUSTOMER" ? "/client/profile" : "/account";
+  const isAdmin = user?.role === "ADMIN";
 
   const initials = user?.name
     ? user.name
@@ -398,17 +400,19 @@ export default function UserMenu() {
               {user?.email ?? ""}
             </div>
             <a
-              href="/account"
+              href={accountHref}
               className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
             >
               {t("userMenu.account")}
             </a>
-            <a
-              href="/account/updates"
-              className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
-            >
-              {t("userMenu.updates")}
-            </a>
+            {isAdmin ? (
+              <a
+                href="/account/updates"
+                className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
+              >
+                {t("userMenu.updates")}
+              </a>
+            ) : null}
             <InstallAppAction variant="menu" />
             {user?.isDeveloper ? (
               <a

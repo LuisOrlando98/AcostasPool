@@ -3,6 +3,7 @@
 import AppShell from "@/components/layout/AppShell";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/client";
+import { useRouter } from "next/navigation";
 
 type PropertyOption = {
   id: string;
@@ -50,6 +51,7 @@ function isSameMonth(a: Date, b: Date) {
 
 export default function ClientRequestPage() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const localeTag = locale === "es" ? "es-US" : "en-US";
 
   const [description, setDescription] = useState("");
@@ -83,6 +85,8 @@ export default function ClientRequestPage() {
   const [messageTone, setMessageTone] = useState<"error" | "success" | "warning">(
     "success"
   );
+  const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,6 +139,18 @@ export default function ClientRequestPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!showConfirmationModal) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      router.push("/client");
+    }, 1800);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [router, showConfirmationModal]);
 
   const availabilityByDate = useMemo(() => {
     const map = new Map<string, AvailabilityDay>();
@@ -322,24 +338,20 @@ export default function ClientRequestPage() {
       return;
     }
 
-    if (data.reviewRequired) {
-      setMessageTone("warning");
-      setMessage(t("client.request.successReview"));
-    } else if (data.partial) {
-      setMessageTone("warning");
-      setMessage(
-        t("client.request.successPartial", {
-          count: String(data.createdCount ?? 0),
-        })
-      );
-    } else {
-      setMessageTone("success");
-      setMessage(
-        t("client.request.successCount", {
-          count: String(data.createdCount ?? 1),
-        })
-      );
-    }
+    const successCopy = data.reviewRequired
+      ? t("client.request.successReview")
+      : data.partial
+        ? t("client.request.successPartial", {
+            count: String(data.createdCount ?? 0),
+          })
+        : t("client.request.successCount", {
+            count: String(data.createdCount ?? 1),
+          });
+
+    setMessageTone(data.reviewRequired || data.partial ? "warning" : "success");
+    setMessage(null);
+    setConfirmationMessage(successCopy);
+    setShowConfirmationModal(true);
 
     setLoading(false);
   };
@@ -702,6 +714,47 @@ export default function ClientRequestPage() {
           </div>
         </div>
       </section>
+
+      {showConfirmationModal ? (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center p-4 sm:p-6">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
+            aria-label={t("common.actions.close")}
+            onClick={() => {
+              setShowConfirmationModal(false);
+              router.push("/client");
+            }}
+          />
+          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl">
+            <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+                {locale === "es" ? "Solicitud enviada" : "Request sent"}
+              </p>
+              <h3 className="mt-2 text-xl font-semibold text-slate-900">
+                {locale === "es"
+                  ? "Tu solicitud fue registrada correctamente"
+                  : "Your request was submitted successfully"}
+              </h3>
+              <p className="mt-3 text-sm text-slate-600">
+                {confirmationMessage}
+              </p>
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfirmationModal(false);
+                    router.push("/client");
+                  }}
+                  className="app-button-primary px-4 py-2 text-sm font-semibold"
+                >
+                  {locale === "es" ? "Continuar" : "Continue"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }

@@ -36,6 +36,7 @@ export default function SidebarAccount() {
         .toUpperCase()
     : "AP";
   const isAdmin = user?.role === "ADMIN";
+  const accountHref = user?.role === "CUSTOMER" ? "/client/profile" : "/account";
 
   const handleLogout = async () => {
     setLoading(true);
@@ -65,7 +66,7 @@ export default function SidebarAccount() {
         </div>
       </div>
       <div className="sidebar-account-actions">
-        <a href="/account" className="sidebar-account-link">
+        <a href={accountHref} className="sidebar-account-link">
           <span className="sidebar-account-icon" aria-hidden="true">
             <svg
               viewBox="0 0 24 24"

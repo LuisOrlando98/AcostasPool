@@ -1,17 +1,17 @@
 import AppShell from "@/components/layout/AppShell";
 import { updates } from "@/content/updates";
-import { requireAuth } from "@/lib/auth/guards";
+import { requireRole } from "@/lib/auth/guards";
 import { getTranslations } from "@/i18n/server";
 
 export default async function UpdatesPage() {
-  const session = await requireAuth();
+  await requireRole("ADMIN");
   const t = await getTranslations();
 
   return (
     <AppShell
       title={t("updates.title")}
       subtitle={t("updates.subtitle")}
-      role={session.role}
+      role="ADMIN"
     >
       <section className="space-y-6">
         {updates.length === 0 ? (

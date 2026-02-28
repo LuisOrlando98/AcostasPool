@@ -185,7 +185,7 @@
     "fallbackUser": "Usuario",
     "role": "Rol",
     "account": "Mi cuenta",
-    "updates": "Actualizaciones",
+    "updates": "Log de versiones",
     "installApp": "Instalar app",
     "installingApp": "Preparando...",
     "iosInstallHint": "En iPhone: abre Compartir y toca Agregar a pantalla de inicio.",
@@ -244,8 +244,8 @@
     "signingOut": "Cerrando..."
   },
   "updates": {
-    "title": "Actualizaciones",
-    "subtitle": "Un registro vivo de cada cambio que publicamos.",
+    "title": "Log de versiones",
+    "subtitle": "Notas de version con los cambios recientes de la plataforma.",
     "empty": "Aun no hay actualizaciones."
   },
   "notifications": {
@@ -1186,9 +1186,11 @@
       "filters": {
         "toolbar": "Filtros",
         "range": "Rango",
+        "rangeCustom": "Personalizado",
         "range7": "7 dias",
         "range30": "30 dias",
         "range90": "90 dias",
+        "dateRange": "Fechas",
         "from": "Desde",
         "to": "Hasta",
         "technician": "Tecnico",

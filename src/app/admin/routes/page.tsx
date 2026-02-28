@@ -213,6 +213,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       title={t("admin.routes.title")}
       subtitle={t("admin.routes.subtitle")}
       role="ADMIN"
+      wide
     >
       <div className="space-y-4">
         <RoutesCalendar
