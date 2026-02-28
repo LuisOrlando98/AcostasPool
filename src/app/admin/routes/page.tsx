@@ -1,6 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
 import RoutesCalendar from "@/components/routes/RoutesCalendar";
-import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
@@ -216,7 +215,6 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       role="ADMIN"
     >
       <div className="space-y-4">
-        <RoutesSectionTabs />
         <RoutesCalendar
           jobs={jobsData}
           technicians={techniciansData}

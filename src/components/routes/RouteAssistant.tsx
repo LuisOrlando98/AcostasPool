@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
+import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 
 type AssistantTechnician = {
   id: string;
@@ -196,12 +197,15 @@ export default function RouteAssistant({
   return (
     <div className="space-y-4">
       <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+            {t("admin.routes.assistant.kicker")}
+          </p>
+          <RoutesSectionTabs />
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-              {t("admin.routes.assistant.kicker")}
-            </p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-900 sm:text-xl">
+            <h2 className="text-lg font-semibold text-slate-900 sm:text-xl">
               {t("admin.routes.assistant.title")}
             </h2>
             <p className="mt-1 text-sm text-slate-600">

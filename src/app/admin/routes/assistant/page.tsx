@@ -1,6 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
 import RouteAssistant from "@/components/routes/RouteAssistant";
-import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 import { requireRole } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/jobs/capacity";
@@ -43,7 +42,6 @@ export default async function RouteAssistantPage({
       wide
     >
       <div className="space-y-4">
-        <RoutesSectionTabs />
         <RouteAssistant
           initialDate={resolveDate(dateParam)}
           technicians={technicians.map((technician) => ({

@@ -14,8 +14,8 @@ export default function RoutesSectionTabs() {
   const { t } = useI18n();
 
   return (
-    <div className="flex w-full justify-start md:justify-end">
-      <div className="inline-grid w-full max-w-[20rem] grid-cols-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm md:w-auto md:max-w-none">
+    <div className="w-full sm:w-auto">
+      <div className="inline-grid w-full max-w-[18rem] grid-cols-2 rounded-full border border-slate-200 bg-white p-0.5 shadow-sm sm:w-auto sm:max-w-none">
         {tabs.map((tab) => {
           const isActive =
             tab.href === "/admin/routes"
@@ -25,7 +25,7 @@ export default function RoutesSectionTabs() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`inline-flex min-w-0 items-center justify-center rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition sm:px-4 ${
+              className={`inline-flex min-w-0 items-center justify-center rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition sm:px-3.5 ${
                 isActive
                   ? "bg-slate-900 text-white"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"

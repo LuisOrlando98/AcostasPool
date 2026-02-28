@@ -8,6 +8,7 @@ import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
+import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 
 type JobItem = {
   id: string;
@@ -1050,12 +1051,15 @@ export default function RoutesCalendar({
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            {t("admin.routes.title")}
+          </p>
+          <RoutesSectionTabs />
+        </div>
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,36rem)]">
           <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-              {t("admin.routes.title")}
-            </p>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
               <button
                 type="button"
