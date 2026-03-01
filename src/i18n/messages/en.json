@@ -1500,7 +1500,44 @@
     "properties": {
       "title": "My properties",
       "subtitle": "Manage your properties and review work history.",
-      "empty": "Customer profile not found."
+      "empty": "Customer profile not found.",
+      "actions": {
+        "create": "Create new"
+      },
+      "list": {
+        "title": "Properties",
+        "subtitle": "Review your properties and edit details when needed.",
+        "scheduledCount": "{{count}} scheduled",
+        "completedCount": "{{count}} completed"
+      },
+      "editor": {
+        "createKicker": "New property",
+        "editKicker": "Edit property",
+        "createTitle": "Create property",
+        "editTitle": "Edit property",
+        "createSubtitle": "Complete the data and review before saving.",
+        "editSubtitle": "Update data and review before saving.",
+        "review": "Review changes",
+        "addressRequired": "Address is required.",
+        "saveFailed": "Unable to save property.",
+        "createdOk": "Property created successfully.",
+        "updatedOk": "Property updated successfully."
+      },
+      "confirm": {
+        "kicker": "Confirmation",
+        "title": "Confirm property data",
+        "subtitle": "Please verify this information before saving.",
+        "back": "Back to edit",
+        "confirm": "Confirm and save"
+      },
+      "history": {
+        "scheduledTitle": "Scheduled jobs",
+        "scheduledSubtitle": "Upcoming and in-progress services.",
+        "scheduledEmpty": "No scheduled jobs yet.",
+        "completedTitle": "Completed jobs",
+        "completedSubtitle": "Completed service history.",
+        "completedEmpty": "No completed jobs yet."
+      }
     },
     "invoices": {
       "title": "Invoices",

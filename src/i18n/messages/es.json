@@ -1500,7 +1500,44 @@
     "properties": {
       "title": "Mis propiedades",
       "subtitle": "Gestiona tus propiedades y revisa el historial de trabajos.",
-      "empty": "No se encontro el perfil del cliente."
+      "empty": "No se encontro el perfil del cliente.",
+      "actions": {
+        "create": "Crear nueva"
+      },
+      "list": {
+        "title": "Propiedades",
+        "subtitle": "Revisa tus propiedades y edita la informacion cuando sea necesario.",
+        "scheduledCount": "{{count}} programados",
+        "completedCount": "{{count}} completados"
+      },
+      "editor": {
+        "createKicker": "Nueva propiedad",
+        "editKicker": "Editar propiedad",
+        "createTitle": "Crear propiedad",
+        "editTitle": "Editar propiedad",
+        "createSubtitle": "Completa los datos y revisa antes de guardar.",
+        "editSubtitle": "Actualiza los datos y revisa antes de guardar.",
+        "review": "Revisar cambios",
+        "addressRequired": "La direccion es obligatoria.",
+        "saveFailed": "No se pudo guardar la propiedad.",
+        "createdOk": "Propiedad creada correctamente.",
+        "updatedOk": "Propiedad actualizada correctamente."
+      },
+      "confirm": {
+        "kicker": "Confirmacion",
+        "title": "Confirma los datos de la propiedad",
+        "subtitle": "Verifica esta informacion antes de guardar.",
+        "back": "Volver a editar",
+        "confirm": "Confirmar y guardar"
+      },
+      "history": {
+        "scheduledTitle": "Trabajos programados",
+        "scheduledSubtitle": "Servicios pendientes o en progreso.",
+        "scheduledEmpty": "Aun no hay trabajos programados.",
+        "completedTitle": "Trabajos completados",
+        "completedSubtitle": "Historial de servicios completados.",
+        "completedEmpty": "Aun no hay trabajos completados."
+      }
     },
     "invoices": {
       "title": "Facturas",
