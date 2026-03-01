@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import {
   getNotificationDetail,
+  getNotificationSource,
   getNotificationTitle,
 } from "@/lib/notifications/view";
 import { emitNotificationSignal } from "@/lib/notifications/client-alert";
@@ -316,13 +317,11 @@ export default function NotificationsBell() {
               type="button"
               onClick={async () => {
                 await fetch("/api/notifications/clear", { method: "POST" });
-                setNotifications((current) =>
-                  current.map((entry) => ({
-                    ...entry,
-                    readAt: entry.readAt ?? new Date().toISOString(),
-                  }))
-                );
+                setNotifications([]);
                 setUnreadCount(0);
+                setRevealedDeleteId(null);
+                setConfirmDeleteId(null);
+                setSwipeState(null);
               }}
               className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
             >
@@ -467,7 +466,7 @@ export default function NotificationsBell() {
                                   </span>
                                 </div>
                                 <div className="mt-2 text-sm font-semibold text-slate-700">
-                                  {item.customerName ?? t("userMenu.system")}
+                                  {getNotificationSource(item, t)}
                                 </div>
                                 <div className="mt-1 text-[11px] text-slate-500">
                                   {detail}

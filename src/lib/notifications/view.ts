@@ -4,6 +4,7 @@ type NotificationItem = {
   eventType: string;
   createdAt: string;
   status?: string;
+  customerName?: string | null;
   payload?: Record<string, unknown> | null;
 };
 
@@ -95,7 +96,7 @@ export function getNotificationDetail(
 
   if (item.eventType === "JOB_COMPLETED") {
     const parts = [
-      technicianName ?? t("userMenu.system"),
+      technicianName ?? t("notifications.source.team"),
       completedAt ?? createdAt,
     ].filter(Boolean);
     return parts.join(" - ");
@@ -147,4 +148,35 @@ export function getNotificationDetail(
   }
 
   return createdAt ?? "";
+}
+
+export function getNotificationSource(
+  item: NotificationItem,
+  t: TranslateFn
+) {
+  const payload =
+    item.payload && typeof item.payload === "object"
+      ? (item.payload as Record<string, unknown>)
+      : {};
+
+  const explicitName =
+    item.customerName ??
+    asString(payload.technicianName) ??
+    asString(payload.actorName) ??
+    asString(payload.requestedByName) ??
+    asString(payload.customerName);
+
+  if (explicitName) {
+    return explicitName;
+  }
+
+  if (item.eventType === "INVOICE_SENT") {
+    return t("notifications.source.billing");
+  }
+
+  if (item.eventType === "ROUTE_UPDATED") {
+    return t("notifications.source.operations");
+  }
+
+  return t("notifications.source.team");
 }

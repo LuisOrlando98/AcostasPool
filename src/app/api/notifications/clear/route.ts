@@ -18,14 +18,12 @@ export async function POST() {
     if (filtered.length === 0) {
       return NextResponse.json({ ok: true, count: 0 });
     }
-    const result = await prisma.notification.updateMany({
+    const result = await prisma.notification.deleteMany({
       where: {
-        readAt: null,
         eventType: { in: filtered },
         recipientRole: "ADMIN",
         OR: [{ actorUserId: null }, { actorUserId: { not: session.sub } }],
       },
-      data: { readAt: new Date() },
     });
     return NextResponse.json({ ok: true, count: result.count });
   }
@@ -41,14 +39,12 @@ export async function POST() {
       session.sub,
       session.role
     );
-    const result = await prisma.notification.updateMany({
+    const result = await prisma.notification.deleteMany({
       where: {
         customerId: customer.id,
         recipientRole: "CUSTOMER",
-        readAt: null,
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
-      data: { readAt: new Date() },
     });
     return NextResponse.json({ ok: true, count: result.count });
   }
@@ -61,7 +57,6 @@ export async function POST() {
     const candidates = await prisma.notification.findMany({
       where: {
         recipientRole: "TECH",
-        readAt: null,
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
       select: { id: true, payload: true },
@@ -78,9 +73,8 @@ export async function POST() {
     if (ids.length === 0) {
       return NextResponse.json({ ok: true, count: 0 });
     }
-    const result = await prisma.notification.updateMany({
+    const result = await prisma.notification.deleteMany({
       where: { id: { in: ids } },
-      data: { readAt: new Date() },
     });
     return NextResponse.json({ ok: true, count: result.count });
   }

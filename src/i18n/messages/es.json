@@ -256,6 +256,11 @@
     "deleteConfirm": "Toca de nuevo",
     "none": "No hay preferencias de notificacion disponibles.",
     "requested": "Solicitado",
+    "source": {
+      "team": "Equipo de AcostasPool",
+      "operations": "Equipo de operaciones",
+      "billing": "Equipo de facturacion"
+    },
     "jobCompleted": "Trabajo completado",
     "customerRequest": "Nueva solicitud",
     "serviceScheduled": "Servicio programado",

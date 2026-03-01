@@ -256,6 +256,11 @@
     "deleteConfirm": "Tap again",
     "none": "No notification preferences available.",
     "requested": "Requested",
+    "source": {
+      "team": "AcostasPool team",
+      "operations": "Operations team",
+      "billing": "Billing team"
+    },
     "jobCompleted": "Job completed",
     "customerRequest": "New service request",
     "serviceScheduled": "Service scheduled",
