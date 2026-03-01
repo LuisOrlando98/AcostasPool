@@ -1477,10 +1477,10 @@
       }
     },
     "profile": {
-      "title": "Client profile",
-      "subtitle": "Personal data and properties.",
+      "title": "My profile",
+      "subtitle": "Personal information, primary address, and security.",
       "empty": "Customer profile not found.",
-      "manageAccount": "Manage account settings",
+      "manageAccount": "Manage profile",
       "fields": {
         "phone": "Primary phone",
         "phoneSecondary": "Secondary phone",
@@ -1491,6 +1491,47 @@
       "addressFallback": "No city registered",
       "properties": "Properties",
       "noProperties": "No properties registered.",
+      "sections": {
+        "personalTitle": "Personal information",
+        "addressTitle": "Primary address",
+        "addressEmpty": "No primary address configured yet.",
+        "photoTitle": "Profile photo",
+        "notificationsTitle": "Notification settings",
+        "notificationsSubtitle": "Choose the alerts you want to receive."
+      },
+      "editor": {
+        "personalTitle": "Edit personal information",
+        "personalSubtitle": "Update your contact details and language.",
+        "addressTitle": "Edit primary address",
+        "addressSubtitle": "Update your location details.",
+        "review": "Review changes",
+        "personalRequired": "Complete first name, last name, email, and phone.",
+        "addressRequired": "Complete address, city, state, and postal code.",
+        "saveFailed": "Unable to save profile changes.",
+        "personalSaved": "Personal information updated.",
+        "addressSaved": "Primary address updated."
+      },
+      "confirm": {
+        "title": "Confirm profile changes",
+        "subtitle": "Please verify this information before saving.",
+        "back": "Back to edit",
+        "confirm": "Confirm and save"
+      },
+      "security": {
+        "title": "Security",
+        "subtitle": "Manage password reset and optional email 2FA.",
+        "twoFaTitle": "Email two-factor authentication (2FA)",
+        "twoFaSubtitle": "Add an email verification step for your sign-in flow.",
+        "twoFaEnabled": "Email 2FA enabled.",
+        "twoFaDisabled": "Email 2FA disabled.",
+        "twoFaError": "Unable to update email 2FA setting.",
+        "reset": {
+          "submit": "Send reset password",
+          "loading": "Sending...",
+          "sent": "Password reset instructions were sent.",
+          "error": "Unable to send password reset instructions."
+        }
+      },
       "property": {
         "pool": "Pool",
         "water": "Water type",

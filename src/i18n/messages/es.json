@@ -1477,10 +1477,10 @@
       }
     },
     "profile": {
-      "title": "Perfil del cliente",
-      "subtitle": "Datos personales y propiedades.",
+      "title": "Mi perfil",
+      "subtitle": "Informacion personal, direccion principal y seguridad.",
       "empty": "No se encontro el perfil del cliente.",
-      "manageAccount": "Gestionar cuenta",
+      "manageAccount": "Gestionar perfil",
       "fields": {
         "phone": "Telefono principal",
         "phoneSecondary": "Telefono secundario",
@@ -1491,6 +1491,47 @@
       "addressFallback": "Sin ciudad registrada",
       "properties": "Propiedades",
       "noProperties": "No hay propiedades registradas.",
+      "sections": {
+        "personalTitle": "Informacion personal",
+        "addressTitle": "Direccion principal",
+        "addressEmpty": "Aun no tienes direccion principal configurada.",
+        "photoTitle": "Foto de perfil",
+        "notificationsTitle": "Ajustes de notificaciones",
+        "notificationsSubtitle": "Elige las alertas que quieres recibir."
+      },
+      "editor": {
+        "personalTitle": "Editar informacion personal",
+        "personalSubtitle": "Actualiza tus datos de contacto e idioma.",
+        "addressTitle": "Editar direccion principal",
+        "addressSubtitle": "Actualiza los datos de ubicacion.",
+        "review": "Revisar cambios",
+        "personalRequired": "Completa nombre, apellidos, email y telefono.",
+        "addressRequired": "Completa direccion, ciudad, estado y codigo postal.",
+        "saveFailed": "No se pudieron guardar los cambios del perfil.",
+        "personalSaved": "Informacion personal actualizada.",
+        "addressSaved": "Direccion principal actualizada."
+      },
+      "confirm": {
+        "title": "Confirma cambios del perfil",
+        "subtitle": "Verifica esta informacion antes de guardar.",
+        "back": "Volver a editar",
+        "confirm": "Confirmar y guardar"
+      },
+      "security": {
+        "title": "Seguridad",
+        "subtitle": "Gestiona cambio de contrasena y 2FA opcional por email.",
+        "twoFaTitle": "Autenticacion de dos factores (2FA) por email",
+        "twoFaSubtitle": "Agrega una verificacion por email a tu inicio de sesion.",
+        "twoFaEnabled": "2FA por email activado.",
+        "twoFaDisabled": "2FA por email desactivado.",
+        "twoFaError": "No se pudo actualizar la configuracion de 2FA por email.",
+        "reset": {
+          "submit": "Enviar cambio de contrasena",
+          "loading": "Enviando...",
+          "sent": "Se enviaron instrucciones para cambiar la contrasena.",
+          "error": "No se pudieron enviar las instrucciones de cambio de contrasena."
+        }
+      },
       "property": {
         "pool": "Piscina",
         "water": "Tipo agua",
