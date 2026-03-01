@@ -168,7 +168,8 @@
       "home": "Inicio",
       "request": "Solicitar servicio",
       "invoices": "Facturas",
-      "profile": "Perfil"
+      "profile": "Perfil",
+      "properties": "Mis propiedades"
     },
     "account": "Mi cuenta"
   },
@@ -1495,6 +1496,11 @@
         "water": "Tipo agua",
         "volume": "Volumen N/A"
       }
+    },
+    "properties": {
+      "title": "Mis propiedades",
+      "subtitle": "Gestiona tus propiedades y revisa el historial de trabajos.",
+      "empty": "No se encontro el perfil del cliente."
     },
     "invoices": {
       "title": "Facturas",

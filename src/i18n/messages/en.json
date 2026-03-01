@@ -168,7 +168,8 @@
       "home": "Home",
       "request": "Request Service",
       "invoices": "Invoices",
-      "profile": "Profile"
+      "profile": "Profile",
+      "properties": "My properties"
     },
     "account": "My account"
   },
@@ -1495,6 +1496,11 @@
         "water": "Water type",
         "volume": "Volume N/A"
       }
+    },
+    "properties": {
+      "title": "My properties",
+      "subtitle": "Manage your properties and review work history.",
+      "empty": "Customer profile not found."
     },
     "invoices": {
       "title": "Invoices",

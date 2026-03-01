@@ -359,8 +359,8 @@ const clientNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
-    label: t("nav.client.profile"),
-    href: "/client/profile",
+    label: t("nav.client.properties"),
+    href: "/client/properties",
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -372,12 +372,12 @@ const clientNavItems = (t: (key: string) => string): NavItem[] => [
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M7.5 18a4.5 4.5 0 019 0"
+          d="M4.5 10.5L12 4l7.5 6.5V19a1 1 0 01-1 1H5.5a1 1 0 01-1-1v-8.5z"
         />
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
-          d="M8.5 9.5a3.5 3.5 0 117 0"
+          d="M9 20v-5.5h6V20"
         />
       </svg>
     ),
@@ -624,15 +624,7 @@ export default function AppShell({
                 </svg>
               </button>
 
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1">
-                  <img
-                    src="/newlogo.png"
-                    alt={`${t("app.name")} logo`}
-                    className="h-full w-full rounded-lg object-cover"
-                  />
-                </span>
-                <div className="min-w-0">
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                   {resolvedRoleLabel}
                 </p>
@@ -643,40 +635,11 @@ export default function AppShell({
                 {subtitle ? (
                   <p className="truncate text-sm text-slate-500">{subtitle}</p>
                 ) : null}
-                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <NotificationsBell />
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition hover:border-rose-300 hover:text-rose-700 disabled:opacity-70"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 8V6.5A2.5 2.5 0 0111.5 4h6A2.5 2.5 0 0120 6.5v11A2.5 2.5 0 0117.5 20h-6A2.5 2.5 0 019 17.5V16"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13 12H4m0 0l3-3m-3 3l3 3"
-                  />
-                </svg>
-                <span className="hidden sm:inline">
-                  {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
-                </span>
-              </button>
             </div>
           </div>
         </header>
