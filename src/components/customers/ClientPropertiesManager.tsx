@@ -229,7 +229,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     if (rows.length === 0) {
       return (
         <tr>
-          <td colSpan={5} className="px-4 py-6 text-sm text-slate-500">
+          <td colSpan={99} className="px-4 py-6 text-sm text-slate-500">
             {emptyLabel}
           </td>
         </tr>
@@ -332,25 +332,31 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5 text-[11px]">
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.routes.labels.poolType")}: {show(p.poolType)}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.routes.labels.waterType")}: {show(p.waterType)}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.routes.labels.filterType")}: {show(p.filterType)}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.routes.labels.sanitizerSystem")}: {show(p.sanitizerType)}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.routes.labels.poolVolume")}: {p.poolVolumeGallons ?? "-"}
-                    </span>
-                    <span className="rounded-full border border-slate-200 bg-white px-2 py-1 text-slate-700">
-                      {t("admin.customers.detail.properties.fields.spa")}: {p.hasSpa ? t("common.labels.yes") : t("common.labels.no")}
-                    </span>
+                  <div className="mt-3 grid gap-x-5 gap-y-1 text-sm text-slate-700 sm:grid-cols-2">
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span>{" "}
+                      {show(p.poolType)}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.waterType")}:</span>{" "}
+                      {show(p.waterType)}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span>{" "}
+                      {show(p.filterType)}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span>{" "}
+                      {show(p.sanitizerType)}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span>{" "}
+                      {p.poolVolumeGallons ?? "-"}
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span>{" "}
+                      {p.hasSpa ? t("common.labels.yes") : t("common.labels.no")}
+                    </p>
                   </div>
                 </article>
               );
@@ -363,14 +369,14 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
         <h2 className="text-lg font-semibold">{t("client.properties.history.scheduledTitle")}</h2>
         <p className="text-sm text-slate-500">{t("client.properties.history.scheduledSubtitle")}</p>
         <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-          <table className="w-full table-fixed text-left text-sm">
+          <table className="w-full min-w-full table-fixed text-left text-sm">
             <thead className="bg-[linear-gradient(120deg,#0f3b73,#0e7490)] text-[11px] uppercase tracking-[0.12em] text-sky-50">
               <tr>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.date")}</th>
-                <th className="hidden px-3 py-2 font-semibold lg:table-cell">{t("client.home.recent.columns.property")}</th>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.type")}</th>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.status")}</th>
-                <th className="hidden px-3 py-2 text-right font-semibold lg:table-cell">{t("client.home.recent.columns.evidence")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[20%]">{t("client.home.recent.columns.date")}</th>
+                <th className="hidden px-3 py-2 font-semibold lg:table-cell lg:w-[28%]">{t("client.home.recent.columns.property")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[18%]">{t("client.home.recent.columns.type")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[18%]">{t("client.home.recent.columns.status")}</th>
+                <th className="hidden px-3 py-2 text-right font-semibold lg:table-cell lg:w-[16%]">{t("client.home.recent.columns.evidence")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
@@ -384,14 +390,14 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
         <h2 className="text-lg font-semibold">{t("client.properties.history.completedTitle")}</h2>
         <p className="text-sm text-slate-500">{t("client.properties.history.completedSubtitle")}</p>
         <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-          <table className="w-full table-fixed text-left text-sm">
+          <table className="w-full min-w-full table-fixed text-left text-sm">
             <thead className="bg-[linear-gradient(120deg,#14532d,#0f766e)] text-[11px] uppercase tracking-[0.12em] text-emerald-50">
               <tr>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.date")}</th>
-                <th className="hidden px-3 py-2 font-semibold lg:table-cell">{t("client.home.recent.columns.property")}</th>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.type")}</th>
-                <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.status")}</th>
-                <th className="hidden px-3 py-2 text-right font-semibold lg:table-cell">{t("client.home.recent.columns.evidence")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[20%]">{t("client.home.recent.columns.date")}</th>
+                <th className="hidden px-3 py-2 font-semibold lg:table-cell lg:w-[28%]">{t("client.home.recent.columns.property")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[18%]">{t("client.home.recent.columns.type")}</th>
+                <th className="w-1/3 px-3 py-2 font-semibold lg:w-[18%]">{t("client.home.recent.columns.status")}</th>
+                <th className="hidden px-3 py-2 text-right font-semibold lg:table-cell lg:w-[16%]">{t("client.home.recent.columns.evidence")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-slate-700">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import {
   getNotificationDetail,
@@ -40,6 +41,8 @@ export default function NotificationsBell() {
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
+  const canUseDom =
+    typeof window !== "undefined" && typeof document !== "undefined";
   const SWIPE_ACTION_WIDTH = 88;
   const SWIPE_OPEN_THRESHOLD = 56;
 
@@ -297,20 +300,21 @@ export default function NotificationsBell() {
         ) : null}
       </button>
 
-      {open ? (
-        <>
-          <button
-            type="button"
-            aria-label={t("common.actions.close")}
-            className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
-            onClick={() => {
-              setOpen(false);
-              setRevealedDeleteId(null);
-              setConfirmDeleteId(null);
-              setSwipeState(null);
-            }}
-          />
-          <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:z-[1150] sm:mt-3 sm:w-80 sm:max-h-[34rem]">
+      {open && canUseDom
+        ? createPortal(
+            <>
+              <button
+                type="button"
+                aria-label={t("common.actions.close")}
+                className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
+                onClick={() => {
+                  setOpen(false);
+                  setRevealedDeleteId(null);
+                  setConfirmDeleteId(null);
+                  setSwipeState(null);
+                }}
+              />
+              <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:left-auto sm:right-4 sm:w-80 sm:max-h-[34rem]">
           <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500">
             <span>{t("userMenu.recent")}</span>
             <button
@@ -481,9 +485,11 @@ export default function NotificationsBell() {
               )}
             </div>
           )}
-          </div>
-        </>
-      ) : null}
+              </div>
+            </>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

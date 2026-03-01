@@ -253,7 +253,14 @@ export default function UserMenu() {
           ) : null}
         </button>
         {openNotifications ? (
-          <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast">
+          <>
+            <button
+              type="button"
+              aria-label={t("common.actions.close")}
+              className="fixed inset-0 z-[1080] h-screen w-screen bg-slate-950/45 backdrop-blur-[1px]"
+              onClick={() => setOpenNotifications(false)}
+            />
+            <div className="absolute right-0 z-[1090] mt-3 w-80 overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast">
             <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500">
               <span>{t("userMenu.recent")}</span>
               <button
@@ -358,7 +365,8 @@ export default function UserMenu() {
                 )}
               </div>
             )}
-          </div>
+            </div>
+          </>
         ) : null}
       </div>
 
