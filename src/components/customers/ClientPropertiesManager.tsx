@@ -332,31 +332,24 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 grid gap-x-5 gap-y-1 text-sm text-slate-700 sm:grid-cols-2">
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span>{" "}
-                      {show(p.poolType)}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.waterType")}:</span>{" "}
-                      {show(p.waterType)}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span>{" "}
-                      {show(p.filterType)}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span>{" "}
-                      {show(p.sanitizerType)}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span>{" "}
-                      {p.poolVolumeGallons ?? "-"}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span>{" "}
-                      {p.hasSpa ? t("common.labels.yes") : t("common.labels.no")}
-                    </p>
+                  <div className="mt-3 text-sm leading-6 text-slate-700">
+                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span>{" "}
+                    {show(p.poolType)}
+                    <span className="px-2 text-slate-300">•</span>
+                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.waterType")}:</span>{" "}
+                    {show(p.waterType)}
+                    <span className="px-2 text-slate-300">•</span>
+                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span>{" "}
+                    {show(p.filterType)}
+                    <span className="px-2 text-slate-300">•</span>
+                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span>{" "}
+                    {show(p.sanitizerType)}
+                    <span className="px-2 text-slate-300">•</span>
+                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span>{" "}
+                    {p.poolVolumeGallons ?? "-"}
+                    <span className="px-2 text-slate-300">•</span>
+                    <span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span>{" "}
+                    {p.hasSpa ? t("common.labels.yes") : t("common.labels.no")}
                   </div>
                 </article>
               );
