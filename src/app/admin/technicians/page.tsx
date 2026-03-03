@@ -251,7 +251,7 @@ export default async function TechniciansPage() {
                   </svg>
                 </label>
               </div>
-              <TechnicianCreateForm createTechnician={createTechnician} />
+              <TechnicianCreateForm createTechnicianAction={createTechnician} />
             </div>
           </div>
         </div>

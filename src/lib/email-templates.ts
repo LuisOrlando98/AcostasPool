@@ -473,33 +473,50 @@ export function buildPremiumEmailTemplateHtml(
 ) {
   const meta = EMAIL_TEMPLATE_DEFINITIONS[templateId];
   const bodyBlocks = buildEmailBodyBlocks(templateId, text);
+  const appUrlRaw = process.env.APP_URL?.trim() || "https://acostaspool.com";
+  const appUrlNormalized = /^https?:\/\//i.test(appUrlRaw) ? appUrlRaw : `https://${appUrlRaw}`;
+  let appOrigin = "https://acostaspool.com";
+  try {
+    appOrigin = new URL(appUrlNormalized).origin.replace(/\/+$/, "");
+  } catch {
+    appOrigin = "https://acostaspool.com";
+  }
+  const legalCenterUrl = `${appOrigin}/legal`;
+  const privacyUrl = `${appOrigin}/legal/privacy-policy`;
+  const termsUrl = `${appOrigin}/legal/terms-of-service`;
+  const paymentUrl = `${appOrigin}/legal/payment-cancellation-policy`;
+  const disclaimerUrl = `${appOrigin}/legal/disclaimer-limitation-of-liability`;
+  const cookieUrl = `${appOrigin}/legal/cookie-notice`;
 
   return [
     '<div style="margin:0;padding:26px;background:#edf2f7;font-family:Inter,Arial,sans-serif;">',
     '<div style="max-width:680px;margin:0 auto;border:1px solid #d7e3f0;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 18px 36px rgba(15,23,42,0.12);">',
-    '<div style="padding:18px 22px;background:linear-gradient(145deg,#082236,#0d3555);color:#e2f5ff;">',
-    '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;opacity:.8;">AcostasPool</p>',
+    '<div style="padding:18px 22px;background:linear-gradient(140deg,#0b3b66,#0ea5e9);color:#ffffff;">',
+    '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#e8f7ff;">AcostasPool</p>',
     `<h2 style="margin:8px 0 0;font-size:19px;line-height:1.3;font-weight:800;color:#ffffff;">${escapeHtml(
       meta.label
     )}</h2>`,
-    `<p style="margin:8px 0 0;font-size:13px;line-height:1.45;color:#cbe9fb;">${escapeHtml(
+    `<p style="margin:8px 0 0;font-size:13px;line-height:1.45;color:#eaf7ff;">${escapeHtml(
       subject
     )}</p>`,
     "</div>",
     '<div style="padding:22px 22px 16px;">',
     bodyBlocks,
-    '<div style="margin-top:18px;padding:10px 12px;border:1px solid #dbe7f3;border-radius:10px;background:#f8fbff;">',
-    '<p style="margin:0;color:#5b6b80;font-size:11px;line-height:1.5;">This message was generated from your AcostasPool admin panel templates.</p>',
+    '<div style="margin-top:18px;padding:12px 14px;border:1px solid #d8e5f2;border-radius:12px;background:#f8fbff;">',
+    '<p style="margin:0 0 7px;color:#0f172a;font-size:12px;font-weight:700;">Need help?</p>',
+    '<p style="margin:0;color:#475569;font-size:12px;line-height:1.55;">Reply to this email or contact <a href="mailto:support@acostaspool.com" style="color:#0c4a6e;text-decoration:underline;">support@acostaspool.com</a>.</p>',
     "</div>",
     "</div>",
     '<div style="padding:12px 22px;border-top:1px solid #e2e8f0;background:#f8fafc;">',
-    '<p style="margin:0;color:#7a8ca1;font-size:10px;line-height:1.45;">AcostasPool • Premium pool operations • support@acostaspool.com</p>',
+    `<p style="margin:0 0 6px;color:#475569;font-size:11px;line-height:1.5;">Legal: <a href="${legalCenterUrl}" style="color:#0c4a6e;text-decoration:underline;">Legal Center</a> | <a href="${privacyUrl}" style="color:#0c4a6e;text-decoration:underline;">Privacy Policy</a> | <a href="${termsUrl}" style="color:#0c4a6e;text-decoration:underline;">Terms of Service</a></p>`,
+    `<p style="margin:0 0 7px;color:#64748b;font-size:10px;line-height:1.5;">More policies: <a href="${paymentUrl}" style="color:#0c4a6e;text-decoration:underline;">Payment and Cancellation</a> | <a href="${disclaimerUrl}" style="color:#0c4a6e;text-decoration:underline;">Disclaimer and Liability</a> | <a href="${cookieUrl}" style="color:#0c4a6e;text-decoration:underline;">Cookie Notice</a></p>`,
+    '<p style="margin:0 0 4px;color:#0f172a;font-size:11px;line-height:1.45;font-weight:700;">Digitally signed by AcostasPool Operations Team</p>',
+    '<p style="margin:0;color:#64748b;font-size:10px;line-height:1.45;">AcostasPool | Premium pool operations | support@acostaspool.com</p>',
     "</div>",
     "</div>",
     "</div>",
   ].join("");
 }
-
 export function getDefaultEmailTemplatesConfig(): EmailTemplatesConfig {
   return EMAIL_TEMPLATE_IDS.reduce((acc, templateId) => {
     const defaults = EMAIL_TEMPLATE_DEFINITIONS[templateId].defaults;
@@ -554,3 +571,4 @@ export function renderEmailTemplate(
 export function isEmailTemplateId(value: string | null | undefined): value is EmailTemplateId {
   return EMAIL_TEMPLATE_IDS.some((templateId) => templateId === value);
 }
+

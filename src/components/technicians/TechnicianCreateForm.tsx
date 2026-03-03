@@ -12,7 +12,7 @@ type CreateTechnicianResult = {
 };
 
 type Props = {
-  createTechnician: (formData: FormData) => Promise<CreateTechnicianResult>;
+  createTechnicianAction: (formData: FormData) => Promise<CreateTechnicianResult>;
 };
 
 function closeNewTechModal() {
@@ -22,7 +22,7 @@ function closeNewTechModal() {
   }
 }
 
-export default function TechnicianCreateForm({ createTechnician }: Props) {
+export default function TechnicianCreateForm({ createTechnicianAction }: Props) {
   const { t, locale } = useI18n();
   const formRef = useRef<HTMLFormElement | null>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -131,7 +131,7 @@ export default function TechnicianCreateForm({ createTechnician }: Props) {
     setPending(true);
 
     try {
-      const result = await createTechnician(formData);
+      const result = await createTechnicianAction(formData);
       if (!result.ok) {
         if (result.fieldErrors) {
           const normalizedErrors = Object.fromEntries(

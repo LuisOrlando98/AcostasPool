@@ -88,6 +88,13 @@ const EMAIL_TEMPLATE_DEFAULTS = {
   },
 };
 
+const EMAIL_TEMPLATE_LABELS = {
+  CUSTOMER_SERVICE_SCHEDULED: "Service scheduled",
+  CUSTOMER_SERVICE_RESCHEDULED: "Service rescheduled",
+  TECH_DAILY_DIGEST: "Daily route digest",
+  TECH_CHANGE_DIGEST: "Route changes digest",
+};
+
 let emailTemplateCache = EMAIL_TEMPLATE_DEFAULTS;
 let emailTemplateCacheAt = 0;
 
@@ -102,12 +109,130 @@ const escapeHtml = (value) =>
 const interpolateTemplate = (content, variables) =>
   String(content ?? "").replace(TEMPLATE_TOKEN, (_match, token) => variables[token] ?? "");
 
-const normalizeTemplateContent = (value, fallback) => {
+const buildEmailBodyBlocks = (templateId, text) => {
+  const rawLines = String(text ?? "").replace(/\r/g, "").split("\n");
+  const blocks = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (listItems.length === 0) {
+      return;
+    }
+    blocks.push(
+      `<ul style="margin:0 0 16px;padding-left:20px;color:#334155;line-height:1.6;">${listItems
+        .map((item) => `<li style="margin:0 0 6px;">${escapeHtml(item)}</li>`)
+        .join("")}</ul>`
+    );
+    listItems = [];
+  };
+
+  for (const line of rawLines) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      continue;
+    }
+
+    if (trimmed === "{{invite_link}}") {
+      flushList();
+      blocks.push(
+        '<div style="margin:0 0 18px;"><a href="{{invite_link}}" style="display:inline-block;padding:11px 18px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#22c55e);color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">Complete profile</a></div>'
+      );
+      continue;
+    }
+
+    if (trimmed === "{{lines_text}}") {
+      flushList();
+      if (templateId === "TECH_DAILY_DIGEST" || templateId === "TECH_CHANGE_DIGEST") {
+        blocks.push(
+          '<ol style="margin:0 0 16px;padding-left:20px;color:#334155;line-height:1.6;">{{lines_html}}</ol>'
+        );
+      } else {
+        blocks.push(
+          '<p style="margin:0 0 12px;color:#334155;line-height:1.65;">{{lines_text}}</p>'
+        );
+      }
+      continue;
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^[-*]\s+/, ""));
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      listItems.push(trimmed.replace(/^\d+\.\s+/, ""));
+      continue;
+    }
+
+    flushList();
+    blocks.push(
+      `<p style="margin:0 0 12px;color:#334155;line-height:1.65;">${escapeHtml(trimmed)}</p>`
+    );
+  }
+
+  flushList();
+  return blocks.join("");
+};
+
+const buildPremiumEmailTemplateHtml = (templateId, subject, text) => {
+  const bodyBlocks = buildEmailBodyBlocks(templateId, text);
+  const label = EMAIL_TEMPLATE_LABELS[templateId] || "Notification";
+  const appUrlRaw = (process.env.APP_URL || "https://acostaspool.com").trim();
+  const appUrlNormalized = /^https?:\/\//i.test(appUrlRaw)
+    ? appUrlRaw
+    : `https://${appUrlRaw}`;
+  let appOrigin = "https://acostaspool.com";
+  try {
+    appOrigin = new URL(appUrlNormalized).origin.replace(/\/+$/, "");
+  } catch {
+    appOrigin = "https://acostaspool.com";
+  }
+  const legalCenterUrl = `${appOrigin}/legal`;
+  const privacyUrl = `${appOrigin}/legal/privacy-policy`;
+  const termsUrl = `${appOrigin}/legal/terms-of-service`;
+  const paymentUrl = `${appOrigin}/legal/payment-cancellation-policy`;
+  const disclaimerUrl = `${appOrigin}/legal/disclaimer-limitation-of-liability`;
+  const cookieUrl = `${appOrigin}/legal/cookie-notice`;
+
+  return [
+    '<div style="margin:0;padding:26px;background:#edf2f7;font-family:Inter,Arial,sans-serif;">',
+    '<div style="max-width:680px;margin:0 auto;border:1px solid #d7e3f0;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 18px 36px rgba(15,23,42,0.12);">',
+    '<div style="padding:18px 22px;background:linear-gradient(140deg,#0b3b66,#0ea5e9);color:#ffffff;">',
+    '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#e8f7ff;">AcostasPool</p>',
+    `<h2 style="margin:8px 0 0;font-size:19px;line-height:1.3;font-weight:800;color:#ffffff;">${escapeHtml(
+      label
+    )}</h2>`,
+    `<p style="margin:8px 0 0;font-size:13px;line-height:1.45;color:#eaf7ff;">${escapeHtml(
+      subject
+    )}</p>`,
+    "</div>",
+    '<div style="padding:22px 22px 16px;">',
+    bodyBlocks,
+    '<div style="margin-top:18px;padding:12px 14px;border:1px solid #d8e5f2;border-radius:12px;background:#f8fbff;">',
+    '<p style="margin:0 0 7px;color:#0f172a;font-size:12px;font-weight:700;">Need help?</p>',
+    '<p style="margin:0;color:#475569;font-size:12px;line-height:1.55;">Reply to this email or contact <a href="mailto:support@acostaspool.com" style="color:#0c4a6e;text-decoration:underline;">support@acostaspool.com</a>.</p>',
+    "</div>",
+    "</div>",
+    '<div style="padding:12px 22px;border-top:1px solid #e2e8f0;background:#f8fafc;">',
+    `<p style="margin:0 0 6px;color:#475569;font-size:11px;line-height:1.5;">Legal: <a href="${legalCenterUrl}" style="color:#0c4a6e;text-decoration:underline;">Legal Center</a> | <a href="${privacyUrl}" style="color:#0c4a6e;text-decoration:underline;">Privacy Policy</a> | <a href="${termsUrl}" style="color:#0c4a6e;text-decoration:underline;">Terms of Service</a></p>`,
+    `<p style="margin:0 0 7px;color:#64748b;font-size:10px;line-height:1.5;">More policies: <a href="${paymentUrl}" style="color:#0c4a6e;text-decoration:underline;">Payment and Cancellation</a> | <a href="${disclaimerUrl}" style="color:#0c4a6e;text-decoration:underline;">Disclaimer and Liability</a> | <a href="${cookieUrl}" style="color:#0c4a6e;text-decoration:underline;">Cookie Notice</a></p>`,
+    '<p style="margin:0 0 4px;color:#0f172a;font-size:11px;line-height:1.45;font-weight:700;">Digitally signed by AcostasPool Operations Team</p>',
+    '<p style="margin:0;color:#64748b;font-size:10px;line-height:1.45;">AcostasPool | Premium pool operations | support@acostaspool.com</p>',
+    "</div>",
+    "</div>",
+    "</div>",
+  ].join("");
+};
+
+const normalizeTemplateContent = (templateId, value, fallback) => {
   const input = value && typeof value === "object" ? value : {};
+  const subject = String(input.subject ?? fallback.subject);
+  const text = String(input.text ?? fallback.text);
   return {
-    subject: String(input.subject ?? fallback.subject),
-    text: String(input.text ?? fallback.text),
-    html: String(input.html ?? fallback.html),
+    subject,
+    text,
+    html: buildPremiumEmailTemplateHtml(templateId, subject, text),
   };
 };
 
@@ -116,7 +241,7 @@ const normalizeTemplateConfig = (value) => {
   const normalized = {};
 
   for (const [templateId, fallback] of Object.entries(EMAIL_TEMPLATE_DEFAULTS)) {
-    normalized[templateId] = normalizeTemplateContent(input[templateId], fallback);
+    normalized[templateId] = normalizeTemplateContent(templateId, input[templateId], fallback);
   }
 
   return normalized;
