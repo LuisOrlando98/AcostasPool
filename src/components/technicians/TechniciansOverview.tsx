@@ -377,8 +377,8 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
               </div>
 
               <div className="ui-table-shell hidden overflow-hidden md:block">
-                <div className="overflow-x-auto">
-                  <table className="min-w-[960px] w-full text-left text-xs">
+                <div className="overflow-x-auto xl:overflow-visible">
+                  <table className="w-full min-w-[960px] text-left text-xs xl:min-w-0">
                     <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.2em] text-slate-400">
                       <tr>
                         <th className="px-4 py-3">{t("admin.technicians.overview.table.technician")}</th>
@@ -455,7 +455,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                             {formatLastActivity(row.lastActivity)}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                            <div className="flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap">
                               <Link
                                 href={`/admin/routes?tech=${row.id}`}
                                 className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"

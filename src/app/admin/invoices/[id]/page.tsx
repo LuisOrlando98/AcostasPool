@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
 import { formatCustomerName } from "@/lib/customers/format";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
+import { normalizeInvoiceLineItems, roundCurrency } from "@/lib/invoices/line-items";
 import {
   getInvoiceTemplateConfig,
   type SiteInvoiceTemplateConfig,
@@ -16,38 +17,6 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE";
 type InvoiceTheme = "STANDARD" | "SPECIAL" | "ESTIMATE";
-
-type EditableLineItem = {
-  label: string;
-  quantity: number;
-  unitPrice: number;
-  amount: number;
-};
-
-function normalizeLineItems(value: unknown): EditableLineItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value
-    .map((entry) => {
-      const label = typeof entry?.label === "string" ? entry.label.trim() : "";
-      const quantityRaw = Number(entry?.quantity ?? 1);
-      const quantity = Number.isFinite(quantityRaw) && quantityRaw > 0 ? quantityRaw : 1;
-      const unitPriceRaw = Number(entry?.unitPrice ?? entry?.amount ?? 0);
-      const unitPrice = Number.isFinite(unitPriceRaw) ? unitPriceRaw : 0;
-      const amountRaw = Number(entry?.amount ?? quantity * unitPrice);
-      const amount = Number.isFinite(amountRaw) ? amountRaw : quantity * unitPrice;
-
-      return {
-        label,
-        quantity,
-        unitPrice,
-        amount,
-      };
-    })
-    .filter((item) => item.label && item.amount >= 0);
-}
 
 function parseStatus(value: string): InvoiceStatus {
   if (value === "SENT" || value === "PAID" || value === "OVERDUE") {
@@ -77,7 +46,8 @@ async function updateInvoice(formData: FormData) {
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const number = String(formData.get("number") ?? "").trim();
   const status = parseStatus(String(formData.get("status") ?? "DRAFT"));
-  const theme = parseTheme(String(formData.get("theme") ?? "STANDARD"));
+  const typeRaw = String(formData.get("type") ?? formData.get("theme") ?? "STANDARD");
+  const theme = parseTheme(typeRaw);
   const jobIdRaw = String(formData.get("jobId") ?? "").trim();
   const taxRaw = Number(String(formData.get("tax") ?? "0"));
   const tax = Number.isFinite(taxRaw) && taxRaw >= 0 ? taxRaw : 0;
@@ -104,13 +74,13 @@ async function updateInvoice(formData: FormData) {
   } catch {
     return;
   }
-  const lineItems = normalizeLineItems(parsedLineItems);
+  const lineItems = normalizeInvoiceLineItems(parsedLineItems);
   if (lineItems.length === 0) {
     return;
   }
 
-  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
-  const total = subtotal + tax;
+  const subtotal = roundCurrency(lineItems.reduce((sum, item) => sum + item.amount, 0));
+  const total = roundCurrency(subtotal + tax);
 
   let jobId: string | null = null;
   if (jobIdRaw) {
@@ -133,13 +103,7 @@ async function updateInvoice(formData: FormData) {
     issueDate: currentInvoice.createdAt,
     customerName: formatCustomerName(currentInvoice.customer),
     customerEmail: currentInvoice.customer.email,
-    items: lineItems.map((item) => ({
-      label:
-        item.quantity > 1
-          ? `${item.label} (${item.quantity} x $${item.unitPrice.toFixed(2)})`
-          : item.label,
-      amount: item.amount,
-    })),
+    items: lineItems,
     subtotal,
     tax,
     total,
@@ -236,7 +200,7 @@ export default async function InvoiceEditorPage({
     template as SiteInvoiceTemplateConfig,
     invoice.theme
   );
-  const normalizedLineItems = normalizeLineItems(invoice.lineItems);
+  const normalizedLineItems = normalizeInvoiceLineItems(invoice.lineItems);
   const lineItemsSeed =
     normalizedLineItems.length > 0
       ? normalizedLineItems
@@ -322,10 +286,10 @@ export default async function InvoiceEditorPage({
                   </label>
                   <label>
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Theme
+                      Type
                     </span>
                     <select
-                      name="theme"
+                      name="type"
                       defaultValue={invoice.theme}
                       className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
                     >
@@ -411,7 +375,7 @@ export default async function InvoiceEditorPage({
             <div className="app-card p-6 shadow-contrast">
               <h3 className="text-base font-semibold text-slate-900">Web preview</h3>
               <p className="mt-1 text-sm text-slate-600">
-                Preview de template para el tema actual: {invoice.theme}
+                Preview de template para el tipo actual: {invoice.theme}
               </p>
               <iframe
                 title={`invoice-preview-${invoice.id}`}

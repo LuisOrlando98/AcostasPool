@@ -818,6 +818,18 @@
             "save": "Guardar cambios"
           }
         },
+        "credentials": {
+          "title": "Credenciales y seguridad",
+          "subtitle": "Gestiona el acceso del tecnico y enlaces seguros de invitacion.",
+          "sendInvite": "Enviar invitacion segura",
+          "lastInvite": "Ultima invitacion: {{date}}",
+          "labels": {
+            "portalNotInvited": "Portal: sin invitacion",
+            "portalInvitePending": "Portal: invitacion pendiente",
+            "portalActive": "Portal: activo",
+            "portalLinked": "Portal: vinculado"
+          }
+        },
         "jobs": {
           "upcomingTitle": "Proximos trabajos",
           "upcomingSubtitle": "Vista rapida del calendario del tecnico.",
@@ -1031,6 +1043,14 @@
             "chlorine": "Cloro",
             "other": "Otro"
           },
+          "edit": {
+            "summary": "Editar propiedad",
+            "sections": {
+              "identity": "Identidad de propiedad",
+              "specs": "Especificaciones de piscina",
+              "access": "Accesos y notas"
+            }
+          },
           "spaNo": "Spa: No",
           "spaYes": "Spa: Si"
         },
@@ -1157,6 +1177,7 @@
         "empty": "No hay facturas aun.",
         "noTech": "Sin tecnico",
         "theme": "Tema",
+        "type": "Tipo",
         "job": "Trabajo",
         "tech": "Tecnico",
         "noJob": "Sin trabajo asociado",
@@ -1166,25 +1187,41 @@
         "next": "Siguiente"
       },
       "actions": {
-        "new": "Nueva invoice"
+        "new": "Nueva factura"
       },
       "new": {
-        "kicker": "Nueva invoice",
+        "kicker": "Nueva factura",
         "title": "Detalle de facturacion",
         "fields": {
           "customer": "Cliente",
           "job": "Trabajo (opcional)",
           "noJob": "Sin asociar",
           "theme": "Tema",
+          "type": "Tipo de factura",
+          "items": "Servicios a cobrar",
+          "customService": "Servicio personalizado",
+          "qty": "Cantidad",
+          "unitPrice": "Precio",
+          "lineTotal": "Total",
+          "taxExempt": "Cliente exento de impuestos",
           "description": "Descripcion",
           "subtotal": "Subtotal",
           "tax": "Impuestos"
         },
         "placeholders": {
-          "description": "Servicio mensual"
+          "description": "Servicio mensual",
+          "service": "Selecciona servicio",
+          "customService": "Nombre del servicio personalizado"
+        },
+        "summary": {
+          "subtotal": "Subtotal",
+          "tax": "Impuesto ({{rate}}%)",
+          "total": "Total"
         },
         "actions": {
-          "create": "Crear invoice"
+          "create": "Crear factura",
+          "addLine": "Agregar linea",
+          "removeLine": "Quitar"
         }
       },
       "send": {

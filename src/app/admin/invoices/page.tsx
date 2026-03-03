@@ -2,11 +2,15 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
-import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
+import InvoiceCreateForm from "@/components/invoices/InvoiceCreateForm";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
+import {
+  normalizeInvoiceLineItems,
+  roundCurrency,
+} from "@/lib/invoices/line-items";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
@@ -17,27 +21,34 @@ async function createInvoice(formData: FormData) {
   "use server";
   const session = await requireRole("ADMIN");
 
-  const customerId = String(formData.get("customerId"));
+  const customerId = String(formData.get("customerId") ?? "");
   const jobId = String(formData.get("jobId") ?? "");
-  const description = String(formData.get("description") ?? "Service");
-  const amountRaw = String(formData.get("amount") ?? "0");
-  const taxRaw = String(formData.get("tax") ?? "0");
+  const lineItemsJsonRaw = String(formData.get("lineItemsJson") ?? "[]");
   const notes = String(formData.get("notes") ?? "");
-  const themeRaw = String(formData.get("theme") ?? "STANDARD");
-
-  const amount = Number(amountRaw) || 0;
-  const tax = Number(taxRaw) || 0;
-  const total = amount + tax;
+  const typeRaw = String(formData.get("type") ?? "STANDARD");
+  const taxExempt = String(formData.get("taxExempt") ?? "") === "on";
   const theme =
-    themeRaw === "SPECIAL"
+    typeRaw === "SPECIAL"
       ? "SPECIAL"
-      : themeRaw === "ESTIMATE"
+      : typeRaw === "ESTIMATE"
         ? "ESTIMATE"
         : "STANDARD";
 
-  if (!customerId || amount <= 0) {
+  let parsedLineItems: unknown = null;
+  try {
+    parsedLineItems = JSON.parse(lineItemsJsonRaw);
+  } catch {
     return;
   }
+  const lineItems = normalizeInvoiceLineItems(parsedLineItems);
+  const subtotal = roundCurrency(
+    lineItems.reduce((sum, line) => sum + line.amount, 0)
+  );
+  if (!customerId || lineItems.length === 0 || subtotal <= 0) {
+    return;
+  }
+  const tax = taxExempt ? 0 : roundCurrency(subtotal * 0.07);
+  const total = roundCurrency(subtotal + tax);
 
   const number = `INV-${Date.now()}`;
   const customer = await prisma.customer.findUnique({
@@ -68,11 +79,11 @@ async function createInvoice(formData: FormData) {
       number,
       status: "DRAFT",
       theme,
-      subtotal: amount,
+      subtotal,
       tax,
       total,
       notes: notes || null,
-      lineItems: [{ label: description, amount }],
+      lineItems: lineItems as unknown as object,
     },
   });
 
@@ -82,8 +93,8 @@ async function createInvoice(formData: FormData) {
     issueDate: invoice.createdAt,
     customerName,
     customerEmail: customer.email,
-    items: [{ label: description, amount }],
-    subtotal: amount,
+    items: lineItems,
+    subtotal,
     tax,
     total,
     notes: notes || null,
@@ -104,10 +115,12 @@ async function createInvoice(formData: FormData) {
     metadata: {
       customerId,
       jobId: linkedJobId,
-      subtotal: amount,
+      subtotal,
       tax,
       total,
       theme,
+      taxExempt,
+      lineItemsCount: lineItems.length,
     },
   });
 
@@ -170,8 +183,10 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     orderBy: { scheduledDate: "desc" },
     select: {
       id: true,
+      customerId: true,
       scheduledDate: true,
-      customer: { select: { nombre: true, apellidos: true, email: true } },
+      status: true,
+      serviceType: true,
     },
   });
 
@@ -289,7 +304,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                         }
                       />
                       <Badge
-                        label={`${t("admin.invoices.list.theme")}: ${
+                        label={`${t("admin.invoices.list.type")}: ${
                           themeLabels[invoice.theme] ?? invoice.theme
                         }`}
                         tone="info"
@@ -318,7 +333,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                         href={`/admin/invoices/${invoice.id}`}
                         className="text-xs font-semibold text-sky-700 underline"
                       >
-                        Editar invoice
+                        {t("common.actions.edit")}
                       </Link>
                       {invoice.pdfUrl ? (
                         <a
@@ -408,108 +423,20 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   </svg>
                 </label>
               </div>
-              <form action={createInvoice} className="mt-5 space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.invoices.new.fields.customer")}
-                </label>
-                <select
-                  name="customerId"
-                  className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  required
-                >
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {formatCustomerName(customer)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.invoices.new.fields.job")}
-                </label>
-                <select
-                  name="jobId"
-                  className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">{t("admin.invoices.new.fields.noJob")}</option>
-                  {jobs.map((job) => (
-                    <option key={job.id} value={job.id}>
-                      {formatCustomerName(job.customer)} -{" "}
-                      {job.scheduledDate.toLocaleDateString(locale)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.new.fields.theme")}
-                  </label>
-                  <select
-                    name="theme"
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="STANDARD">{t("admin.invoices.theme.standard")}</option>
-                    <option value="SPECIAL">{t("admin.invoices.theme.special")}</option>
-                    <option value="ESTIMATE">{t("admin.invoices.theme.estimate")}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.new.fields.description")}
-                  </label>
-                  <input
-                    name="description"
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    placeholder={t("admin.invoices.new.placeholders.description")}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.new.fields.subtotal")}
-                  </label>
-                  <input
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.new.fields.tax")}
-                  </label>
-                  <input
-                    name="tax"
-                    type="number"
-                    step="0.01"
-                    defaultValue="0"
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("common.labels.notes")}
-                </label>
-                <textarea
-                  name="notes"
-                  className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
-                />
-              </div>
-              <FormSubmitButton
-                idleLabel={t("admin.invoices.new.actions.create")}
-                pendingLabel={t("common.feedback.creating")}
-                successLabel={t("common.feedback.created")}
-                className="w-full px-4 py-3"
+              <InvoiceCreateForm
+                customers={customers.map((customer) => ({
+                  id: customer.id,
+                  name: formatCustomerName(customer),
+                }))}
+                jobs={jobs.map((job) => ({
+                  id: job.id,
+                  customerId: job.customerId,
+                  scheduledDate: job.scheduledDate.toISOString(),
+                  status: job.status,
+                  serviceType: job.serviceType,
+                }))}
+                createInvoiceAction={createInvoice}
               />
-              </form>
             </div>
           </div>
         </div>

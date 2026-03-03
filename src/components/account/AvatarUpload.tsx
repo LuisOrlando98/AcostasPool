@@ -260,9 +260,9 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
       : "text-slate-500";
 
   return (
-    <div className="grid gap-5 md:grid-cols-[11rem_1fr]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="h-44 w-44 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-100 shadow-sm">
+    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3">
+      <div className="flex justify-center">
+        <div className="h-28 w-28 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm sm:h-32 sm:w-32">
           {preview ? (
             <img
               src={preview}
@@ -286,7 +286,7 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
         <input
           ref={inputRef}
           type="file"
@@ -294,10 +294,10 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           onChange={handleFileChange}
           className="hidden"
         />
-        <p className="text-sm font-medium text-slate-700">{t("account.avatar.formats")}</p>
+        <p className="text-xs font-medium text-slate-700">{t("account.avatar.formats")}</p>
 
         {hasFile ? (
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-1 truncate text-[11px] text-slate-500">
             {t("account.avatar.selected", {
               name: file?.name ?? "",
               size: file ? formatFileSize(file.size) : "",
@@ -305,7 +305,7 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           </p>
         ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handlePick}
@@ -324,7 +324,7 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           </button>
         </div>
 
-        {message ? <p className={`mt-3 text-xs ${messageClass}`}>{message}</p> : null}
+        {message ? <p className={`mt-2 text-xs ${messageClass}`}>{message}</p> : null}
       </div>
     </div>
   );

@@ -255,8 +255,8 @@ export function renderInvoiceTemplatePreview(
 ) {
   const resolvedTheme = template.themes[theme];
   const items = [
-    { label: "Weekly service visit", amount: 125 },
-    { label: "Chemicals and supplies", amount: 48.5 },
+    { label: "Weekly cleaning", quantity: 1, unitPrice: 125, amount: 125 },
+    { label: "Chemicals and supplies", quantity: 2, unitPrice: 24.25, amount: 48.5 },
   ];
   const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
   const tax = subtotal * 0.07;
@@ -264,8 +264,12 @@ export function renderInvoiceTemplatePreview(
 
   const itemRows = items
     .map(
-      (item) =>
-        `<tr><td>${escapeHtml(item.label)}</td><td style="text-align:right;">$${item.amount.toFixed(2)}</td></tr>`
+      (item) => `<tr>
+  <td>${escapeHtml(item.label)}</td>
+  <td style="text-align:center;">${item.quantity}</td>
+  <td style="text-align:right;">$${item.unitPrice.toFixed(2)}</td>
+  <td style="text-align:right;">$${item.amount.toFixed(2)}</td>
+</tr>`
     )
     .join("");
 
@@ -284,30 +288,23 @@ export function renderInvoiceTemplatePreview(
 <html>
   <body style="margin:0;padding:24px;background:#edf2f7;font-family:Arial,sans-serif;color:#0f172a;">
     <article style="position:relative;max-width:860px;margin:0 auto;border:1px solid #dbe4ee;border-radius:18px;overflow:hidden;background:#fff;">
-      <header style="background:${resolvedTheme.lightHex};padding:26px 28px 20px;border-bottom:1px solid #e2e8f0;">
-        <div style="display:flex;justify-content:space-between;gap:24px;">
+      <header style="background:${resolvedTheme.brandHex};padding:24px 28px 22px;border-bottom:1px solid rgba(255,255,255,.2);">
+        <div style="display:flex;justify-content:space-between;gap:24px;align-items:flex-start;">
           <div>
-            <p style="margin:0;color:${resolvedTheme.brandHex};font:700 24px/1.2 Arial,sans-serif;">${escapeHtml(template.companyName)}</p>
-            <p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.headerSubtitle)}</p>
-            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+            <img src="/h-logo.png" alt="AcostasPool" style="display:block;max-width:190px;height:auto;" />
+            <p style="margin:10px 0 0;color:#dbe7f3;font-size:13px;">${escapeHtml(template.headerSubtitle)}</p>
+            <p style="margin:6px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
               template.companyPhone
-            )} • ${escapeHtml(template.companyEmail)}</p>
-            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
-              template.companyAddressLine1
-            )} ${template.companyAddressLine2 ? `• ${escapeHtml(template.companyAddressLine2)}` : ""}</p>
-            ${template.companyWebsite ? `<p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(template.companyWebsite)}</p>` : ""}
+            )} | ${escapeHtml(template.companyEmail)}</p>
           </div>
           <div style="text-align:right;">
-            <p style="margin:0;color:${resolvedTheme.brandHex};font:700 16px/1.2 Arial,sans-serif;">${escapeHtml(resolvedTheme.label)}</p>
-            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+            <p style="margin:0;color:#ffffff;font:700 17px/1.2 Arial,sans-serif;">${escapeHtml(resolvedTheme.label)}</p>
+            <p style="margin:6px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
               template.invoiceNumberLabel
             )}: INV-2026-1042</p>
-            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
+            <p style="margin:4px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
               template.issueDateLabel
-            )}: 02/23/2026</p>
-            <p style="margin:4px 0 0;color:#64748b;font-size:12px;">${escapeHtml(
-              template.companyTaxId
-            )}</p>
+            )}: 03/03/2026</p>
           </div>
         </div>
       </header>
@@ -320,6 +317,8 @@ export function renderInvoiceTemplatePreview(
           <thead>
             <tr style="background:${resolvedTheme.lightHex};">
               <th style="text-align:left;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">${escapeHtml(template.tableDescriptionLabel)}</th>
+              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">Qty</th>
+              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">Price</th>
               <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">${escapeHtml(template.tableAmountLabel)}</th>
             </tr>
           </thead>
@@ -330,7 +329,7 @@ export function renderInvoiceTemplatePreview(
 
         <div style="margin-top:20px;display:grid;justify-content:end;">
           <p style="margin:0;color:#475569;font-size:13px;">${escapeHtml(template.subtotalLabel)}: <strong>$${subtotal.toFixed(2)}</strong></p>
-          <p style="margin:7px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.taxLabel)}: <strong>$${tax.toFixed(2)}</strong></p>
+          <p style="margin:7px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.taxLabel)} (7%): <strong>$${tax.toFixed(2)}</strong></p>
           <p style="margin:9px 0 0;color:${resolvedTheme.brandHex};font:700 16px/1.2 Arial,sans-serif;">${escapeHtml(template.totalLabel)}: $${total.toFixed(2)}</p>
         </div>
 

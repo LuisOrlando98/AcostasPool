@@ -581,8 +581,8 @@ const UpcomingCalendarSection = ({
         t={t}
       />
 
-      <div className="mt-4 -mx-1 overflow-x-auto px-1 pb-1">
-        <div className="grid auto-cols-[minmax(82vw,1fr)] grid-flow-col gap-3 sm:auto-cols-[minmax(220px,1fr)]">
+      <div className="mt-4 -mx-1 overflow-x-auto px-1 pb-1 lg:overflow-visible">
+        <div className="grid auto-cols-[minmax(82vw,1fr)] grid-flow-col gap-3 sm:auto-cols-[minmax(240px,1fr)] lg:auto-cols-auto lg:grid-flow-row lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           {calendarDays.map((day) => {
             const dayRows = grouped.get(day.key) ?? [];
             return (

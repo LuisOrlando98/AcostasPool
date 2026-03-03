@@ -7,6 +7,18 @@ export type UpdateEntry = {
 
 export const updates: UpdateEntry[] = [
   {
+    date: "2026-03-03",
+    title: "Invoice flow revamp and smarter job linking",
+    tag: "Major",
+    items: [
+      "Redesigned admin invoice creation with structured line items (service, quantity, unit price, and line total) plus dynamic add/remove rows.",
+      "Added automatic job preselection per customer using the latest completed job first, with fallback to the latest related job.",
+      "Updated job dropdown labels to include schedule date, completion status, and service type for faster admin decisions.",
+      "Implemented default 7% tax calculation with customer tax-exempt option and consistent subtotal/tax/total rounding on server side.",
+      "Upgraded invoice PDF and web preview layout to use the horizontal brand logo and richer line-item table columns (Qty, Price, Amount).",
+    ],
+  },
+  {
     date: "2026-02-28",
     title: "Customer portal profile and UX upgrade",
     tag: "Major",

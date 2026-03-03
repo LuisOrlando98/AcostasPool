@@ -1087,167 +1087,245 @@ export default async function CustomerDetailPage({
                   {t("admin.customers.detail.properties.empty")}
                 </p>
               ) : (
-                customer.properties.map((property) => (
-                  <div
-                    key={property.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        {property.name || t("admin.customers.detail.properties.nameFallback")}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {property.address}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {property.poolType ||
-                          t("admin.customers.detail.properties.poolFallback")}
-                        {" Â· "}
-                        {property.sanitizerType ||
-                          t("admin.customers.detail.properties.systemFallback")}
-                        {" Â· "}
-                        {property.poolVolumeGallons
-                          ? `${property.poolVolumeGallons} gal`
-                          : t(
-                              "admin.customers.detail.properties.volumeFallback"
-                            )}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <details className="text-xs text-slate-500">
-                        <summary className="cursor-pointer rounded-full border border-slate-200 px-3 py-1">
-                          {t("common.actions.edit")}
-                        </summary>
-                        <form
-                          action={updateProperty}
-                          className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white p-3"
-                        >
-                          <input
-                            type="hidden"
-                            name="propertyId"
-                            value={property.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="customerId"
-                            value={customer.id}
-                          />
-                          <input
-                            name="name"
-                            defaultValue={property.name ?? ""}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                            placeholder={t(
-                              "admin.customers.detail.properties.placeholders.name"
-                            )}
-                          />
-                          <AddressAutocompleteSingle
-                            name="address"
-                            defaultValue={property.address}
-                            placeholder={t("admin.routes.labels.address")}
-                            required
-                            size="compact"
-                            showHelper={false}
-                          />
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <input
-                              name="poolType"
-                              defaultValue={property.poolType ?? ""}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                              placeholder={t(
-                                "admin.customers.detail.properties.placeholders.poolType"
-                              )}
-                            />
-                            <input
-                              name="waterType"
-                              defaultValue={property.waterType ?? ""}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                              placeholder={t(
-                                "admin.customers.detail.properties.placeholders.waterType"
-                              )}
-                            />
-                          </div>
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <input
-                              name="poolVolumeGallons"
-                              type="number"
-                              defaultValue={property.poolVolumeGallons ?? ""}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                              placeholder={t(
-                                "admin.customers.detail.properties.placeholders.volume"
-                              )}
-                            />
-                            <input
-                              name="filterType"
-                              defaultValue={property.filterType ?? ""}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                              placeholder={t(
-                                "admin.customers.detail.properties.placeholders.filterType"
-                              )}
-                            />
-                          </div>
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            <input
-                              name="sanitizerType"
-                              defaultValue={property.sanitizerType ?? ""}
-                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                              placeholder={t(
-                                "admin.customers.detail.properties.placeholders.sanitizerType"
-                              )}
-                            />
-                            <select
-                              name="hasSpa"
-                              defaultValue={property.hasSpa ? "yes" : "no"}
-                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                customer.properties.map((property) => {
+                  const poolTypeOptions = [
+                    { value: "Concreto", label: t("admin.customers.detail.properties.options.concrete") },
+                    { value: "Fibra", label: t("admin.customers.detail.properties.options.fiberglass") },
+                    { value: "Vinilo", label: t("admin.customers.detail.properties.options.vinyl") },
+                    {
+                      value: "Material alternativo",
+                      label: t("admin.customers.detail.properties.options.altMaterial"),
+                    },
+                  ];
+                  const sanitizerOptions = [
+                    { value: "Sal", label: t("admin.customers.detail.properties.options.salt") },
+                    { value: "Cloro", label: t("admin.customers.detail.properties.options.chlorine") },
+                    { value: "Otro", label: t("admin.customers.detail.properties.options.other") },
+                  ];
+                  const poolTypeValue = property.poolType ?? "";
+                  const sanitizerValue = property.sanitizerType ?? "";
+                  const hasCustomPoolType =
+                    Boolean(poolTypeValue) &&
+                    !poolTypeOptions.some((option) => option.value === poolTypeValue);
+                  const hasCustomSanitizer =
+                    Boolean(sanitizerValue) &&
+                    !sanitizerOptions.some((option) => option.value === sanitizerValue);
+
+                  return (
+                    <div
+                      key={property.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"
+                    >
+                      <div>
+                        <p className="text-base font-semibold text-slate-900">
+                          {property.name || t("admin.customers.detail.properties.nameFallback")}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">{property.address}</p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          {property.poolType || t("admin.customers.detail.properties.poolFallback")}
+                          {" · "}
+                          {property.sanitizerType || t("admin.customers.detail.properties.systemFallback")}
+                          {" · "}
+                          {property.poolVolumeGallons
+                            ? `${property.poolVolumeGallons} gal`
+                            : t("admin.customers.detail.properties.volumeFallback")}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-start">
+                        <details className="group text-xs text-slate-600">
+                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 font-semibold transition hover:border-slate-300 [&::-webkit-details-marker]:hidden">
+                            <span>{t("admin.customers.detail.properties.edit.summary")}</span>
+                            <svg
+                              viewBox="0 0 20 20"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              className="h-3.5 w-3.5 text-slate-500 transition group-open:rotate-180"
                             >
-                              <option value="no">
-                                {t("admin.customers.detail.properties.spaNo")}
-                              </option>
-                              <option value="yes">
-                                {t("admin.customers.detail.properties.spaYes")}
-                              </option>
-                            </select>
-                          </div>
-                          <textarea
-                            name="accessInfo"
-                            defaultValue={property.accessInfo ?? ""}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                            placeholder={t(
-                              "admin.customers.detail.properties.placeholders.accessInfo"
-                            )}
-                          />
-                          <textarea
-                            name="locationNotes"
-                            defaultValue={property.locationNotes ?? ""}
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                            placeholder={t(
-                              "admin.customers.detail.properties.placeholders.locationNotes"
-                            )}
-                          />
-                          <FormSubmitButton
-                            idleLabel={t("admin.customers.detail.actions.saveChanges")}
-                            pendingLabel={t("admin.customers.detail.actions.saving")}
-                            className="w-full px-4 py-2 text-xs sm:col-span-2"
-                          />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8l5 5 5-5" />
+                            </svg>
+                          </summary>
+
+                          <form
+                            action={updateProperty}
+                            className="mt-3 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
+                          >
+                            <input type="hidden" name="propertyId" value={property.id} />
+                            <input type="hidden" name="customerId" value={customer.id} />
+
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                {t("admin.customers.detail.properties.edit.sections.identity")}
+                              </p>
+                              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.customers.detail.properties.fields.name")}
+                                  </label>
+                                  <input
+                                    name="name"
+                                    defaultValue={property.name ?? ""}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.name")}
+                                  />
+                                </div>
+                                <AddressAutocompleteSingle
+                                  name="address"
+                                  label={t("admin.routes.labels.address")}
+                                  defaultValue={property.address}
+                                  placeholder={t("admin.customers.detail.properties.placeholders.address")}
+                                  required
+                                  size="compact"
+                                  showHelper={false}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                {t("admin.customers.detail.properties.edit.sections.specs")}
+                              </p>
+                              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.routes.labels.poolType")}
+                                  </label>
+                                  <select
+                                    name="poolType"
+                                    defaultValue={poolTypeValue}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                  >
+                                    <option value="">
+                                      {t("admin.customers.detail.properties.options.select")}
+                                    </option>
+                                    {poolTypeOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                    {hasCustomPoolType ? <option value={poolTypeValue}>{poolTypeValue}</option> : null}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.customers.detail.properties.fields.sanitizerType")}
+                                  </label>
+                                  <select
+                                    name="sanitizerType"
+                                    defaultValue={sanitizerValue}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                  >
+                                    <option value="">
+                                      {t("admin.customers.detail.properties.options.select")}
+                                    </option>
+                                    {sanitizerOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                    {hasCustomSanitizer ? <option value={sanitizerValue}>{sanitizerValue}</option> : null}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.routes.labels.poolVolume")}
+                                  </label>
+                                  <input
+                                    name="poolVolumeGallons"
+                                    type="number"
+                                    defaultValue={property.poolVolumeGallons ?? ""}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.volume")}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.routes.labels.filterType")}
+                                  </label>
+                                  <input
+                                    name="filterType"
+                                    defaultValue={property.filterType ?? ""}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.filterType")}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.routes.labels.waterType")}
+                                  </label>
+                                  <input
+                                    name="waterType"
+                                    defaultValue={property.waterType ?? ""}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.waterType")}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.customers.detail.properties.fields.spa")}
+                                  </label>
+                                  <select
+                                    name="hasSpa"
+                                    defaultValue={property.hasSpa ? "yes" : "no"}
+                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                  >
+                                    <option value="no">{t("common.labels.no")}</option>
+                                    <option value="yes">{t("common.labels.yes")}</option>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                {t("admin.customers.detail.properties.edit.sections.access")}
+                              </p>
+                              <div className="mt-2 space-y-3">
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.customers.detail.properties.fields.accessInfo")}
+                                  </label>
+                                  <textarea
+                                    name="accessInfo"
+                                    defaultValue={property.accessInfo ?? ""}
+                                    className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.accessInfo")}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    {t("admin.customers.detail.properties.fields.locationNotes")}
+                                  </label>
+                                  <textarea
+                                    name="locationNotes"
+                                    defaultValue={property.locationNotes ?? ""}
+                                    className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                                    placeholder={t("admin.customers.detail.properties.placeholders.locationNotes")}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <FormSubmitButton
+                              idleLabel={t("admin.customers.detail.actions.saveChanges")}
+                              pendingLabel={t("admin.customers.detail.actions.saving")}
+                              className="w-full px-4 py-2 text-xs sm:w-auto sm:px-5"
+                            />
+                          </form>
+                        </details>
+
+                        <form action={deleteProperty} className="sm:pt-0.5">
+                          <input type="hidden" name="propertyId" value={property.id} />
+                          <input type="hidden" name="customerId" value={customer.id} />
+                          <button className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100">
+                            {t("common.actions.delete")}
+                          </button>
                         </form>
-                      </details>
-                      <form action={deleteProperty}>
-                        <input
-                          type="hidden"
-                          name="propertyId"
-                          value={property.id}
-                        />
-                        <input
-                          type="hidden"
-                          name="customerId"
-                          value={customer.id}
-                        />
-                        <button className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600">
-                          {t("common.actions.delete")}
-                        </button>
-                      </form>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

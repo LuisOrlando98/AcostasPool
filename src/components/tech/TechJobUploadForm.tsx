@@ -325,16 +325,18 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
         </div>
       </div>
 
-      <div className="app-card p-6 shadow-contrast">
-        {message ? (
-          <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            {message}
-          </div>
-        ) : null}
-        {isCompleted ? (
-          <p className="text-xs text-slate-500">{t("tech.jobs.upload.completedNote")}</p>
-        ) : null}
-      </div>
+      {message || isCompleted ? (
+        <div className="app-card p-6 shadow-contrast">
+          {message ? (
+            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              {message}
+            </div>
+          ) : null}
+          {isCompleted ? (
+            <p className="text-xs text-slate-500">{t("tech.jobs.upload.completedNote")}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="sticky bottom-2 z-20 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
         {!canSubmit && !isCompleted ? (

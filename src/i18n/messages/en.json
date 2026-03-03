@@ -818,6 +818,18 @@
             "save": "Save changes"
           }
         },
+        "credentials": {
+          "title": "Credentials & security",
+          "subtitle": "Manage technician access and secure invite links.",
+          "sendInvite": "Send secure invite",
+          "lastInvite": "Last invite: {{date}}",
+          "labels": {
+            "portalNotInvited": "Portal: not invited",
+            "portalInvitePending": "Portal: invite pending",
+            "portalActive": "Portal: active",
+            "portalLinked": "Portal: linked"
+          }
+        },
         "jobs": {
           "upcomingTitle": "Upcoming jobs",
           "upcomingSubtitle": "Quick calendar view for the technician.",
@@ -1031,6 +1043,14 @@
             "chlorine": "Chlorine",
             "other": "Other"
           },
+          "edit": {
+            "summary": "Edit property",
+            "sections": {
+              "identity": "Property identity",
+              "specs": "Pool specs",
+              "access": "Access and notes"
+            }
+          },
           "spaNo": "Spa: No",
           "spaYes": "Spa: Yes"
         },
@@ -1157,6 +1177,7 @@
         "empty": "No invoices yet.",
         "noTech": "No technician",
         "theme": "Theme",
+        "type": "Type",
         "job": "Job",
         "tech": "Technician",
         "noJob": "No job attached",
@@ -1176,15 +1197,31 @@
           "job": "Job (optional)",
           "noJob": "Unassigned",
           "theme": "Theme",
+          "type": "Invoice type",
+          "items": "Services to bill",
+          "customService": "Custom service",
+          "qty": "Qty",
+          "unitPrice": "Price",
+          "lineTotal": "Total",
+          "taxExempt": "Customer is exempt from taxes",
           "description": "Description",
           "subtotal": "Subtotal",
           "tax": "Tax"
         },
         "placeholders": {
-          "description": "Monthly service"
+          "description": "Monthly service",
+          "service": "Select service",
+          "customService": "Custom service name"
+        },
+        "summary": {
+          "subtotal": "Subtotal",
+          "tax": "Tax ({{rate}}%)",
+          "total": "Total"
         },
         "actions": {
-          "create": "Create invoice"
+          "create": "Create invoice",
+          "addLine": "Add line",
+          "removeLine": "Remove"
         }
       },
       "send": {

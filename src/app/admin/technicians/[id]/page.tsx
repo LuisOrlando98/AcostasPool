@@ -8,6 +8,7 @@ import { resolveParams } from "@/lib/utils/params";
 import { formatCustomerName } from "@/lib/customers/format";
 import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { sendTechnicianInvite } from "@/lib/technicians/invite";
 
 async function updateTechnician(formData: FormData) {
   "use server";
@@ -43,6 +44,28 @@ async function updateTechnician(formData: FormData) {
   revalidatePath("/admin/technicians");
 }
 
+async function inviteTechnician(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const technicianId = String(formData.get("technicianId") ?? "").trim();
+  if (!technicianId) {
+    return;
+  }
+
+  try {
+    const result = await sendTechnicianInvite(technicianId);
+    if (!result.ok) {
+      console.error("Technician invite failed:", result.error);
+    }
+  } catch (error) {
+    console.error("Technician invite failed:", error);
+  }
+
+  revalidatePath(`/admin/technicians/${technicianId}`);
+  revalidatePath("/admin/technicians");
+}
+
 export default async function TechnicianDetailPage({
   params,
 }: {
@@ -72,7 +95,24 @@ export default async function TechnicianDetailPage({
   const technician = await prisma.technician.findUnique({
     where: { id: techId },
     include: {
-      user: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          isActive: true,
+          passwordResetTokens: {
+            where: { purpose: "INVITE" },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            select: {
+              createdAt: true,
+              expiresAt: true,
+              usedAt: true,
+            },
+          },
+        },
+      },
       jobs: {
         orderBy: { scheduledDate: "desc" },
         include: {
@@ -100,6 +140,29 @@ export default async function TechnicianDetailPage({
   }
 
   const now = new Date();
+  const inviteTokens = technician.user.passwordResetTokens ?? [];
+  const hasPendingInvite = inviteTokens.some(
+    (token) => !token.usedAt && token.expiresAt > now
+  );
+  const hasCompletedInvite = inviteTokens.some((token) => Boolean(token.usedAt));
+  const portalStatusLabel = hasPendingInvite
+    ? t("admin.technicians.detail.credentials.labels.portalInvitePending")
+    : hasCompletedInvite
+      ? t("admin.technicians.detail.credentials.labels.portalActive")
+      : inviteTokens.length > 0
+        ? t("admin.technicians.detail.credentials.labels.portalLinked")
+        : t("admin.technicians.detail.credentials.labels.portalNotInvited");
+  const portalStatusClass = hasPendingInvite
+    ? "border-amber-200 bg-amber-50 text-amber-700"
+    : hasCompletedInvite
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : inviteTokens.length > 0
+        ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+        : "border-slate-200 bg-slate-100 text-slate-700";
+  const latestInvite = inviteTokens[0]?.createdAt ?? null;
+  const latestInviteLabel = latestInvite
+    ? latestInvite.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })
+    : null;
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(now);
@@ -170,6 +233,7 @@ export default async function TechnicianDetailPage({
       })}
       subtitle={t("admin.technicians.detail.subtitle")}
       role="ADMIN"
+      wide
     >
       <section className="space-y-6">
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -291,6 +355,34 @@ export default async function TechnicianDetailPage({
                   count: totalJobs,
                 })}
               </span>
+            </div>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    {t("admin.technicians.detail.credentials.title")}
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t("admin.technicians.detail.credentials.subtitle")}
+                  </p>
+                  <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}>
+                    {portalStatusLabel}
+                  </span>
+                  {latestInviteLabel ? (
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      {t("admin.technicians.detail.credentials.lastInvite", {
+                        date: latestInviteLabel,
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+                <form action={inviteTechnician}>
+                  <input type="hidden" name="technicianId" value={technician.id} />
+                  <button className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900">
+                    {t("admin.technicians.detail.credentials.sendInvite")}
+                  </button>
+                </form>
+              </div>
             </div>
             <form
               action={updateTechnician}

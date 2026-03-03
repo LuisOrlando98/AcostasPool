@@ -1,0 +1,447 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import FormSubmitButton from "@/components/ui/FormSubmitButton";
+import { useI18n } from "@/i18n/client";
+import { getJobStatusLabel } from "@/lib/constants";
+import { serviceTypeOptions } from "@/lib/jobs/templates";
+import { roundCurrency } from "@/lib/invoices/line-items";
+
+type CustomerOption = {
+  id: string;
+  name: string;
+};
+
+type JobOption = {
+  id: string;
+  customerId: string;
+  scheduledDate: string;
+  status: string;
+  serviceType: string;
+};
+
+type InvoiceType = "STANDARD" | "SPECIAL" | "ESTIMATE";
+
+type LineDraft = {
+  id: string;
+  serviceCode: string;
+  customLabel: string;
+  quantity: string;
+  unitPrice: string;
+};
+
+type Props = {
+  customers: CustomerOption[];
+  jobs: JobOption[];
+  createInvoiceAction: (formData: FormData) => Promise<void>;
+};
+
+const CUSTOM_SERVICE_CODE = "CUSTOM";
+
+function createLine(): LineDraft {
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    serviceCode: "",
+    customLabel: "",
+    quantity: "1",
+    unitPrice: "",
+  };
+}
+
+function toNumber(value: string, fallback = 0) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return parsed;
+}
+
+export default function InvoiceCreateForm({
+  customers,
+  jobs,
+  createInvoiceAction,
+}: Props) {
+  const { t, locale } = useI18n();
+  const [selectedCustomerId, setSelectedCustomerId] = useState(customers[0]?.id ?? "");
+  const [selectedJobId, setSelectedJobId] = useState(() => {
+    const firstCustomerId = customers[0]?.id ?? "";
+    if (!firstCustomerId) {
+      return "";
+    }
+    const jobsForCustomer = jobs
+      .filter((job) => job.customerId === firstCustomerId)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+      );
+    const latestCompleted = jobsForCustomer.find((job) => job.status === "COMPLETED");
+    return latestCompleted?.id ?? jobsForCustomer[0]?.id ?? "";
+  });
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>("STANDARD");
+  const [taxExempt, setTaxExempt] = useState(false);
+  const [lines, setLines] = useState<LineDraft[]>([createLine()]);
+
+  const serviceCatalog = useMemo(
+    () =>
+      serviceTypeOptions.map((option) => ({
+        value: option.value,
+        label: option.labelKey ? t(option.labelKey) : option.label,
+      })),
+    [t]
+  );
+
+  const jobsByCustomer = useMemo(() => {
+    const map = new Map<string, JobOption[]>();
+    jobs.forEach((job) => {
+      const list = map.get(job.customerId) ?? [];
+      list.push(job);
+      map.set(job.customerId, list);
+    });
+    map.forEach((list) =>
+      list.sort(
+        (a, b) =>
+          new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime()
+      )
+    );
+    return map;
+  }, [jobs]);
+
+  const visibleJobs = jobsByCustomer.get(selectedCustomerId) ?? [];
+
+  const pickDefaultJob = (customerId: string) => {
+    const options = jobsByCustomer.get(customerId) ?? [];
+    if (options.length === 0) {
+      return "";
+    }
+    const latestCompleted = options.find((job) => job.status === "COMPLETED");
+    return latestCompleted?.id ?? options[0]?.id ?? "";
+  };
+
+  const ensureJobFromCustomer = (customerId: string, currentJobId: string) => {
+    const options = jobsByCustomer.get(customerId) ?? [];
+    if (options.some((job) => job.id === currentJobId)) {
+      return currentJobId;
+    }
+    return pickDefaultJob(customerId);
+  };
+
+  const normalizedLines = useMemo(() => {
+    return lines
+      .map((line) => {
+        const serviceMatch = serviceCatalog.find((item) => item.value === line.serviceCode);
+        const label =
+          line.serviceCode === CUSTOM_SERVICE_CODE
+            ? line.customLabel.trim()
+            : serviceMatch?.label ?? "";
+        const quantity = toNumber(line.quantity, 1);
+        const unitPrice = toNumber(line.unitPrice, 0);
+        const safeQuantity = quantity > 0 ? quantity : 1;
+        const safeUnitPrice = unitPrice >= 0 ? unitPrice : 0;
+        const amount = roundCurrency(safeQuantity * safeUnitPrice);
+        return {
+          serviceCode:
+            line.serviceCode && line.serviceCode !== CUSTOM_SERVICE_CODE
+              ? line.serviceCode
+              : null,
+          label,
+          quantity: safeQuantity,
+          unitPrice: safeUnitPrice,
+          amount,
+        };
+      })
+      .filter((line) => line.label.length > 0);
+  }, [lines, serviceCatalog]);
+
+  const subtotal = useMemo(
+    () => roundCurrency(normalizedLines.reduce((sum, line) => sum + line.amount, 0)),
+    [normalizedLines]
+  );
+  const taxAmount = taxExempt ? 0 : roundCurrency(subtotal * 0.07);
+  const total = roundCurrency(subtotal + taxAmount);
+
+  const lineItemsJson = useMemo(
+    () => JSON.stringify(normalizedLines),
+    [normalizedLines]
+  );
+
+  const money = (value: number) =>
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+
+  return (
+    <form action={createInvoiceAction} className="mt-5 space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {t("admin.invoices.new.fields.customer")}
+          </span>
+          <select
+            name="customerId"
+            value={selectedCustomerId}
+            onChange={(event) => {
+              const nextCustomerId = event.target.value;
+              setSelectedCustomerId(nextCustomerId);
+              setSelectedJobId((currentJobId) =>
+                ensureJobFromCustomer(nextCustomerId, currentJobId)
+              );
+            }}
+            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+            required
+          >
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {t("admin.invoices.new.fields.job")}
+          </span>
+          <select
+            name="jobId"
+            value={selectedJobId}
+            onFocus={() => {
+              if (!selectedJobId) {
+                setSelectedJobId(pickDefaultJob(selectedCustomerId));
+              }
+            }}
+            onChange={(event) => setSelectedJobId(event.target.value)}
+            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+          >
+            <option value="">{t("admin.invoices.new.fields.noJob")}</option>
+            {visibleJobs.map((job) => {
+              const statusLabel = getJobStatusLabel(job.status, t);
+              const serviceLabel =
+                serviceCatalog.find((item) => item.value === job.serviceType)?.label ?? job.serviceType;
+              const dateLabel = new Date(job.scheduledDate).toLocaleDateString(locale);
+              return (
+                <option key={job.id} value={job.id}>
+                  {`${dateLabel} - ${statusLabel} - ${serviceLabel}`}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label>
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            {t("admin.invoices.new.fields.type")}
+          </span>
+          <select
+            name="type"
+            value={invoiceType}
+            onChange={(event) => setInvoiceType(event.target.value as InvoiceType)}
+            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+          >
+            <option value="STANDARD">{t("admin.invoices.theme.standard")}</option>
+            <option value="SPECIAL">{t("admin.invoices.theme.special")}</option>
+            <option value="ESTIMATE">{t("admin.invoices.theme.estimate")}</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+          {t("admin.invoices.new.fields.items")}
+        </p>
+
+        <div className="mt-3 space-y-2">
+          {lines.map((line) => {
+            const quantity = toNumber(line.quantity, 1);
+            const unitPrice = toNumber(line.unitPrice, 0);
+            const lineTotal = roundCurrency(Math.max(quantity, 1) * Math.max(unitPrice, 0));
+
+            return (
+              <div
+                key={line.id}
+                className="grid gap-2 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_92px_120px_auto] sm:items-end"
+              >
+                <div className="space-y-2">
+                  <select
+                    value={line.serviceCode}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setLines((current) =>
+                        current.map((entry) =>
+                          entry.id === line.id
+                            ? {
+                                ...entry,
+                                serviceCode: value,
+                                customLabel:
+                                  value === CUSTOM_SERVICE_CODE ? entry.customLabel : "",
+                              }
+                            : entry
+                        )
+                      );
+                    }}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                  >
+                    <option value="">{t("admin.invoices.new.placeholders.service")}</option>
+                    {serviceCatalog.map((service) => (
+                      <option key={service.value} value={service.value}>
+                        {service.label}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_SERVICE_CODE}>
+                      {t("admin.invoices.new.fields.customService")}
+                    </option>
+                  </select>
+
+                  {line.serviceCode === CUSTOM_SERVICE_CODE ? (
+                    <input
+                      value={line.customLabel}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setLines((current) =>
+                          current.map((entry) =>
+                            entry.id === line.id
+                              ? { ...entry, customLabel: value }
+                              : entry
+                          )
+                        );
+                      }}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                      placeholder={t("admin.invoices.new.placeholders.customService")}
+                    />
+                  ) : null}
+                </div>
+
+                <label>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("admin.invoices.new.fields.qty")}
+                  </span>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={line.quantity}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setLines((current) =>
+                        current.map((entry) =>
+                          entry.id === line.id ? { ...entry, quantity: value } : entry
+                        )
+                      );
+                    }}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                  />
+                </label>
+
+                <label>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("admin.invoices.new.fields.unitPrice")}
+                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={line.unitPrice}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setLines((current) =>
+                        current.map((entry) =>
+                          entry.id === line.id ? { ...entry, unitPrice: value } : entry
+                        )
+                      );
+                    }}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                  />
+                </label>
+
+                <div className="flex items-center justify-between gap-2 sm:block">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("admin.invoices.new.fields.lineTotal")}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-900">{money(lineTotal)}</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLines((current) =>
+                        current.length > 1
+                          ? current.filter((entry) => entry.id !== line.id)
+                          : current
+                      )
+                    }
+                    disabled={lines.length <= 1}
+                    className="mt-2 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {t("admin.invoices.new.actions.removeLine")}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setLines((current) => [...current, createLine()])}
+          className="mt-3 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+        >
+          {t("admin.invoices.new.actions.addLine")}
+        </button>
+      </div>
+
+      <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
+        <input
+          type="checkbox"
+          name="taxExempt"
+          checked={taxExempt}
+          onChange={(event) => setTaxExempt(event.target.checked)}
+          className="h-4 w-4 rounded border-slate-300"
+        />
+        <span>{t("admin.invoices.new.fields.taxExempt")}</span>
+      </label>
+
+      <input type="hidden" name="lineItemsJson" value={lineItemsJson} />
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div className="grid gap-1 text-sm text-slate-600">
+          <p className="flex items-center justify-between">
+            <span>{t("admin.invoices.new.summary.subtotal")}</span>
+            <strong className="text-slate-900">{money(subtotal)}</strong>
+          </p>
+          <p className="flex items-center justify-between">
+            <span>
+              {t("admin.invoices.new.summary.tax", {
+                rate: "7",
+              })}
+            </span>
+            <strong className="text-slate-900">{money(taxAmount)}</strong>
+          </p>
+          <p className="mt-1 flex items-center justify-between border-t border-slate-200 pt-2 text-base font-semibold text-slate-900">
+            <span>{t("admin.invoices.new.summary.total")}</span>
+            <span>{money(total)}</span>
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {t("common.labels.notes")}
+        </label>
+        <textarea
+          name="notes"
+          className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
+        />
+      </div>
+
+      <FormSubmitButton
+        idleLabel={t("admin.invoices.new.actions.create")}
+        pendingLabel={t("common.feedback.creating")}
+        successLabel={t("common.feedback.created")}
+        className="w-full px-4 py-3"
+      />
+    </form>
+  );
+}
+
