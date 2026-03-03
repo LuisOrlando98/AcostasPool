@@ -133,7 +133,7 @@ export async function POST(request: Request) {
     coordinates: geocoded.get(job.property.address) ?? null,
   }));
 
-  const plans = buildRouteAssistantPlans({
+  const plans = await buildRouteAssistantPlans({
     jobs: plannedJobs,
     technicians: techniciansData,
   });

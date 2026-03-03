@@ -5,6 +5,11 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { geocodeAddresses } from "@/lib/routing/geo";
+import {
+  getAddressPairKey,
+  getTravelMetricsForPairs,
+} from "@/lib/routing/travel";
 
 export default async function TechPage() {
   const session = await requireRole("TECH");
@@ -77,6 +82,21 @@ export default async function TechPage() {
 
   const toMinutes = (from: Date, to: Date) =>
     Math.max(1, Math.round((to.getTime() - from.getTime()) / 60000));
+
+  const geocodedByAddress = await geocodeAddresses(
+    routeJobs.map((job) => job.property.address)
+  );
+  const routePairMetrics = await getTravelMetricsForPairs(
+    routeJobs.slice(1).map((job, index) => {
+      const previous = routeJobs[index];
+      return {
+        fromAddress: previous.property.address,
+        toAddress: job.property.address,
+        fromCoordinates: geocodedByAddress.get(previous.property.address) ?? null,
+        toCoordinates: geocodedByAddress.get(job.property.address) ?? null,
+      };
+    })
+  );
 
   return (
     <AppShell
@@ -204,8 +224,18 @@ export default async function TechPage() {
                 const awayMinutes = Math.round(
                   (job.scheduledDate.getTime() - now.getTime()) / 60000
                 );
+                const tripMetric =
+                  previous == null
+                    ? null
+                    : routePairMetrics.get(
+                        getAddressPairKey(
+                          previous.property.address,
+                          job.property.address
+                        )
+                      ) ?? null;
                 const tripMinutes = previous
-                  ? toMinutes(previous.scheduledDate, job.scheduledDate)
+                  ? tripMetric?.durationMinutes ??
+                    toMinutes(previous.scheduledDate, job.scheduledDate)
                   : 1;
                 const timingLabel =
                   index === 0
@@ -215,6 +245,14 @@ export default async function TechPage() {
                     : t("tech.home.route.trip", {
                         count: tripMinutes,
                       });
+                const tripSourceLabel =
+                  index === 0 || !tripMetric
+                    ? null
+                    : tripMetric.source === "LIVE_TRAFFIC"
+                      ? t("tech.home.route.liveTraffic")
+                      : tripMetric.source === "SAME_ADDRESS"
+                        ? t("tech.home.route.sameAddress")
+                        : t("tech.home.route.estimated");
 
                 return (
                   <li key={job.id} className="relative pl-6">
@@ -224,6 +262,11 @@ export default async function TechPage() {
                     ) : null}
 
                     <p className="text-xs font-semibold text-slate-500">{timingLabel}</p>
+                    {tripSourceLabel ? (
+                      <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+                        {tripSourceLabel}
+                      </p>
+                    ) : null}
 
                     <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                       <p className="text-sm font-semibold text-slate-900">

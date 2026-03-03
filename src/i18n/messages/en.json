@@ -611,14 +611,20 @@
           "stops": "{{count}} stops",
           "drive": "Drive: {{value}}",
           "service": "Service: {{value}}",
-          "conflicts": "Conflicts: {{count}}"
+          "conflicts": "Conflicts: {{count}}",
+          "livePairs": "Live traffic pairs: {{count}}",
+          "estimatedPairs": "Estimated pairs: {{count}}",
+          "sameAddressPairs": "Same address pairs: {{count}}"
         },
         "table": {
           "customer": "Customer",
           "address": "Address",
           "drive": "Drive from prev.",
           "eta": "ETA",
-          "scheduled": "Scheduled"
+          "scheduled": "Scheduled",
+          "liveTraffic": "Live",
+          "estimated": "Estimated",
+          "sameAddress": "Same address"
         }
       },
       "errors": {
@@ -1633,6 +1639,9 @@
         "empty": "No pending stops in your route.",
         "away": "{{count}} mins away",
         "trip": "{{count}} mins trip",
+        "liveTraffic": "Live traffic",
+        "estimated": "Estimated",
+        "sameAddress": "Same address",
         "now": "Now",
         "stop": "Stop {{count}}",
         "openMap": "Open map",

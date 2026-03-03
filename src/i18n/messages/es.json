@@ -611,14 +611,20 @@
           "stops": "{{count}} paradas",
           "drive": "Traslado: {{value}}",
           "service": "Servicio: {{value}}",
-          "conflicts": "Conflictos: {{count}}"
+          "conflicts": "Conflictos: {{count}}",
+          "livePairs": "Tramos con trafico real: {{count}}",
+          "estimatedPairs": "Tramos estimados: {{count}}",
+          "sameAddressPairs": "Tramos misma direccion: {{count}}"
         },
         "table": {
           "customer": "Cliente",
           "address": "Direccion",
           "drive": "Traslado desde anterior",
           "eta": "Llegada estimada",
-          "scheduled": "Programado"
+          "scheduled": "Programado",
+          "liveTraffic": "En vivo",
+          "estimated": "Estimado",
+          "sameAddress": "Misma direccion"
         }
       },
       "errors": {
@@ -1633,6 +1639,9 @@
         "empty": "No hay paradas pendientes en tu ruta.",
         "away": "A {{count}} min",
         "trip": "{{count}} min de trayecto",
+        "liveTraffic": "Trafico en vivo",
+        "estimated": "Estimado",
+        "sameAddress": "Misma direccion",
         "now": "Ahora",
         "stop": "Parada {{count}}",
         "openMap": "Abrir mapa",

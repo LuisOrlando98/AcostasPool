@@ -23,6 +23,7 @@ type AssistantStop = {
   estimatedServiceMinutes: number;
   distanceMilesFromPrevious: number | null;
   delayMinutes: number | null;
+  driveSource?: "LIVE_TRAFFIC" | "ESTIMATED" | "SAME_ADDRESS";
 };
 
 type AssistantRoute = {
@@ -370,6 +371,29 @@ export default function RouteAssistant({
 
               {selectedPlan ? (
                 <div className="mt-5 space-y-4">
+                  <div className="flex flex-wrap gap-2 text-[11px] text-slate-600">
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1">
+                      {t("admin.routes.assistant.summary.livePairs", {
+                        count: selectedPlan.routes
+                          .flatMap((route) => route.stops)
+                          .filter((stop) => stop.driveSource === "LIVE_TRAFFIC").length,
+                      })}
+                    </span>
+                    <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                      {t("admin.routes.assistant.summary.estimatedPairs", {
+                        count: selectedPlan.routes
+                          .flatMap((route) => route.stops)
+                          .filter((stop) => stop.driveSource === "ESTIMATED").length,
+                      })}
+                    </span>
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1">
+                      {t("admin.routes.assistant.summary.sameAddressPairs", {
+                        count: selectedPlan.routes
+                          .flatMap((route) => route.stops)
+                          .filter((stop) => stop.driveSource === "SAME_ADDRESS").length,
+                      })}
+                    </span>
+                  </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex flex-wrap gap-2 text-xs text-slate-600">
                       <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
@@ -471,6 +495,23 @@ export default function RouteAssistant({
                                             ? ` (${stop.distanceMilesFromPrevious} mi)`
                                             : ""
                                         }`}
+                                    {stop.order > 1 ? (
+                                      <span
+                                        className={`ml-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                          stop.driveSource === "LIVE_TRAFFIC"
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                            : stop.driveSource === "SAME_ADDRESS"
+                                              ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+                                              : "border-slate-200 bg-slate-50 text-slate-600"
+                                        }`}
+                                      >
+                                        {stop.driveSource === "LIVE_TRAFFIC"
+                                          ? t("admin.routes.assistant.table.liveTraffic")
+                                          : stop.driveSource === "SAME_ADDRESS"
+                                            ? t("admin.routes.assistant.table.sameAddress")
+                                            : t("admin.routes.assistant.table.estimated")}
+                                      </span>
+                                    ) : null}
                                   </td>
                                   <td className="px-3 py-2 text-slate-600">
                                     {stop.estimatedArrivalTime}
