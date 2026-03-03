@@ -105,6 +105,112 @@ async function createTechnician(formData: FormData): Promise<CreateTechnicianAct
   return { ok: true } satisfies CreateTechnicianActionState;
 }
 
+async function deleteTechnician(formData: FormData): Promise<void> {
+  "use server";
+  await requireRole("ADMIN");
+
+  const technicianId = String(formData.get("technicianId") ?? "").trim();
+  if (!technicianId) {
+    return;
+  }
+
+  const technician = await prisma.technician.findUnique({
+    where: { id: technicianId },
+    select: {
+      id: true,
+      userId: true,
+      user: {
+        select: {
+          id: true,
+          role: true,
+        },
+      },
+    },
+  });
+
+  if (!technician || !technician.user || technician.user.role !== "TECH") {
+    return;
+  }
+
+  const userId = technician.user.id;
+
+  await prisma.$transaction(async (tx) => {
+    const digests = await tx.techDigest.findMany({
+      where: { technicianId },
+      select: { id: true },
+    });
+    const digestIds = digests.map((digest) => digest.id);
+
+    await tx.job.updateMany({
+      where: { technicianId },
+      data: { technicianId: null },
+    });
+
+    await tx.servicePlan.updateMany({
+      where: { technicianId },
+      data: { technicianId: null },
+    });
+
+    await tx.emailLog.updateMany({
+      where: { technicianId },
+      data: { technicianId: null },
+    });
+
+    if (digestIds.length > 0) {
+      await tx.emailLog.updateMany({
+        where: { digestId: { in: digestIds } },
+        data: { digestId: null },
+      });
+    }
+
+    await tx.techDigestItem.deleteMany({
+      where: { technicianId },
+    });
+
+    await tx.techDigest.deleteMany({
+      where: { technicianId },
+    });
+
+    await tx.job.updateMany({
+      where: { requestedByUserId: userId },
+      data: { requestedByUserId: null },
+    });
+
+    await tx.notification.updateMany({
+      where: { actorUserId: userId },
+      data: { actorUserId: null },
+    });
+
+    await tx.customerDocument.updateMany({
+      where: { uploadedByUserId: userId },
+      data: { uploadedByUserId: null },
+    });
+
+    await tx.notificationPreference.deleteMany({
+      where: { userId },
+    });
+
+    await tx.passwordResetToken.deleteMany({
+      where: { userId },
+    });
+
+    await tx.auditLog.deleteMany({
+      where: { userId },
+    });
+
+    await tx.technician.delete({
+      where: { id: technicianId },
+    });
+
+    await tx.user.delete({
+      where: { id: userId },
+    });
+  });
+
+  revalidatePath("/admin/technicians");
+  revalidatePath("/admin/routes");
+}
+
 export default async function TechniciansPage() {
   await requireRole("ADMIN");
   const t = await getTranslations();
@@ -216,7 +322,7 @@ export default async function TechniciansPage() {
     >
       <section className="space-y-6">
         <input id="new-tech" type="checkbox" className="peer hidden" />
-        <TechniciansOverview rows={rows} />
+        <TechniciansOverview rows={rows} deleteTechnicianAction={deleteTechnician} />
 
         <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked:flex">
           <label
