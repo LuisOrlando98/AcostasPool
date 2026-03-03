@@ -14,7 +14,6 @@ type ShellCopy = {
     reviews: string;
     about: string;
     contact: string;
-    legal: string;
     login: string;
   };
   announce: string;
@@ -30,7 +29,6 @@ const SHELL_COPY: Record<LandingLocale, ShellCopy> = {
       reviews: "Reviews",
       about: "About",
       contact: "Contact",
-      legal: "Legal",
       login: "Log in",
     },
     announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
@@ -44,7 +42,6 @@ const SHELL_COPY: Record<LandingLocale, ShellCopy> = {
       reviews: "Resenas",
       about: "Nosotros",
       contact: "Contacto",
-      legal: "Legal",
       login: "Acceso",
     },
     announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
@@ -62,7 +59,6 @@ const SECTION_NAV_ITEMS = [
 const PAGE_NAV_ITEMS = [
   { href: "/about", key: "about" },
   { href: "/contact", key: "contact" },
-  { href: "/legal", key: "legal" },
   { href: "/login", key: "login" },
 ] as const;
 
@@ -133,7 +129,6 @@ export default function LegalPageChrome({
                 href={item.href}
                 className="lp-nav-link lp-nav-link-page"
                 data-nav-key={item.key}
-                data-active={item.key === "legal"}
               >
                 {copy.nav[item.key]}
               </Link>

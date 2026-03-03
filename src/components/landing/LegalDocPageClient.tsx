@@ -5,6 +5,7 @@ import type { ComplianceDocConfig, ComplianceDocId } from "@/lib/compliance-conf
 import type { LandingSocialLinks } from "@/components/landing/LandingFooter";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 import LegalPageChrome from "@/components/landing/LegalPageChrome";
+import LegalCategoryStrip from "@/components/landing/LegalCategoryStrip";
 
 type LegalDoc = {
   id: ComplianceDocId;
@@ -55,62 +56,66 @@ export default function LegalDocPageClient({
       socialLinks={socialLinks}
     >
       <section className="lp-section">
-        <div className="lp-container grid gap-5 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,0.28fr)]">
-          <article className="app-card p-6 shadow-contrast sm:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {currentDoc.label}
-              </p>
-              <Link
-                href="/legal"
-                className="app-button-secondary inline-flex min-h-9 items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em]"
-              >
-                {copy.back}
-              </Link>
-            </div>
+        <div className="lp-container">
+          <LegalCategoryStrip docs={docs} language={language} currentSlug={currentDoc.slug} />
 
-            <h1 className="mt-3 text-3xl font-semibold text-slate-900">{currentContent.title}</h1>
-            <p className="mt-2 text-sm text-slate-600">{currentContent.summary}</p>
-            <p className="mt-4 text-xs text-slate-500">
-              {copy.effective}: <span className="font-semibold text-slate-700">{currentContent.effectiveDate}</span>
-            </p>
-
-            <section className="mt-6 space-y-4 text-sm leading-7 text-slate-700">
-              {paragraphs.map((block, index) => (
-                <p key={`${currentDoc.id}-${index}`} className="whitespace-pre-wrap">
-                  {block}
+          <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,0.72fr)_minmax(0,0.28fr)]">
+            <article className="app-card p-6 shadow-contrast sm:p-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  {currentDoc.label}
                 </p>
-              ))}
-            </section>
-          </article>
+                <Link
+                  href="/legal"
+                  className="app-button-secondary inline-flex min-h-9 items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em]"
+                >
+                  {copy.back}
+                </Link>
+              </div>
 
-          <aside className="app-card h-fit p-5 shadow-contrast xl:sticky xl:top-24">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-              {copy.related}
-            </h2>
-            <div className="mt-3 space-y-2">
-              {docs.map((doc) => {
-                const selected = doc.id === currentDoc.id;
-                const localized = doc.content[language];
-                return (
-                  <Link
-                    key={doc.id}
-                    href={`/legal/${doc.slug}`}
-                    className={`block rounded-xl border px-3 py-3 text-left transition ${
-                      selected
-                        ? "border-sky-300 bg-sky-50"
-                        : "border-slate-200 bg-white hover:border-slate-300"
-                    }`}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
-                      {doc.label}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{localized.title}</p>
-                  </Link>
-                );
-              })}
-            </div>
-          </aside>
+              <h1 className="mt-3 text-3xl font-semibold text-slate-900">{currentContent.title}</h1>
+              <p className="mt-2 text-sm text-slate-600">{currentContent.summary}</p>
+              <p className="mt-4 text-xs text-slate-500">
+                {copy.effective}: <span className="font-semibold text-slate-700">{currentContent.effectiveDate}</span>
+              </p>
+
+              <section className="mt-6 space-y-4 text-sm leading-7 text-slate-700">
+                {paragraphs.map((block, index) => (
+                  <p key={`${currentDoc.id}-${index}`} className="whitespace-pre-wrap">
+                    {block}
+                  </p>
+                ))}
+              </section>
+            </article>
+
+            <aside className="app-card h-fit p-5 shadow-contrast xl:sticky xl:top-24">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {copy.related}
+              </h2>
+              <div className="mt-3 space-y-2">
+                {docs.map((doc) => {
+                  const selected = doc.id === currentDoc.id;
+                  const localized = doc.content[language];
+                  return (
+                    <Link
+                      key={doc.id}
+                      href={`/legal/${doc.slug}`}
+                      className={`block rounded-xl border px-3 py-3 text-left transition ${
+                        selected
+                          ? "border-sky-300 bg-sky-50"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      }`}
+                    >
+                      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+                        {doc.label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-900">{localized.title}</p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
     </LegalPageChrome>

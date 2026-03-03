@@ -5,6 +5,7 @@ import type { ComplianceDocConfig, ComplianceDocId } from "@/lib/compliance-conf
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 import type { LandingSocialLinks } from "@/components/landing/LandingFooter";
 import LegalPageChrome from "@/components/landing/LegalPageChrome";
+import LegalCategoryStrip from "@/components/landing/LegalCategoryStrip";
 
 type LegalIndexDoc = {
   id: ComplianceDocId;
@@ -60,6 +61,10 @@ export default function LegalIndexPageClient({
             <h1 className="mt-2 text-3xl font-semibold text-slate-900">{copy.title}</h1>
             <p className="mt-3 max-w-3xl text-sm text-slate-600">{copy.subtitle}</p>
           </article>
+
+          <div className="mt-4">
+            <LegalCategoryStrip docs={docs} language={language} />
+          </div>
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             {docs.map((doc) => {

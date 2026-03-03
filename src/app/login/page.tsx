@@ -323,17 +323,25 @@ export default function LoginPage() {
           <p className="text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
             Legal
           </p>
-          <nav aria-label={locale === "es" ? "Enlaces legales" : "Legal links"} className="mx-auto mt-2 max-w-3xl">
-            <ul className="grid grid-cols-3 gap-x-2 gap-y-1 md:grid-cols-5">
-              {legalLinks.map((item) => (
-                <li key={item.href} className="text-center">
+          <nav
+            aria-label={locale === "es" ? "Enlaces legales" : "Legal links"}
+            className="mx-auto mt-2 max-w-3xl rounded-2xl border border-sky-200/70 bg-[linear-gradient(135deg,rgba(4,36,58,0.95),rgba(5,68,96,0.88))] px-3 py-2"
+          >
+            <ul className="flex flex-wrap items-center justify-center gap-y-1 text-center">
+              {legalLinks.map((item, index) => (
+                <li key={item.href} className="inline-flex items-center">
                   <a
                     href={item.href}
-                    className="inline-flex items-center justify-center text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-600 underline-offset-4 transition hover:text-sky-700 hover:underline sm:text-[11px]"
+                    className="px-2 text-[10px] font-medium text-sky-50/92 transition hover:text-white sm:text-[11px]"
                   >
                     <span className="sm:hidden">{locale === "es" ? item.shortEs : item.shortEn}</span>
                     <span className="hidden sm:inline">{locale === "es" ? item.es : item.en}</span>
                   </a>
+                  {index < legalLinks.length - 1 ? (
+                    <span aria-hidden="true" className="px-1 text-[10px] text-sky-100/55">
+                      •
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>
