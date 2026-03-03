@@ -32,28 +32,9 @@ function normalizeTitle(value: string) {
   return trimmed || "document";
 }
 
-async function hasTechAccessToCustomer(userId: string, customerId: string) {
-  const technician = await prisma.technician.findUnique({
-    where: { userId },
-    select: { id: true },
-  });
-  if (!technician) {
-    return false;
-  }
-
-  const jobsCount = await prisma.job.count({
-    where: {
-      customerId,
-      technicianId: technician.id,
-    },
-  });
-
-  return jobsCount > 0;
-}
-
 export async function POST(request: Request, context: RouteContext) {
   const session = await getSession();
-  if (!session || !["ADMIN", "TECH"].includes(session.role)) {
+  if (!session || session.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -68,13 +49,6 @@ export async function POST(request: Request, context: RouteContext) {
   });
   if (!customer) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
-  }
-
-  if (session.role === "TECH") {
-    const canUpload = await hasTechAccessToCustomer(session.sub, customerId);
-    if (!canUpload) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
   }
 
   const formData = await request.formData();

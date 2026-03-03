@@ -40,6 +40,7 @@ export default async function TechJobUploadPage({
       property: true,
       technician: { include: { user: true } },
       serviceTier: true,
+      photos: { select: { id: true } },
     },
   });
 
@@ -100,6 +101,8 @@ export default async function TechJobUploadPage({
           id: job.id,
           customerId: job.customerId,
           customerName: formatCustomerName(job.customer),
+          technicianName: job.technician?.user.fullName ?? session.name ?? "Tech",
+          existingPhotosCount: job.photos.length,
           customerPhone: job.customer.telefono ?? null,
           propertyAddress: job.property.address,
           scheduledTime: job.scheduledDate.toLocaleTimeString(locale),

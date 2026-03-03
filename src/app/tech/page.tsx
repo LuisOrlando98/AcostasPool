@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import StatCard from "@/components/ui/StatCard";
+import TechRoutePlannerButton from "@/components/tech/TechRoutePlannerButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
@@ -10,6 +11,35 @@ import {
   getAddressPairKey,
   getTravelMetricsForPairs,
 } from "@/lib/routing/travel";
+
+function MapPinIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
+      <path
+        d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function PhoneIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
+      <path
+        d="M21 16.4v3a2 2 0 0 1-2.2 2 19 19 0 0 1-8.3-3 18.5 18.5 0 0 1-5.7-5.7 19 19 0 0 1-3-8.4A2 2 0 0 1 3.8 2h3A2 2 0 0 1 8.8 3.7l.5 2.4a2 2 0 0 1-.6 1.9L7.6 9a16 16 0 0 0 7.4 7.4l1-1.1a2 2 0 0 1 1.9-.6l2.4.5a2 2 0 0 1 1.7 2.2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default async function TechPage() {
   const session = await requireRole("TECH");
@@ -97,6 +127,11 @@ export default async function TechPage() {
       };
     })
   );
+  const routePreviewStops = routeJobs.map((job) => ({
+    id: job.id,
+    customerName: formatCustomerName(job.customer),
+    address: job.property.address,
+  }));
 
   return (
     <AppShell
@@ -146,32 +181,34 @@ export default async function TechPage() {
                   {nextJob.scheduledDate.toLocaleTimeString(locale)}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {nextJob.customer.telefono ? (
-                  <a
-                    href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
-                    className="app-button-secondary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
-                  >
-                    {t("tech.home.route.call")}
-                  </a>
-                ) : null}
+              <div className="mt-2 flex items-center gap-2">
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                     nextJob.property.address
                   )}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="app-button-secondary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
+                  className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                 >
+                  <MapPinIcon />
                   {t("tech.home.route.openMap")}
                 </a>
-                <Link
-                  href={`/tech/jobs/${nextJob.id}`}
-                  className="app-button-primary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
-                >
-                  {t("tech.home.next.complete")}
-                </Link>
+                {nextJob.customer.telefono ? (
+                  <a
+                    href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
+                    className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                  >
+                    <PhoneIcon />
+                    {t("tech.home.route.call")}
+                  </a>
+                ) : null}
               </div>
+              <Link
+                href={`/tech/jobs/${nextJob.id}`}
+                className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
+              >
+                {t("tech.home.next.complete")}
+              </Link>
             </div>
           ) : (
             <p className="mt-4 text-sm text-slate-500">
@@ -180,7 +217,40 @@ export default async function TechPage() {
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-2 gap-2 sm:hidden">
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {t("tech.home.stats.stops")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">{todaysJobs.length}</p>
+            <p className="text-[11px] text-slate-500">{t("tech.home.stats.scheduled")}</p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+              {t("tech.home.stats.pending")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-amber-900">{pendingCount}</p>
+            <p className="text-[11px] text-amber-700">{t("tech.home.stats.remaining")}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
+              {t("tech.home.stats.completed")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-emerald-900">{completedCount}</p>
+            <p className="text-[11px] text-emerald-700">
+              {completedWithPhotos} {t("tech.home.stats.withPhotos")}
+            </p>
+          </div>
+          <div className="rounded-xl border border-sky-200 bg-sky-50/60 px-3 py-2 shadow-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-700">
+              {t("tech.home.stats.onDemand")}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-sky-900">{onDemandCount}</p>
+            <p className="text-[11px] text-sky-700">{t("tech.home.stats.quickRequests")}</p>
+          </div>
+        </div>
+
+        <div className="hidden gap-3 sm:grid sm:grid-cols-2">
           <StatCard
             label={t("tech.home.stats.stops")}
             value={`${todaysJobs.length}`}
@@ -211,6 +281,7 @@ export default async function TechPage() {
       <section className="app-card p-6 shadow-contrast">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">{t("tech.home.route.title")}</h2>
+          <TechRoutePlannerButton stops={routePreviewStops} />
         </div>
         <div className="mt-4 space-y-3">
           {routeJobs.length === 0 ? (
@@ -255,8 +326,15 @@ export default async function TechPage() {
                         : t("tech.home.route.estimated");
 
                 return (
-                  <li key={job.id} className="relative pl-6">
-                    <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-slate-800" />
+                  <li
+                    key={job.id}
+                    className="relative pl-6 animate-rise motion-reduce:animate-none"
+                    style={{
+                      animationDelay: `${index * 65}ms`,
+                      animationDuration: "420ms",
+                    }}
+                  >
+                    <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-slate-800 motion-safe:animate-pulse" />
                     {index < routeJobs.length - 1 ? (
                       <span className="absolute left-[3px] top-4 h-[calc(100%+0.8rem)] border-l border-dashed border-slate-300" />
                     ) : null}
@@ -268,7 +346,7 @@ export default async function TechPage() {
                       </p>
                     ) : null}
 
-                    <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                    <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-transform duration-200 hover:-translate-y-0.5">
                       <p className="text-sm font-semibold text-slate-900">
                         {t("tech.home.route.stop", { count: index + 1 })}
                       </p>
@@ -292,32 +370,34 @@ export default async function TechPage() {
                         </span>
                       </div>
 
-                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <div className="mt-3 flex items-center gap-2">
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
                             job.property.address
                           )}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="app-button-ghost inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
+                          className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                         >
+                          <MapPinIcon />
                           {t("tech.home.route.openMap")}
                         </a>
                         {job.customer.telefono ? (
                           <a
                             href={`tel:${job.customer.telefono.replace(/\s+/g, "")}`}
-                            className="app-button-ghost inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
+                            className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                           >
+                            <PhoneIcon />
                             {t("tech.home.route.call")}
                           </a>
                         ) : null}
-                        <Link
-                          href={`/tech/jobs/${job.id}`}
-                          className="app-button-primary inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
-                        >
-                          {t("tech.home.list.upload")}
-                        </Link>
                       </div>
+                      <Link
+                        href={`/tech/jobs/${job.id}`}
+                        className="app-button-primary mt-2 inline-flex w-full items-center justify-center px-4 py-2 text-xs font-semibold"
+                      >
+                        {t("tech.home.list.upload")}
+                      </Link>
                     </div>
                   </li>
                 );

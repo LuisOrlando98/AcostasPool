@@ -1645,7 +1645,15 @@
         "now": "Now",
         "stop": "Stop {{count}}",
         "openMap": "Open map",
-        "call": "Call client"
+        "call": "Call client",
+        "quickPlan": "Route in GPS",
+        "quickPlanKicker": "Quick route",
+        "quickPlanTitle": "Open full route in maps",
+        "quickPlanQuestion": "Do you want to send this route with all stops to your GPS app?",
+        "recommendedGoogle": "Recommended on this device: Google Maps",
+        "recommendedApple": "Recommended on this device: Apple Maps",
+        "openInGoogle": "Open in Google Maps",
+        "openInApple": "Open in Apple Maps"
       }
     },
     "history": {
@@ -1687,6 +1695,9 @@
         "photosRequired": "Required",
         "takePhoto": "Take/choose photos",
         "photoCount": "{{count}} selected",
+        "renamePreviewTitle": "Rename preview (.jpg)",
+        "repositoryPathLabel": "Repository path:",
+        "repositoryAdminOnly": "Saved in client repository (admin access only).",
         "quickHintPhoto": "Add at least one photo to complete this visit.",
         "quickHintChecklist": "Complete checklist items to continue.",
         "quickHintReady": "Everything is ready. Tap complete.",

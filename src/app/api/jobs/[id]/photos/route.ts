@@ -4,20 +4,18 @@ import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
 import { storePublicAsset } from "@/lib/storage/object-store";
-import { buildJobPhotoAssetPath } from "@/lib/storage/paths";
+import sharp from "sharp";
+import {
+  buildCustomerJobPhotoAssetPath,
+  buildTechJobPhotoFileName,
+} from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
 
-const PHOTO_MIME_TO_EXT: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-const PHOTO_EXT_TO_MIME: Record<string, string> = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
+const SUPPORTED_MIME_TYPES: Record<string, true> = {
+  "image/jpeg": true,
+  "image/png": true,
+  "image/webp": true,
 };
 const MAX_FILES_PER_REQUEST = 12;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -37,16 +35,14 @@ function getFileExtension(fileName: string) {
 
 function resolvePhotoContentType(file: File) {
   const mime = (file.type || "").trim().toLowerCase();
-  if (PHOTO_MIME_TO_EXT[mime]) {
+  if (SUPPORTED_MIME_TYPES[mime]) {
     return mime;
   }
   const ext = getFileExtension(file.name);
-  return PHOTO_EXT_TO_MIME[ext] ?? null;
-}
-
-function buildSafePhotoName(index: number, contentType: string) {
-  const extension = PHOTO_MIME_TO_EXT[contentType] ?? "jpg";
-  return `photo-${Date.now()}-${index}-${crypto.randomUUID()}.${extension}`;
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  return null;
 }
 
 export async function POST(
@@ -61,7 +57,11 @@ export async function POST(
 
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    include: { technician: { include: { user: true } } },
+    include: {
+      technician: { include: { user: true } },
+      customer: { select: { nombre: true, apellidos: true } },
+      photos: { select: { id: true } },
+    },
   });
   if (!job) {
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
@@ -90,12 +90,8 @@ export async function POST(
   }
 
   let totalSize = 0;
-  const normalizedEntries: Array<{
-    file: File;
-    contentType: string;
-    fileName: string;
-  }> = [];
-  for (const [index, file] of fileEntries.entries()) {
+  const normalizedEntries: Array<{ file: File }> = [];
+  for (const file of fileEntries) {
     const contentType = resolvePhotoContentType(file);
     if (!contentType) {
       return NextResponse.json(
@@ -122,8 +118,6 @@ export async function POST(
 
     normalizedEntries.push({
       file,
-      contentType,
-      fileName: buildSafePhotoName(index + 1, contentType),
     });
   }
 
@@ -166,13 +160,38 @@ export async function POST(
   }
 
   const createdPhotos = [];
-  for (const entry of normalizedEntries) {
+  const customerName = `${job.customer.nombre ?? ""} ${job.customer.apellidos ?? ""}`.trim();
+  const technicianName =
+    job.technician?.user?.fullName ||
+    session.name ||
+    "Tech";
+  const existingPhotosCount = job.photos.length;
+  const now = new Date();
+
+  for (const [index, entry] of normalizedEntries.entries()) {
     const arrayBuffer = await entry.file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const originalBuffer = Buffer.from(arrayBuffer);
+    const jpegBuffer = await sharp(originalBuffer)
+      .rotate()
+      .jpeg({ quality: 88, mozjpeg: true })
+      .toBuffer()
+      .catch(() => null);
+    if (!jpegBuffer) {
+      return NextResponse.json(
+        { error: "Unable to process one of the images." },
+        { status: 400 }
+      );
+    }
+    const fileName = buildTechJobPhotoFileName({
+      date: now,
+      customerName,
+      technicianName,
+      index: existingPhotosCount + index,
+    });
     const url = await storePublicAsset({
-      relativePath: buildJobPhotoAssetPath(jobId, entry.fileName),
-      buffer,
-      contentType: entry.contentType,
+      relativePath: buildCustomerJobPhotoAssetPath(job.customerId, fileName, now),
+      buffer: jpegBuffer,
+      contentType: "image/jpeg",
       cacheControl: "public, max-age=31536000, immutable",
     });
     const photo = await prisma.jobPhoto.create({

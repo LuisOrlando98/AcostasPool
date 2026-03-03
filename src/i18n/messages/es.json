@@ -1645,7 +1645,15 @@
         "now": "Ahora",
         "stop": "Parada {{count}}",
         "openMap": "Abrir mapa",
-        "call": "Llamar cliente"
+        "call": "Llamar cliente",
+        "quickPlan": "Ruta en GPS",
+        "quickPlanKicker": "Ruta rapida",
+        "quickPlanTitle": "Abrir ruta completa en mapas",
+        "quickPlanQuestion": "Quieres enviar esta ruta con todas las paradas a tu app de GPS?",
+        "recommendedGoogle": "Recomendado en este dispositivo: Google Maps",
+        "recommendedApple": "Recomendado en este dispositivo: Apple Maps",
+        "openInGoogle": "Abrir en Google Maps",
+        "openInApple": "Abrir en Apple Maps"
       }
     },
     "history": {
@@ -1687,6 +1695,9 @@
         "photosRequired": "Obligatorio",
         "takePhoto": "Tomar/elegir fotos",
         "photoCount": "{{count}} seleccionadas",
+        "renamePreviewTitle": "Vista previa de renombre (.jpg)",
+        "repositoryPathLabel": "Ruta del repositorio:",
+        "repositoryAdminOnly": "Se guarda en el repositorio del cliente (solo admin).",
         "quickHintPhoto": "Agrega al menos una foto para completar la visita.",
         "quickHintChecklist": "Completa los items del checklist para continuar.",
         "quickHintReady": "Todo listo. Toca completar.",

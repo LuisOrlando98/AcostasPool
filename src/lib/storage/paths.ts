@@ -69,6 +69,57 @@ export function buildJobPhotoAssetPath(jobId: string, originalName: string) {
   return `uploads/jobs/${sanitizeSegment(jobId, "job")}/${toYearMonth(now)}/${buildFileName(originalName, now)}`;
 }
 
+function toCompactName(value: string, fallback: string) {
+  const clean = value
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join("");
+  return clean || fallback;
+}
+
+export function buildTechJobPhotoFileName(input: {
+  date: Date;
+  customerName: string;
+  technicianName: string;
+  index: number;
+}) {
+  const { date, customerName, technicianName, index } = input;
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  const customer = toCompactName(customerName, "Client");
+  const techToken = technicianName.trim().split(/\s+/).filter(Boolean)[0] ?? "";
+  const techFirstName = toCompactName(techToken || technicianName, "Tech");
+  const base = `${day}-${month}-${year}_${customer}_tech${techFirstName}`;
+  if (index <= 0) {
+    return `${base}.jpg`;
+  }
+  return `${base}_${String(index + 1).padStart(2, "0")}.jpg`;
+}
+
+export function buildCustomerJobPhotoAssetPath(
+  customerId: string,
+  fileName: string,
+  now = new Date()
+) {
+  const safeCustomer = sanitizeSegment(customerId, "customer");
+  const safeFileName = fileName.replace(SAFE_FILE_BASENAME_PATTERN, "_");
+  return `uploads/customers/${safeCustomer}/jobs/${toYearMonth(now)}/${safeFileName}`;
+}
+
+export function buildCustomerJobPhotoRepositoryPrefix(
+  customerId: string,
+  now = new Date()
+) {
+  const safeCustomer = sanitizeSegment(customerId, "customer");
+  return `uploads/customers/${safeCustomer}/jobs/${toYearMonth(now)}/`;
+}
+
 export function buildInvoicePdfAssetPath(
   customerId: string,
   invoiceNumber: string,

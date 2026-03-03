@@ -266,9 +266,19 @@ export default function UserMenu() {
               <button
                 type="button"
                 onClick={async () => {
-                  await fetch("/api/notifications/clear", { method: "POST" });
+                  const previous = notifications;
+                  const previousUnread = unreadCount;
                   setNotifications([]);
                   setUnreadCount(0);
+                  const response = await fetch("/api/notifications/clear", {
+                    method: "POST",
+                  }).catch(() => null);
+                  if (!response?.ok) {
+                    setNotifications(previous);
+                    setUnreadCount(previousUnread);
+                    return;
+                  }
+                  void load();
                 }}
                 className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
               >

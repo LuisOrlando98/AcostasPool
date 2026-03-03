@@ -242,10 +242,10 @@ export default function NotificationsBell() {
       return;
     }
     const delta = Math.max(
-      0,
-      Math.min(SWIPE_ACTION_WIDTH, clientX - start.startX)
+      -SWIPE_ACTION_WIDTH,
+      Math.min(0, clientX - start.startX)
     );
-    if (delta > 8) {
+    if (delta < -8) {
       swipedRef.current = true;
     }
     setSwipeState({ id: itemId, offset: delta });
@@ -254,7 +254,7 @@ export default function NotificationsBell() {
   const handleSwipeEnd = (itemId: string) => {
     const isActive = swipeState?.id === itemId;
     const offset = isActive ? swipeState.offset : 0;
-    if (offset >= SWIPE_OPEN_THRESHOLD) {
+    if (offset <= -SWIPE_OPEN_THRESHOLD) {
       setRevealedDeleteId(itemId);
       setConfirmDeleteId(null);
     } else if (revealedDeleteId === itemId) {
@@ -320,12 +320,22 @@ export default function NotificationsBell() {
             <button
               type="button"
               onClick={async () => {
-                await fetch("/api/notifications/clear", { method: "POST" });
+                const previous = notifications;
+                const previousUnread = unreadCount;
                 setNotifications([]);
                 setUnreadCount(0);
                 setRevealedDeleteId(null);
                 setConfirmDeleteId(null);
                 setSwipeState(null);
+                const response = await fetch("/api/notifications/clear", {
+                  method: "POST",
+                }).catch(() => null);
+                if (!response?.ok) {
+                  setNotifications(previous);
+                  setUnreadCount(previousUnread);
+                  return;
+                }
+                void load();
               }}
               className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
             >
@@ -359,13 +369,13 @@ export default function NotificationsBell() {
                             swipeState?.id === item.id
                               ? swipeState.offset
                               : revealedDeleteId === item.id
-                                ? SWIPE_ACTION_WIDTH
+                                ? -SWIPE_ACTION_WIDTH
                                 : 0;
                           return (
                             <div key={item.id} className="relative overflow-hidden">
                               <div
-                                className={`absolute inset-y-0 left-0 flex w-[88px] items-center justify-center bg-rose-600 px-2 text-white transition ${
-                                  translateX > 0 ? "opacity-100" : "opacity-0"
+                                className={`absolute inset-y-0 right-0 flex w-[88px] items-center justify-center bg-rose-600 px-2 text-white transition ${
+                                  Math.abs(translateX) > 0 ? "opacity-100" : "opacity-0"
                                 }`}
                               >
                                 <button
@@ -404,6 +414,19 @@ export default function NotificationsBell() {
                                   handleSwipeEnd(item.id);
                                 }}
                                 onPointerCancel={() => {
+                                  handleSwipeEnd(item.id);
+                                }}
+                                onTouchStart={(event) => {
+                                  const touch = event.touches[0];
+                                  if (!touch) return;
+                                  handleSwipeStart(item.id, touch.clientX);
+                                }}
+                                onTouchMove={(event) => {
+                                  const touch = event.touches[0];
+                                  if (!touch) return;
+                                  handleSwipeMove(item.id, touch.clientX);
+                                }}
+                                onTouchEnd={() => {
                                   handleSwipeEnd(item.id);
                                 }}
                                 onClick={async () => {
