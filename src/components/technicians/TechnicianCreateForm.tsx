@@ -43,6 +43,7 @@ export default function TechnicianCreateForm({ createTechnicianAction }: Props) 
     locale === "es"
       ? "Tecnico creado e invitacion enviada."
       : "Technician created and invitation sent.";
+  const closingMessage = locale === "es" ? "Cerrando formulario..." : "Closing form...";
 
   useEffect(
     () => () => {
@@ -164,7 +165,7 @@ export default function TechnicianCreateForm({ createTechnicianAction }: Props) 
         setFieldErrors({});
         setShowSuccess(false);
         closeNewTechModal();
-      }, 1800);
+      }, 2200);
     } catch {
       setFormError(
         locale === "es"
@@ -269,26 +270,6 @@ export default function TechnicianCreateForm({ createTechnicianAction }: Props) 
         </div>
       ) : null}
 
-      {showSuccess ? (
-        <div className="animate-fade rounded-2xl border border-emerald-200 bg-[linear-gradient(120deg,#ecfdf5,#eff6ff)] px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 10l4 4 8-8" />
-              </svg>
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{inviteSuccessMessage}</p>
-              <p className="text-xs text-slate-600">
-                {locale === "es"
-                  ? "Cerrando formulario..."
-                  : "Closing form..."}
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
       <button
         type="submit"
         disabled={pending}
@@ -307,6 +288,25 @@ export default function TechnicianCreateForm({ createTechnicianAction }: Props) 
       <p className="text-[11px] text-slate-500">
         {t("admin.technicians.newTech.inviteHint")}
       </p>
+
+      {showSuccess ? (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]" />
+          <div className="relative w-full max-w-sm animate-fade rounded-2xl border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#eff6ff)] px-5 py-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 10l4 4 8-8" />
+                </svg>
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{inviteSuccessMessage}</p>
+                <p className="text-xs text-slate-600">{closingMessage}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }

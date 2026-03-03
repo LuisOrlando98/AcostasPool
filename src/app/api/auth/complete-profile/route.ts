@@ -31,146 +31,196 @@ function splitFullName(fullName: string) {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const token = searchParams.get("token") ?? "";
-  if (!token) {
-    return NextResponse.json({ error: "Token requerido" }, { status: 400 });
-  }
+  try {
+    const { searchParams } = new URL(request.url);
+    const token = searchParams.get("token") ?? "";
+    if (!token) {
+      return NextResponse.json({ error: "Token requerido" }, { status: 400 });
+    }
 
-  const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
-    include: { user: { include: { customer: true, technician: true } } },
-  });
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: { include: { customer: true, technician: true } } },
+    });
 
-  if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
-    return NextResponse.json({ error: "Token invalido" }, { status: 400 });
-  }
+    if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
+      return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+    }
 
-  if (resetToken.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Token expirado" }, { status: 400 });
-  }
+    if (resetToken.expiresAt < new Date()) {
+      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+    }
 
-  const user = resetToken.user;
-  const customer = user?.customer;
-  const technician = user?.technician;
+    const user = resetToken.user;
+    const customer = user?.customer;
+    const technician = user?.technician;
 
-  if (!user) {
+    if (!user) {
+      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+    }
+
+    if (user.role === "CUSTOMER" && customer) {
+      return NextResponse.json({
+        accountType: "CUSTOMER",
+        customer: {
+          nombre: customer.nombre,
+          apellidos: customer.apellidos,
+          email: customer.email,
+          telefono: customer.telefono,
+          telefonoSecundario: customer.telefonoSecundario,
+          idiomaPreferencia: customer.idiomaPreferencia,
+          direccionLinea1: customer.direccionLinea1,
+          direccionLinea2: customer.direccionLinea2,
+          ciudad: customer.ciudad,
+          estadoProvincia: customer.estadoProvincia,
+          codigoPostal: customer.codigoPostal,
+        },
+      });
+    }
+
+    if (user.role === "TECH" && technician) {
+      const splitName = splitFullName(user.fullName);
+      return NextResponse.json({
+        accountType: "TECH",
+        technician: {
+          nombre: splitName.nombre,
+          apellidos: splitName.apellidos,
+          email: user.email,
+          telefono: technician.phone ?? "",
+          idiomaPreferencia: user.locale,
+        },
+      });
+    }
+
     return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+  } catch (error) {
+    console.error("Complete profile GET failed:", error);
+    return NextResponse.json(
+      { error: "No se pudo validar la invitacion. Intenta de nuevo." },
+      { status: 500 }
+    );
   }
-
-  if (user.role === "CUSTOMER" && customer) {
-    return NextResponse.json({
-      accountType: "CUSTOMER",
-      customer: {
-        nombre: customer.nombre,
-        apellidos: customer.apellidos,
-        email: customer.email,
-        telefono: customer.telefono,
-        telefonoSecundario: customer.telefonoSecundario,
-        idiomaPreferencia: customer.idiomaPreferencia,
-        direccionLinea1: customer.direccionLinea1,
-        direccionLinea2: customer.direccionLinea2,
-        ciudad: customer.ciudad,
-        estadoProvincia: customer.estadoProvincia,
-        codigoPostal: customer.codigoPostal,
-      },
-    });
-  }
-
-  if (user.role === "TECH" && technician) {
-    const splitName = splitFullName(user.fullName);
-    return NextResponse.json({
-      accountType: "TECH",
-      technician: {
-        nombre: splitName.nombre,
-        apellidos: splitName.apellidos,
-        email: user.email,
-        telefono: technician.phone ?? "",
-        idiomaPreferencia: user.locale,
-      },
-    });
-  }
-
-  return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
 }
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => null);
-  const parsed = completeSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Datos invalidos" }, { status: 400 });
-  }
+  try {
+    const body = await request.json().catch(() => null);
+    const parsed = completeSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Datos invalidos" }, { status: 400 });
+    }
 
-  const {
-    token,
-    password,
-    nombre,
-    apellidos,
-    telefono: telefonoRaw,
-    telefonoSecundario: telefonoSecundarioRaw,
-    idiomaPreferencia,
-    direccionLinea1,
-    direccionLinea2,
-    ciudad,
-    estadoProvincia,
-    codigoPostal,
-  } = parsed.data;
+    const {
+      token,
+      password,
+      nombre,
+      apellidos,
+      telefono: telefonoRaw,
+      telefonoSecundario: telefonoSecundarioRaw,
+      idiomaPreferencia,
+      direccionLinea1,
+      direccionLinea2,
+      ciudad,
+      estadoProvincia,
+      codigoPostal,
+    } = parsed.data;
 
-  const telefono = normalizeUsPhone(telefonoRaw);
-  if (!telefono) {
-    return NextResponse.json({ error: "Telefono invalido" }, { status: 400 });
-  }
+    const telefono = normalizeUsPhone(telefonoRaw);
+    if (!telefono) {
+      return NextResponse.json({ error: "Telefono invalido" }, { status: 400 });
+    }
 
-  const telefonoSecundarioClean = telefonoSecundarioRaw?.trim() ?? "";
-  const telefonoSecundario = telefonoSecundarioClean
-    ? normalizeUsPhone(telefonoSecundarioClean)
-    : null;
-  if (telefonoSecundarioClean && !telefonoSecundario) {
-    return NextResponse.json(
-      { error: "Telefono secundario invalido" },
-      { status: 400 }
-    );
-  }
+    const telefonoSecundarioClean = telefonoSecundarioRaw?.trim() ?? "";
+    const telefonoSecundario = telefonoSecundarioClean
+      ? normalizeUsPhone(telefonoSecundarioClean)
+      : null;
+    if (telefonoSecundarioClean && !telefonoSecundario) {
+      return NextResponse.json(
+        { error: "Telefono secundario invalido" },
+        { status: 400 }
+      );
+    }
 
-  const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
-    include: { user: { include: { customer: true, technician: true } } },
-  });
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: { include: { customer: true, technician: true } } },
+    });
 
-  if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
-    return NextResponse.json({ error: "Token invalido" }, { status: 400 });
-  }
+    if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
+      return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+    }
 
-  if (resetToken.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Token expirado" }, { status: 400 });
-  }
+    if (resetToken.expiresAt < new Date()) {
+      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+    }
 
-  const user = resetToken.user;
-  const customer = user?.customer;
-  const technician = user?.technician;
+    const user = resetToken.user;
+    const customer = user?.customer;
+    const technician = user?.technician;
 
-  if (!user) {
-    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
-  }
+    if (!user) {
+      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+    }
 
-  if (user.role === "TECH" && technician) {
+    if (user.role === "TECH" && technician) {
+      const passwordHash = await hashPassword(password);
+      const fullName = `${nombre} ${apellidos}`.trim();
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: user.id },
+          data: {
+            passwordHash,
+            isActive: true,
+            fullName,
+            locale: idiomaPreferencia ?? user.locale,
+          },
+        }),
+        prisma.technician.update({
+          where: { id: technician.id },
+          data: {
+            phone: telefono,
+          },
+        }),
+        prisma.passwordResetToken.updateMany({
+          where: { userId: user.id, purpose: "INVITE", usedAt: null },
+          data: { usedAt: new Date() },
+        }),
+      ]);
+
+      return NextResponse.json({ ok: true });
+    }
+
+    if (user.role !== "CUSTOMER" || !customer) {
+      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+    }
+
     const passwordHash = await hashPassword(password);
-    const fullName = `${nombre} ${apellidos}`.trim();
+    const fullName = formatCustomerName({ nombre, apellidos, email: user.email });
 
     await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
         data: {
           passwordHash,
-          isActive: true,
+          isActive: customer.estadoCuenta === "ACTIVE",
           fullName,
           locale: idiomaPreferencia ?? user.locale,
         },
       }),
-      prisma.technician.update({
-        where: { id: technician.id },
+      prisma.customer.update({
+        where: { id: customer.id },
         data: {
-          phone,
+          nombre,
+          apellidos,
+          telefono,
+          telefonoSecundario,
+          idiomaPreferencia: idiomaPreferencia ?? customer.idiomaPreferencia,
+          direccionLinea1: direccionLinea1?.trim() || null,
+          direccionLinea2: direccionLinea2?.trim() || null,
+          ciudad: ciudad?.trim() || null,
+          estadoProvincia: estadoProvincia?.trim() || null,
+          codigoPostal: codigoPostal?.trim() || null,
         },
       }),
       prisma.passwordResetToken.updateMany({
@@ -180,45 +230,11 @@ export async function POST(request: Request) {
     ]);
 
     return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Complete profile POST failed:", error);
+    return NextResponse.json(
+      { error: "No se pudo completar el perfil. Intenta nuevamente." },
+      { status: 500 }
+    );
   }
-
-  if (user.role !== "CUSTOMER" || !customer) {
-    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
-  }
-
-  const passwordHash = await hashPassword(password);
-  const fullName = formatCustomerName({ nombre, apellidos, email: user.email });
-
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        isActive: customer.estadoCuenta === "ACTIVE",
-        fullName,
-        locale: idiomaPreferencia ?? user.locale,
-      },
-    }),
-    prisma.customer.update({
-      where: { id: customer.id },
-      data: {
-        nombre,
-        apellidos,
-        telefono,
-        telefonoSecundario,
-        idiomaPreferencia: idiomaPreferencia ?? customer.idiomaPreferencia,
-        direccionLinea1: direccionLinea1?.trim() || null,
-        direccionLinea2: direccionLinea2?.trim() || null,
-        ciudad: ciudad?.trim() || null,
-        estadoProvincia: estadoProvincia?.trim() || null,
-        codigoPostal: codigoPostal?.trim() || null,
-      },
-    }),
-    prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, purpose: "INVITE", usedAt: null },
-      data: { usedAt: new Date() },
-    }),
-  ]);
-
-  return NextResponse.json({ ok: true });
 }

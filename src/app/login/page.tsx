@@ -339,7 +339,7 @@ export default function LoginPage() {
                   </a>
                   {index < legalLinks.length - 1 ? (
                     <span aria-hidden="true" className="px-1 text-[10px] text-sky-100/55">
-                      •
+                      |
                     </span>
                   ) : null}
                 </li>
