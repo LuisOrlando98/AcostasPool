@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { isTechNotificationForUser } from "@/lib/notifications/tech";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -27,15 +28,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   if (session.role !== "ADMIN") {
     if (session.role === "TECH") {
-      const payload =
-        notification.payload && typeof notification.payload === "object"
-          ? (notification.payload as Record<string, unknown>)
-          : null;
-      const recipientUserId =
-        payload && typeof payload.recipientUserId === "string"
-          ? payload.recipientUserId
-          : null;
-      if (recipientUserId !== session.sub) {
+      if (!isTechNotificationForUser(notification.payload, session.sub)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     } else {

@@ -626,7 +626,8 @@
         "selectCustomerProperty": "Select a customer and property for each job.",
         "createFailed": "Unable to create the jobs.",
         "saveFailed": "Unable to save the changes.",
-        "saveJobFailed": "Unable to save the job changes."
+        "saveJobFailed": "Unable to save the job changes.",
+        "deleteJobFailed": "Unable to delete the selected job."
       },
       "filters": {
         "statusAll": "Status: All",
@@ -1626,6 +1627,16 @@
         "title": "Today's list",
         "empty": "No jobs scheduled for today.",
         "upload": "Complete job"
+      },
+      "route": {
+        "title": "Route timeline",
+        "empty": "No pending stops in your route.",
+        "away": "{{count}} mins away",
+        "trip": "{{count}} mins trip",
+        "now": "Now",
+        "stop": "Stop {{count}}",
+        "openMap": "Open map",
+        "call": "Call client"
       }
     },
     "history": {
@@ -1665,6 +1676,11 @@
         "customerNotesPlaceholder": "Note visible to the customer.",
         "photosTitle": "Photos",
         "photosRequired": "Required",
+        "takePhoto": "Take/choose photos",
+        "photoCount": "{{count}} selected",
+        "quickHintPhoto": "Add at least one photo to complete this visit.",
+        "quickHintChecklist": "Complete checklist items to continue.",
+        "quickHintReady": "Everything is ready. Tap complete.",
         "fields": {
           "photo": "Photo evidence"
         },

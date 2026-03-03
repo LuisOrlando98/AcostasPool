@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
+import { buildTechRecipientWhere } from "@/lib/notifications/tech";
 
 export async function GET() {
   const session = await getSession();
@@ -86,23 +87,15 @@ export async function GET() {
       session.sub,
       session.role
     );
-    const candidates = await prisma.notification.findMany({
+    const notifications = await prisma.notification.findMany({
       where: {
         recipientRole: "TECH",
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+        ...buildTechRecipientWhere(session.sub),
       },
       orderBy: { createdAt: "desc" },
-      take: 120,
+      take: 20,
     });
-    const notifications = candidates
-      .filter((item) => {
-        const payload =
-          item.payload && typeof item.payload === "object"
-            ? (item.payload as Record<string, unknown>)
-            : null;
-        return payload?.recipientUserId === session.sub;
-      })
-      .slice(0, 20);
     return NextResponse.json({
       notifications: notifications.map((item) => ({
         id: item.id,

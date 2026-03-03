@@ -28,6 +28,13 @@ export async function createNotification({
   payload,
   actorUserId,
 }: CreateNotificationInput) {
+  if (recipientRole === "TECH" && !recipientUserId) {
+    console.warn("Creating TECH notification without recipientUserId", {
+      eventType,
+      customerId,
+    });
+  }
+
   const normalizedPayload: Record<string, unknown> = payload
     ? { ...payload }
     : {};

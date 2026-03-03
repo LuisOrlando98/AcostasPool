@@ -34,6 +34,9 @@ export function broadcastNotification(event: NotificationEventPayload) {
     if (subscriber.role !== event.recipientRole) {
       continue;
     }
+    if (subscriber.role === "TECH" && !event.recipientUserId) {
+      continue;
+    }
     if (
       event.recipientUserId &&
       subscriber.userId !== event.recipientUserId

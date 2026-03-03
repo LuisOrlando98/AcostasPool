@@ -151,6 +151,34 @@ const parseMonthKey = (value: string) => {
 const toMonthKey = (value: Date) =>
   `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
 
+const getJobTimestamp = (value: string) => {
+  const time = new Date(value).getTime();
+  if (Number.isNaN(time)) {
+    return 0;
+  }
+  return time;
+};
+
+const sortJobsChronologically = <T extends { id: string; scheduledDate: string; sortOrder?: number | null }>(
+  list: T[]
+) =>
+  [...list].sort((a, b) => {
+    const byDate = getJobTimestamp(a.scheduledDate) - getJobTimestamp(b.scheduledDate);
+    if (byDate !== 0) {
+      return byDate;
+    }
+    if (a.sortOrder != null && b.sortOrder != null) {
+      return a.sortOrder - b.sortOrder;
+    }
+    if (a.sortOrder != null) {
+      return -1;
+    }
+    if (b.sortOrder != null) {
+      return 1;
+    }
+    return a.id.localeCompare(b.id);
+  });
+
 const createDraft = (
   customers: Customer[],
   serviceTiers: ServiceTier[]
@@ -209,7 +237,7 @@ export default function RoutesCalendar({
 }: RoutesCalendarProps) {
   const { t, locale } = useI18n();
   const [jobsState, setJobsState] = useState(() =>
-    jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate }))
+    sortJobsChronologically(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })))
   );
   const [pendingChanges, setPendingChanges] = useState<
     Record<string, PendingUpdate>
@@ -221,6 +249,7 @@ export default function RoutesCalendar({
   const [creating, setCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [highlightJobId, setHighlightJobId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{
     dateKey: string;
@@ -293,13 +322,16 @@ export default function RoutesCalendar({
   useEffect(() => {
     if (!editMode) {
       setActiveTechJobId(null);
+      setSelectedJobId(null);
       setDraggingJobId(null);
       setDragOverTarget(null);
     }
   }, [editMode]);
 
   useEffect(() => {
-    setJobsState(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })));
+    setJobsState(
+      sortJobsChronologically(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })))
+    );
     setPendingChanges({});
     setEditMode(false);
     setSelectedDate(null);
@@ -308,9 +340,20 @@ export default function RoutesCalendar({
     setSaveSuccess(false);
     setJobModal(null);
     setActiveTechJobId(null);
+    setSelectedJobId(null);
     setDraggingJobId(null);
     setDragOverTarget(null);
   }, [jobs, monthKey]);
+
+  useEffect(() => {
+    if (!selectedJobId) {
+      return;
+    }
+    const exists = jobsState.some((job) => job.id === selectedJobId);
+    if (!exists) {
+      setSelectedJobId(null);
+    }
+  }, [jobsState, selectedJobId]);
 
   const today = new Date();
   const todayKey = toDateKey(today);
@@ -357,21 +400,7 @@ export default function RoutesCalendar({
   }, [jobsState]);
 
   const sortJobsForDay = (list: JobItem[]) => {
-    return [...list].sort((a, b) => {
-      if (a.sortOrder != null && b.sortOrder != null) {
-        return a.sortOrder - b.sortOrder;
-      }
-      if (a.sortOrder != null) {
-        return -1;
-      }
-      if (b.sortOrder != null) {
-        return 1;
-      }
-      return (
-        new Date(a.scheduledDate).getTime() -
-        new Date(b.scheduledDate).getTime()
-      );
-    });
+    return sortJobsChronologically(list);
   };
 
   const monthLabelRaw = monthStart.toLocaleDateString(locale, {
@@ -644,8 +673,8 @@ export default function RoutesCalendar({
   const moveJobToDate = (
     targetDate: Date,
     jobId: string,
-    targetJobId?: string,
-    targetPosition?: "before" | "after"
+    _targetJobId?: string,
+    _targetPosition?: "before" | "after"
   ) => {
     if (!editMode) {
       return;
@@ -676,59 +705,15 @@ export default function RoutesCalendar({
 
     if (sourceKey !== targetKey) {
       dragged.scheduledDate = updatedDate.toISOString();
+      dragged.sortOrder = updatedDate.getHours() * 60 + updatedDate.getMinutes();
       jobMap.set(jobId, dragged);
-      addPending(jobId, { scheduledDate: dragged.scheduledDate });
-    }
-
-    const sourceList = sortJobsForDay(
-      current.filter(
-        (job) => toDateKey(new Date(job.scheduledDate)) === sourceKey
-      )
-    ).filter((job) => job.id !== jobId);
-
-    const targetList = sortJobsForDay(
-      (sourceKey === targetKey
-        ? [...sourceList, dragged]
-        : current.filter(
-            (job) => toDateKey(new Date(job.scheduledDate)) === targetKey
-          )
-      )
-    ).filter((job) => job.id !== jobId);
-
-    const resolvedIndex =
-      targetJobId && targetList.findIndex((job) => job.id === targetJobId) >= 0
-        ? targetList.findIndex((job) => job.id === targetJobId)
-        : targetList.length;
-    const targetIndex =
-      targetPosition === "after" ? resolvedIndex + 1 : resolvedIndex;
-    const boundedIndex = Math.min(targetIndex, targetList.length);
-
-    const nextTarget = [
-      ...targetList.slice(0, boundedIndex),
-      dragged,
-      ...targetList.slice(boundedIndex),
-    ];
-
-    const applyOrder = (dateKey: string, ordered: JobItem[]) => {
-      ordered.forEach((job, index) => {
-        const ref = jobMap.get(job.id);
-        if (!ref || ref.sortOrder === index) {
-          return;
-        }
-        ref.sortOrder = index;
-        jobMap.set(job.id, ref);
-        addPending(job.id, { sortOrder: index });
+      addPending(jobId, {
+        scheduledDate: dragged.scheduledDate,
+        sortOrder: dragged.sortOrder,
       });
-    };
-
-    if (sourceKey === targetKey) {
-      applyOrder(targetKey, nextTarget);
-    } else {
-      applyOrder(sourceKey, sourceList);
-      applyOrder(targetKey, nextTarget);
     }
 
-    setJobsState(Array.from(jobMap.values()));
+    setJobsState(sortJobsChronologically(Array.from(jobMap.values())));
     if (Object.keys(pendingUpdates).length > 0) {
       setPendingChanges((currentChanges) => ({
         ...currentChanges,
@@ -873,7 +858,7 @@ export default function RoutesCalendar({
     });
     const data = await res.json().catch(() => ({ jobs: [] }));
     if (res.ok && Array.isArray(data.jobs)) {
-      setJobsState((current) => [...data.jobs, ...current]);
+      setJobsState((current) => sortJobsChronologically([...data.jobs, ...current]));
       setSelectedDate(null);
       setDrafts([]);
     } else {
@@ -901,8 +886,44 @@ export default function RoutesCalendar({
       return true;
     }
     setSaving(false);
-      setErrorMessage(t("admin.routes.errors.saveFailed"));
+    setErrorMessage(t("admin.routes.errors.saveFailed"));
     return false;
+  };
+
+  const deleteJobById = async (jobId: string) => {
+    if (!jobId) {
+      return false;
+    }
+    setErrorMessage(null);
+    setSaving(true);
+    const res = await fetch(`/api/jobs/${jobId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => null);
+      setSaving(false);
+      setErrorMessage(
+        error?.error || t("admin.routes.errors.deleteJobFailed")
+      );
+      return false;
+    }
+    setJobsState((current) => current.filter((job) => job.id !== jobId));
+    setPendingChanges((current) => {
+      if (!current[jobId]) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[jobId];
+      return next;
+    });
+    setSelectedJobId((current) => (current === jobId ? null : current));
+    setHighlightJobId((current) => (current === jobId ? null : current));
+    setActiveTechJobId((current) => (current === jobId ? null : current));
+    setSaving(false);
+    setSaveSuccess(true);
+    window.setTimeout(() => setSaveSuccess(false), 1600);
+    return true;
   };
 
   const handleTechnicianAssign = async (
@@ -974,12 +995,15 @@ export default function RoutesCalendar({
     const techInfo = jobModal.technicianId
       ? techniciansById.get(jobModal.technicianId)
       : null;
+    const nextSortOrder =
+      scheduledDateTime.getHours() * 60 + scheduledDateTime.getMinutes();
     setJobsState((current) =>
-      current.map((job) =>
+      sortJobsChronologically(current.map((job) =>
         job.id === jobModal.jobId
           ? {
               ...job,
               scheduledDate: scheduledDateTime.toISOString(),
+              sortOrder: nextSortOrder,
               status: jobModal.status,
               priority: jobModal.priority,
               serviceTierId: jobModal.serviceTierId || null,
@@ -995,7 +1019,7 @@ export default function RoutesCalendar({
               checklist: jobModal.checklist,
             }
           : job
-      )
+      ))
     );
     setSaving(false);
     setJobModal(null);
@@ -1041,6 +1065,34 @@ export default function RoutesCalendar({
     setSaveSuccess(false);
     setEditMode(true);
   };
+
+  useEffect(() => {
+    if (!editMode || !selectedJobId || selectedDate || jobModal || saving) {
+      return;
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Delete") {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (target) {
+        const tagName = target.tagName.toLowerCase();
+        if (
+          target.isContentEditable ||
+          tagName === "input" ||
+          tagName === "textarea" ||
+          tagName === "select"
+        ) {
+          return;
+        }
+      }
+      event.preventDefault();
+      void deleteJobById(selectedJobId);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editMode, selectedJobId, selectedDate, jobModal, saving, deleteJobById]);
+
   const todayActive =
     rangeFilter === "CUSTOM" &&
     customStart === todayKey &&
@@ -1315,6 +1367,47 @@ export default function RoutesCalendar({
                   </span>
                 </span>
               </button>
+              {editMode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedJobId || saving) {
+                      return;
+                    }
+                    void deleteJobById(selectedJobId);
+                  }}
+                  disabled={!selectedJobId || saving}
+                  className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
+                    selectedJobId && !saving
+                      ? "text-rose-700 hover:bg-rose-50"
+                      : "cursor-not-allowed text-slate-400"
+                  }`}
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 13h12l1-13"
+                      />
+                    </svg>
+                  </span>
+                  <span className="flex flex-col leading-tight">
+                    <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
+                      {locale === "es" ? "TECLA SUPR" : "DELETE KEY"}
+                    </span>
+                    <span className="text-xs font-semibold">
+                      {t("common.actions.delete")}
+                    </span>
+                  </span>
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -1335,17 +1428,6 @@ export default function RoutesCalendar({
                 day.getFullYear() === monthStart.getFullYear();
               const isPastDay = day < startOfToday;
               const jobsForDay = sortJobsForDay(jobsByDate.get(key) ?? []);
-              const timeOrder = [...jobsForDay].sort(
-                (a, b) =>
-                  new Date(a.scheduledDate).getTime() -
-                  new Date(b.scheduledDate).getTime()
-              );
-              const timeIndex = new Map(
-                timeOrder.map((job, index) => [job.id, index])
-              );
-              const hasManualOrder = jobsForDay.some(
-                (job) => job.sortOrder != null
-              );
               const fillPct = Math.round((jobsForDay.length / dayCapacity) * 100);
               const fillWidth =
                 jobsForDay.length === 0 ? 0 : Math.max(10, fillPct);
@@ -1417,11 +1499,6 @@ export default function RoutesCalendar({
                           {t("admin.routes.labels.free")}
                         </span>
                       )}
-                      {hasManualOrder && editMode ? (
-                        <span className="text-[8px] font-semibold text-slate-400">
-                          {t("admin.routes.labels.manualOrder")}
-                        </span>
-                      ) : null}
                     </div>
                   </div>
                   <div
@@ -1442,12 +1519,9 @@ export default function RoutesCalendar({
                   !dragOverTarget.jobId ? (
                     <div className="pointer-events-none absolute inset-1 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/40" />
                   ) : null}
-                  {jobsForDay.map((job, index) => {
+                  {jobsForDay.map((job) => {
                     const isHighlighted = highlightJobId === job.id;
-                    const orderMismatch =
-                      hasManualOrder &&
-                      timeIndex.get(job.id) !== undefined &&
-                      timeIndex.get(job.id) !== index;
+                    const isSelected = selectedJobId === job.id;
                     const isDropTarget =
                       dragOverTarget?.jobId === job.id &&
                       draggingJobId !== job.id;
@@ -1548,13 +1622,17 @@ export default function RoutesCalendar({
                         }}
                         onClick={(event) => {
                           event.stopPropagation();
-                          if (!editMode) {
-                            openJobModal(job);
+                          if (editMode) {
+                            setSelectedJobId((current) =>
+                              current === job.id ? null : job.id
+                            );
+                            return;
                           }
+                          openJobModal(job);
                         }}
                         className={`relative block rounded-2xl border px-3 py-3 text-[10px] transition ${
                           editMode ? "cursor-move" : "cursor-pointer"
-                        } ${isHighlighted ? "ring-2 ring-sky-400" : ""} ${
+                        } ${isSelected ? "ring-2 ring-rose-400" : isHighlighted ? "ring-2 ring-sky-400" : ""} ${
                           isDropTarget
                             ? "outline outline-2 outline-sky-300 outline-offset-2"
                             : ""
@@ -1645,11 +1723,6 @@ export default function RoutesCalendar({
                             {job.priority === "URGENT" ? (
                               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
                                 {t("jobs.priority.urgent")}
-                              </span>
-                            ) : null}
-                            {orderMismatch ? (
-                              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
-                                {t("admin.routes.labels.order")}
                               </span>
                             ) : null}
                           </div>
@@ -1892,6 +1965,7 @@ export default function RoutesCalendar({
                       ? serviceTiersById.get(job.serviceTierId)?.name ?? null
                       : null;
                     const isHighlighted = highlightJobId === job.id;
+                    const isSelected = selectedJobId === job.id;
                     const scheduled = new Date(job.scheduledDate);
                     const dateLabel = scheduled.toLocaleDateString(locale, {
                       day: "2-digit",
@@ -1934,11 +2008,23 @@ export default function RoutesCalendar({
                     return (
                       <tr
                         key={job.id}
+                        onClick={() => {
+                          if (!editMode) {
+                            return;
+                          }
+                          setSelectedJobId((current) =>
+                            current === job.id ? null : job.id
+                          );
+                        }}
                         className={`group text-slate-700 transition ${
-                          isHighlighted ? "bg-sky-50/70" : "bg-white"
+                          isSelected
+                            ? "bg-rose-50/70"
+                            : isHighlighted
+                              ? "bg-sky-50/70"
+                              : "bg-white"
                         } hover:bg-slate-50 ${
                           job.status === "COMPLETED" ? "opacity-60" : ""
-                        }`}
+                        } ${editMode ? "cursor-pointer" : ""}`}
                       >
                         <td className={`${cellPadding} align-top`}>
                           <div className="space-y-1">
@@ -1991,6 +2077,7 @@ export default function RoutesCalendar({
                                 )}`}
                                 target="_blank"
                                 rel="noreferrer"
+                                onClick={(event) => event.stopPropagation()}
                                 className="max-w-[240px] truncate font-medium text-slate-600 transition hover:text-slate-900"
                                 title={job.property.address}
                               >
@@ -2054,7 +2141,10 @@ export default function RoutesCalendar({
                         <td className={`${cellPadding} align-top text-right`}>
                           <button
                             type="button"
-                            onClick={() => openJobModal(job)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openJobModal(job);
+                            }}
                             className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                           >
                             {t("common.actions.view")}

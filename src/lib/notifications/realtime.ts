@@ -76,10 +76,11 @@ export async function publishNotification(payload: NotificationEventPayload) {
   if (payload.recipientRole === "TECH") {
     if (payload.recipientUserId) {
       await triggerForUser(payload.recipientUserId, payload);
-      return;
-    }
-    if (payload.actorUserId) {
-      await triggerForUser(payload.actorUserId, payload);
+    } else {
+      console.warn("TECH notification skipped: missing recipientUserId", {
+        notificationId: payload.id,
+        eventType: payload.eventType,
+      });
     }
     return;
   }

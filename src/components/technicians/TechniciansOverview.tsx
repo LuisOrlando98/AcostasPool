@@ -54,6 +54,13 @@ function getInitials(name: string) {
   return initials || "T";
 }
 
+function getTelHref(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  return `tel:${value.replace(/\s+/g, "")}`;
+}
+
 export default function TechniciansOverview({ rows, deleteTechnicianAction }: Props) {
   const { t, locale } = useI18n();
   const [query, setQuery] = useState("");
@@ -133,7 +140,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
           </p>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
           <div className="ui-search flex w-full items-center gap-2 px-3 py-2">
             <svg
               viewBox="0 0 24 24"
@@ -200,7 +207,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
               <option value="name">{t("admin.technicians.overview.sort.name")}</option>
             </select>
 
-            <div className="grid grid-cols-2 gap-2 md:ml-auto md:flex md:items-center">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:ml-auto md:flex md:items-center">
               {hasActiveFilters ? (
                 <button
                   type="button"
@@ -217,7 +224,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
               <label
                 htmlFor="new-tech"
                 className={`app-button-primary cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em] ${
-                  hasActiveFilters ? "" : "col-span-2"
+                  hasActiveFilters ? "" : "sm:col-span-2"
                 }`}
               >
                 {t("admin.technicians.overview.actions.new")}
@@ -235,7 +242,12 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
             <>
               <div className="space-y-3 md:hidden">
                 {sortedRows.map((row) => (
-                  <article key={row.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <article
+                    key={row.id}
+                    className={`rounded-2xl border bg-white p-4 shadow-sm ${
+                      row.isActive ? "border-slate-200" : "border-slate-300"
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span
@@ -249,10 +261,10 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-slate-900">{row.name}</p>
-                          <p className="truncate text-[11px] text-slate-500">{row.email}</p>
-                          {row.phone ? (
-                            <p className="text-[11px] text-slate-500">{formatUsPhone(row.phone) ?? row.phone}</p>
-                          ) : null}
+                          <p className="text-[11px] text-slate-500">
+                            {t("admin.technicians.overview.table.lastActivity")}:{" "}
+                            {formatLastActivity(row.lastActivity)}
+                          </p>
                         </div>
                       </div>
                       <span
@@ -264,6 +276,46 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                       >
                         {row.isActive ? t("common.status.active") : t("admin.technicians.overview.filters.inactive")}
                       </span>
+                    </div>
+
+                    <div className="mt-3 grid gap-2">
+                      <a
+                        href={`mailto:${row.email}`}
+                        className="inline-flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] text-slate-600"
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6.75h18v10.5H3z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5l8 6 8-6" />
+                        </svg>
+                        <span className="truncate">{row.email}</span>
+                      </a>
+                      {row.phone ? (
+                        <a
+                          href={getTelHref(row.phone) ?? "#"}
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[11px] text-slate-600"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6.8 3.8h2.9l1.4 3.4-1.8 1.6a14.2 14.2 0 006 6l1.6-1.8 3.4 1.4v2.9a1.8 1.8 0 01-1.9 1.8A15.4 15.4 0 014.9 5.7 1.8 1.8 0 016.8 3.8z"
+                            />
+                          </svg>
+                          <span>{formatUsPhone(row.phone) ?? row.phone}</span>
+                        </a>
+                      ) : null}
                     </div>
 
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -291,41 +343,35 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                       </div>
                     </div>
 
-                    <p className="mt-3 text-[11px] text-slate-500">
-                      {t("admin.technicians.overview.table.lastActivity")}: {formatLastActivity(row.lastActivity)}
-                    </p>
-
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-2">
                       <Link
                         href={`/admin/routes?tech=${row.id}`}
-                        className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
                         {t("admin.technicians.overview.actions.viewRoute")}
                       </Link>
                       <Link
                         href={`/admin/technicians/${row.id}`}
-                        className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                       >
                         {t("admin.technicians.overview.actions.viewProfile")}
                       </Link>
+                      <form
+                        action={deleteTechnicianAction}
+                        onSubmit={(event) => {
+                          if (!window.confirm(confirmDeleteMessage)) {
+                            event.preventDefault();
+                          }
+                        }}
+                      >
+                        <input type="hidden" name="technicianId" value={row.id} />
+                        <DeleteTechnicianButton
+                          idleLabel={t("common.actions.delete")}
+                          pendingLabel={deletingLabel}
+                          className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
+                        />
+                      </form>
                     </div>
-
-                    <form
-                      action={deleteTechnicianAction}
-                      className="mt-2"
-                      onSubmit={(event) => {
-                        if (!window.confirm(confirmDeleteMessage)) {
-                          event.preventDefault();
-                        }
-                      }}
-                    >
-                      <input type="hidden" name="technicianId" value={row.id} />
-                      <DeleteTechnicianButton
-                        idleLabel={t("common.actions.delete")}
-                        pendingLabel={deletingLabel}
-                        className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
-                      />
-                    </form>
                   </article>
                 ))}
               </div>

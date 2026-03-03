@@ -626,7 +626,8 @@
         "selectCustomerProperty": "Selecciona cliente y propiedad para cada trabajo.",
         "createFailed": "No se pudieron crear los trabajos.",
         "saveFailed": "No se pudieron guardar los cambios.",
-        "saveJobFailed": "No se pudieron guardar los cambios del trabajo."
+        "saveJobFailed": "No se pudieron guardar los cambios del trabajo.",
+        "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado."
       },
       "filters": {
         "statusAll": "Estado: Todos",
@@ -1626,6 +1627,16 @@
         "title": "Lista del dia",
         "empty": "No hay trabajos para hoy.",
         "upload": "Completar trabajo"
+      },
+      "route": {
+        "title": "Linea de ruta",
+        "empty": "No hay paradas pendientes en tu ruta.",
+        "away": "A {{count}} min",
+        "trip": "{{count}} min de trayecto",
+        "now": "Ahora",
+        "stop": "Parada {{count}}",
+        "openMap": "Abrir mapa",
+        "call": "Llamar cliente"
       }
     },
     "history": {
@@ -1665,6 +1676,11 @@
         "customerNotesPlaceholder": "Nota visible para el cliente.",
         "photosTitle": "Fotos",
         "photosRequired": "Obligatorio",
+        "takePhoto": "Tomar/elegir fotos",
+        "photoCount": "{{count}} seleccionadas",
+        "quickHintPhoto": "Agrega al menos una foto para completar la visita.",
+        "quickHintChecklist": "Completa los items del checklist para continuar.",
+        "quickHintReady": "Todo listo. Toca completar.",
         "fields": {
           "photo": "Evidencia fotografica"
         },

@@ -27,6 +27,7 @@ import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
+import { normalizePropertyAddress } from "@/lib/routing/address";
 
 async function createProperty(formData: FormData) {
   "use server";
@@ -47,12 +48,13 @@ async function createProperty(formData: FormData) {
   if (!customerId || !address || !poolType || !sanitizerType || !filterType || !volume || !accessInfo) {
     return;
   }
+  const normalizedAddress = await normalizePropertyAddress(address);
 
   await prisma.property.create({
     data: {
       customerId,
       name: name || null,
-      address,
+      address: normalizedAddress,
       poolType: poolType || null,
       waterType: waterType || null,
       sanitizerType: sanitizerType || null,
@@ -238,12 +240,13 @@ async function updateProperty(formData: FormData) {
   if (!propertyId || !customerId || !address) {
     return;
   }
+  const normalizedAddress = await normalizePropertyAddress(address);
 
   await prisma.property.update({
     where: { id: propertyId },
     data: {
       name: name || null,
-      address,
+      address: normalizedAddress,
       poolType: poolType || null,
       waterType: waterType || null,
       sanitizerType: sanitizerType || null,

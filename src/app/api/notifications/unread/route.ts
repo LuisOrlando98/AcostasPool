@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
+import { buildTechRecipientWhere } from "@/lib/notifications/tech";
 
 export async function GET() {
   const session = await getSession();
@@ -61,22 +62,15 @@ export async function GET() {
       session.sub,
       session.role
     );
-    const candidates = await prisma.notification.findMany({
+    const unread = await prisma.notification.count({
       where: {
         recipientRole: "TECH",
         readAt: null,
         createdAt: { gte: since },
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+        ...buildTechRecipientWhere(session.sub),
       },
-      select: { payload: true },
     });
-    const unread = candidates.filter((item) => {
-      const payload =
-        item.payload && typeof item.payload === "object"
-          ? (item.payload as Record<string, unknown>)
-          : null;
-      return payload?.recipientUserId === session.sub;
-    }).length;
     return NextResponse.json({ unread });
   }
 

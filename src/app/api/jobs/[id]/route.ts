@@ -3,10 +3,15 @@ import { JobPriority, JobStatus, ServiceType, type Prisma } from "@prisma/client
 import { getSession } from "@/lib/auth/session";
 import { getServiceTierChecklist } from "@/lib/service-tiers";
 import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
+import { prisma } from "@/lib/db";
+import { logAuditEvent } from "@/lib/audit/log";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
+
+const toSortOrder = (value: Date) =>
+  value.getHours() * 60 + value.getMinutes();
 
 export async function PATCH(
   request: Request,
@@ -24,12 +29,22 @@ export async function PATCH(
     return NextResponse.json({ error: "Missing job id" }, { status: 400 });
   }
   const data: Prisma.JobUpdateInput = {};
+  let nextScheduledDate: Date | null = null;
 
   if (body.scheduledDate) {
     const date = new Date(String(body.scheduledDate));
     if (!Number.isNaN(date.getTime())) {
       data.scheduledDate = date;
+      nextScheduledDate = date;
     }
+  }
+
+  if (typeof body.sortOrder === "number") {
+    data.sortOrder = body.sortOrder;
+  } else if (body.sortOrder === null) {
+    data.sortOrder = null;
+  } else if (nextScheduledDate) {
+    data.sortOrder = toSortOrder(nextScheduledDate);
   }
 
   if (
@@ -89,4 +104,70 @@ export async function PATCH(
   }
 
   return NextResponse.json({ job: updated });
+}
+
+export async function DELETE(
+  _request: Request,
+  context: RouteContext
+) {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id: jobId } = await context.params;
+  if (!jobId) {
+    return NextResponse.json({ error: "Missing job id" }, { status: 400 });
+  }
+
+  const existing = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: {
+      id: true,
+      customerId: true,
+      propertyId: true,
+      technicianId: true,
+      scheduledDate: true,
+      status: true,
+    },
+  });
+  if (!existing) {
+    return NextResponse.json({ error: "Job not found" }, { status: 404 });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.invoice.updateMany({
+      where: { jobId },
+      data: { jobId: null },
+    });
+    await tx.emailLog.updateMany({
+      where: { jobId },
+      data: { jobId: null },
+    });
+    await tx.techDigestItem.deleteMany({
+      where: { jobId },
+    });
+    await tx.jobPhoto.deleteMany({
+      where: { jobId },
+    });
+    await tx.job.delete({
+      where: { id: jobId },
+    });
+  });
+
+  await logAuditEvent({
+    userId: session.sub,
+    action: "JOB_DELETED",
+    entity: "Job",
+    entityId: jobId,
+    metadata: {
+      customerId: existing.customerId,
+      propertyId: existing.propertyId,
+      technicianId: existing.technicianId,
+      scheduledDate: existing.scheduledDate.toISOString(),
+      status: existing.status,
+    },
+  });
+
+  return NextResponse.json({ deleted: true, jobId });
 }

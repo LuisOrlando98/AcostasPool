@@ -10,6 +10,9 @@ type UpdatePayload = {
   technicianId?: string | null;
 };
 
+const toSortOrder = (value: Date) =>
+  value.getHours() * 60 + value.getMinutes();
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -40,9 +43,24 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const nextScheduledDate = update.scheduledDate
-      ? new Date(update.scheduledDate)
+    const parsedScheduledDate =
+      typeof update.scheduledDate === "string"
+        ? new Date(update.scheduledDate)
+        : null;
+    const hasValidScheduledDate =
+      parsedScheduledDate !== null &&
+      !Number.isNaN(parsedScheduledDate.getTime());
+    const nextScheduledDate = hasValidScheduledDate
+      ? parsedScheduledDate
       : existing.scheduledDate;
+    const nextSortOrder =
+      typeof update.sortOrder === "number"
+        ? update.sortOrder
+        : update.sortOrder === null
+          ? null
+          : hasValidScheduledDate
+            ? toSortOrder(nextScheduledDate)
+            : undefined;
     const status =
       existing.status === "COMPLETED"
         ? "COMPLETED"
@@ -55,12 +73,7 @@ export async function POST(request: Request) {
       actorUserId: session.sub,
       data: {
         scheduledDate: nextScheduledDate,
-        sortOrder:
-          typeof update.sortOrder === "number"
-            ? update.sortOrder
-            : update.sortOrder === null
-              ? null
-              : undefined,
+        sortOrder: nextSortOrder,
         technicianId:
           update.technicianId !== undefined ? update.technicianId : undefined,
         status,

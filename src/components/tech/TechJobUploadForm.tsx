@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/client";
 import CustomerDocumentUploader from "@/components/customers/CustomerDocumentUploader";
@@ -11,6 +11,7 @@ type TechJobUploadData = {
   id: string;
   customerId: string;
   customerName: string;
+  customerPhone?: string | null;
   propertyAddress: string;
   scheduledTime: string;
   serviceLabel: string;
@@ -26,6 +27,7 @@ type TechJobUploadData = {
 
 export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
   const { t } = useI18n();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>(job.checklist);
   const [internalNotes, setInternalNotes] = useState(job.internalNotes ?? "");
@@ -38,6 +40,12 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
     [checklist]
   );
   const isCompleted = job.status === "COMPLETED";
+  const canSubmit = !isCompleted && files.length > 0 && (checklist.length === 0 || checklistCompleted);
+  const canCallCustomer =
+    typeof job.customerPhone === "string" && job.customerPhone.trim().length > 0;
+  const phoneHref = canCallCustomer
+    ? `tel:${job.customerPhone?.replace(/\s+/g, "")}`
+    : null;
 
   const handleSubmit = async () => {
     if (isCompleted) {
@@ -78,6 +86,9 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
 
     setMessage(t("tech.jobs.upload.success"));
     setLoading(false);
+    window.setTimeout(() => {
+      window.location.href = "/tech";
+    }, 900);
   };
 
   return (
@@ -125,6 +136,24 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
                 {job.accessInfo}
               </div>
             ) : null}
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.propertyAddress)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="ui-button-ghost inline-flex items-center justify-center px-3 py-2 text-xs font-semibold"
+              >
+                {t("tech.home.route.openMap")}
+              </a>
+              {canCallCustomer ? (
+                <a
+                  href={phoneHref ?? "#"}
+                  className="ui-button-ghost inline-flex items-center justify-center px-3 py-2 text-xs font-semibold"
+                >
+                  {t("tech.home.route.call")}
+                </a>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -242,7 +271,15 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
             </span>
           </div>
           <div className="mt-4 space-y-3">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="app-button-secondary w-full px-4 py-3 text-xs font-semibold"
+            >
+              {t("tech.jobs.upload.takePhoto")}
+            </button>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               multiple
@@ -259,6 +296,9 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
                 ))}
               </ul>
             ) : null}
+            <p className="text-[11px] text-slate-500">
+              {t("tech.jobs.upload.photoCount", { count: files.length })}
+            </p>
           </div>
         </div>
 
@@ -279,21 +319,33 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
               {message}
             </div>
           ) : null}
+          {isCompleted ? (
+            <p className="text-xs text-slate-500">
+              {t("tech.jobs.upload.completedNote")}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="sticky bottom-2 z-20 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+          {!canSubmit && !isCompleted ? (
+            <p className="mb-2 text-[11px] text-slate-500">
+              {files.length === 0
+                ? t("tech.jobs.upload.quickHintPhoto")
+                : checklist.length > 0 && !checklistCompleted
+                  ? t("tech.jobs.upload.quickHintChecklist")
+                  : t("tech.jobs.upload.quickHintReady")}
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={loading || isCompleted}
+            disabled={loading || isCompleted || !canSubmit}
             className="app-button-primary w-full px-5 py-3 text-sm font-semibold disabled:opacity-70"
           >
             {loading
               ? t("tech.jobs.upload.loading")
               : t("tech.jobs.upload.submit")}
           </button>
-          {isCompleted ? (
-            <p className="mt-3 text-xs text-slate-500">
-              {t("tech.jobs.upload.completedNote")}
-            </p>
-          ) : null}
         </div>
       </div>
     </section>

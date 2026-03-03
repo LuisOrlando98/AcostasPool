@@ -48,7 +48,7 @@ export default async function TechPage() {
       type: true,
       priority: true,
       serviceType: true,
-      customer: { select: { nombre: true, apellidos: true } },
+      customer: { select: { nombre: true, apellidos: true, telefono: true } },
       property: { select: { address: true } },
       photos: { select: { id: true } },
     },
@@ -66,6 +66,7 @@ export default async function TechPage() {
     (job) => job.type === "ON_DEMAND"
   ).length;
   const nextJob = remainingJobs[0] ?? null;
+  const routeJobs = remainingJobs;
   const allDone = todaysJobs.length > 0 && remainingJobs.length === 0;
   const serviceLabelMap: Record<string, string> = {
     WEEKLY_CLEANING: t("jobs.service.weeklyCleaning"),
@@ -73,6 +74,9 @@ export default async function TechPage() {
     CHEM_BALANCE: t("jobs.service.chemBalance"),
     EQUIPMENT_CHECK: t("jobs.service.equipmentCheck"),
   };
+
+  const toMinutes = (from: Date, to: Date) =>
+    Math.max(1, Math.round((to.getTime() - from.getTime()) / 60000));
 
   return (
     <AppShell
@@ -123,6 +127,24 @@ export default async function TechPage() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
+                {nextJob.customer.telefono ? (
+                  <a
+                    href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
+                    className="app-button-secondary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
+                  >
+                    {t("tech.home.route.call")}
+                  </a>
+                ) : null}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    nextJob.property.address
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="app-button-secondary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
+                >
+                  {t("tech.home.route.openMap")}
+                </a>
                 <Link
                   href={`/tech/jobs/${nextJob.id}`}
                   className="app-button-primary w-full px-4 py-3 text-sm font-semibold sm:w-auto"
@@ -168,61 +190,96 @@ export default async function TechPage() {
 
       <section className="app-card p-6 shadow-contrast">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">{t("tech.home.list.title")}</h2>
+          <h2 className="text-lg font-semibold">{t("tech.home.route.title")}</h2>
         </div>
         <div className="mt-4 space-y-3">
-          {todaysJobs.length === 0 ? (
+          {routeJobs.length === 0 ? (
             <p className="text-sm text-slate-500">
-              {t("tech.home.list.empty")}
+              {allDone ? t("tech.home.next.done") : t("tech.home.route.empty")}
             </p>
           ) : (
-            todaysJobs.map((job) => (
-              <div
-                key={job.id}
-                className="app-callout flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {formatCustomerName(job.customer)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {job.property.address}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span className="app-chip px-2 py-1 text-xs" data-tone="info">
-                      {serviceLabelMap[job.serviceType] ?? job.serviceType}
-                    </span>
-                    <span
-                      className="app-chip px-2 py-1 text-xs"
-                      data-tone={job.priority === "URGENT" ? "danger" : "warning"}
-                    >
-                      {job.priority === "URGENT"
-                        ? t("jobs.priority.urgent")
-                        : t("jobs.priority.normal")}
-                    </span>
-                    <span
-                      className="app-chip px-2 py-1 text-xs"
-                      data-tone={job.type === "ON_DEMAND" ? "warning" : "info"}
-                    >
-                      {job.type === "ON_DEMAND"
-                        ? t("jobs.type.onDemand")
-                        : t("jobs.type.routine")}
-                    </span>
-                    <span className="app-chip px-2 py-1 text-xs" data-tone="success">
-                      {job.scheduledDate.toLocaleTimeString(locale)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <Link
-                    href={`/tech/jobs/${job.id}`}
-                    className="app-button-primary w-full px-4 py-3 text-xs font-semibold sm:w-auto"
-                  >
-                    {t("tech.home.list.upload")}
-                  </Link>
-                </div>
-              </div>
-            ))
+            <ol className="space-y-3">
+              {routeJobs.map((job, index) => {
+                const previous = routeJobs[index - 1] ?? null;
+                const awayMinutes = Math.round(
+                  (job.scheduledDate.getTime() - now.getTime()) / 60000
+                );
+                const tripMinutes = previous
+                  ? toMinutes(previous.scheduledDate, job.scheduledDate)
+                  : 1;
+                const timingLabel =
+                  index === 0
+                    ? awayMinutes <= 1
+                      ? t("tech.home.route.now")
+                      : t("tech.home.route.away", { count: awayMinutes })
+                    : t("tech.home.route.trip", {
+                        count: tripMinutes,
+                      });
+
+                return (
+                  <li key={job.id} className="relative pl-6">
+                    <span className="absolute left-0 top-1.5 h-2 w-2 rounded-full bg-slate-800" />
+                    {index < routeJobs.length - 1 ? (
+                      <span className="absolute left-[3px] top-4 h-[calc(100%+0.8rem)] border-l border-dashed border-slate-300" />
+                    ) : null}
+
+                    <p className="text-xs font-semibold text-slate-500">{timingLabel}</p>
+
+                    <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {t("tech.home.route.stop", { count: index + 1 })}
+                      </p>
+                      <p className="text-sm text-slate-700">{formatCustomerName(job.customer)}</p>
+                      <p className="text-xs text-slate-500">{job.property.address}</p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span className="app-chip px-2 py-1 text-xs" data-tone="info">
+                          {serviceLabelMap[job.serviceType] ?? job.serviceType}
+                        </span>
+                        <span
+                          className="app-chip px-2 py-1 text-xs"
+                          data-tone={job.priority === "URGENT" ? "danger" : "warning"}
+                        >
+                          {job.priority === "URGENT"
+                            ? t("jobs.priority.urgent")
+                            : t("jobs.priority.normal")}
+                        </span>
+                        <span className="app-chip px-2 py-1 text-xs" data-tone="success">
+                          {job.scheduledDate.toLocaleTimeString(locale)}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            job.property.address
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="app-button-ghost inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
+                        >
+                          {t("tech.home.route.openMap")}
+                        </a>
+                        {job.customer.telefono ? (
+                          <a
+                            href={`tel:${job.customer.telefono.replace(/\s+/g, "")}`}
+                            className="app-button-ghost inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
+                          >
+                            {t("tech.home.route.call")}
+                          </a>
+                        ) : null}
+                        <Link
+                          href={`/tech/jobs/${job.id}`}
+                          className="app-button-primary inline-flex items-center justify-center px-4 py-2 text-xs font-semibold"
+                        >
+                          {t("tech.home.list.upload")}
+                        </Link>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
           )}
         </div>
       </section>

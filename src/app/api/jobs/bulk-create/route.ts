@@ -146,6 +146,7 @@ export async function POST(request: Request) {
         technician: { include: { user: true } },
       },
     });
+    const customerName = formatCustomerName(job.customer);
 
     if (job.technicianId) {
       const { start, end } = getRouteDayRange(job.scheduledDate);
@@ -163,7 +164,7 @@ export async function POST(request: Request) {
         changeType: existingCount === 0 ? "ROUTE_ASSIGNED" : "JOB_ASSIGNED",
         payload: {
           scheduledDate: job.scheduledDate.toISOString(),
-          customerName: formatCustomerName(job.customer),
+          customerName,
           address: job.property.address,
         },
       });
@@ -182,6 +183,25 @@ export async function POST(request: Request) {
       },
     });
 
+    if (job.technician?.userId) {
+      await createNotification({
+        customerId: job.customerId,
+        recipientRole: "TECH",
+        recipientUserId: job.technician.userId,
+        eventType: "ROUTE_UPDATED",
+        severity: "INFO",
+        actorUserId: session.sub,
+        payload: {
+          jobId: job.id,
+          technicianId: job.technician.id,
+          customerName,
+          address: job.property.address,
+          scheduledDate: job.scheduledDate.toISOString(),
+          changeType: "ASSIGNED",
+        },
+      });
+    }
+
     created.push({
       id: job.id,
       scheduledDate: job.scheduledDate.toISOString(),
@@ -199,7 +219,7 @@ export async function POST(request: Request) {
         : null,
       customer: {
         id: job.customer.id,
-        name: formatCustomerName(job.customer),
+        name: customerName,
         email: job.customer.email,
         phone: job.customer.telefono,
       },

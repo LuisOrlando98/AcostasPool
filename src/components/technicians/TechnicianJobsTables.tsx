@@ -228,17 +228,17 @@ const DateFilterPopover = ({
   };
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative w-full sm:w-auto" ref={containerRef}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300"
+        className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 sm:w-auto sm:justify-start"
       >
         <IconCalendar className="h-4 w-4 text-slate-500" />
         {t("admin.technicians.detail.jobs.filters.date")}
       </button>
       <div
-        className={`absolute right-0 z-20 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg transition ${
+        className={`absolute left-0 right-0 z-20 mt-2 rounded-2xl border border-slate-200 bg-white p-3 shadow-lg transition sm:left-auto sm:right-0 sm:w-64 ${
           open ? "opacity-100 scale-100" : "pointer-events-none opacity-0 scale-95"
         }`}
         style={{ transformOrigin: "top right" }}
@@ -346,8 +346,8 @@ const FiltersBar = ({
   statusOptions: string[];
   t: (key: string, values?: Record<string, string | number>) => string;
 }) => (
-  <div className="ui-filter-bar mt-4 flex flex-wrap items-center gap-2 px-3 py-3">
-    <label className="ui-search flex min-w-[220px] flex-1 items-center gap-2 px-3 py-2 text-xs">
+  <div className="ui-filter-bar mt-4 grid gap-2 px-3 py-3 sm:grid-cols-2 xl:flex xl:flex-wrap xl:items-center">
+    <label className="ui-search flex min-w-0 items-center gap-2 px-3 py-2 text-xs sm:col-span-2 xl:min-w-[220px] xl:flex-1">
       <IconSearch className="ui-search-icon h-4 w-4" />
       <input
         value={search}
@@ -360,7 +360,7 @@ const FiltersBar = ({
     <select
       value={statusFilter}
       onChange={(event) => setStatusFilter(event.target.value)}
-      className="ui-select px-3 py-2 text-xs"
+      className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">{t("admin.technicians.detail.jobs.filters.status")}</option>
       {statusOptions.map((status) => (
@@ -373,7 +373,7 @@ const FiltersBar = ({
     <select
       value={priorityFilter}
       onChange={(event) => setPriorityFilter(event.target.value)}
-      className="ui-select px-3 py-2 text-xs"
+      className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">
         {t("admin.technicians.detail.jobs.filters.priority")}
@@ -385,7 +385,7 @@ const FiltersBar = ({
     <select
       value={serviceFilter}
       onChange={(event) => setServiceFilter(event.target.value)}
-      className="ui-select px-3 py-2 text-xs"
+      className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">
         {t("admin.technicians.detail.jobs.filters.service")}
@@ -401,7 +401,7 @@ const FiltersBar = ({
       <select
         value={evidenceFilter}
         onChange={(event) => setEvidenceFilter(event.target.value)}
-        className="ui-select px-3 py-2 text-xs"
+        className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
       >
         <option value="ALL">
           {t("admin.technicians.detail.jobs.filters.evidence")}
@@ -427,7 +427,7 @@ const FiltersBar = ({
     <button
       type="button"
       onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
-      className="ui-button-ghost px-3 py-2 text-[11px] font-semibold"
+      className="ui-button-ghost w-full px-3 py-2 text-[11px] font-semibold sm:w-auto"
     >
       {sortDir === "asc"
         ? mode === "future"
@@ -441,7 +441,7 @@ const FiltersBar = ({
     <button
       type="button"
       onClick={clearFilters}
-      className="ui-button-ghost px-3 py-2 text-[11px] font-semibold"
+      className="ui-button-ghost w-full px-3 py-2 text-[11px] font-semibold sm:w-auto"
     >
       {t("admin.technicians.detail.jobs.filters.clear")}
     </button>
@@ -581,8 +581,8 @@ const UpcomingCalendarSection = ({
         t={t}
       />
 
-      <div className="mt-4 overflow-x-auto">
-        <div className="grid auto-cols-[minmax(190px,1fr)] grid-flow-col gap-3">
+      <div className="mt-4 -mx-1 overflow-x-auto px-1 pb-1">
+        <div className="grid auto-cols-[minmax(82vw,1fr)] grid-flow-col gap-3 sm:auto-cols-[minmax(220px,1fr)]">
           {calendarDays.map((day) => {
             const dayRows = grouped.get(day.key) ?? [];
             return (
@@ -765,7 +765,73 @@ const CompletedTableSection = ({
         t={t}
       />
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 space-y-3 md:hidden">
+        {filteredRows.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+            {t("admin.technicians.detail.jobs.table.empty")}
+          </div>
+        ) : (
+          filteredRows.map((row) => (
+            <article key={row.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">{row.customerName}</p>
+                  <p className="text-[11px] text-slate-500">{row.address}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">{formatDateTime(row.scheduledDate, locale)}</p>
+                </div>
+                <span
+                  className="app-chip px-2 py-0.5 text-[10px] font-semibold"
+                  data-tone={statusTone[row.status] ?? "info"}
+                >
+                  {getJobStatusLabel(row.status, t)}
+                </span>
+              </div>
+
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    {t("admin.technicians.detail.jobs.table.priority")}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-slate-900">
+                    {row.priority === "URGENT" ? t("jobs.priority.urgent") : t("jobs.priority.normal")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                    {t("admin.technicians.detail.jobs.table.service")}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold text-slate-900">
+                    {serviceTypeOptions.find((option) => option.value === row.serviceType)?.label ?? row.serviceType}
+                  </p>
+                </div>
+                {showEvidenceFilter ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                      {t("admin.technicians.detail.jobs.table.evidence")}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold text-slate-900">
+                      {row.photosCount > 0
+                        ? t("admin.technicians.detail.jobs.evidenceCount", {
+                            count: row.photosCount,
+                          })
+                        : t("admin.technicians.detail.jobs.noEvidence")}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              <Link
+                href={`/admin/routes/${row.id}`}
+                className="ui-button-ghost mt-3 inline-flex w-full items-center justify-center px-3 py-2 text-[11px] font-semibold"
+              >
+                {t("admin.technicians.detail.jobs.table.viewJob")}
+              </Link>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="mt-4 hidden overflow-x-auto md:block">
         <table className="min-w-[760px] w-full text-left text-[12px] text-slate-600">
           <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
             <tr className="border-b border-slate-100">

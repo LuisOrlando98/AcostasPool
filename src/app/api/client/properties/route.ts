@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { revalidatePath } from "next/cache";
+import { normalizePropertyAddress } from "@/lib/routing/address";
 
 const normalizeOptional = (value: unknown) => {
   if (typeof value !== "string") {
@@ -71,12 +72,13 @@ export async function POST(request: Request) {
   if (!address) {
     return NextResponse.json({ error: "Address is required" }, { status: 400 });
   }
+  const normalizedAddress = await normalizePropertyAddress(address);
 
   const property = await prisma.property.create({
     data: {
       customerId: customer.id,
       name: normalizeOptional(body.name),
-      address,
+      address: normalizedAddress,
       poolType: normalizeOptional(body.poolType),
       waterType: normalizeOptional(body.waterType),
       sanitizerType: normalizeOptional(body.sanitizerType),
@@ -125,6 +127,7 @@ export async function PATCH(request: Request) {
       { status: 400 }
     );
   }
+  const normalizedAddress = await normalizePropertyAddress(address);
 
   const existing = await prisma.property.findUnique({
     where: { id: propertyId },
@@ -139,7 +142,7 @@ export async function PATCH(request: Request) {
     where: { id: existing.id },
     data: {
       name: normalizeOptional(body.name),
-      address,
+      address: normalizedAddress,
       poolType: normalizeOptional(body.poolType),
       waterType: normalizeOptional(body.waterType),
       sanitizerType: normalizeOptional(body.sanitizerType),

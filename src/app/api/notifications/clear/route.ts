@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
+import { buildTechRecipientWhere } from "@/lib/notifications/tech";
 
 export async function POST() {
   const session = await getSession();
@@ -54,27 +55,12 @@ export async function POST() {
       session.sub,
       session.role
     );
-    const candidates = await prisma.notification.findMany({
+    const result = await prisma.notification.deleteMany({
       where: {
         recipientRole: "TECH",
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
+        ...buildTechRecipientWhere(session.sub),
       },
-      select: { id: true, payload: true },
-    });
-    const ids = candidates
-      .filter((item) => {
-        const payload =
-          item.payload && typeof item.payload === "object"
-            ? (item.payload as Record<string, unknown>)
-            : null;
-        return payload?.recipientUserId === session.sub;
-      })
-      .map((item) => item.id);
-    if (ids.length === 0) {
-      return NextResponse.json({ ok: true, count: 0 });
-    }
-    const result = await prisma.notification.deleteMany({
-      where: { id: { in: ids } },
     });
     return NextResponse.json({ ok: true, count: result.count });
   }

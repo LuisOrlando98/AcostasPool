@@ -100,6 +100,7 @@ export default async function TechJobUploadPage({
           id: job.id,
           customerId: job.customerId,
           customerName: formatCustomerName(job.customer),
+          customerPhone: job.customer.telefono ?? null,
           propertyAddress: job.property.address,
           scheduledTime: job.scheduledDate.toLocaleTimeString(locale),
           serviceLabel: serviceDescriptor,
