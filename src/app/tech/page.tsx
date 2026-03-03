@@ -138,8 +138,9 @@ export default async function TechPage() {
       title={t("tech.home.title")}
       subtitle={t("tech.home.subtitle")}
       role="TECH"
+      wide
     >
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
         <div className="app-card p-6 shadow-contrast">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -156,59 +157,67 @@ export default async function TechPage() {
           </div>
 
           {nextJob ? (
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div>
-                <p className="text-base font-semibold text-slate-900">
-                  {formatCustomerName(nextJob.customer)}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {nextJob.property.address}
-                </p>
+            <div className="mt-4 text-sm text-slate-600 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)] xl:gap-4">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-base font-semibold text-slate-900">
+                    {formatCustomerName(nextJob.customer)}
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    {nextJob.property.address}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span className="app-chip px-2 py-1 text-xs" data-tone="info">
+                    {serviceLabelMap[nextJob.serviceType] ?? nextJob.serviceType}
+                  </span>
+                  <span
+                    className="app-chip px-2 py-1 text-xs"
+                    data-tone={nextJob.priority === "URGENT" ? "danger" : "warning"}
+                  >
+                    {nextJob.priority === "URGENT"
+                      ? t("jobs.priority.urgent")
+                      : t("jobs.priority.normal")}
+                  </span>
+                  <span className="app-chip px-2 py-1 text-xs" data-tone="success">
+                    {nextJob.scheduledDate.toLocaleTimeString(locale)}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                <span className="app-chip px-2 py-1 text-xs" data-tone="info">
-                  {serviceLabelMap[nextJob.serviceType] ?? nextJob.serviceType}
-                </span>
-                <span
-                  className="app-chip px-2 py-1 text-xs"
-                  data-tone={nextJob.priority === "URGENT" ? "danger" : "warning"}
+              <div className="mt-3 space-y-2 xl:mt-0 xl:flex xl:flex-col xl:justify-end">
+                <div
+                  className={`grid gap-2 ${
+                    nextJob.customer.telefono ? "grid-cols-2" : "grid-cols-1"
+                  }`}
                 >
-                  {nextJob.priority === "URGENT"
-                    ? t("jobs.priority.urgent")
-                    : t("jobs.priority.normal")}
-                </span>
-                <span className="app-chip px-2 py-1 text-xs" data-tone="success">
-                  {nextJob.scheduledDate.toLocaleTimeString(locale)}
-                </span>
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                    nextJob.property.address
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
-                >
-                  <MapPinIcon />
-                  {t("tech.home.route.openMap")}
-                </a>
-                {nextJob.customer.telefono ? (
                   <a
-                    href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      nextJob.property.address
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
                     className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                   >
-                    <PhoneIcon />
-                    {t("tech.home.route.call")}
+                    <MapPinIcon />
+                    {t("tech.home.route.openMap")}
                   </a>
-                ) : null}
+                  {nextJob.customer.telefono ? (
+                    <a
+                      href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
+                      className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                    >
+                      <PhoneIcon />
+                      {t("tech.home.route.call")}
+                    </a>
+                  ) : null}
+                </div>
+                <Link
+                  href={`/tech/jobs/${nextJob.id}`}
+                  className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
+                >
+                  {t("tech.home.next.complete")}
+                </Link>
               </div>
-              <Link
-                href={`/tech/jobs/${nextJob.id}`}
-                className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
-              >
-                {t("tech.home.next.complete")}
-              </Link>
             </div>
           ) : (
             <p className="mt-4 text-sm text-slate-500">
@@ -250,7 +259,7 @@ export default async function TechPage() {
           </div>
         </div>
 
-        <div className="hidden gap-3 sm:grid sm:grid-cols-2">
+        <div className="hidden gap-3 sm:grid sm:grid-cols-2 2xl:grid-cols-4">
           <StatCard
             label={t("tech.home.stats.stops")}
             value={`${todaysJobs.length}`}
@@ -346,58 +355,68 @@ export default async function TechPage() {
                       </p>
                     ) : null}
 
-                    <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-transform duration-200 hover:-translate-y-0.5">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {t("tech.home.route.stop", { count: index + 1 })}
-                      </p>
-                      <p className="text-sm text-slate-700">{formatCustomerName(job.customer)}</p>
-                      <p className="text-xs text-slate-500">{job.property.address}</p>
+                    <div className="mt-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-transform duration-200 hover:-translate-y-0.5 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.72fr)] xl:items-start xl:gap-4">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {t("tech.home.route.stop", { count: index + 1 })}
+                        </p>
+                        <p className="text-sm text-slate-700">
+                          {formatCustomerName(job.customer)}
+                        </p>
+                        <p className="text-xs text-slate-500">{job.property.address}</p>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="app-chip px-2 py-1 text-xs" data-tone="info">
-                          {serviceLabelMap[job.serviceType] ?? job.serviceType}
-                        </span>
-                        <span
-                          className="app-chip px-2 py-1 text-xs"
-                          data-tone={job.priority === "URGENT" ? "danger" : "warning"}
-                        >
-                          {job.priority === "URGENT"
-                            ? t("jobs.priority.urgent")
-                            : t("jobs.priority.normal")}
-                        </span>
-                        <span className="app-chip px-2 py-1 text-xs" data-tone="success">
-                          {job.scheduledDate.toLocaleTimeString(locale)}
-                        </span>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                          <span className="app-chip px-2 py-1 text-xs" data-tone="info">
+                            {serviceLabelMap[job.serviceType] ?? job.serviceType}
+                          </span>
+                          <span
+                            className="app-chip px-2 py-1 text-xs"
+                            data-tone={job.priority === "URGENT" ? "danger" : "warning"}
+                          >
+                            {job.priority === "URGENT"
+                              ? t("jobs.priority.urgent")
+                              : t("jobs.priority.normal")}
+                          </span>
+                          <span className="app-chip px-2 py-1 text-xs" data-tone="success">
+                            {job.scheduledDate.toLocaleTimeString(locale)}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="mt-3 flex items-center gap-2">
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                            job.property.address
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                      <div className="mt-3 space-y-2 xl:mt-0 xl:self-end">
+                        <div
+                          className={`grid gap-2 ${
+                            job.customer.telefono ? "grid-cols-2" : "grid-cols-1"
+                          }`}
                         >
-                          <MapPinIcon />
-                          {t("tech.home.route.openMap")}
-                        </a>
-                        {job.customer.telefono ? (
                           <a
-                            href={`tel:${job.customer.telefono.replace(/\s+/g, "")}`}
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              job.property.address
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
                             className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                           >
-                            <PhoneIcon />
-                            {t("tech.home.route.call")}
+                            <MapPinIcon />
+                            {t("tech.home.route.openMap")}
                           </a>
-                        ) : null}
+                          {job.customer.telefono ? (
+                            <a
+                              href={`tel:${job.customer.telefono.replace(/\s+/g, "")}`}
+                              className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                            >
+                              <PhoneIcon />
+                              {t("tech.home.route.call")}
+                            </a>
+                          ) : null}
+                        </div>
+                        <Link
+                          href={`/tech/jobs/${job.id}`}
+                          className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2 text-xs font-semibold"
+                        >
+                          {t("tech.home.list.upload")}
+                        </Link>
                       </div>
-                      <Link
-                        href={`/tech/jobs/${job.id}`}
-                        className="app-button-primary mt-2 inline-flex w-full items-center justify-center px-4 py-2 text-xs font-semibold"
-                      >
-                        {t("tech.home.list.upload")}
-                      </Link>
                     </div>
                   </li>
                 );

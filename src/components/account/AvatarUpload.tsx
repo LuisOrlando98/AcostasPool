@@ -260,9 +260,9 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
       : "text-slate-500";
 
   return (
-    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] items-start gap-3">
-      <div className="flex justify-center">
-        <div className="h-28 w-28 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm sm:h-32 sm:w-32">
+    <div className="grid gap-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-stretch">
+      <div className="flex justify-center sm:justify-start">
+        <div className="h-32 w-32 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm sm:h-full sm:min-h-[10.75rem] sm:w-full">
           {preview ? (
             <img
               src={preview}
@@ -286,7 +286,7 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4">
         <input
           ref={inputRef}
           type="file"
@@ -294,10 +294,10 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           onChange={handleFileChange}
           className="hidden"
         />
-        <p className="text-xs font-medium text-slate-700">{t("account.avatar.formats")}</p>
+        <p className="text-sm font-medium text-slate-700">{t("account.avatar.formats")}</p>
 
         {hasFile ? (
-          <p className="mt-1 truncate text-[11px] text-slate-500">
+          <p className="mt-1 truncate text-xs text-slate-500">
             {t("account.avatar.selected", {
               name: file?.name ?? "",
               size: file ? formatFileSize(file.size) : "",
@@ -305,12 +305,12 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           </p>
         ) : null}
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handlePick}
             disabled={loading}
-            className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+            className="app-button-secondary inline-flex min-h-10 items-center justify-center px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-60"
           >
             {hasFile ? t("account.avatar.change") : t("account.avatar.choose")}
           </button>
@@ -318,13 +318,13 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
             type="button"
             onClick={handleSubmit}
             disabled={loading || !hasFile}
-            className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60"
+            className="app-button-primary inline-flex min-h-10 items-center justify-center px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             {loading ? t("account.avatar.loading") : t("account.avatar.submit")}
           </button>
         </div>
 
-        {message ? <p className={`mt-2 text-xs ${messageClass}`}>{message}</p> : null}
+        {message ? <p className={`mt-3 text-sm ${messageClass}`}>{message}</p> : null}
       </div>
     </div>
   );

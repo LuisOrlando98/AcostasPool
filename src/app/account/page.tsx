@@ -18,6 +18,8 @@ async function updateProfile(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = normalizeEmail(String(formData.get("email") ?? ""));
   const locale = String(formData.get("locale") ?? "EN");
+  const techPhone = String(formData.get("techPhone") ?? "").trim();
+  const techNotes = String(formData.get("techNotes") ?? "").trim();
 
   if (!fullName || !email) {
     return;
@@ -61,6 +63,15 @@ async function updateProfile(formData: FormData) {
       data: { idiomaPreferencia: locale === "EN" ? "EN" : "ES" },
     });
   }
+  if (session.role === "TECH") {
+    await prisma.technician.updateMany({
+      where: { userId: session.sub },
+      data: {
+        phone: techPhone || null,
+        notes: techNotes || null,
+      },
+    });
+  }
 
   const cookieStore = await cookies();
   cookieStore.set(LOCALE_COOKIE, normalizeLocale(locale), {
@@ -79,6 +90,7 @@ export default async function AccountPage() {
   const t = await getTranslations();
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
+    include: { technician: true },
   });
 
   if (!user) {
@@ -91,9 +103,9 @@ export default async function AccountPage() {
       subtitle={t("account.subtitle")}
       role={user.role}
     >
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
         <div className="space-y-6">
-          <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm">
+          <div className="app-card p-6 shadow-contrast">
             <h2 className="text-lg font-semibold">{t("account.profile.title")}</h2>
             <form action={updateProfile} className="mt-4 space-y-4">
               <div>
@@ -131,6 +143,31 @@ export default async function AccountPage() {
                   <option value="ES">ES</option>
                 </select>
               </div>
+              {user.role === "TECH" ? (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.phone")}
+                    </label>
+                    <input
+                      name="techPhone"
+                      defaultValue={user.technician?.phone ?? ""}
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.notes")}
+                    </label>
+                    <textarea
+                      name="techNotes"
+                      defaultValue={user.technician?.notes ?? ""}
+                      rows={4}
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    />
+                  </div>
+                </>
+              ) : null}
               <FormSubmitButton
                 idleLabel={t("common.actions.save")}
                 pendingLabel={t("common.feedback.saving")}
@@ -140,26 +177,28 @@ export default async function AccountPage() {
             </form>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">{t("account.photo.title")}</h2>
-            <div className="mt-4">
-              <AvatarUpload avatarUrl={user.avatarUrl} />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="app-card p-6 shadow-contrast">
+              <h2 className="text-lg font-semibold">{t("account.photo.title")}</h2>
+              <div className="mt-4">
+                <AvatarUpload avatarUrl={user.avatarUrl} />
+              </div>
+            </div>
+
+            <div className="app-card p-6 shadow-contrast">
+              <h2 className="text-lg font-semibold">{t("account.credentials.title")}</h2>
+              <p className="mt-2 text-sm text-slate-600">
+                {t("account.credentials.subtitle")}
+              </p>
+              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <ResetLinkButton buttonClassName="w-full justify-center" />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm">
-            <h2 className="text-lg font-semibold">{t("account.credentials.title")}</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              {t("account.credentials.subtitle")}
-            </p>
-            <div className="mt-4">
-              <ResetLinkButton />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-[var(--border)] bg-white p-6 shadow-sm">
+          <div className="app-card p-6 shadow-contrast">
             <h2 className="text-lg font-semibold">
               {t("account.notifications.title")}
             </h2>

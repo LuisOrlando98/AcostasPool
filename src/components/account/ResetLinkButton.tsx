@@ -8,6 +8,7 @@ type ResetLinkButtonProps = {
   loadingLabel?: string;
   sentLabel?: string;
   errorLabel?: string;
+  buttonClassName?: string;
 };
 
 export default function ResetLinkButton({
@@ -15,6 +16,7 @@ export default function ResetLinkButton({
   loadingLabel,
   sentLabel,
   errorLabel,
+  buttonClassName,
 }: ResetLinkButtonProps) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
@@ -47,16 +49,16 @@ export default function ResetLinkButton({
         type="button"
         onClick={handleSend}
         disabled={loading}
-        className="rounded-full border border-slate-200 px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+        className={`app-button-secondary inline-flex min-h-10 items-center px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 disabled:opacity-60 ${buttonClassName ?? ""}`}
       >
         {loading ? resolvedLoadingLabel : resolvedSubmitLabel}
       </button>
       {sent ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {resolvedSentLabel}
         </div>
       ) : null}
-      {error ? <p className="text-xs text-rose-500">{error}</p> : null}
+      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
     </div>
   );
 }

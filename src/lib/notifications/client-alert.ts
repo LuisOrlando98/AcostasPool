@@ -2,6 +2,9 @@ const SOUND_COOLDOWN_MS = 1200;
 
 type WindowWithNotificationState = Window & {
   __apLastNotificationSignalAt?: number;
+  __apNotificationAudio?: HTMLAudioElement | null;
+  __apNotificationAudioUrl?: string | null;
+  __apNotificationSoundBroken?: boolean;
 };
 
 function canEmitSignal() {
@@ -20,7 +23,44 @@ function canEmitSignal() {
   return true;
 }
 
-function playNotificationChime() {
+async function playConfiguredAudio() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_NOTIFICATION_SOUND_URL?.trim() ||
+    "/sounds/notification.mp3";
+  if (!configuredUrl) {
+    return false;
+  }
+  const w = window as WindowWithNotificationState;
+  if (w.__apNotificationSoundBroken) {
+    return false;
+  }
+  if (!w.__apNotificationAudio || w.__apNotificationAudioUrl !== configuredUrl) {
+    w.__apNotificationAudio = new Audio(configuredUrl);
+    w.__apNotificationAudioUrl = configuredUrl;
+    w.__apNotificationAudio.preload = "auto";
+  }
+  const audio = w.__apNotificationAudio;
+  if (!audio) {
+    return false;
+  }
+  try {
+    audio.currentTime = 0;
+    await audio.play();
+    return true;
+  } catch (error) {
+    const name =
+      error instanceof DOMException ? error.name : "UnknownNotificationAudioError";
+    if (name === "NotSupportedError") {
+      w.__apNotificationSoundBroken = true;
+    }
+    return false;
+  }
+}
+
+function playSynthNotificationChime() {
   if (typeof window === "undefined") {
     return;
   }
@@ -52,6 +92,13 @@ function playNotificationChime() {
   }, 320);
 }
 
+async function playNotificationChime() {
+  const played = await playConfiguredAudio();
+  if (!played) {
+    playSynthNotificationChime();
+  }
+}
+
 function showSystemNotification(title: string, body: string) {
   if (
     typeof window === "undefined" ||
@@ -79,6 +126,6 @@ export function emitNotificationSignal({
   if (!canEmitSignal()) {
     return;
   }
-  playNotificationChime();
+  void playNotificationChime();
   showSystemNotification(title, body);
 }

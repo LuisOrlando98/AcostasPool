@@ -264,30 +264,6 @@ const techNavItems = (t: (key: string) => string): NavItem[] => [
       </svg>
     ),
   },
-  {
-    label: t("nav.tech.profile"),
-    href: "/tech/profile",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className={iconClassName}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7.5 18a4.5 4.5 0 019 0"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M8.5 9.5a3.5 3.5 0 117 0"
-        />
-      </svg>
-    ),
-  },
 ];
 
 const clientNavItems = (t: (key: string) => string): NavItem[] => [

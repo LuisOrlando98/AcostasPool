@@ -12,6 +12,13 @@ export function isTechNotificationForUser(payload: unknown, userId: string) {
   return getTechRecipientUserId(payload) === userId;
 }
 
+export function filterTechNotificationsForUser<T extends { payload: unknown }>(
+  items: T[],
+  userId: string
+) {
+  return items.filter((item) => isTechNotificationForUser(item.payload, userId));
+}
+
 export function buildTechRecipientWhere(userId: string): Prisma.NotificationWhereInput {
   return {
     payload: {
