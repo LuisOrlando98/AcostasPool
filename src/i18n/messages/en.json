@@ -716,8 +716,9 @@
           "calendarColor": "Calendar color",
           "notes": "Internal notes"
         },
+        "inviteHint": "After creating the technician, an email invitation is sent automatically so they can complete and secure the account.",
         "actions": {
-          "create": "Create technician"
+          "create": "Create technician and send invite"
         }
       },
       "overview": {

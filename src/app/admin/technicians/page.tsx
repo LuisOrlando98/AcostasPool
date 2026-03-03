@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import TechniciansOverview from "@/components/technicians/TechniciansOverview";
@@ -7,19 +8,23 @@ import { requireRole } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
+import { normalizeUsPhone } from "@/lib/phones";
+import { sendTechnicianInvite } from "@/lib/technicians/invite";
 
 async function createTechnician(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
 
-  const fullName = String(formData.get("fullName") ?? "").trim();
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
+  const fullName = `${firstName} ${lastName}`.trim();
   const email = normalizeEmail(String(formData.get("email") ?? ""));
-  const phone = String(formData.get("phone") ?? "").trim();
-  const password = String(formData.get("password") ?? "").trim();
+  const phoneRaw = String(formData.get("phone") ?? "").trim();
+  const phone = normalizeUsPhone(phoneRaw);
   const notes = String(formData.get("notes") ?? "").trim();
   const colorHex = String(formData.get("colorHex") ?? "").trim();
 
-  if (!fullName || !email || !password) {
+  if (!firstName || !lastName || !email || !phone) {
     return;
   }
 
@@ -31,7 +36,8 @@ async function createTechnician(formData: FormData) {
     return;
   }
 
-  const passwordHash = await hashPassword(password);
+  const tempPassword = crypto.randomBytes(24).toString("hex");
+  const passwordHash = await hashPassword(tempPassword);
 
   const user = await prisma.user.create({
     data: {
@@ -40,18 +46,27 @@ async function createTechnician(formData: FormData) {
       fullName,
       role: "TECH",
       locale: "EN",
-      isActive: true,
+      isActive: false,
     },
   });
 
-  await prisma.technician.create({
+  const technician = await prisma.technician.create({
     data: {
       userId: user.id,
-      phone: phone || null,
+      phone,
       notes: notes || null,
       colorHex: colorHex || null,
     },
   });
+
+  try {
+    const invite = await sendTechnicianInvite(technician.id);
+    if (!invite.ok) {
+      console.error("Technician invite failed:", invite.error);
+    }
+  } catch (error) {
+    console.error("Technician invite failed:", error);
+  }
 
   revalidatePath("/admin/technicians");
 }
@@ -203,47 +218,50 @@ export default async function TechniciansPage() {
                 </label>
               </div>
               <form action={createTechnician} className="mt-5 space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.technicians.newTech.fields.fullName")}
-                </label>
-                <input
-                  name="fullName"
-                  className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("common.labels.email")}
-                </label>
-                <input
-                  name="email"
-                  type="email"
-                  className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  required
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("common.labels.phone")}
-                  </label>
-                  <input
-                    name="phone"
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.firstName")}
+                    </label>
+                    <input
+                      name="firstName"
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.lastName")}
+                    </label>
+                    <input
+                      name="lastName"
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.technicians.newTech.fields.password")}
-                  </label>
-                  <input
-                    name="password"
-                    type="password"
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    required
-                  />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.email")}
+                    </label>
+                    <input
+                      name="email"
+                      type="email"
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {t("common.labels.phone")}
+                    </label>
+                    <input
+                      name="phone"
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      required
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -256,22 +274,24 @@ export default async function TechniciansPage() {
                     className="mt-2 h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3"
                   />
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.technicians.newTech.fields.notes")}
-                </label>
-                <textarea
-                  name="notes"
-                  className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.technicians.newTech.fields.notes")}
+                  </label>
+                  <textarea
+                    name="notes"
+                    className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
+                  />
+                </div>
+                <FormSubmitButton
+                  idleLabel={t("admin.technicians.newTech.actions.create")}
+                  pendingLabel={t("common.feedback.creating")}
+                  successLabel={t("common.feedback.created")}
+                  className="w-full px-4 py-3"
                 />
-              </div>
-              <FormSubmitButton
-                idleLabel={t("admin.technicians.newTech.actions.create")}
-                pendingLabel={t("common.feedback.creating")}
-                successLabel={t("common.feedback.created")}
-                className="w-full px-4 py-3"
-              />
+                <p className="text-[11px] text-slate-500">
+                  {t("admin.technicians.newTech.inviteHint")}
+                </p>
               </form>
             </div>
           </div>

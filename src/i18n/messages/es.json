@@ -716,8 +716,9 @@
           "calendarColor": "Color en calendario",
           "notes": "Notas internas"
         },
+        "inviteHint": "Al crear el tecnico, se envia automaticamente una invitacion por email para que complete y asegure su cuenta.",
         "actions": {
-          "create": "Crear tecnico"
+          "create": "Crear tecnico y enviar invitacion"
         }
       },
       "overview": {

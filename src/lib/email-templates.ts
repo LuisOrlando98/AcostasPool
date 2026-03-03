@@ -1,5 +1,6 @@
 export const EMAIL_TEMPLATE_IDS = [
   "CUSTOMER_INVITE",
+  "TECH_ACCOUNT_INVITE",
   "PASSWORD_RESET",
   "INVOICE_SENT",
   "QUOTE_REQUEST",
@@ -61,6 +62,43 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
     previewValues: {
       customer_name: "Alex Rivera",
       customer_name_html: "Alex Rivera",
+      invite_link: "https://app.example.com/complete-profile?token=abc123",
+      invite_hours: "48",
+    },
+  },
+  TECH_ACCOUNT_INVITE: {
+    label: "Technician account invite",
+    description: "Invitation email used when creating portal access for a technician.",
+    placeholders: [
+      "{{tech_name}}",
+      "{{tech_name_html}}",
+      "{{invite_link}}",
+      "{{invite_hours}}",
+    ],
+    defaults: {
+      subject: "Welcome to AcostasPool - Complete your technician account",
+      text: [
+        "Hi {{tech_name}},",
+        "",
+        "Your technician account is ready. Review your details and create your password.",
+        "Use this secure access link:",
+        "{{invite_link}}",
+        "",
+        "This invitation expires in {{invite_hours}} hours.",
+        "If you need help, reply to this message and our admin team will assist you.",
+      ].join("\n"),
+      html: [
+        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+        '<p style="margin:0 0 14px;color:#0b1f35;">Hi {{tech_name_html}},</p>',
+        '<p style="margin:0 0 14px;color:#334155;">Your technician account is ready. Complete your profile and set your password.</p>',
+        '<p style="margin:0 0 14px;"><a href="{{invite_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Complete profile</a></p>',
+        '<p style="margin:0;color:#64748b;font-size:13px;">This link expires in {{invite_hours}} hours.</p>',
+        "</div>",
+      ].join(""),
+    },
+    previewValues: {
+      tech_name: "Carlos Diaz",
+      tech_name_html: "Carlos Diaz",
       invite_link: "https://app.example.com/complete-profile?token=abc123",
       invite_hours: "48",
     },

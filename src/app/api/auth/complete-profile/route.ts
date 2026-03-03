@@ -20,6 +20,16 @@ const completeSchema = z.object({
   codigoPostal: z.string().optional().nullable(),
 });
 
+function splitFullName(fullName: string) {
+  const cleaned = fullName.trim().replace(/\s+/g, " ");
+  if (!cleaned) {
+    return { nombre: "", apellidos: "" };
+  }
+  const parts = cleaned.split(" ");
+  const nombre = parts.shift() ?? "";
+  return { nombre, apellidos: parts.join(" ") };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token") ?? "";
@@ -29,7 +39,7 @@ export async function GET(request: Request) {
 
   const resetToken = await prisma.passwordResetToken.findUnique({
     where: { token },
-    include: { user: { include: { customer: true } } },
+    include: { user: { include: { customer: true, technician: true } } },
   });
 
   if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
@@ -42,29 +52,46 @@ export async function GET(request: Request) {
 
   const user = resetToken.user;
   const customer = user?.customer;
+  const technician = user?.technician;
 
-  if (!user || user.role !== "CUSTOMER" || !customer) {
-    return NextResponse.json(
-      { error: "Invitacion invalida" },
-      { status: 400 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
   }
 
-  return NextResponse.json({
-    customer: {
-      nombre: customer.nombre,
-      apellidos: customer.apellidos,
-      email: customer.email,
-      telefono: customer.telefono,
-      telefonoSecundario: customer.telefonoSecundario,
-      idiomaPreferencia: customer.idiomaPreferencia,
-      direccionLinea1: customer.direccionLinea1,
-      direccionLinea2: customer.direccionLinea2,
-      ciudad: customer.ciudad,
-      estadoProvincia: customer.estadoProvincia,
-      codigoPostal: customer.codigoPostal,
-    },
-  });
+  if (user.role === "CUSTOMER" && customer) {
+    return NextResponse.json({
+      accountType: "CUSTOMER",
+      customer: {
+        nombre: customer.nombre,
+        apellidos: customer.apellidos,
+        email: customer.email,
+        telefono: customer.telefono,
+        telefonoSecundario: customer.telefonoSecundario,
+        idiomaPreferencia: customer.idiomaPreferencia,
+        direccionLinea1: customer.direccionLinea1,
+        direccionLinea2: customer.direccionLinea2,
+        ciudad: customer.ciudad,
+        estadoProvincia: customer.estadoProvincia,
+        codigoPostal: customer.codigoPostal,
+      },
+    });
+  }
+
+  if (user.role === "TECH" && technician) {
+    const splitName = splitFullName(user.fullName);
+    return NextResponse.json({
+      accountType: "TECH",
+      technician: {
+        nombre: splitName.nombre,
+        apellidos: splitName.apellidos,
+        email: user.email,
+        telefono: technician.phone ?? "",
+        idiomaPreferencia: user.locale,
+      },
+    });
+  }
+
+  return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
 }
 
 export async function POST(request: Request) {
@@ -107,7 +134,7 @@ export async function POST(request: Request) {
 
   const resetToken = await prisma.passwordResetToken.findUnique({
     where: { token },
-    include: { user: { include: { customer: true } } },
+    include: { user: { include: { customer: true, technician: true } } },
   });
 
   if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
@@ -120,12 +147,43 @@ export async function POST(request: Request) {
 
   const user = resetToken.user;
   const customer = user?.customer;
+  const technician = user?.technician;
 
-  if (!user || user.role !== "CUSTOMER" || !customer) {
-    return NextResponse.json(
-      { error: "Invitacion invalida" },
-      { status: 400 }
-    );
+  if (!user) {
+    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+  }
+
+  if (user.role === "TECH" && technician) {
+    const passwordHash = await hashPassword(password);
+    const fullName = `${nombre} ${apellidos}`.trim();
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          isActive: true,
+          fullName,
+          locale: idiomaPreferencia ?? user.locale,
+        },
+      }),
+      prisma.technician.update({
+        where: { id: technician.id },
+        data: {
+          phone,
+        },
+      }),
+      prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, purpose: "INVITE", usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return NextResponse.json({ ok: true });
+  }
+
+  if (user.role !== "CUSTOMER" || !customer) {
+    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
   }
 
   const passwordHash = await hashPassword(password);

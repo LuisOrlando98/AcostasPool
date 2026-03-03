@@ -21,9 +21,12 @@ const emptyProfile = {
 };
 
 type ProfileData = typeof emptyProfile;
+type InviteAccountType = "CUSTOMER" | "TECH";
 
 type ApiResponse = {
+  accountType?: InviteAccountType;
   customer?: Partial<ProfileData> & { email?: string };
+  technician?: Partial<ProfileData> & { email?: string };
   error?: string;
 };
 
@@ -32,6 +35,7 @@ export default function CompleteProfilePage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [accountType, setAccountType] = useState<InviteAccountType | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -51,21 +55,33 @@ export default function CompleteProfilePage() {
         if (data.error) {
           setMessage(data.error);
           setProfile(null);
+          setAccountType(null);
           return;
         }
-        const customer = data.customer ?? {};
+        const resolvedAccountType =
+          data.accountType ??
+          (data.technician ? "TECH" : data.customer ? "CUSTOMER" : undefined);
+        if (!resolvedAccountType) {
+          setMessage(t("auth.complete.notFound"));
+          setProfile(null);
+          setAccountType(null);
+          return;
+        }
+
+        const source = resolvedAccountType === "TECH" ? data.technician ?? {} : data.customer ?? {};
+        setAccountType(resolvedAccountType);
         setProfile({
-          nombre: customer.nombre ?? "",
-          apellidos: customer.apellidos ?? "",
-          email: customer.email ?? "",
-          telefono: customer.telefono ?? "",
-          telefonoSecundario: customer.telefonoSecundario ?? "",
-          idiomaPreferencia: customer.idiomaPreferencia ?? "EN",
-          direccionLinea1: customer.direccionLinea1 ?? "",
-          direccionLinea2: customer.direccionLinea2 ?? "",
-          ciudad: customer.ciudad ?? "",
-          estadoProvincia: customer.estadoProvincia ?? "",
-          codigoPostal: customer.codigoPostal ?? "",
+          nombre: source.nombre ?? "",
+          apellidos: source.apellidos ?? "",
+          email: source.email ?? "",
+          telefono: source.telefono ?? "",
+          telefonoSecundario: source.telefonoSecundario ?? "",
+          idiomaPreferencia: source.idiomaPreferencia ?? "EN",
+          direccionLinea1: source.direccionLinea1 ?? "",
+          direccionLinea2: source.direccionLinea2 ?? "",
+          ciudad: source.ciudad ?? "",
+          estadoProvincia: source.estadoProvincia ?? "",
+          codigoPostal: source.codigoPostal ?? "",
         });
       })
       .catch(() => {
@@ -242,7 +258,7 @@ export default function CompleteProfilePage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className={`grid gap-3 ${accountType === "CUSTOMER" ? "sm:grid-cols-2" : ""}`}>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
                     {t("common.labels.phone")}
@@ -254,32 +270,36 @@ export default function CompleteProfilePage() {
                     required
                   />
                 </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
-                    {t("common.labels.phoneSecondary")}
-                  </label>
-                  <input
-                    name="telefonoSecundario"
-                    defaultValue={profile.telefonoSecundario}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </div>
+                {accountType === "CUSTOMER" ? (
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-white/60">
+                      {t("common.labels.phoneSecondary")}
+                    </label>
+                    <input
+                      name="telefonoSecundario"
+                      defaultValue={profile.telefonoSecundario}
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    />
+                  </div>
+                ) : null}
               </div>
 
-              <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
-                <h3 className="text-sm font-semibold text-white/80">{t("address.sectionTitle")}</h3>
-                <div className="mt-4">
-                  <AddressAutocomplete
-                    defaultValue={{
-                      line1: profile.direccionLinea1,
-                      line2: profile.direccionLinea2,
-                      city: profile.ciudad,
-                      state: profile.estadoProvincia,
-                      postalCode: profile.codigoPostal,
-                    }}
-                  />
+              {accountType === "CUSTOMER" ? (
+                <div className="rounded-2xl border border-white/12 bg-white/5 p-4">
+                  <h3 className="text-sm font-semibold text-white/80">{t("address.sectionTitle")}</h3>
+                  <div className="mt-4">
+                    <AddressAutocomplete
+                      defaultValue={{
+                        line1: profile.direccionLinea1,
+                        line2: profile.direccionLinea2,
+                        city: profile.ciudad,
+                        state: profile.estadoProvincia,
+                        postalCode: profile.codigoPostal,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
