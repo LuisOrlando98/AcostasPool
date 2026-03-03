@@ -69,14 +69,10 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
 
   const totals = useMemo(() => {
     const active = rows.filter((row) => row.isActive).length;
-    const pending = rows.reduce((sum, row) => sum + row.pending, 0);
-    const completed = rows.reduce((sum, row) => sum + row.completed, 0);
     return {
       total: rows.length,
       active,
       inactive: rows.length - active,
-      pending,
-      completed,
     };
   }, [rows]);
 
@@ -127,37 +123,6 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="app-card p-4 sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">
-            {t("admin.technicians.overview.cards.technicians")}
-          </p>
-          <p className="mt-1.5 text-xl font-semibold text-slate-900 sm:text-2xl">{totals.total}</p>
-          <p className="text-xs text-slate-500">{t("admin.technicians.overview.cards.total")}</p>
-        </div>
-        <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 shadow-sm sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-teal-700">
-            {t("admin.technicians.overview.cards.active")}
-          </p>
-          <p className="mt-1.5 text-xl font-semibold text-teal-900 sm:text-2xl">{totals.active}</p>
-          <p className="text-xs text-teal-700">{t("admin.technicians.overview.cards.activeHint")}</p>
-        </div>
-        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-indigo-700">
-            {t("admin.technicians.overview.cards.pending")}
-          </p>
-          <p className="mt-1.5 text-xl font-semibold text-indigo-900 sm:text-2xl">{totals.pending}</p>
-          <p className="text-xs text-indigo-700">{t("admin.technicians.overview.cards.pendingHint")}</p>
-        </div>
-        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 shadow-sm sm:p-5">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-sky-700">
-            {t("admin.technicians.overview.cards.completed")}
-          </p>
-          <p className="mt-1.5 text-xl font-semibold text-sky-900 sm:text-2xl">{totals.completed}</p>
-          <p className="text-xs text-sky-700">{t("admin.technicians.overview.cards.completedHint")}</p>
-        </div>
-      </div>
-
       <div className="rounded-3xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
         <div>
           <h2 className="text-lg font-semibold">{t("admin.technicians.overview.title")}</h2>
