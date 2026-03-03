@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
@@ -90,8 +90,19 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
   const [editorOpen, setEditorOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (saveSuccessTimerRef.current) {
+        clearTimeout(saveSuccessTimerRef.current);
+      }
+    },
+    []
+  );
 
   const openCreate = () => {
     setMode("create");
@@ -99,6 +110,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     setError(null);
     setNotice(null);
     setConfirmOpen(false);
+    setSaveSuccess(false);
     setEditorOpen(true);
   };
 
@@ -108,6 +120,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     setError(null);
     setNotice(null);
     setConfirmOpen(false);
+    setSaveSuccess(false);
     setEditorOpen(true);
   };
 
@@ -115,6 +128,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     if (saving) return;
     setEditorOpen(false);
     setConfirmOpen(false);
+    setSaveSuccess(false);
     setError(null);
   };
 
@@ -161,6 +175,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
   const save = async () => {
     if (saving) return;
     setSaving(true);
+    setSaveSuccess(false);
     setError(null);
 
     const payload = {
@@ -187,6 +202,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     if (!res.ok || !data?.property) {
       setSaving(false);
       setError(typeof data?.error === "string" ? data.error : t("client.properties.editor.saveFailed"));
+      setSaveSuccess(false);
       return;
     }
 
@@ -211,11 +227,18 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       )
     );
 
+    setSaveSuccess(true);
     setSaving(false);
-    setEditorOpen(false);
-    setConfirmOpen(false);
     setDraft(emptyDraft);
     setNotice(mode === "create" ? t("client.properties.editor.createdOk") : t("client.properties.editor.updatedOk"));
+    if (saveSuccessTimerRef.current) {
+      clearTimeout(saveSuccessTimerRef.current);
+    }
+    saveSuccessTimerRef.current = setTimeout(() => {
+      setSaveSuccess(false);
+      setEditorOpen(false);
+      setConfirmOpen(false);
+    }, 850);
     router.refresh();
   };
 
@@ -535,11 +558,15 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
               {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
               <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button type="button" onClick={() => setConfirmOpen(false)} disabled={saving} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60">
+                <button type="button" onClick={() => setConfirmOpen(false)} disabled={saving || saveSuccess} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60">
                   {t("client.properties.confirm.back")}
                 </button>
-                <button type="button" onClick={save} disabled={saving} className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60">
-                  {saving ? t("common.feedback.saving") : t("client.properties.confirm.confirm")}
+                <button type="button" onClick={save} disabled={saving || saveSuccess} className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60">
+                  {saving
+                    ? t("common.feedback.saving")
+                    : saveSuccess
+                      ? t("common.feedback.saved")
+                      : t("client.properties.confirm.confirm")}
                 </button>
               </div>
             </div>

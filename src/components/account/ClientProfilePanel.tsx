@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AvatarUpload from "@/components/account/AvatarUpload";
 import ResetLinkButton from "@/components/account/ResetLinkButton";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
@@ -66,9 +66,20 @@ export default function ClientProfilePanel({ initialData }: Props) {
   const [editor, setEditor] = useState<"personal" | "address" | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [securitySaving, setSecuritySaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (saveSuccessTimerRef.current) {
+        clearTimeout(saveSuccessTimerRef.current);
+      }
+    },
+    []
+  );
 
   const hasAddress = useMemo(
     () =>
@@ -100,6 +111,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     setError(null);
     setEditor("personal");
     setConfirmOpen(false);
+    setSaveSuccess(false);
   };
 
   const openAddressEditor = () => {
@@ -113,6 +125,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     setError(null);
     setEditor("address");
     setConfirmOpen(false);
+    setSaveSuccess(false);
   };
 
   const closeModal = () => {
@@ -121,6 +134,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     }
     setEditor(null);
     setConfirmOpen(false);
+    setSaveSuccess(false);
     setError(null);
   };
 
@@ -162,6 +176,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
       return;
     }
     setSaving(true);
+    setSaveSuccess(false);
     setError(null);
 
     const payload =
@@ -183,6 +198,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
           ? body.error
           : t("client.profile.editor.saveFailed")
       );
+      setSaveSuccess(false);
       return;
     }
 
@@ -201,9 +217,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
       setNotice(t("client.profile.editor.addressSaved"));
     }
 
+    setSaveSuccess(true);
     setSaving(false);
-    setEditor(null);
-    setConfirmOpen(false);
+    if (saveSuccessTimerRef.current) {
+      clearTimeout(saveSuccessTimerRef.current);
+    }
+    saveSuccessTimerRef.current = setTimeout(() => {
+      setSaveSuccess(false);
+      setEditor(null);
+      setConfirmOpen(false);
+    }, 850);
   };
 
   const toggle2fa = async () => {
@@ -639,7 +662,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
                 <button
                   type="button"
                   onClick={() => setConfirmOpen(false)}
-                  disabled={saving}
+                  disabled={saving || saveSuccess}
                   className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
                 >
                   {t("client.profile.confirm.back")}
@@ -647,10 +670,14 @@ export default function ClientProfilePanel({ initialData }: Props) {
                 <button
                   type="button"
                   onClick={saveChanges}
-                  disabled={saving}
+                  disabled={saving || saveSuccess}
                   className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60"
                 >
-                  {saving ? t("common.feedback.saving") : t("client.profile.confirm.confirm")}
+                  {saving
+                    ? t("common.feedback.saving")
+                    : saveSuccess
+                      ? t("common.feedback.saved")
+                      : t("client.profile.confirm.confirm")}
                 </button>
               </div>
             </div>

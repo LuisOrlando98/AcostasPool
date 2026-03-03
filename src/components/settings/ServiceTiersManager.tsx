@@ -57,6 +57,7 @@ export default function ServiceTiersManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [savedTierId, setSavedTierId] = useState<string | null>(null);
 
   const activeCount = useMemo(
     () => tiers.filter((tier) => tier.isActive).length,
@@ -120,6 +121,7 @@ export default function ServiceTiersManager() {
         (key) => key !== "newItemText" && key !== "saving"
       );
       if (shouldSave) {
+        setSavedTierId((current) => (current === id ? null : current));
         scheduleSave(id);
       }
     }
@@ -176,10 +178,18 @@ export default function ServiceTiersManager() {
       const payloadKey = JSON.stringify(payload);
       lastSavedPayload.current.delete(tier.id);
       lastSavedPayload.current.set(nextKey, payloadKey);
+      setSavedTierId(nextKey);
     } else {
       updateTier(tier.id, { saving: false }, { silent: true });
       lastSavedPayload.current.set(tier.id, JSON.stringify(payload));
+      setSavedTierId(tier.id);
     }
+    if (savedBadgeTimer.current) {
+      clearTimeout(savedBadgeTimer.current);
+    }
+    savedBadgeTimer.current = setTimeout(() => {
+      setSavedTierId(null);
+    }, 1600);
     setError(null);
   };
 
@@ -188,6 +198,16 @@ export default function ServiceTiersManager() {
     new Map()
   );
   const lastSavedPayload = useRef<Map<string, string>>(new Map());
+  const savedBadgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (savedBadgeTimer.current) {
+        clearTimeout(savedBadgeTimer.current);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     tiersRef.current = tiers;
@@ -407,6 +427,10 @@ export default function ServiceTiersManager() {
                       {tier.saving ? (
                         <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                           {t("admin.settings.tiers.actions.saving")}
+                        </div>
+                      ) : savedTierId === tier.id ? (
+                        <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                          {t("common.feedback.saved")}
                         </div>
                       ) : null}
                     </div>

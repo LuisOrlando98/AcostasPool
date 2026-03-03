@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 
 type Preference = {
@@ -30,7 +30,18 @@ export default function NotificationPreferences() {
   const [prefs, setPrefs] = useState<Preference[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingEvent, setSavingEvent] = useState<string | null>(null);
+  const [savedEvent, setSavedEvent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -93,6 +104,13 @@ export default function NotificationPreferences() {
       if (!response.ok) {
         throw new Error("Unable to save preference");
       }
+      setSavedEvent(eventType);
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+      savedTimerRef.current = setTimeout(() => {
+        setSavedEvent(null);
+      }, 1600);
     } catch {
       setPrefs((current) =>
         current.map((pref) =>
@@ -168,6 +186,7 @@ export default function NotificationPreferences() {
               ? t("notifications.preferences.defaultDescription")
               : description;
           const isSaving = savingEvent === pref.eventType;
+          const isSaved = savedEvent === pref.eventType;
           const toneClass = EVENT_COLOR[pref.eventType] ?? "bg-slate-100 text-slate-700";
 
           return (
@@ -215,6 +234,10 @@ export default function NotificationPreferences() {
               {isSaving ? (
                 <p className="mt-2 text-xs text-slate-500">
                   {t("notifications.preferences.saving")}
+                </p>
+              ) : isSaved ? (
+                <p className="mt-2 text-xs font-semibold text-emerald-600">
+                  {t("common.feedback.saved")}
                 </p>
               ) : null}
             </div>
