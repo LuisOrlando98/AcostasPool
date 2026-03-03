@@ -223,31 +223,21 @@ export default function LandingFooter({
     { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
   ].filter((item) => Boolean(item.href));
 
-  const groups = [
+  const contactItems = [
+    { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },
+    { label: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
+    { label: copy.contactPage, href: "/contact" },
+  ];
+  const legalItems = [
+    { label: copy.legalCenter, href: "/legal" },
+    { label: copy.privacyPolicy, href: "/legal/privacy-policy" },
+    { label: copy.termsOfService, href: "/legal/terms-of-service" },
+    { label: copy.paymentCancellation, href: "/legal/payment-cancellation-policy" },
     {
-      id: "contact",
-      title: copy.contact,
-      items: [
-        { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },
-        { label: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
-        { label: copy.contactPage, href: "/contact" },
-      ],
+      label: copy.disclaimerLiability,
+      href: "/legal/disclaimer-limitation-of-liability",
     },
-    {
-      id: "legal",
-      title: copy.legal,
-      items: [
-        { label: copy.legalCenter, href: "/legal" },
-        { label: copy.privacyPolicy, href: "/legal/privacy-policy" },
-        { label: copy.termsOfService, href: "/legal/terms-of-service" },
-        { label: copy.paymentCancellation, href: "/legal/payment-cancellation-policy" },
-        {
-          label: copy.disclaimerLiability,
-          href: "/legal/disclaimer-limitation-of-liability",
-        },
-        { label: copy.cookieNotice, href: "/legal/cookie-notice" },
-      ],
-    },
+    { label: copy.cookieNotice, href: "/legal/cookie-notice" },
   ];
 
   return (
@@ -278,7 +268,9 @@ export default function LandingFooter({
               </div>
             </div>
           ) : null}
+        </div>
 
+        <div className="lp-footer-middle">
           <div className="lp-footer-preferences">
             <div className="lp-footer-preference-group">
               <p>{copy.languageLabel}</p>
@@ -332,6 +324,26 @@ export default function LandingFooter({
               </div>
             </div>
           </div>
+
+          <span aria-hidden="true" className="lp-footer-middle-divider" />
+
+          <div className="lp-footer-col lp-footer-col-contact">
+            <h3>{copy.contact}</h3>
+            <ul>
+              {contactItems.map((item) => {
+                const isExternal = item.href.startsWith("tel:") || item.href.startsWith("mailto:");
+                return (
+                  <li key={item.label}>
+                    {isExternal ? (
+                      <a href={item.href}>{item.label}</a>
+                    ) : (
+                      <Link href={item.href}>{item.label}</Link>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
 
         <div className="lp-footer-grid">
@@ -346,28 +358,16 @@ export default function LandingFooter({
             <p>Professional maintenance for premium residential pools in South Florida.</p>
           </div>
 
-          {groups.map((group) => (
-            <div
-              key={group.title}
-              className={`lp-footer-col${group.id === "legal" ? " lp-footer-col-legal" : ""}`}
-            >
-              <h3>{group.title}</h3>
-              <ul>
-                {group.items.map((item) => {
-                  const isExternal = item.href.startsWith("tel:") || item.href.startsWith("mailto:");
-                  return (
-                    <li key={item.label}>
-                      {isExternal ? (
-                        <a href={item.href}>{item.label}</a>
-                      ) : (
-                        <Link href={item.href}>{item.label}</Link>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+          <div className="lp-footer-col lp-footer-col-legal">
+            <h3>{copy.legal}</h3>
+            <ul>
+              {legalItems.map((item) => (
+                <li key={item.label}>
+                  <Link href={item.href}>{item.label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="lp-footer-meta">
