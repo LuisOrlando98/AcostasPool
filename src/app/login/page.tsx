@@ -80,19 +80,41 @@ export default function LoginPage() {
   };
 
   const legalLinks = [
-    { href: "/legal/terms-of-service", en: "Terms of Service", es: "Terminos de Servicio" },
-    { href: "/legal/privacy-policy", en: "Privacy Policy", es: "Politica de Privacidad" },
+    {
+      href: "/legal/terms-of-service",
+      en: "Terms of Service",
+      es: "Terminos de Servicio",
+      shortEn: "Terms",
+      shortEs: "Terminos",
+    },
+    {
+      href: "/legal/privacy-policy",
+      en: "Privacy Policy",
+      es: "Politica de Privacidad",
+      shortEn: "Privacy",
+      shortEs: "Privacidad",
+    },
     {
       href: "/legal/payment-cancellation-policy",
       en: "Payment & Cancellation",
       es: "Pago y Cancelacion",
+      shortEn: "Payments",
+      shortEs: "Pagos",
     },
     {
       href: "/legal/disclaimer-limitation-of-liability",
       en: "Disclaimer & Liability",
       es: "Descargo y Responsabilidad",
+      shortEn: "Liability",
+      shortEs: "Responsabilidad",
     },
-    { href: "/legal/cookie-notice", en: "Cookie Notice", es: "Aviso de Cookies" },
+    {
+      href: "/legal/cookie-notice",
+      en: "Cookie Notice",
+      es: "Aviso de Cookies",
+      shortEn: "Cookies",
+      shortEs: "Cookies",
+    },
   ] as const;
 
   return (
@@ -141,27 +163,35 @@ export default function LoginPage() {
             {t("auth.login.lede")}
           </p>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <article className="app-card p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
+            <article className="app-card p-3 sm:p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px]">
                 {t("auth.login.metrics.quality.kicker")}
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.quality.title")}</p>
-              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.quality.desc")}</p>
+              <p className="mt-2 text-xs font-semibold leading-4 text-slate-900 sm:text-sm">
+                {t("auth.login.metrics.quality.title")}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-600 sm:text-xs">{t("auth.login.metrics.quality.desc")}</p>
             </article>
-            <article className="app-card p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <article className="app-card p-3 sm:p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px]">
                 {t("auth.login.metrics.routes.kicker")}
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.routes.title")}</p>
-              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.routes.desc")}</p>
+              <p className="mt-2 text-xs font-semibold leading-4 text-slate-900 sm:text-sm">
+                {t("auth.login.metrics.routes.title")}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-600 sm:text-xs">{t("auth.login.metrics.routes.desc")}</p>
             </article>
-            <article className="app-card p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <article className="app-card p-3 sm:p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px]">
                 {t("auth.login.metrics.security.kicker")}
               </p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{t("auth.login.metrics.security.title")}</p>
-              <p className="mt-1 text-xs text-slate-600">{t("auth.login.metrics.security.desc")}</p>
+              <p className="mt-2 text-xs font-semibold leading-4 text-slate-900 sm:text-sm">
+                {t("auth.login.metrics.security.title")}
+              </p>
+              <p className="mt-1 text-[11px] leading-4 text-slate-600 sm:text-xs">
+                {t("auth.login.metrics.security.desc")}
+              </p>
             </article>
           </div>
 
@@ -289,21 +319,25 @@ export default function LoginPage() {
           </section>
         </div>
 
-        <div className="mt-8 border-t border-slate-200/80 pt-4">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <div className="mt-8 border-t border-slate-200/80 pt-3">
+          <p className="text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
             Legal
           </p>
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-            {legalLinks.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-600 underline-offset-4 transition hover:text-sky-700 hover:underline"
-              >
-                {locale === "es" ? item.es : item.en}
-              </a>
-            ))}
-          </div>
+          <nav aria-label={locale === "es" ? "Enlaces legales" : "Legal links"} className="mx-auto mt-2 max-w-3xl">
+            <ul className="grid grid-cols-3 gap-x-2 gap-y-1 md:grid-cols-5">
+              {legalLinks.map((item) => (
+                <li key={item.href} className="text-center">
+                  <a
+                    href={item.href}
+                    className="inline-flex items-center justify-center text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-600 underline-offset-4 transition hover:text-sky-700 hover:underline sm:text-[11px]"
+                  >
+                    <span className="sm:hidden">{locale === "es" ? item.shortEs : item.shortEn}</span>
+                    <span className="hidden sm:inline">{locale === "es" ? item.es : item.en}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
           <p className="mt-4 text-center text-[11px] text-slate-500">
             Copyright {currentYear} AcostasPool. {locale === "es" ? "Todos los derechos reservados." : "All rights reserved."}
           </p>
