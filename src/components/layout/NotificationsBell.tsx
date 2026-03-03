@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type TouchEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import {
@@ -28,9 +35,24 @@ type LiveAlert = {
   body: string;
 };
 
+type PanelPlacement = {
+  top: number;
+  left: number;
+  width: number;
+  maxHeight: number;
+};
+
 const ALERT_AUTO_CLOSE_MS = 4000;
 const ALERT_HIDE_DURATION_MS = 220;
 const ALERT_SWIPE_CLOSE_THRESHOLD = -60;
+const ROW_SWIPE_DELETE_THRESHOLD = -56;
+const ROW_SWIPE_MAX = -92;
+
+function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
+  const aTime = new Date(a.createdAt).getTime();
+  const bTime = new Date(b.createdAt).getTime();
+  return bTime - aTime;
+}
 
 function CloseIcon() {
   return (
@@ -80,13 +102,24 @@ export default function NotificationsBell() {
   const [liveAlert, setLiveAlert] = useState<LiveAlert | null>(null);
   const [liveAlertVisible, setLiveAlertVisible] = useState(false);
   const [alertDragOffset, setAlertDragOffset] = useState(0);
+  const [panelPlacement, setPanelPlacement] = useState<PanelPlacement | null>(null);
+  const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
 
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const portalPanelRef = useRef<HTMLDivElement | null>(null);
+  const bellButtonRef = useRef<HTMLButtonElement | null>(null);
   const previousUnreadRef = useRef(0);
   const initializedRef = useRef(false);
-  const alertSwipeStartYRef = useRef<number | null>(null);
   const alertAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const alertSwipeStartYRef = useRef<number | null>(null);
+  const rowSwipeRef = useRef<{
+    id: string;
+    startX: number;
+    startY: number;
+    isHorizontal: boolean;
+  } | null>(null);
+  const rowSwipeConsumedIdRef = useRef<string | null>(null);
 
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
@@ -141,9 +174,10 @@ export default function NotificationsBell() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const cacheBust = Date.now().toString();
       const [unreadRes, notificationsRes] = await Promise.all([
-        fetch("/api/notifications/unread"),
-        fetch("/api/notifications/recent"),
+        fetch(`/api/notifications/unread?cb=${cacheBust}`, { cache: "no-store" }),
+        fetch(`/api/notifications/recent?cb=${cacheBust}`, { cache: "no-store" }),
       ]);
       const unreadData = await unreadRes.json().catch(() => ({ unread: 0 }));
       const notificationsData = await notificationsRes
@@ -153,14 +187,13 @@ export default function NotificationsBell() {
       setUnreadCount(
         typeof unreadData.unread === "number" ? unreadData.unread : 0
       );
-      setNotifications(
-        Array.isArray(notificationsData.notifications)
-          ? notificationsData.notifications
-          : []
-      );
+      const resolved = Array.isArray(notificationsData.notifications)
+        ? (notificationsData.notifications as NotificationItem[])
+        : [];
+      setNotifications([...resolved].sort(byCreatedDesc));
 
       if (!userId) {
-        const meRes = await fetch("/api/auth/me");
+        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         const meData = await meRes.json().catch(() => ({ user: null }));
         if (meData?.user?.id) {
           setUserId(meData.user.id);
@@ -171,6 +204,38 @@ export default function NotificationsBell() {
     }
   }, [userId]);
 
+  const updatePanelPlacement = useCallback(() => {
+    if (!canUseDom || !bellButtonRef.current) {
+      return;
+    }
+    const rect = bellButtonRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 12;
+    const top = Math.min(viewportHeight - 220, rect.bottom + 10);
+    const maxHeight = Math.max(300, viewportHeight - top - margin);
+
+    if (viewportWidth < 640) {
+      setPanelPlacement({
+        top,
+        left: margin,
+        width: viewportWidth - margin * 2,
+        maxHeight,
+      });
+      return;
+    }
+
+    const width = 352;
+    const preferredLeft = rect.right - width;
+    const left = Math.max(margin, Math.min(preferredLeft, viewportWidth - width - margin));
+    setPanelPlacement({
+      top,
+      left,
+      width,
+      maxHeight: Math.min(560, maxHeight),
+    });
+  }, [canUseDom]);
+
   useEffect(() => {
     void load();
   }, [load]);
@@ -178,13 +243,31 @@ export default function NotificationsBell() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (panelRef.current && !panelRef.current.contains(target)) {
+      const insideInline = panelRef.current?.contains(target) ?? false;
+      const insidePortal = portalPanelRef.current?.contains(target) ?? false;
+      if (!insideInline && !insidePortal) {
         setOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setSwipeOffsets({});
+      return;
+    }
+    updatePanelPlacement();
+    const onResize = () => updatePanelPlacement();
+    const onScroll = () => updatePanelPlacement();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open, updatePanelPlacement]);
 
   useEffect(() => {
     if (usePusher && userId) {
@@ -227,9 +310,7 @@ export default function NotificationsBell() {
         stream.addEventListener("notification", () => {
           void load();
         });
-        stream.addEventListener("error", () => undefined);
       }
-
       const intervalId = window.setInterval(() => {
         void load();
       }, 20000);
@@ -306,31 +387,28 @@ export default function NotificationsBell() {
     previousUnreadRef.current = unreadCount;
   }, [locale, notifications, showLiveAlert, t, unreadCount]);
 
-  const markAsRead = useCallback(
-    async (item: NotificationItem) => {
-      if (item.readAt) {
-        return;
-      }
-      const response = await fetch(`/api/notifications/${item.id}/read`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        return;
-      }
-      setNotifications((current) =>
-        current.map((entry) =>
-          entry.id === item.id
-            ? {
-                ...entry,
-                readAt: new Date().toISOString(),
-              }
-            : entry
-        )
-      );
-      setUnreadCount((current) => (current > 0 ? current - 1 : 0));
-    },
-    []
-  );
+  const markAsRead = useCallback(async (item: NotificationItem) => {
+    if (item.readAt) {
+      return;
+    }
+    const response = await fetch(`/api/notifications/${item.id}/read`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      return;
+    }
+    setNotifications((current) =>
+      current.map((entry) =>
+        entry.id === item.id
+          ? {
+              ...entry,
+              readAt: new Date().toISOString(),
+            }
+          : entry
+      )
+    );
+    setUnreadCount((current) => (current > 0 ? current - 1 : 0));
+  }, []);
 
   const openNotification = useCallback(
     async (item: NotificationItem) => {
@@ -368,7 +446,16 @@ export default function NotificationsBell() {
         setUnreadCount(previousUnreadCount);
         setActionError(t("notifications.preferences.saveError"));
       }
+
       setDeletingId(null);
+      setSwipeOffsets((current) => {
+        if (!(item.id in current)) {
+          return current;
+        }
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
     },
     [deletingId, notifications, t, unreadCount]
   );
@@ -379,17 +466,83 @@ export default function NotificationsBell() {
     }
     setActionError(null);
     setClearing(true);
+
+    const previousNotifications = notifications;
+    const previousUnreadCount = unreadCount;
+    setNotifications([]);
+    setUnreadCount(0);
+    setSwipeOffsets({});
+
     const response = await fetch("/api/notifications/clear", {
       method: "POST",
     }).catch(() => null);
+
     if (!response?.ok) {
+      setNotifications(previousNotifications);
+      setUnreadCount(previousUnreadCount);
       setActionError(t("notifications.preferences.saveError"));
       setClearing(false);
       return;
     }
+
     await load();
     setClearing(false);
-  }, [clearing, load, t]);
+  }, [clearing, load, notifications, t, unreadCount]);
+
+  const handleRowTouchStart = (itemId: string, touch: Touch) => {
+    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+      return;
+    }
+    rowSwipeRef.current = {
+      id: itemId,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      isHorizontal: false,
+    };
+  };
+
+  const handleRowTouchMove = (itemId: string, event: TouchEvent<HTMLButtonElement>) => {
+    const start = rowSwipeRef.current;
+    if (!start || start.id !== itemId) {
+      return;
+    }
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+    const dx = touch.clientX - start.startX;
+    const dy = touch.clientY - start.startY;
+
+    if (!start.isHorizontal) {
+      if (Math.abs(dx) < 8) {
+        return;
+      }
+      if (Math.abs(dx) <= Math.abs(dy)) {
+        return;
+      }
+      start.isHorizontal = true;
+    }
+
+    if (event.cancelable) {
+      event.preventDefault();
+    }
+    const offset = Math.max(ROW_SWIPE_MAX, Math.min(0, dx));
+    setSwipeOffsets((current) => ({ ...current, [itemId]: offset }));
+    if (Math.abs(offset) > 10) {
+      rowSwipeConsumedIdRef.current = itemId;
+    }
+  };
+
+  const handleRowTouchEnd = (item: NotificationItem) => {
+    const offset = swipeOffsets[item.id] ?? 0;
+    rowSwipeRef.current = null;
+    if (offset <= ROW_SWIPE_DELETE_THRESHOLD) {
+      rowSwipeConsumedIdRef.current = item.id;
+      void handleDeleteNotification(item);
+      return;
+    }
+    setSwipeOffsets((current) => ({ ...current, [item.id]: 0 }));
+  };
 
   const alertTranslateY = (liveAlertVisible ? 0 : -22) + alertDragOffset;
   const alertOpacity = liveAlertVisible ? 1 : 0;
@@ -397,6 +550,7 @@ export default function NotificationsBell() {
   return (
     <div className="relative" ref={panelRef}>
       <button
+        ref={bellButtonRef}
         type="button"
         onClick={() => {
           setOpen((value) => !value);
@@ -416,7 +570,7 @@ export default function NotificationsBell() {
         ) : null}
       </button>
 
-      {open && canUseDom
+      {open && canUseDom && panelPlacement
         ? createPortal(
             <>
               <button
@@ -425,7 +579,16 @@ export default function NotificationsBell() {
                 className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
                 onClick={() => setOpen(false)}
               />
-              <div className="fixed left-3 right-3 top-[5.2rem] z-[1100] max-h-[78vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast sm:left-auto sm:right-4 sm:w-[22rem] sm:max-h-[34rem]">
+              <div
+                ref={portalPanelRef}
+                className="fixed z-[1100] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast"
+                style={{
+                  top: panelPlacement.top,
+                  left: panelPlacement.left,
+                  width: panelPlacement.width,
+                  maxHeight: panelPlacement.maxHeight,
+                }}
+              >
                 <div className="border-b border-slate-100 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
@@ -458,7 +621,10 @@ export default function NotificationsBell() {
                     {t("userMenu.empty")}
                   </div>
                 ) : (
-                  <div className="max-h-[calc(78vh-5.25rem)] overflow-y-auto text-sm text-slate-600 sm:max-h-[28rem]">
+                  <div
+                    className="overflow-y-auto text-sm text-slate-600"
+                    style={{ maxHeight: Math.max(160, panelPlacement.maxHeight - 74) }}
+                  >
                     {(["today", "yesterday", "week", "older"] as const).map(
                       (groupKey) =>
                         grouped[groupKey].length > 0 ? (
@@ -474,57 +640,86 @@ export default function NotificationsBell() {
                                 const isRead = Boolean(item.readAt);
                                 const title = getNotificationTitle(item.eventType, t);
                                 const detail = getNotificationDetail(item, locale, t);
+                                const offset = swipeOffsets[item.id] ?? 0;
+
                                 return (
-                                  <div
-                                    key={item.id}
-                                    data-severity={item.severity ?? "INFO"}
-                                    className={`notification-item relative px-4 py-3 transition ${
-                                      isRead
-                                        ? "bg-white hover:bg-slate-50"
-                                        : "bg-slate-50/80 hover:bg-slate-50"
-                                    }`}
-                                  >
-                                    <button
-                                      type="button"
-                                      onClick={() => void openNotification(item)}
-                                      className="w-full pr-8 text-left"
-                                    >
-                                      <div className="flex items-center justify-between text-xs text-slate-400">
-                                        <span className="font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                          {title}
-                                        </span>
-                                        <span
-                                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                            isRead
-                                              ? "bg-slate-100 text-slate-500"
-                                              : "bg-sky-100 text-sky-700"
-                                          }`}
-                                        >
-                                          {isRead
-                                            ? t("notifications.read")
-                                            : t("notifications.unread")}
-                                        </span>
-                                      </div>
-                                      <div className="mt-2 text-sm font-semibold text-slate-700">
-                                        {getNotificationSource(item, t)}
-                                      </div>
-                                      <div className="mt-1 text-[11px] text-slate-500">
-                                        {detail}
-                                      </div>
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        void handleDeleteNotification(item);
+                                  <div key={item.id} className="relative overflow-hidden">
+                                    <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-center bg-rose-600 px-2 text-white">
+                                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+                                        {t("common.actions.delete")}
+                                      </span>
+                                    </div>
+
+                                    <div
+                                      style={{
+                                        transform: `translateX(${offset}px)`,
+                                        transition:
+                                          rowSwipeRef.current?.id === item.id
+                                            ? "none"
+                                            : "transform 180ms ease",
                                       }}
-                                      disabled={deletingId === item.id}
-                                      className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60"
-                                      aria-label={t("common.actions.delete")}
-                                      title={t("common.actions.delete")}
                                     >
-                                      <CloseIcon />
-                                    </button>
+                                      <button
+                                        type="button"
+                                        onTouchStart={(event) => {
+                                          const touch = event.touches[0];
+                                          if (!touch) return;
+                                          handleRowTouchStart(item.id, touch);
+                                        }}
+                                        onTouchMove={(event) => handleRowTouchMove(item.id, event)}
+                                        onTouchEnd={() => handleRowTouchEnd(item)}
+                                        onClick={() => {
+                                          if (rowSwipeConsumedIdRef.current === item.id) {
+                                            rowSwipeConsumedIdRef.current = null;
+                                            return;
+                                          }
+                                          void openNotification(item);
+                                        }}
+                                        data-severity={item.severity ?? "INFO"}
+                                        className={`notification-item relative w-full px-4 py-3 text-left transition ${
+                                          isRead
+                                            ? "bg-white hover:bg-slate-50"
+                                            : "bg-slate-50/80 hover:bg-slate-50"
+                                        }`}
+                                      >
+                                        <div className="flex items-center justify-between gap-2 pr-8 text-xs text-slate-400">
+                                          <span className="font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            {title}
+                                          </span>
+                                          <span
+                                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                                              isRead
+                                                ? "bg-slate-100 text-slate-500"
+                                                : "bg-sky-100 text-sky-700"
+                                            }`}
+                                          >
+                                            {isRead
+                                              ? t("notifications.read")
+                                              : t("notifications.unread")}
+                                          </span>
+                                        </div>
+                                        <div className="mt-2 text-sm font-semibold text-slate-700">
+                                          {getNotificationSource(item, t)}
+                                        </div>
+                                        <div className="mt-1 text-[11px] text-slate-500">
+                                          {detail}
+                                        </div>
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          void handleDeleteNotification(item);
+                                        }}
+                                        disabled={deletingId === item.id}
+                                        className="absolute right-3 top-3 hidden h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 md:inline-flex"
+                                        aria-label={t("common.actions.delete")}
+                                        title={t("common.actions.delete")}
+                                      >
+                                        <CloseIcon />
+                                      </button>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -542,40 +737,35 @@ export default function NotificationsBell() {
 
       {liveAlert && canUseDom
         ? createPortal(
-            <div className="pointer-events-none fixed left-1/2 top-3 z-[1200] w-[min(94vw,34rem)] -translate-x-1/2 px-1">
+            <div className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[1200] w-[min(94vw,34rem)] -translate-x-1/2 px-1">
               <div
                 className="pointer-events-auto rounded-2xl border border-sky-200 bg-white/95 px-4 py-3 shadow-contrast backdrop-blur"
-                onPointerDown={(event) => {
-                  if (event.pointerType !== "touch") {
-                    return;
-                  }
-                  alertSwipeStartYRef.current = event.clientY;
+                onTouchStart={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch) return;
+                  alertSwipeStartYRef.current = touch.clientY;
                 }}
-                onPointerMove={(event) => {
-                  if (event.pointerType !== "touch") {
-                    return;
-                  }
+                onTouchMove={(event) => {
+                  const touch = event.touches[0];
+                  if (!touch) return;
                   const startY = alertSwipeStartYRef.current;
                   if (startY == null) {
                     return;
                   }
-                  const delta = Math.max(-140, Math.min(0, event.clientY - startY));
+                  const delta = Math.max(-140, Math.min(0, touch.clientY - startY));
                   setAlertDragOffset(delta);
-                }}
-                onPointerUp={(event) => {
-                  if (event.pointerType === "touch") {
-                    const delta = alertDragOffset;
-                    alertSwipeStartYRef.current = null;
-                    if (delta <= ALERT_SWIPE_CLOSE_THRESHOLD) {
-                      dismissLiveAlert();
-                    } else {
-                      setAlertDragOffset(0);
-                    }
+                  if (event.cancelable) {
+                    event.preventDefault();
                   }
                 }}
-                onPointerCancel={() => {
+                onTouchEnd={() => {
+                  const delta = alertDragOffset;
                   alertSwipeStartYRef.current = null;
-                  setAlertDragOffset(0);
+                  if (delta <= ALERT_SWIPE_CLOSE_THRESHOLD) {
+                    dismissLiveAlert();
+                  } else {
+                    setAlertDragOffset(0);
+                  }
                 }}
                 style={{
                   transform: `translateY(${alertTranslateY}px)`,
