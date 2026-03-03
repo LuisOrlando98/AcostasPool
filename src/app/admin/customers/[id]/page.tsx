@@ -1123,9 +1123,9 @@ export default async function CustomerDetailPage({
                         <p className="mt-1 text-xs text-slate-500">{property.address}</p>
                         <p className="mt-1 text-xs text-slate-400">
                           {property.poolType || t("admin.customers.detail.properties.poolFallback")}
-                          {" · "}
+                          {" Â· "}
                           {property.sanitizerType || t("admin.customers.detail.properties.systemFallback")}
-                          {" · "}
+                          {" Â· "}
                           {property.poolVolumeGallons
                             ? `${property.poolVolumeGallons} gal`
                             : t("admin.customers.detail.properties.volumeFallback")}

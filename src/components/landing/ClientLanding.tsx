@@ -235,9 +235,14 @@ const SERVICE_PILLARS: Array<{
 ];
 
 const SERVICES_BACKGROUND_IMAGE = "/landing/media/curated/images/pool-home-services-hero-technician.jpg";
-const SERVICES_BACKGROUND_VIDEO =
-  process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC?.trim() ||
+const DEFAULT_SERVICES_BACKGROUND_VIDEO =
   "/landing/media/curated/videos/pool-services-clean-water-promo.mp4";
+const CONFIGURED_SERVICES_BACKGROUND_VIDEO =
+  process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC?.trim() || "";
+const SERVICES_BACKGROUND_VIDEO_SOURCES = [
+  CONFIGURED_SERVICES_BACKGROUND_VIDEO,
+  DEFAULT_SERVICES_BACKGROUND_VIDEO,
+].filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
 const SERVICES_BACKGROUND_VIDEO_ENABLED =
   (process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED ?? "true").toLowerCase() !==
   "false";
@@ -400,6 +405,12 @@ export default function ClientLanding({
     useState<(typeof SECTION_NAV_ITEMS)[number]["id"]>("overview");
   const [pressedNav, setPressedNav] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [servicesVideoAllowed, setServicesVideoAllowed] =
+    useState(SERVICES_BACKGROUND_VIDEO_ENABLED);
+  const [servicesVideoVisible, setServicesVideoVisible] = useState(false);
+  const [servicesVideoSourceIndex, setServicesVideoSourceIndex] = useState(0);
+  const servicesIntroRef = useRef<HTMLDivElement | null>(null);
+  const servicesVideoRef = useRef<HTMLVideoElement | null>(null);
   const copy = LANDING_COPY[language];
   const promoCopy = landingConfig?.promo[language] ?? DEFAULT_LANDING_PROMO_COPY[language];
 
@@ -476,6 +487,76 @@ export default function ClientLanding({
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!SERVICES_BACKGROUND_VIDEO_ENABLED) {
+      setServicesVideoAllowed(false);
+      return;
+    }
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const connection = (
+      navigator as Navigator & {
+        connection?: {
+          saveData?: boolean;
+          effectiveType?: string;
+        };
+      }
+    ).connection;
+    const saveData = Boolean(connection?.saveData);
+    const effectiveType = connection?.effectiveType?.toLowerCase() ?? "";
+    const slowConnection =
+      effectiveType.includes("slow-2g") ||
+      effectiveType.includes("2g") ||
+      effectiveType.includes("3g");
+
+    setServicesVideoAllowed(!reducedMotion && !saveData && !slowConnection);
+  }, []);
+
+  useEffect(() => {
+    if (!servicesVideoAllowed) {
+      return;
+    }
+
+    const section = servicesIntroRef.current;
+    if (!section) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setServicesVideoVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        rootMargin: "240px 0px",
+        threshold: 0.01,
+      }
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [servicesVideoAllowed]);
+
+  useEffect(() => {
+    if (!servicesVideoAllowed || !servicesVideoVisible) {
+      return;
+    }
+
+    const video = servicesVideoRef.current;
+    if (!video) {
+      return;
+    }
+
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(() => {
+        // Autoplay can be blocked on some phones; poster image remains visible.
+      });
+    }
+  }, [servicesVideoAllowed, servicesVideoVisible, servicesVideoSourceIndex]);
 
   useEffect(() => {
     if (pauseCarousel) {
@@ -693,24 +774,40 @@ export default function ClientLanding({
 
         <section id="services" className="lp-section lp-services-section">
           <div className="lp-container">
-            <div className="lp-services-intro-shell lp-surface" data-lp-reveal>
+            <div
+              ref={servicesIntroRef}
+              className="lp-services-intro-shell lp-surface"
+              data-lp-reveal
+            >
               <img
                 src={SERVICES_BACKGROUND_IMAGE}
                 alt="Premium pool deck with palm trees and modern architecture"
                 className="lp-services-intro-bg"
               />
-              {SERVICES_BACKGROUND_VIDEO_ENABLED ? (
+              {servicesVideoAllowed && servicesVideoVisible ? (
                 <video
+                  key={SERVICES_BACKGROUND_VIDEO_SOURCES[servicesVideoSourceIndex]}
+                  ref={servicesVideoRef}
                   className="lp-services-intro-video"
                   autoPlay
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload="none"
                   poster={SERVICES_BACKGROUND_IMAGE}
                   aria-hidden="true"
+                  onError={() => {
+                    if (servicesVideoSourceIndex < SERVICES_BACKGROUND_VIDEO_SOURCES.length - 1) {
+                      setServicesVideoSourceIndex((current) => current + 1);
+                      return;
+                    }
+                    setServicesVideoAllowed(false);
+                  }}
                 >
-                  <source src={SERVICES_BACKGROUND_VIDEO} type="video/mp4" />
+                  <source
+                    src={SERVICES_BACKGROUND_VIDEO_SOURCES[servicesVideoSourceIndex]}
+                    type="video/mp4"
+                  />
                 </video>
               ) : null}
               <div className="lp-services-intro-overlay" />

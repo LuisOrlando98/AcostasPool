@@ -8,6 +8,17 @@ export type UpdateEntry = {
 export const updates: UpdateEntry[] = [
   {
     date: "2026-03-03",
+    title: "Landing mobile video reliability and footer alignment",
+    tag: "UX",
+    items: [
+      "Optimized landing services background video loading for mobile by deferring load until section visibility and respecting reduced-motion/data-saver conditions.",
+      "Added automatic fallback logic for background video source errors to prevent blank media states on slower phones.",
+      "Centered footer legal/copyright layout and refined middle two-column alignment: selector column right-aligned and contact column left-aligned with divider.",
+      "Fixed UTF-8 encoding integrity in admin customer detail page to prevent Render/Next.js production build failures.",
+    ],
+  },
+  {
+    date: "2026-03-03",
     title: "Invoice flow revamp and smarter job linking",
     tag: "Major",
     items: [
