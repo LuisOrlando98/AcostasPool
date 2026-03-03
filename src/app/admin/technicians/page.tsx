@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import TechniciansOverview from "@/components/technicians/TechniciansOverview";
-import FormSubmitButton from "@/components/ui/FormSubmitButton";
+import TechnicianCreateForm from "@/components/technicians/TechnicianCreateForm";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
@@ -11,7 +11,15 @@ import { normalizeEmail } from "@/lib/auth/email";
 import { normalizeUsPhone } from "@/lib/phones";
 import { sendTechnicianInvite } from "@/lib/technicians/invite";
 
-async function createTechnician(formData: FormData) {
+type CreateTechnicianActionState = {
+  ok: boolean;
+  error?: string;
+  fieldErrors?: Partial<
+    Record<"firstName" | "lastName" | "email" | "phone" | "colorHex" | "notes", string>
+  >;
+};
+
+async function createTechnician(formData: FormData): Promise<CreateTechnicianActionState> {
   "use server";
   await requireRole("ADMIN");
 
@@ -24,8 +32,18 @@ async function createTechnician(formData: FormData) {
   const notes = String(formData.get("notes") ?? "").trim();
   const colorHex = String(formData.get("colorHex") ?? "").trim();
 
-  if (!firstName || !lastName || !email || !phone) {
-    return;
+  if (!firstName || !lastName || !email || !phoneRaw || !phone) {
+    const phoneError = !phoneRaw ? "Required" : !phone ? "Invalid phone format" : undefined;
+    return {
+      ok: false,
+      error: "Missing required fields",
+      fieldErrors: {
+        firstName: !firstName ? "Required" : undefined,
+        lastName: !lastName ? "Required" : undefined,
+        email: !email ? "Required" : undefined,
+        phone: phoneError,
+      },
+    } satisfies CreateTechnicianActionState;
   }
 
   const existingUser = await prisma.user.findFirst({
@@ -33,7 +51,13 @@ async function createTechnician(formData: FormData) {
     select: { id: true },
   });
   if (existingUser) {
-    return;
+    return {
+      ok: false,
+      error: "Email already in use",
+      fieldErrors: {
+        email: "Email already in use",
+      },
+    } satisfies CreateTechnicianActionState;
   }
 
   const tempPassword = crypto.randomBytes(24).toString("hex");
@@ -62,13 +86,23 @@ async function createTechnician(formData: FormData) {
   try {
     const invite = await sendTechnicianInvite(technician.id);
     if (!invite.ok) {
-      console.error("Technician invite failed:", invite.error);
+      return {
+        ok: false,
+        error:
+          "Technician was created, but invitation email could not be sent. Check SMTP settings and resend invite.",
+      } satisfies CreateTechnicianActionState;
     }
   } catch (error) {
     console.error("Technician invite failed:", error);
+    return {
+      ok: false,
+      error:
+        "Technician was created, but invitation email could not be sent. Check SMTP settings and resend invite.",
+    } satisfies CreateTechnicianActionState;
   }
 
   revalidatePath("/admin/technicians");
+  return { ok: true } satisfies CreateTechnicianActionState;
 }
 
 export default async function TechniciansPage() {
@@ -217,82 +251,7 @@ export default async function TechniciansPage() {
                   </svg>
                 </label>
               </div>
-              <form action={createTechnician} className="mt-5 space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.firstName")}
-                    </label>
-                    <input
-                      name="firstName"
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.lastName")}
-                    </label>
-                    <input
-                      name="lastName"
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.email")}
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.phone")}
-                    </label>
-                    <input
-                      name="phone"
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.technicians.newTech.fields.calendarColor")}
-                  </label>
-                  <input
-                    name="colorHex"
-                    type="color"
-                    defaultValue="#38bdf8"
-                    className="mt-2 h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.technicians.newTech.fields.notes")}
-                  </label>
-                  <textarea
-                    name="notes"
-                    className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
-                  />
-                </div>
-                <FormSubmitButton
-                  idleLabel={t("admin.technicians.newTech.actions.create")}
-                  pendingLabel={t("common.feedback.creating")}
-                  successLabel={t("common.feedback.created")}
-                  className="w-full px-4 py-3"
-                />
-                <p className="text-[11px] text-slate-500">
-                  {t("admin.technicians.newTech.inviteHint")}
-                </p>
-              </form>
+              <TechnicianCreateForm createTechnician={createTechnician} />
             </div>
           </div>
         </div>
