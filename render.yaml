@@ -6,7 +6,7 @@ services:
     healthCheckPath: /api/health
     buildCommand: |
       set -e
-      npm ci
+      npm install --include=dev
       npx prisma generate
       npx playwright install chromium
       npm run build
@@ -63,7 +63,7 @@ services:
     plan: starter
     buildCommand: |
       set -e
-      npm ci
+      npm install --include=dev
       npx prisma generate
     startCommand: npm run worker:cron
     envVars:
