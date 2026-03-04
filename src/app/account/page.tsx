@@ -1,6 +1,6 @@
 import AppShell from "@/components/layout/AppShell";
 import AvatarUpload from "@/components/account/AvatarUpload";
-import ResetLinkButton from "@/components/account/ResetLinkButton";
+import AccountSecurityPanel from "@/components/account/AccountSecurityPanel";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { prisma } from "@/lib/db";
@@ -90,7 +90,13 @@ export default async function AccountPage() {
   const t = await getTranslations();
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    include: { technician: true },
+    include: {
+      technician: true,
+      notificationPreferences: {
+        where: { eventType: "EMAIL_2FA" },
+        select: { enabled: true },
+      },
+    },
   });
 
   if (!user) {
@@ -186,13 +192,11 @@ export default async function AccountPage() {
             </div>
 
             <div className="app-card p-6 shadow-contrast">
-              <h2 className="text-lg font-semibold">{t("account.credentials.title")}</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                {t("account.credentials.subtitle")}
-              </p>
-              <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <ResetLinkButton buttonClassName="w-full justify-center" />
-              </div>
+              <AccountSecurityPanel
+                initialEmail2faEnabled={Boolean(
+                  user.notificationPreferences?.[0]?.enabled
+                )}
+              />
             </div>
           </div>
         </div>

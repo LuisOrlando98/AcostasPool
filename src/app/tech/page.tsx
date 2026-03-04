@@ -7,10 +7,12 @@ import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { geocodeAddresses } from "@/lib/routing/geo";
+import { BUSINESS_TIMEZONE, toDateKey } from "@/lib/jobs/capacity";
 import {
   getAddressPairKey,
   getTravelMetricsForPairs,
 } from "@/lib/routing/travel";
+import { DateTime } from "luxon";
 
 function MapPinIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
@@ -65,17 +67,16 @@ export default async function TechPage() {
   }
 
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  const businessNow = DateTime.now().setZone(BUSINESS_TIMEZONE);
+  const startOfDay = businessNow.startOf("day").toJSDate();
 
-  const todaysJobs = await prisma.job.findMany({
+  const upcomingJobs = await prisma.job.findMany({
     where: {
       technicianId: technician.id,
-      scheduledDate: { gte: startOfDay, lte: endOfDay },
+      scheduledDate: { gte: startOfDay },
     },
     orderBy: { scheduledDate: "asc" },
+    take: 120,
     select: {
       id: true,
       scheduledDate: true,
@@ -89,20 +90,35 @@ export default async function TechPage() {
     },
   });
 
-  const remainingJobs = todaysJobs.filter((job) => job.status !== "COMPLETED");
+  const todayKey = toDateKey(now);
+  const jobsByDay = new Map<string, typeof upcomingJobs>();
+  for (const job of upcomingJobs) {
+    const key = toDateKey(job.scheduledDate);
+    const current = jobsByDay.get(key);
+    if (current) {
+      current.push(job);
+    } else {
+      jobsByDay.set(key, [job]);
+    }
+  }
+
+  const todaysJobs = jobsByDay.get(todayKey) ?? [];
+  const activeDayJobs = todaysJobs;
+  const remainingJobs = activeDayJobs.filter((job) => job.status !== "COMPLETED");
+  const activeDayLabel = t("tech.home.next.today");
   const pendingCount = remainingJobs.length;
-  const completedCount = todaysJobs.filter(
+  const completedCount = activeDayJobs.filter(
     (job) => job.status === "COMPLETED"
   ).length;
-  const completedWithPhotos = todaysJobs.filter(
+  const completedWithPhotos = activeDayJobs.filter(
     (job) => job.status === "COMPLETED" && job.photos.length > 0
   ).length;
-  const onDemandCount = todaysJobs.filter(
+  const onDemandCount = activeDayJobs.filter(
     (job) => job.type === "ON_DEMAND"
   ).length;
   const nextJob = remainingJobs[0] ?? null;
   const routeJobs = remainingJobs;
-  const allDone = todaysJobs.length > 0 && remainingJobs.length === 0;
+  const allDone = activeDayJobs.length > 0 && remainingJobs.length === 0;
   const serviceLabelMap: Record<string, string> = {
     WEEKLY_CLEANING: t("jobs.service.weeklyCleaning"),
     FILTER_CHECK: t("jobs.service.filterCheck"),
@@ -152,7 +168,7 @@ export default async function TechPage() {
               </h2>
             </div>
             <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-              {t("tech.home.next.today")}
+              {activeDayLabel}
             </span>
           </div>
 
@@ -180,7 +196,9 @@ export default async function TechPage() {
                       : t("jobs.priority.normal")}
                   </span>
                   <span className="app-chip px-2 py-1 text-xs" data-tone="success">
-                    {nextJob.scheduledDate.toLocaleTimeString(locale)}
+                    {nextJob.scheduledDate.toLocaleTimeString(locale, {
+                      timeZone: BUSINESS_TIMEZONE,
+                    })}
                   </span>
                 </div>
               </div>
@@ -231,7 +249,9 @@ export default async function TechPage() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
               {t("tech.home.stats.stops")}
             </p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{todaysJobs.length}</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {activeDayJobs.length}
+            </p>
             <p className="text-[11px] text-slate-500">{t("tech.home.stats.scheduled")}</p>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 shadow-sm">
@@ -262,7 +282,7 @@ export default async function TechPage() {
         <div className="hidden gap-3 sm:grid sm:grid-cols-2 2xl:grid-cols-4">
           <StatCard
             label={t("tech.home.stats.stops")}
-            value={`${todaysJobs.length}`}
+            value={`${activeDayJobs.length}`}
             helper={t("tech.home.stats.scheduled")}
             tone="info"
           />
@@ -378,7 +398,9 @@ export default async function TechPage() {
                               : t("jobs.priority.normal")}
                           </span>
                           <span className="app-chip px-2 py-1 text-xs" data-tone="success">
-                            {job.scheduledDate.toLocaleTimeString(locale)}
+                            {job.scheduledDate.toLocaleTimeString(locale, {
+                              timeZone: BUSINESS_TIMEZONE,
+                            })}
                           </span>
                         </div>
                       </div>

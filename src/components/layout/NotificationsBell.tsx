@@ -54,6 +54,17 @@ function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
   return bTime - aTime;
 }
 
+function formatRelativeDate(value: string, locale: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleString(locale, {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
 function CloseIcon() {
   return (
     <svg
@@ -589,24 +600,23 @@ export default function NotificationsBell() {
                   maxHeight: panelPlacement.maxHeight,
                 }}
               >
-                <div className="border-b border-slate-100 px-4 py-3">
+                <div className="border-b border-slate-100 bg-slate-50/75 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      <p className="text-sm font-semibold text-slate-900">
                         {t("userMenu.notifications")}
                       </p>
-                      <p className="mt-1 text-[11px] text-slate-500">
-                        {t("notifications.preferences.enabledCount", {
-                          enabled: String(unreadCount),
-                          total: String(notifications.length),
-                        })}
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {unreadCount > 0
+                          ? `${unreadCount} ${t("notifications.unread").toLowerCase()}`
+                          : t("userMenu.empty")}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => void handleClearAll()}
                       disabled={clearing || notifications.length === 0}
-                      className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 transition hover:border-slate-300 hover:text-slate-800 disabled:opacity-60"
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
                     >
                       {clearing ? t("common.feedback.saving") : t("notifications.clear")}
                     </button>
@@ -622,7 +632,7 @@ export default function NotificationsBell() {
                   </div>
                 ) : (
                   <div
-                    className="overflow-y-auto text-sm text-slate-600"
+                    className="overflow-y-auto bg-white text-sm text-slate-600"
                     style={{ maxHeight: Math.max(160, panelPlacement.maxHeight - 74) }}
                   >
                     {(["today", "yesterday", "week", "older"] as const).map(
@@ -632,20 +642,24 @@ export default function NotificationsBell() {
                             key={groupKey}
                             className="border-t border-slate-100 first:border-t-0"
                           >
-                            <div className="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            <div className="px-4 py-2 text-[11px] font-medium text-slate-500">
                               {t(`notifications.group.${groupKey}`)}
                             </div>
-                            <div className="divide-y divide-slate-100">
+                            <div className="space-y-2 px-2 pb-2">
                               {grouped[groupKey].map((item) => {
                                 const isRead = Boolean(item.readAt);
                                 const title = getNotificationTitle(item.eventType, t);
                                 const detail = getNotificationDetail(item, locale, t);
                                 const offset = swipeOffsets[item.id] ?? 0;
+                                const timeLabel = formatRelativeDate(item.createdAt, locale);
 
                                 return (
-                                  <div key={item.id} className="relative overflow-hidden">
+                                  <div
+                                    key={item.id}
+                                    className="relative overflow-hidden rounded-xl border border-slate-200 bg-white"
+                                  >
                                     <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-center bg-rose-600 px-2 text-white">
-                                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">
+                                      <span className="text-[11px] font-semibold">
                                         {t("common.actions.delete")}
                                       </span>
                                     </div>
@@ -679,30 +693,31 @@ export default function NotificationsBell() {
                                         className={`notification-item relative w-full px-4 py-3 text-left transition ${
                                           isRead
                                             ? "bg-white hover:bg-slate-50"
-                                            : "bg-slate-50/80 hover:bg-slate-50"
+                                            : "bg-sky-50/40 hover:bg-sky-50/60"
                                         }`}
                                       >
-                                        <div className="flex items-center justify-between gap-2 pr-8 text-xs text-slate-400">
-                                          <span className="font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                        <div className="flex items-start justify-between gap-3 pr-8">
+                                          <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold text-slate-900">
+                                              {getNotificationSource(item, t)}
+                                            </p>
+                                            <p className="truncate text-xs text-slate-500">
+                                              {detail}
+                                            </p>
+                                          </div>
+                                          <span className="shrink-0 text-[11px] text-slate-400">
+                                            {timeLabel}
+                                          </span>
+                                        </div>
+                                        <div className="mt-2 flex items-center gap-2">
+                                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                                             {title}
                                           </span>
-                                          <span
-                                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                              isRead
-                                                ? "bg-slate-100 text-slate-500"
-                                                : "bg-sky-100 text-sky-700"
-                                            }`}
-                                          >
-                                            {isRead
-                                              ? t("notifications.read")
-                                              : t("notifications.unread")}
-                                          </span>
-                                        </div>
-                                        <div className="mt-2 text-sm font-semibold text-slate-700">
-                                          {getNotificationSource(item, t)}
-                                        </div>
-                                        <div className="mt-1 text-[11px] text-slate-500">
-                                          {detail}
+                                          {!isRead ? (
+                                            <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                                              {t("notifications.unread")}
+                                            </span>
+                                          ) : null}
                                         </div>
                                       </button>
 

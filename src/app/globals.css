@@ -520,23 +520,15 @@ h3 {
 }
 
 .notification-item::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 3px;
-  border-radius: 999px;
-  background: #0ea5e9;
-  opacity: 0.7;
+  content: none;
 }
 
 .notification-item[data-severity="WARNING"]::before {
-  background: #f97316;
+  content: none;
 }
 
 .notification-item[data-severity="CRITICAL"]::before {
-  background: #ef4444;
+  content: none;
 }
 
 #sidebar-toggle:checked ~ div .sidebar-item {
