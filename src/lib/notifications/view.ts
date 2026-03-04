@@ -88,7 +88,10 @@ export function getNotificationDetail(
   const count = asNumber(payload.count);
   const reason = asString(payload.reason);
   const email = asString(payload.email);
-  const invoiceId = asString(payload.invoiceId);
+  const invoiceNumber =
+    asString(payload.invoiceNumber) ??
+    asString(payload.number) ??
+    asString(payload.invoiceNo);
   const technicianName = asString(payload.technicianName);
   const changeType = formatChangeType(asString(payload.changeType), locale);
   const reviewRequired = asBoolean(payload.reviewRequired);
@@ -136,13 +139,18 @@ export function getNotificationDetail(
   }
 
   if (item.eventType === "INVOICE_SENT") {
-    const parts = [
-      invoiceId ? `#${invoiceId}` : null,
-      email,
+    const delivery =
       item.status === "FAILED"
         ? word(locale, "delivery failed", "envio fallido")
-        : null,
-      createdAt,
+        : word(locale, "sent by email", "enviada por correo");
+    const invoiceLabel = invoiceNumber
+      ? `${word(locale, "Invoice", "Factura")} ${invoiceNumber}`
+      : null;
+    const emailLabel = email ? `${word(locale, "to", "a")} ${email}` : null;
+    const parts = [
+      invoiceLabel,
+      delivery,
+      emailLabel,
     ].filter(Boolean);
     return parts.join(" - ");
   }

@@ -1,5 +1,12 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { mkdir, readFile, writeFile } from "fs/promises";
+import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import { copyFile, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
 
 type StoreAssetInput = {
@@ -7,6 +14,12 @@ type StoreAssetInput = {
   buffer: Buffer;
   contentType?: string;
   cacheControl?: string;
+};
+
+export type StoredAssetItem = {
+  key: string;
+  size: number | null;
+  lastModified: string | null;
 };
 
 const STORAGE_DRIVER = (process.env.STORAGE_DRIVER ?? "local").toLowerCase();
@@ -80,6 +93,52 @@ const normalizeStoragePath = (value: string) => {
 const resolveLocalPath = (storagePath: string) =>
   path.join(process.cwd(), "public", ...storagePath.split("/"));
 
+const localPathExists = async (absolutePath: string) => {
+  try {
+    await stat(absolutePath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+async function walkLocalFiles(
+  rootPath: string,
+  rootStoragePrefix: string
+): Promise<StoredAssetItem[]> {
+  const entries = await readdir(rootPath, { withFileTypes: true });
+  const items: StoredAssetItem[] = [];
+
+  for (const entry of entries) {
+    const absolute = path.join(rootPath, entry.name);
+    if (entry.isDirectory()) {
+      const nestedPrefix = `${rootStoragePrefix}${entry.name}/`;
+      const nested = await walkLocalFiles(absolute, nestedPrefix);
+      items.push(...nested);
+      continue;
+    }
+    if (!entry.isFile()) {
+      continue;
+    }
+    const info = await stat(absolute);
+    items.push({
+      key: `${rootStoragePrefix}${entry.name}`,
+      size: Number.isFinite(info.size) ? info.size : null,
+      lastModified: info.mtime ? info.mtime.toISOString() : null,
+    });
+  }
+
+  return items;
+}
+
+export function getPublicAssetUrl(relativePath: string) {
+  const storagePath = normalizeStoragePath(relativePath);
+  if (isS3Storage) {
+    return getS3PublicUrl(storagePath);
+  }
+  return `/${storagePath}`;
+}
+
 export async function storePublicAsset({
   relativePath,
   buffer,
@@ -125,4 +184,121 @@ export async function readStoredAsset(relativePath: string) {
   }
 
   return readFile(resolveLocalPath(storagePath));
+}
+
+export async function listStoredAssets(prefixPath: string): Promise<StoredAssetItem[]> {
+  const normalizedPrefix = normalizeStoragePath(prefixPath)
+    .replace(/\/+$/, "")
+    .concat("/");
+
+  if (isS3Storage) {
+    const allItems: StoredAssetItem[] = [];
+    let continuationToken: string | undefined = undefined;
+
+    do {
+      const response = await getS3Client().send(
+        new ListObjectsV2Command({
+          Bucket: getS3Bucket(),
+          Prefix: normalizedPrefix,
+          ContinuationToken: continuationToken,
+        })
+      );
+
+      const pageItems =
+        response.Contents?.map((item) => ({
+          key: item.Key ?? "",
+          size: typeof item.Size === "number" ? item.Size : null,
+          lastModified: item.LastModified
+            ? item.LastModified.toISOString()
+            : null,
+        })).filter((item) => Boolean(item.key)) ?? [];
+
+      allItems.push(...pageItems);
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+
+    return allItems;
+  }
+
+  const rootAbsolute = resolveLocalPath(normalizedPrefix);
+  const exists = await localPathExists(rootAbsolute);
+  if (!exists) {
+    return [];
+  }
+  return walkLocalFiles(rootAbsolute, normalizedPrefix);
+}
+
+export async function deleteStoredAsset(relativePath: string) {
+  const storagePath = normalizeStoragePath(relativePath);
+
+  if (isS3Storage) {
+    await getS3Client().send(
+      new DeleteObjectCommand({
+        Bucket: getS3Bucket(),
+        Key: storagePath,
+      })
+    );
+    return;
+  }
+
+  const absolute = resolveLocalPath(storagePath);
+  const exists = await localPathExists(absolute);
+  if (!exists) {
+    return;
+  }
+  await unlink(absolute);
+}
+
+export async function copyStoredAsset(sourcePath: string, targetPath: string) {
+  const sourceKey = normalizeStoragePath(sourcePath);
+  const targetKey = normalizeStoragePath(targetPath);
+
+  if (isS3Storage) {
+    const bucket = getS3Bucket();
+    await getS3Client().send(
+      new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${bucket}/${sourceKey}`,
+        Key: targetKey,
+      })
+    );
+    return;
+  }
+
+  const sourceAbsolute = resolveLocalPath(sourceKey);
+  const targetAbsolute = resolveLocalPath(targetKey);
+  await mkdir(path.dirname(targetAbsolute), { recursive: true });
+  await copyFile(sourceAbsolute, targetAbsolute);
+}
+
+export async function moveStoredAsset(sourcePath: string, targetPath: string) {
+  const sourceKey = normalizeStoragePath(sourcePath);
+  const targetKey = normalizeStoragePath(targetPath);
+
+  if (isS3Storage) {
+    await copyStoredAsset(sourceKey, targetKey);
+    await deleteStoredAsset(sourceKey);
+    return;
+  }
+
+  const sourceAbsolute = resolveLocalPath(sourceKey);
+  const targetAbsolute = resolveLocalPath(targetKey);
+  await mkdir(path.dirname(targetAbsolute), { recursive: true });
+  await rename(sourceAbsolute, targetAbsolute);
+}
+
+export async function deleteStoredPrefix(prefixPath: string) {
+  const normalizedPrefix = normalizeStoragePath(prefixPath)
+    .replace(/\/+$/, "")
+    .concat("/");
+  const files = await listStoredAssets(normalizedPrefix);
+  await Promise.all(files.map((item) => deleteStoredAsset(item.key)));
+
+  if (!isS3Storage) {
+    const absolute = resolveLocalPath(normalizedPrefix);
+    const exists = await localPathExists(absolute);
+    if (exists) {
+      await rm(absolute, { recursive: true, force: true });
+    }
+  }
 }

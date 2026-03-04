@@ -35,6 +35,7 @@ type Props = {
   customers: CustomerOption[];
   jobs: JobOption[];
   createInvoiceAction: (formData: FormData) => Promise<void>;
+  onCreated?: () => void;
 };
 
 const CUSTOM_SERVICE_CODE = "CUSTOM";
@@ -61,6 +62,7 @@ export default function InvoiceCreateForm({
   customers,
   jobs,
   createInvoiceAction,
+  onCreated,
 }: Props) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -178,10 +180,7 @@ export default function InvoiceCreateForm({
     <form
       action={async (formData) => {
         await createInvoiceAction(formData);
-        const toggle = document.getElementById("new-invoice");
-        if (toggle instanceof HTMLInputElement) {
-          toggle.checked = false;
-        }
+        onCreated?.();
         router.refresh();
       }}
       className="mt-5 space-y-4"

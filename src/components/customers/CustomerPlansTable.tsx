@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
 
@@ -41,6 +41,8 @@ const formatTime = (value: string, locale: string) =>
 const toDateInput = (value: string) =>
   new Date(value).toLocaleDateString("en-CA");
 
+const PAGE_SIZE = 8;
+
 export default function CustomerPlansTable({
   rows,
   onToggle,
@@ -53,6 +55,7 @@ export default function CustomerPlansTable({
   const [frequencyFilter, setFrequencyFilter] = useState("ALL");
   const [serviceFilter, setServiceFilter] = useState("ALL");
   const [techFilter, setTechFilter] = useState("ALL");
+  const [page, setPage] = useState(1);
 
   const frequencyLabel = (value: string) => {
     if (value === "BIWEEKLY") return t("plans.frequency.biweekly");
@@ -92,6 +95,17 @@ export default function CustomerPlansTable({
       return true;
     });
   }, [rows, statusFilter, frequencyFilter, serviceFilter, techFilter, search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, frequencyFilter, serviceFilter, techFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [currentPage, filtered]);
 
   return (
     <div className="ui-panel p-6">
@@ -191,14 +205,14 @@ export default function CustomerPlansTable({
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-6 text-center text-sm text-slate-500">
                   {t("admin.customers.plans.empty")}
                 </td>
               </tr>
             ) : (
-              filtered.map((plan) => {
+              pagedRows.map((plan) => {
                 const nextDate = toDateInput(plan.nextRunAt);
                 const nextTime =
                   plan.preferredTime || formatTime(plan.nextRunAt, locale);
@@ -292,6 +306,40 @@ export default function CustomerPlansTable({
           </tbody>
         </table>
       </div>
+
+      {filtered.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <span>
+            {`${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(
+              currentPage * PAGE_SIZE,
+              filtered.length
+            )} / ${filtered.length}`}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage <= 1}
+              className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setPage((value) => Math.min(totalPages, value + 1))
+              }
+              disabled={currentPage >= totalPages}
+              className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

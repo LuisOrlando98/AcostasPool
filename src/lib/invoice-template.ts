@@ -64,9 +64,9 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   themes: {
     STANDARD: {
       label: "INVOICE",
-      brandHex: "#0d3b56",
-      accentHex: "#0e7aa6",
-      lightHex: "#f3f8fc",
+      brandHex: "#2F4A88",
+      accentHex: "#8FA5D4",
+      lightHex: "#EEF2FB",
       watermarkText: "",
     },
     SPECIAL: {
@@ -246,121 +246,474 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
-export function renderInvoiceTemplatePreview(
-  template: InvoiceTemplateConfig,
-  theme: InvoiceTemplateTheme
-) {
+export type InvoiceTemplateRenderLineItem = {
+  label: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+};
+
+export type InvoiceTemplateRenderInput = {
+  template: InvoiceTemplateConfig;
+  theme: InvoiceTemplateTheme;
+  invoiceNumber: string;
+  issueDateLabel: string;
+  customerName: string;
+  customerAddress?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  items: InvoiceTemplateRenderLineItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  notes?: string | null;
+};
+
+function compactLine(value: string | null | undefined) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function money(value: number) {
+  return `$${value.toFixed(2)}`;
+}
+
+export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
+  const { template, theme } = input;
   const resolvedTheme = template.themes[theme];
-  const items = [
-    { label: "Weekly cleaning", quantity: 1, unitPrice: 125, amount: 125 },
-    { label: "Chemicals and supplies", quantity: 2, unitPrice: 24.25, amount: 48.5 },
-  ];
-  const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
-  const tax = subtotal * 0.07;
-  const total = subtotal + tax;
 
-  const itemRows = items
-    .map(
-      (item, index) => `<tr>
-  <td style="text-align:center;">${index + 1}</td>
-  <td>${escapeHtml(item.label)}</td>
-  <td style="text-align:center;">${item.quantity}</td>
-  <td style="text-align:right;">$${item.unitPrice.toFixed(2)}</td>
-  <td style="text-align:right;">$${item.amount.toFixed(2)}</td>
-</tr>`
-    )
-    .join("");
+  const customerLines = [
+    input.customerName,
+    input.customerAddress,
+    input.customerEmail,
+    input.customerPhone,
+  ]
+    .map(compactLine)
+    .filter(Boolean);
 
-  const billToLines = [
-    "Sample Customer",
-    "123 Palm Ave, Miami, FL 33101",
-    "customer@example.com",
-    "+1 (786) 555-0199",
-  ];
+  const issuerAddress = [template.companyAddressLine1, template.companyAddressLine2]
+    .map(compactLine)
+    .filter(Boolean)
+    .join(", ");
+
   const issuedByLines = [
-    template.companyName,
-    [template.companyAddressLine1, template.companyAddressLine2]
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .join(", "),
-    template.companyEmail,
-    template.companyPhone,
+    compactLine(template.companyName),
+    issuerAddress,
+    compactLine(template.companyEmail),
+    compactLine(template.companyPhone),
   ].filter(Boolean);
+
+  const itemRows = input.items.length
+    ? input.items
+        .map(
+          (item, index) => `<tr>
+  <td class="col-index">${index + 1}</td>
+  <td class="col-description">${escapeHtml(item.label)}</td>
+  <td class="col-qty">${item.quantity}</td>
+  <td class="col-money">${money(item.unitPrice)}</td>
+  <td class="col-money col-money-strong">${money(item.amount)}</td>
+</tr>`
+        )
+        .join("")
+    : `<tr>
+  <td colspan="5" class="empty-row">No line items</td>
+</tr>`;
 
   const watermark =
     theme === "ESTIMATE" &&
     template.showEstimateWatermark &&
     resolvedTheme.watermarkText
-      ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-          <span style="font:700 66px/1.1 Arial,sans-serif;opacity:.08;transform:rotate(-14deg);color:${resolvedTheme.brandHex};">
-            ${escapeHtml(resolvedTheme.watermarkText)}
-          </span>
-        </div>`
+      ? `<div class="watermark">${escapeHtml(resolvedTheme.watermarkText)}</div>`
       : "";
 
+  const notesContent = compactLine(input.notes) || compactLine(template.footerNote);
+
   return `<!doctype html>
-<html>
-  <body style="margin:0;padding:24px;background:#e9eef5;font-family:Arial,sans-serif;color:#0f172a;">
-    <article style="position:relative;max-width:880px;margin:0 auto;border:1px solid #d6e0ec;border-radius:18px;overflow:hidden;background:#ffffff;box-shadow:0 14px 28px rgba(15,23,42,.12);">
-      <header style="background:${resolvedTheme.brandHex};padding:24px 28px 26px;border-bottom:6px solid ${resolvedTheme.accentHex};">
-        <div style="display:flex;justify-content:space-between;gap:24px;align-items:flex-start;">
-          <div>
-            <img src="/h-logo.png" alt="AcostasPool" style="display:block;max-width:190px;height:auto;" />
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      @page {
+        size: Letter;
+        margin: 0;
+      }
+
+      :root {
+        --brand: ${resolvedTheme.brandHex};
+        --accent: ${resolvedTheme.accentHex};
+        --light: ${resolvedTheme.lightHex};
+        --paper: #ffffff;
+        --soft: #f3f6fb;
+        --line: #d9e3ef;
+        --text: #0f1d2e;
+        --muted: #4f637a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #e8edf4;
+        color: var(--text);
+        font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+      }
+
+      .sheet {
+        position: relative;
+        width: 8.5in;
+        min-height: 11in;
+        margin: 0 auto;
+        background: var(--paper);
+        overflow: hidden;
+      }
+
+      .header {
+        background: var(--brand);
+        color: #ffffff;
+        padding: 30px 46px 28px;
+        border-bottom: 6px solid var(--accent);
+      }
+
+      .header-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .brand-lockup {
+        width: 320px;
+        text-align: center;
+      }
+
+      .brand-word {
+        margin: 0;
+        font-weight: 800;
+        font-size: 62px;
+        letter-spacing: 0.03em;
+        line-height: 0.9;
+        text-transform: uppercase;
+      }
+
+      .brand-word + .brand-word {
+        margin-top: 2px;
+      }
+
+      .brand-rule {
+        margin-top: 11px;
+        height: 6px;
+        background: #ffffff;
+      }
+
+      .brand-subtitle {
+        margin-top: 10px;
+        font-size: 16px;
+        letter-spacing: 0.26em;
+        font-weight: 400;
+        text-transform: uppercase;
+      }
+
+      .invoice-head {
+        text-align: right;
+      }
+
+      .invoice-label {
+        margin: 0;
+        font-size: 44px;
+        line-height: 1;
+        letter-spacing: 0.03em;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .invoice-meta {
+        margin-top: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        color: rgba(236, 245, 255, 0.98);
+      }
+
+      .invoice-meta p {
+        margin: 0;
+      }
+
+      .invoice-body {
+        padding: 24px 46px 30px;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .info-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f8fbff;
+        padding: 14px 14px 13px;
+      }
+
+      .card-title {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .card-line {
+        margin: 7px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.32;
+        word-break: break-word;
+      }
+
+      .card-line-strong {
+        color: var(--text);
+        font-size: 18px;
+        line-height: 1.2;
+        margin-top: 10px;
+        font-weight: 700;
+      }
+
+      .items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+        font-size: 13px;
+      }
+
+      .items thead tr {
+        background: var(--light);
+      }
+
+      .items th {
+        border: 1px solid var(--line);
+        color: var(--brand);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 9px 10px;
+      }
+
+      .items td {
+        border-bottom: 1px solid #e8eef5;
+        padding: 10px 10px;
+        font-size: 13px;
+      }
+
+      .col-index {
+        width: 42px;
+        text-align: center;
+      }
+
+      .col-description {
+        width: auto;
+      }
+
+      .col-qty {
+        width: 64px;
+        text-align: center;
+      }
+
+      .col-money {
+        width: 132px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .col-money-strong {
+        font-weight: 700;
+      }
+
+      .empty-row {
+        text-align: center;
+        padding: 14px 12px;
+        color: #6b7f96;
+      }
+
+      .totals {
+        margin-top: 14px;
+        margin-left: auto;
+        width: 270px;
+        font-size: 14px;
+      }
+
+      .totals-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .totals-row + .totals-row {
+        margin-top: 7px;
+      }
+
+      .totals-row strong {
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      .totals-row-total {
+        margin-top: 11px;
+        font-size: 31px;
+        font-weight: 800;
+        color: var(--brand);
+      }
+
+      .totals-row-total strong {
+        color: var(--brand);
+        font-size: 35px;
+        letter-spacing: 0.02em;
+      }
+
+      .detail-grid {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .detail-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #f8fbff;
+        padding: 12px 14px;
+      }
+
+      .detail-title {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .detail-main {
+        margin: 7px 0 0;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.35;
+      }
+
+      .detail-sub {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: #61768d;
+        line-height: 1.35;
+      }
+
+      .footer {
+        margin-top: 26px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+      }
+
+      .footer-title {
+        margin: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .footer-line {
+        margin: 4px 0 0;
+        font-size: 10.5px;
+        line-height: 1.4;
+        color: #60748a;
+      }
+
+      .watermark {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        font-size: 110px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.65);
+        text-shadow: 0 0 1px rgba(70, 83, 98, 0.2);
+        transform: rotate(-14deg);
+      }
+    </style>
+  </head>
+  <body>
+    <article class="sheet">
+      <header class="header">
+        <div class="header-grid">
+          <div class="brand-lockup">
+            <p class="brand-word">Acosta&#39;s</p>
+            <p class="brand-word">Pool</p>
+            <div class="brand-rule"></div>
+            <p class="brand-subtitle">Repair And Maintenance</p>
           </div>
-          <div style="text-align:right;">
-            <p style="margin:0;color:#ffffff;font:700 28px/1.05 Arial,sans-serif;">${escapeHtml(
-              resolvedTheme.label
-            )}</p>
-            <p style="margin:6px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
-              template.invoiceNumberLabel
-            )}: INV-2026-1042</p>
-            <p style="margin:4px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
-              template.issueDateLabel
-            )}: 03/03/2026</p>
+          <div class="invoice-head">
+            <p class="invoice-label">${escapeHtml(resolvedTheme.label)}</p>
+            <div class="invoice-meta">
+              <p>${escapeHtml(template.invoiceNumberLabel)}: ${escapeHtml(input.invoiceNumber)}</p>
+              <p>${escapeHtml(template.issueDateLabel)}: ${escapeHtml(input.issueDateLabel)}</p>
+            </div>
           </div>
         </div>
       </header>
-      <section style="padding:20px 28px 22px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div style="border:1px solid #dde6f2;border-radius:12px;background:#f9fcff;padding:12px 13px;">
-            <p style="margin:0;font:700 11px/1.2 Arial,sans-serif;color:#5f6f81;text-transform:uppercase;letter-spacing:.09em;">${escapeHtml(
-              template.billToLabel
-            )}</p>
-            ${billToLines
+
+      <section class="invoice-body">
+        <div class="info-grid">
+          <section class="info-card">
+            <p class="card-title">${escapeHtml(template.billToLabel)}</p>
+            ${customerLines
               .map((line, index) =>
                 index === 0
-                  ? `<p style="margin:${index === 0 ? "10px" : "6px"} 0 0;font:700 15px/1.25 Arial,sans-serif;color:#0f172a;">${escapeHtml(line)}</p>`
-                  : `<p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(line)}</p>`
+                  ? `<p class="card-line card-line-strong">${escapeHtml(line)}</p>`
+                  : `<p class="card-line">${escapeHtml(line)}</p>`
               )
               .join("")}
-          </div>
-          <div style="border:1px solid #dde6f2;border-radius:12px;background:#f9fcff;padding:12px 13px;">
-            <p style="margin:0;font:700 11px/1.2 Arial,sans-serif;color:#5f6f81;text-transform:uppercase;letter-spacing:.09em;">Issued By</p>
+          </section>
+          <section class="info-card">
+            <p class="card-title">Issued By</p>
             ${issuedByLines
               .map((line, index) =>
                 index === 0
-                  ? `<p style="margin:${index === 0 ? "10px" : "6px"} 0 0;font:700 15px/1.25 Arial,sans-serif;color:#0f172a;">${escapeHtml(line)}</p>`
-                  : `<p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(line)}</p>`
+                  ? `<p class="card-line card-line-strong">${escapeHtml(line)}</p>`
+                  : `<p class="card-line">${escapeHtml(line)}</p>`
               )
               .join("")}
-          </div>
+          </section>
         </div>
 
-        <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
+        <table class="items">
           <thead>
-            <tr style="background:${resolvedTheme.lightHex};border:1px solid #dbe5f0;">
-              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:42px;">#</th>
-              <th style="text-align:left;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;">${escapeHtml(
-                template.tableDescriptionLabel
-              )}</th>
-              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:64px;">Qty</th>
-              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:120px;">Unit Price</th>
-              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:120px;">${escapeHtml(
-                template.tableAmountLabel
-              )}</th>
+            <tr>
+              <th>#</th>
+              <th>${escapeHtml(template.tableDescriptionLabel)}</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>${escapeHtml(template.tableAmountLabel)}</th>
             </tr>
           </thead>
           <tbody>
@@ -368,42 +721,69 @@ export function renderInvoiceTemplatePreview(
           </tbody>
         </table>
 
-        <div style="margin-top:16px;display:grid;justify-content:end;">
-          <p style="margin:0;color:#475569;font-size:13px;">${escapeHtml(template.subtotalLabel)}: <strong>$${subtotal.toFixed(2)}</strong></p>
-          <p style="margin:7px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.taxLabel)} (7%): <strong>$${tax.toFixed(2)}</strong></p>
-          <p style="margin:9px 0 0;color:${resolvedTheme.brandHex};font:700 16px/1.2 Arial,sans-serif;">${escapeHtml(template.totalLabel)}: $${total.toFixed(2)}</p>
+        <div class="totals">
+          <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
+            input.subtotal
+          )}</strong></p>
+          <p class="totals-row"><span>${escapeHtml(template.taxLabel)} (7%):</span><strong>${money(
+            input.tax
+          )}</strong></p>
+          <p class="totals-row totals-row-total"><span>${escapeHtml(
+            template.totalLabel
+          )}:</span><strong>${money(input.total)}</strong></p>
         </div>
 
-        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <div style="padding:12px 14px;border-radius:12px;background:#f8fbff;border:1px solid #dde6f2;">
-            <p style="margin:0 0 6px;color:#5f6f81;font:700 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;">Payment Method</p>
-            <p style="margin:0;color:#0f172a;font-size:13px;">Credit | Debit | ACH | Check</p>
-            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">We accept: Visa, MasterCard, Zelle and Cash</p>
-          </div>
-          <div style="padding:12px 14px;border-radius:12px;background:#f8fbff;border:1px solid #dde6f2;">
-            <p style="margin:0 0 6px;color:#5f6f81;font:700 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;">${escapeHtml(
-              template.notesLabel
-            )}</p>
-            <p style="margin:0;color:#64748b;font-size:13px;">Service completed and balanced. Thank you for trusting us.</p>
-          </div>
+        <div class="detail-grid">
+          <section class="detail-card">
+            <p class="detail-title">Payment Method</p>
+            <p class="detail-main">Credit | Debit | ACH | Check</p>
+            <p class="detail-sub">We accept: Visa, MasterCard, Zelle and Cash</p>
+          </section>
+          <section class="detail-card">
+            <p class="detail-title">${escapeHtml(template.notesLabel)}</p>
+            <p class="detail-main">${escapeHtml(notesContent)}</p>
+          </section>
         </div>
+
+        <footer class="footer">
+          <p class="footer-title">${escapeHtml(template.clausesTitle)}</p>
+          ${template.legalClauses
+            .slice(0, 4)
+            .map((clause) => `<p class="footer-line">${escapeHtml(clause)}</p>`)
+            .join("")}
+        </footer>
       </section>
-      <footer style="padding:14px 28px;border-top:1px solid #dbe5f0;background:#f8fafc;color:#64748b;font-size:12px;">
-        <p style="margin:0 0 6px;font-size:12px;color:#5c6e83;">${escapeHtml(template.footerNote)}</p>
-        <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#718096;">${escapeHtml(
-          template.clausesTitle
-        )}</p>
-        ${template.legalClauses
-          .map(
-            (clause) =>
-              `<p style="margin:0 0 2px;font-size:9px;line-height:1.4;color:#8a97a8;">${escapeHtml(
-                clause
-              )}</p>`
-          )
-          .join("")}
-      </footer>
+
       ${watermark}
     </article>
   </body>
 </html>`;
+}
+
+export function renderInvoiceTemplatePreview(
+  template: InvoiceTemplateConfig,
+  theme: InvoiceTemplateTheme
+) {
+  const items = [
+    { label: "Weekly cleaning", quantity: 1, unitPrice: 125, amount: 125 },
+    { label: "Chemicals and supplies", quantity: 2, unitPrice: 24.25, amount: 48.5 },
+  ];
+  const subtotal = items.reduce((sum, item) => sum + item.amount, 0);
+  const tax = subtotal * 0.07;
+  const total = subtotal + tax;
+  return renderInvoiceTemplateHtml({
+    template,
+    theme,
+    invoiceNumber: "INV-2026-1042",
+    issueDateLabel: "03/03/2026",
+    customerName: "Sample Customer",
+    customerAddress: "123 Palm Ave, Miami, FL 33101",
+    customerEmail: "customer@example.com",
+    customerPhone: "+1 (786) 555-0199",
+    items,
+    subtotal,
+    tax,
+    total,
+    notes: "Service completed and balanced. Thank you for trusting us.",
+  });
 }

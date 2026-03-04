@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { getJobStatusLabel } from "@/lib/constants";
@@ -46,6 +46,8 @@ const formatDateTime = (value: string, locale: string) =>
     timeStyle: "short",
   });
 
+const PAGE_SIZE = 10;
+
 export default function CustomerJobsTable({
   rows,
   actionTargetId,
@@ -62,6 +64,7 @@ export default function CustomerJobsTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [page, setPage] = useState(1);
 
   const technicianOptions = useMemo(() => {
     const names = rows.map((row) => row.technicianName).filter(Boolean);
@@ -131,6 +134,27 @@ export default function CustomerJobsTable({
     search,
     sortDir,
   ]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [
+    search,
+    statusFilter,
+    priorityFilter,
+    serviceFilter,
+    techFilter,
+    evidenceFilter,
+    startDate,
+    endDate,
+    sortDir,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRows = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [currentPage, filtered]);
 
   return (
     <div className="ui-panel p-6">
@@ -274,14 +298,14 @@ export default function CustomerJobsTable({
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {pagedRows.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-6 text-center text-sm text-slate-500">
                   {t("admin.customers.jobs.empty")}
                 </td>
               </tr>
             ) : (
-              filtered.map((row) => (
+              pagedRows.map((row) => (
                 <tr key={row.id} className="border-b border-slate-100">
                   <td className="py-3 font-medium text-slate-800">
                     {formatDateTime(row.scheduledDate, locale)}
@@ -371,6 +395,40 @@ export default function CustomerJobsTable({
           </tbody>
         </table>
       </div>
+
+      {filtered.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <span>
+            {`${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(
+              currentPage * PAGE_SIZE,
+              filtered.length
+            )} / ${filtered.length}`}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage <= 1}
+              className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setPage((value) => Math.min(totalPages, value + 1))
+              }
+              disabled={currentPage >= totalPages}
+              className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

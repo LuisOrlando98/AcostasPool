@@ -271,61 +271,16 @@ export default function LandingFooter({
         </div>
 
         <div className="lp-footer-middle">
-          <div className="lp-footer-preferences">
-            <div className="lp-footer-preference-group">
-              <p>{copy.languageLabel}</p>
-              <div className="lp-lang-switch" role="group" aria-label={copy.languageLabel}>
-                <button
-                  type="button"
-                  className="lp-lang-btn"
-                  data-active={language === "en"}
-                  onClick={() => onLanguageChange?.("en")}
-                  aria-label="English"
-                  title="English"
-                >
-                  EN
-                </button>
-                <button
-                  type="button"
-                  className="lp-lang-btn"
-                  data-active={language === "es"}
-                  onClick={() => onLanguageChange?.("es")}
-                  aria-label="Espanol"
-                  title="Espanol"
-                >
-                  ES
-                </button>
-              </div>
-            </div>
-
-            <div className="lp-footer-preference-group">
-              <p>{copy.themeLabel}</p>
-              <div className="lp-theme-switch" role="group" aria-label={copy.themeLabel}>
-                <button
-                  type="button"
-                  className="lp-theme-btn"
-                  data-active={theme === "ocean"}
-                  onClick={() => onThemeChange?.("ocean")}
-                  aria-label={copy.light}
-                  title={copy.light}
-                >
-                  <SunIcon />
-                </button>
-                <button
-                  type="button"
-                  className="lp-theme-btn"
-                  data-active={theme === "night"}
-                  onClick={() => onThemeChange?.("night")}
-                  aria-label={copy.dark}
-                  title={copy.dark}
-                >
-                  <MoonIcon />
-                </button>
-              </div>
-            </div>
+          <div className="lp-footer-brand lp-footer-brand-inline">
+            <Link href="/" className="lp-brand">
+              <span className="lp-brand-dot" aria-hidden="true" />
+              <span className="lp-brand-name">
+                <span>Acostas</span>
+                <span>Pool</span>
+              </span>
+            </Link>
+            <p>Professional maintenance for premium residential pools in South Florida.</p>
           </div>
-
-          <span aria-hidden="true" className="lp-footer-middle-divider" />
 
           <div className="lp-footer-col lp-footer-col-contact">
             <h3>{copy.contact}</h3>
@@ -343,19 +298,6 @@ export default function LandingFooter({
                 );
               })}
             </ul>
-          </div>
-        </div>
-
-        <div className="lp-footer-grid">
-          <div className="lp-footer-brand">
-            <Link href="/" className="lp-brand">
-              <span className="lp-brand-dot" aria-hidden="true" />
-              <span className="lp-brand-name">
-                <span>Acostas</span>
-                <span>Pool</span>
-              </span>
-            </Link>
-            <p>Professional maintenance for premium residential pools in South Florida.</p>
           </div>
 
           <div className="lp-footer-col lp-footer-col-legal">
@@ -379,6 +321,54 @@ export default function LandingFooter({
             <Link href="/contact">{copy.contactShort}</Link>
             <Link href="/legal">{copy.legalShort}</Link>
             <Link href="/login">{copy.login}</Link>
+          </div>
+
+          <div className="lp-footer-meta-preferences">
+            <div className="lp-lang-switch" role="group" aria-label={copy.languageLabel}>
+              <button
+                type="button"
+                className="lp-lang-btn"
+                data-active={language === "en"}
+                onClick={() => onLanguageChange?.("en")}
+                aria-label="English"
+                title="English"
+              >
+                EN
+              </button>
+              <button
+                type="button"
+                className="lp-lang-btn"
+                data-active={language === "es"}
+                onClick={() => onLanguageChange?.("es")}
+                aria-label="Espanol"
+                title="Espanol"
+              >
+                ES
+              </button>
+            </div>
+
+            <div className="lp-theme-switch" role="group" aria-label={copy.themeLabel}>
+              <button
+                type="button"
+                className="lp-theme-btn"
+                data-active={theme === "ocean"}
+                onClick={() => onThemeChange?.("ocean")}
+                aria-label={copy.light}
+                title={copy.light}
+              >
+                <SunIcon />
+              </button>
+              <button
+                type="button"
+                className="lp-theme-btn"
+                data-active={theme === "night"}
+                onClick={() => onThemeChange?.("night")}
+                aria-label={copy.dark}
+                title={copy.dark}
+              >
+                <MoonIcon />
+              </button>
+            </div>
           </div>
         </div>
       </div>

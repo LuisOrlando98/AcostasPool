@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
-import FormSubmitButton from "@/components/ui/FormSubmitButton";
+import InvoiceEditForm from "@/components/invoices/InvoiceEditForm";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
@@ -33,7 +33,10 @@ function parseTheme(value: string): InvoiceTheme {
 }
 
 function parseEditorMode(value: string | undefined) {
-  if (value === "code" || value === "web") {
+  if (value === "editor" || value === "code" || value === "web") {
+    return value === "code" ? "editor" : value;
+  }
+  if (value === "split") {
     return value;
   }
   return "split";
@@ -65,6 +68,11 @@ async function updateInvoice(formData: FormData) {
     },
   });
   if (!currentInvoice) {
+    return;
+  }
+
+  const isLocked = Boolean(currentInvoice.sentAt);
+  if (isLocked) {
     return;
   }
 
@@ -207,10 +215,21 @@ export default async function InvoiceEditorPage({
     normalizedLineItems.length > 0
       ? normalizedLineItems
       : [{ label: "Service", quantity: 1, unitPrice: Number(invoice.subtotal), amount: Number(invoice.subtotal) }];
-  const lineItemsJson = JSON.stringify(lineItemsSeed, null, 2);
 
-  const modeHref = (nextMode: "code" | "web" | "split") =>
+  const modeHref = (nextMode: "editor" | "web" | "split") =>
     `/admin/invoices/${invoice.id}?mode=${nextMode}`;
+  const isLocked = Boolean(invoice.sentAt);
+  const lockedTitle = locale === "es" ? "Factura bloqueada" : "Invoice locked";
+  const lockedDescription =
+    locale === "es"
+      ? "Esta factura ya fue enviada al cliente y no se puede editar."
+      : "This invoice has already been sent to the customer and can no longer be edited.";
+  const lockedSentAtLabel =
+    locale === "es" ? "Enviada el" : "Sent on";
+
+  const editorLabel = locale === "es" ? "Editor" : "Editor";
+  const previewLabel = locale === "es" ? "Vista" : "Preview";
+  const splitLabel = locale === "es" ? "Ambos" : "Split";
 
   return (
     <AppShell
@@ -232,22 +251,22 @@ export default async function InvoiceEditorPage({
             </div>
             <div className="ui-segment">
               <Link
-                href={modeHref("code")}
-                className={`ui-segment-item ${mode === "code" ? "is-active" : ""}`}
+                href={modeHref("editor")}
+                className={`ui-segment-item ${mode === "editor" ? "is-active" : ""}`}
               >
-                Code
+                {editorLabel}
               </Link>
               <Link
                 href={modeHref("web")}
                 className={`ui-segment-item ${mode === "web" ? "is-active" : ""}`}
               >
-                Web
+                {previewLabel}
               </Link>
               <Link
                 href={modeHref("split")}
                 className={`ui-segment-item ${mode === "split" ? "is-active" : ""}`}
               >
-                Split
+                {splitLabel}
               </Link>
             </div>
           </div>
@@ -256,124 +275,39 @@ export default async function InvoiceEditorPage({
         <div className="grid gap-6 xl:grid-cols-2">
           {mode !== "web" ? (
             <div className="app-card p-6 shadow-contrast">
-              <form action={updateInvoice} className="space-y-4">
-                <input type="hidden" name="invoiceId" value={invoice.id} />
-
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <label>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Number
-                    </span>
-                    <input
-                      name="number"
-                      defaultValue={invoice.number}
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      required
-                    />
-                  </label>
-                  <label>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Status
-                    </span>
-                    <select
-                      name="status"
-                      defaultValue={invoice.status}
-                      className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="SENT">SENT</option>
-                      <option value="PAID">PAID</option>
-                      <option value="OVERDUE">OVERDUE</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Type
-                    </span>
-                    <select
-                      name="type"
-                      defaultValue={invoice.theme}
-                      className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="STANDARD">STANDARD</option>
-                      <option value="SPECIAL">SPECIAL</option>
-                      <option value="ESTIMATE">ESTIMATE</option>
-                    </select>
-                  </label>
+              {isLocked ? (
+                <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="font-semibold">{lockedTitle}</p>
+                  <p className="mt-1">{lockedDescription}</p>
+                  {invoice.sentAt ? (
+                    <p className="mt-1 text-xs text-amber-800">
+                      {lockedSentAtLabel}: {invoice.sentAt.toLocaleDateString(locale)}
+                    </p>
+                  ) : null}
                 </div>
+              ) : null}
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <label>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Linked job
-                    </span>
-                    <select
-                      name="jobId"
-                      defaultValue={invoice.jobId ?? ""}
-                      className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="">No job linked</option>
-                      {jobs.map((job) => (
-                        <option key={job.id} value={job.id}>
-                          {job.scheduledDate.toLocaleDateString(locale)} -{" "}
-                          {job.technician?.user.fullName ?? "No technician"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      Tax
-                    </span>
-                    <input
-                      name="tax"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={Number(invoice.tax).toFixed(2)}
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    />
-                  </label>
-                </div>
-
-                <label className="block">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Line items JSON
-                  </span>
-                  <textarea
-                    name="lineItemsJson"
-                    rows={12}
-                    defaultValue={lineItemsJson}
-                    className="app-input mt-2 w-full px-4 py-3 font-mono text-xs"
-                  />
-                  <p className="mt-2 text-[11px] text-slate-500">
-                    Format: {"[{\"label\":\"Service\",\"quantity\":1,\"unitPrice\":120,\"amount\":120}]"}
-                  </p>
-                </label>
-
-                <label className="block">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Notes
-                  </span>
-                  <textarea
-                    name="notes"
-                    rows={4}
-                    defaultValue={invoice.notes ?? ""}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </label>
-
-                <FormSubmitButton
-                  idleLabel="Guardar cambios y regenerar PDF"
-                  pendingLabel="Guardando..."
-                  successLabel="Actualizado"
-                  className="w-full px-4 py-3"
-                />
-              </form>
+              <InvoiceEditForm
+                invoiceId={invoice.id}
+                defaultNumber={invoice.number}
+                defaultStatus={invoice.status}
+                defaultTheme={invoice.theme}
+                defaultJobId={invoice.jobId}
+                defaultNotes={invoice.notes}
+                defaultTax={Number(invoice.tax)}
+                jobs={jobs.map((job) => ({
+                  id: job.id,
+                  scheduledDate: job.scheduledDate.toISOString(),
+                  technicianName: job.technician?.user.fullName ?? "No technician",
+                }))}
+                initialLineItems={lineItemsSeed}
+                locked={isLocked}
+                updateInvoiceAction={updateInvoice}
+              />
             </div>
           ) : null}
 
-          {mode !== "code" ? (
+          {mode !== "editor" ? (
             <div className="app-card p-6 shadow-contrast">
               <h3 className="text-base font-semibold text-slate-900">Web preview</h3>
               <p className="mt-1 text-sm text-slate-600">

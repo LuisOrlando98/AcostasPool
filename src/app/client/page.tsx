@@ -134,57 +134,106 @@ export default async function ClientPage() {
         </div>
 
         {recentCompletedJobs.length > 0 ? (
-          <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full min-w-[620px] text-left text-sm">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.date")}</th>
-                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.property")}</th>
-                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.type")}</th>
-                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.evidence")}</th>
-                  <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.status")}</th>
-                  <th className="px-3 py-2 text-right font-semibold">
-                    {t("client.home.recent.columns.details")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
-                {recentCompletedJobs.map((job) => (
-                  <tr key={job.id}>
-                    <td className="whitespace-nowrap px-3 py-3">
+          <div className="mt-4">
+            <div className="space-y-2 sm:hidden">
+              {recentCompletedJobs.map((job) => (
+                <Link
+                  key={job.id}
+                  href={`/client/jobs/${job.id}`}
+                  className="block rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-sky-300 hover:bg-sky-50/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">
                       {(job.completedAt ?? job.scheduledDate).toLocaleDateString(locale)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="block max-w-[16rem] truncate" title={job.property.address}>
-                        {job.property.address}
-                      </span>
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">
+                    </p>
+                    <span
+                      className="app-chip inline-flex items-center px-2 py-1 text-[11px]"
+                      data-tone="success"
+                    >
+                      {getJobStatusLabel(job.status, t)}
+                    </span>
+                  </div>
+                  <p
+                    className="mt-2 overflow-hidden text-sm leading-5 text-slate-700"
+                    style={{
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                    title={job.property.address}
+                  >
+                    {job.property.address}
+                  </p>
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>
                       {job.type === "ON_DEMAND"
                         ? t("jobs.type.onDemand")
                         : t("jobs.type.routine")}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-3">{job.photos.length}</td>
-                    <td className="whitespace-nowrap px-3 py-3">
-                      <span
-                        className="app-chip inline-flex items-center px-2 py-1 text-[11px]"
-                        data-tone="success"
-                      >
-                        {getJobStatusLabel(job.status, t)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <Link
-                        href={`/client/jobs/${job.id}`}
-                        className="inline-flex rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                      >
-                        {t("common.actions.view")}
-                      </Link>
-                    </td>
+                    </span>
+                    <span className="font-semibold text-sky-700">{t("common.actions.view")}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto rounded-xl border border-slate-200 sm:block">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.12em] text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.date")}</th>
+                    <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.property")}</th>
+                    <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.type")}</th>
+                    <th className="px-3 py-2 font-semibold">{t("client.home.recent.columns.status")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+                  {recentCompletedJobs.map((job) => (
+                    <tr key={job.id} className="transition hover:bg-sky-50/40">
+                      <td className="p-0">
+                        <Link
+                          href={`/client/jobs/${job.id}`}
+                          className="block whitespace-nowrap px-3 py-3"
+                        >
+                          {(job.completedAt ?? job.scheduledDate).toLocaleDateString(locale)}
+                        </Link>
+                      </td>
+                      <td className="p-0">
+                        <Link
+                          href={`/client/jobs/${job.id}`}
+                          className="block px-3 py-3"
+                          title={job.property.address}
+                        >
+                          <span className="block max-w-[20rem] truncate">{job.property.address}</span>
+                        </Link>
+                      </td>
+                      <td className="p-0">
+                        <Link
+                          href={`/client/jobs/${job.id}`}
+                          className="block whitespace-nowrap px-3 py-3"
+                        >
+                          {job.type === "ON_DEMAND"
+                            ? t("jobs.type.onDemand")
+                            : t("jobs.type.routine")}
+                        </Link>
+                      </td>
+                      <td className="p-0">
+                        <Link
+                          href={`/client/jobs/${job.id}`}
+                          className="block whitespace-nowrap px-3 py-3"
+                        >
+                          <span
+                            className="app-chip inline-flex items-center px-2 py-1 text-[11px]"
+                            data-tone="success"
+                          >
+                            {getJobStatusLabel(job.status, t)}
+                          </span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">

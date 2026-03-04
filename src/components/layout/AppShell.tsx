@@ -481,7 +481,10 @@ export default function AppShell({
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]">
+    <div
+      data-app-shell-role={role ?? "UNKNOWN"}
+      className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]"
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.05),_transparent_42%)]" />
       <input
         id="sidebar-toggle"

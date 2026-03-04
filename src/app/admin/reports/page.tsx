@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
-import { unstable_cache } from "next/cache";
 import {
   buildJobWhere,
   buildQueryParams,
@@ -19,197 +18,167 @@ type ReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const getReportSnapshot = (filtersKey: string, filters: ReportFilters) =>
-  unstable_cache(
-    async () => {
-      const jobWhere = buildJobWhere(filters);
+async function getReportSnapshot(filters: ReportFilters) {
+  const jobWhere = buildJobWhere(filters);
 
-      const [
-        technicians,
-        jobs,
-        jobsWithEvidence,
-        customerRequests,
-        reschedules,
-      ] = await Promise.all([
-        prisma.technician.findMany({
-          include: { user: true },
-          orderBy: { user: { fullName: "asc" } },
-        }),
-        prisma.job.findMany({
-          where: jobWhere,
-          select: {
-            status: true,
-            type: true,
-            serviceType: true,
-            priority: true,
-            customerId: true,
-            technicianId: true,
-            scheduledDate: true,
-            completedAt: true,
-          },
-        }),
-        prisma.job.count({
-          where: { ...jobWhere, status: "COMPLETED", photos: { some: {} } },
-        }),
-        prisma.notification.count({
-          where: {
-            eventType: "CUSTOMER_REQUEST",
-            recipientRole: "ADMIN",
-            createdAt: { gte: filters.from, lte: filters.to },
-          },
-        }),
-        prisma.notification.count({
-          where: {
-            eventType: "SERVICE_RESCHEDULED",
-            recipientRole: "CUSTOMER",
-            createdAt: { gte: filters.from, lte: filters.to },
-          },
-        }),
-      ]);
+  const [technicians, jobs, jobsWithEvidence, customerRequests, reschedules] =
+    await Promise.all([
+      prisma.technician.findMany({
+        include: { user: true },
+        orderBy: { user: { fullName: "asc" } },
+      }),
+      prisma.job.findMany({
+        where: jobWhere,
+        select: {
+          status: true,
+          type: true,
+          serviceType: true,
+          priority: true,
+          customerId: true,
+          technicianId: true,
+          scheduledDate: true,
+          completedAt: true,
+        },
+      }),
+      prisma.job.count({
+        where: { ...jobWhere, status: "COMPLETED", photos: { some: {} } },
+      }),
+      prisma.notification.count({
+        where: {
+          eventType: "CUSTOMER_REQUEST",
+          recipientRole: "ADMIN",
+          createdAt: { gte: filters.from, lte: filters.to },
+        },
+      }),
+      prisma.notification.count({
+        where: {
+          eventType: "SERVICE_RESCHEDULED",
+          recipientRole: "CUSTOMER",
+          createdAt: { gte: filters.from, lte: filters.to },
+        },
+      }),
+    ]);
 
-      const jobStatusMap = new Map<string, number>();
-      const jobTypeMap = new Map<string, number>();
-      const serviceMap = new Map<string, number>();
-      const priorityMap = new Map<string, number>();
-      const customerMap = new Map<string, number>();
-      const technicianStatMap = new Map<string, Map<string, number>>();
+  const jobStatusMap = new Map<string, number>();
+  const jobTypeMap = new Map<string, number>();
+  const serviceMap = new Map<string, number>();
+  const priorityMap = new Map<string, number>();
+  const customerMap = new Map<string, number>();
+  const technicianStatMap = new Map<string, Map<string, number>>();
 
-      const completedJobs: {
-        scheduledDate: Date;
-        completedAt: Date | null;
-      }[] = [];
-      for (const job of jobs) {
-        jobStatusMap.set(job.status, (jobStatusMap.get(job.status) ?? 0) + 1);
-        jobTypeMap.set(job.type, (jobTypeMap.get(job.type) ?? 0) + 1);
-        serviceMap.set(
-          job.serviceType,
-          (serviceMap.get(job.serviceType) ?? 0) + 1
-        );
-        priorityMap.set(
-          job.priority,
-          (priorityMap.get(job.priority) ?? 0) + 1
-        );
-        customerMap.set(
-          job.customerId,
-          (customerMap.get(job.customerId) ?? 0) + 1
-        );
-        const techKey = job.technicianId ?? "unassigned";
-        const statusKey = job.status;
-        const statusMap =
-          technicianStatMap.get(techKey) ?? new Map<string, number>();
-        statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
-        technicianStatMap.set(techKey, statusMap);
-        if (job.status === "COMPLETED") {
-          completedJobs.push({
-            scheduledDate: job.scheduledDate,
-            completedAt: job.completedAt,
-          });
-        }
-      }
+  const completedJobs: {
+    scheduledDate: Date;
+    completedAt: Date | null;
+  }[] = [];
+  for (const job of jobs) {
+    jobStatusMap.set(job.status, (jobStatusMap.get(job.status) ?? 0) + 1);
+    jobTypeMap.set(job.type, (jobTypeMap.get(job.type) ?? 0) + 1);
+    serviceMap.set(job.serviceType, (serviceMap.get(job.serviceType) ?? 0) + 1);
+    priorityMap.set(job.priority, (priorityMap.get(job.priority) ?? 0) + 1);
+    customerMap.set(job.customerId, (customerMap.get(job.customerId) ?? 0) + 1);
 
-      const jobStatusGroups = [...jobStatusMap.entries()].map(
-        ([status, count]) => ({
-          status,
-          _count: { _all: count },
-        })
-      );
-      const jobTypeGroups = [...jobTypeMap.entries()].map(([type, count]) => ({
-        type,
+    const techKey = job.technicianId ?? "unassigned";
+    const statusKey = job.status;
+    const statusMap = technicianStatMap.get(techKey) ?? new Map<string, number>();
+    statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
+    technicianStatMap.set(techKey, statusMap);
+
+    if (job.status === "COMPLETED") {
+      completedJobs.push({
+        scheduledDate: job.scheduledDate,
+        completedAt: job.completedAt,
+      });
+    }
+  }
+
+  const jobStatusGroups = [...jobStatusMap.entries()].map(([status, count]) => ({
+    status,
+    _count: { _all: count },
+  }));
+  const jobTypeGroups = [...jobTypeMap.entries()].map(([type, count]) => ({
+    type,
+    _count: { _all: count },
+  }));
+  const serviceGroups = [...serviceMap.entries()].map(([serviceType, count]) => ({
+    serviceType,
+    _count: { _all: count },
+  }));
+  const priorityGroups = [...priorityMap.entries()].map(([priority, count]) => ({
+    priority,
+    _count: { _all: count },
+  }));
+  const topCustomers = [...customerMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([customerId, count]) => ({
+      customerId,
+      _count: { _all: count },
+    }));
+  const technicianStats = [...technicianStatMap.entries()].flatMap(
+    ([technicianId, statusMap]) =>
+      [...statusMap.entries()].map(([status, count]) => ({
+        technicianId: technicianId === "unassigned" ? null : technicianId,
+        status,
         _count: { _all: count },
-      }));
-      const serviceGroups = [...serviceMap.entries()].map(
-        ([serviceType, count]) => ({
-          serviceType,
-          _count: { _all: count },
-        })
-      );
-      const priorityGroups = [...priorityMap.entries()].map(
-        ([priority, count]) => ({
-          priority,
-          _count: { _all: count },
-        })
-      );
-      const topCustomers = [...customerMap.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([customerId, count]) => ({
-          customerId,
-          _count: { _all: count },
-        }));
-      const technicianStats = [...technicianStatMap.entries()].flatMap(
-        ([technicianId, statusMap]) =>
-          [...statusMap.entries()].map(([status, count]) => ({
-            technicianId: technicianId === "unassigned" ? null : technicianId,
-            status,
-            _count: { _all: count },
-          }))
-      );
+      }))
+  );
 
-      const topCustomerRecords =
-        topCustomers.length > 0
-          ? await prisma.customer.findMany({
-              where: {
-                id: { in: topCustomers.map((item) => item.customerId) },
-              },
-            })
-          : [];
+  const topCustomerRecords =
+    topCustomers.length > 0
+      ? await prisma.customer.findMany({
+          where: {
+            id: { in: topCustomers.map((item) => item.customerId) },
+          },
+        })
+      : [];
 
-      return {
-        technicians,
-        jobStatusGroups,
-        jobTypeGroups,
-        serviceGroups,
-        priorityGroups,
-        completedJobs,
-        jobsWithEvidence,
-        customerRequests,
-        reschedules,
-        topCustomers,
-        topCustomerRecords,
-        technicianStats,
-      };
+  return {
+    technicians,
+    jobStatusGroups,
+    jobTypeGroups,
+    serviceGroups,
+    priorityGroups,
+    completedJobs,
+    jobsWithEvidence,
+    customerRequests,
+    reschedules,
+    topCustomers,
+    topCustomerRecords,
+    technicianStats,
+  };
+}
+
+async function getLogsTotal(filters: ReportFilters) {
+  return prisma.emailLog.count({
+    where: {
+      createdAt: { gte: filters.from, lte: filters.to },
     },
-    ["reports", filtersKey],
-    { revalidate: 60 }
-  )();
+  });
+}
 
-const getLogsTotal = (filtersKey: string, filters: ReportFilters) =>
-  unstable_cache(
-    async () =>
-      prisma.emailLog.count({
-        where: {
-          createdAt: { gte: filters.from, lte: filters.to },
-        },
-      }),
-    ["reports-logs-total", filtersKey],
-    { revalidate: 45 }
-  )();
+async function getLogsPageData(filters: ReportFilters, page: number, pageSize: number) {
+  const where = {
+    createdAt: { gte: filters.from, lte: filters.to },
+  } as const;
 
-const getLogsPageData = (
-  filtersKey: string,
-  filters: ReportFilters,
-  page: number,
-  pageSize: number
-) =>
-  unstable_cache(
-    async () =>
-      prisma.emailLog.findMany({
-        where: {
-          createdAt: { gte: filters.from, lte: filters.to },
-        },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          customer: true,
-          technician: { include: { user: true } },
-          job: { include: { property: true } },
-          digest: true,
-        },
-      }),
-    ["reports-logs-page", filtersKey, String(page), String(pageSize)],
-    { revalidate: 45 }
-  )();
+  try {
+    return await prisma.emailLog.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: {
+        customer: true,
+        technician: { include: { user: true } },
+        job: { include: { property: true } },
+        digest: true,
+      },
+    });
+  } catch (error) {
+    console.error("Reports logs query failed:", error);
+    return [];
+  }
+}
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   await requireRole("ADMIN");
@@ -217,23 +186,48 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const locale = await getRequestLocale();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const filters = getReportFilters(resolvedSearchParams);
-  const filtersKey = buildQueryParams(filters);
   const logsPageRaw = resolvedSearchParams?.logsPage;
   const requestedLogsPage = Array.isArray(logsPageRaw)
     ? Number(logsPageRaw[0])
     : Number(logsPageRaw);
   const logsPageSize = 15;
-  const [snapshot, logsTotal] = await Promise.all([
-    getReportSnapshot(filtersKey, filters),
-    getLogsTotal(filtersKey, filters),
-  ]);
+  const emptySnapshot = {
+    technicians: [] as Awaited<ReturnType<typeof prisma.technician.findMany>>,
+    jobStatusGroups: [] as Array<{ status: string; _count: { _all: number } }>,
+    jobTypeGroups: [] as Array<{ type: string; _count: { _all: number } }>,
+    serviceGroups: [] as Array<{ serviceType: string; _count: { _all: number } }>,
+    priorityGroups: [] as Array<{ priority: string; _count: { _all: number } }>,
+    completedJobs: [] as Array<{ scheduledDate: Date; completedAt: Date | null }>,
+    jobsWithEvidence: 0,
+    customerRequests: 0,
+    reschedules: 0,
+    topCustomers: [] as Array<{ customerId: string; _count: { _all: number } }>,
+    topCustomerRecords: [] as Awaited<ReturnType<typeof prisma.customer.findMany>>,
+    technicianStats: [] as Array<{
+      technicianId: string | null;
+      status: string;
+      _count: { _all: number };
+    }>,
+  };
+
+  let snapshot = emptySnapshot;
+  let logsTotal = 0;
+
+  try {
+    [snapshot, logsTotal] = await Promise.all([
+      getReportSnapshot(filters),
+      getLogsTotal(filters),
+    ]);
+  } catch (error) {
+    console.error("Reports dashboard query failed:", error);
+  }
 
   const logsTotalPages = Math.max(1, Math.ceil(logsTotal / logsPageSize));
   const logsPage =
     Number.isFinite(requestedLogsPage) && requestedLogsPage > 0
       ? Math.min(requestedLogsPage, logsTotalPages)
       : 1;
-  const logs = await getLogsPageData(filtersKey, filters, logsPage, logsPageSize);
+  const logs = await getLogsPageData(filters, logsPage, logsPageSize);
 
   const {
     technicians,

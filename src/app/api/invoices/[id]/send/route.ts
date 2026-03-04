@@ -129,6 +129,7 @@ export async function POST(
       actorUserId: session.sub,
       payload: {
         invoiceId: invoice.id,
+        invoiceNumber: invoice.number,
         email: invoice.customer.email,
       },
     });
@@ -156,6 +157,8 @@ export async function POST(
       actorUserId: session.sub,
       payload: {
         invoiceId: invoice.id,
+        invoiceNumber: invoice.number,
+        email: invoice.customer.email,
       },
     });
 

@@ -27,6 +27,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.10.1",
     "pdf-lib": "^1.17.1",
+    "playwright": "^1.58.2",
     "prisma": "^5.19.1",
     "pusher": "^5.2.0",
     "pusher-js": "^8.4.0",

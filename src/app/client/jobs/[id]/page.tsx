@@ -3,8 +3,8 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
 import { getJobStatusLabel } from "@/lib/constants";
-import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import ClientJobEvidenceGallery from "@/components/client/ClientJobEvidenceGallery";
 
 export default async function ClientJobDetailPage({
   params,
@@ -35,7 +35,14 @@ export default async function ClientJobDetailPage({
 
   const job = await prisma.job.findFirst({
     where: { id: jobId, customer: { userId: session.sub } },
-    include: { property: true, photos: true, serviceTier: true },
+    include: {
+      property: true,
+      photos: {
+        where: { visibleToCustomer: true },
+        orderBy: { takenAt: "desc" },
+      },
+      serviceTier: true,
+    },
   });
 
   if (!job) {
@@ -54,6 +61,15 @@ export default async function ClientJobDetailPage({
     );
   }
 
+  const serviceTypeLabelMap: Record<string, string> = {
+    WEEKLY_CLEANING: t("jobs.service.weeklyCleaning"),
+    FILTER_CHECK: t("jobs.service.filterCheck"),
+    CHEM_BALANCE: t("jobs.service.chemBalance"),
+    EQUIPMENT_CHECK: t("jobs.service.equipmentCheck"),
+  };
+  const serviceTypeLabel = serviceTypeLabelMap[job.serviceType] ?? job.serviceType;
+  const completedOrScheduledAt = job.completedAt ?? job.scheduledDate;
+
   return (
     <AppShell
       title={t("jobs.detail.title")}
@@ -61,7 +77,7 @@ export default async function ClientJobDetailPage({
       role="CUSTOMER"
     >
       <section className="app-card p-5 shadow-contrast">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">
               {t("jobs.detail.serviceTitle")}
@@ -83,27 +99,66 @@ export default async function ClientJobDetailPage({
           </span>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {t("client.home.recent.columns.date")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {completedOrScheduledAt.toLocaleString(locale)}
+            </p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {t("client.home.recent.columns.property")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{job.property.address}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {t("jobs.detail.fields.serviceType")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{serviceTypeLabel}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {t("jobs.detail.fields.evidence")}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">
+              {t("jobs.detail.evidenceCount", { count: job.photos.length })}
+            </p>
+          </article>
+        </div>
+
+        {job.customerNotes ? (
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              {t("jobs.detail.fields.customerNotes")}
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{job.customerNotes}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-5">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
+            {t("jobs.detail.evidenceTitle")}
+          </h3>
           {job.photos.length === 0 ? (
             <p className="text-sm text-slate-500">
               {t("jobs.detail.noEvidence")}
             </p>
           ) : (
-            job.photos.map((photo) => (
-              <div
-                key={photo.id}
-                className="overflow-hidden rounded-xl border border-slate-100 bg-slate-50"
-              >
-                <img
-                  src={getAssetUrl(photo.url)}
-                  alt={t("jobs.detail.evidenceAlt")}
-                  className="h-32 w-full object-cover"
-                />
-                <div className="px-3 py-2 text-xs text-slate-500">
-                  {new Date(photo.takenAt).toLocaleString(locale)}
-                </div>
-              </div>
-            ))
+            <ClientJobEvidenceGallery
+              photos={job.photos.map((photo) => ({
+                id: photo.id,
+                url: photo.url,
+                takenAt: photo.takenAt.toISOString(),
+              }))}
+              locale={locale}
+              evidenceAlt={t("jobs.detail.evidenceAlt")}
+              viewLabel={t("common.actions.view")}
+              closeLabel={t("common.actions.close")}
+            />
           )}
         </div>
       </section>

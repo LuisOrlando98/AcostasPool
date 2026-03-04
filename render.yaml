@@ -7,6 +7,7 @@ services:
     buildCommand: |
       npm ci --include=dev
       npx prisma generate
+      npx playwright install --with-deps chromium
       npm run build
     preDeployCommand: |
       for i in 1 2 3; do
@@ -20,6 +21,10 @@ services:
         value: "20"
       - key: NODE_ENV
         value: production
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
       - key: DATABASE_URL
         fromDatabase:
           name: acostaspool-db
@@ -66,6 +71,10 @@ services:
         value: "20"
       - key: NODE_ENV
         value: production
+      - key: PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        value: "1"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"
       - key: DATABASE_URL
         fromDatabase:
           name: acostaspool-db

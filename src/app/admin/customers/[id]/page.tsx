@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
-import Badge from "@/components/ui/Badge";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
+import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
+import CustomerInvoicesTable from "@/components/customers/CustomerInvoicesTable";
 import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
 import CustomerPlansTable from "@/components/customers/CustomerPlansTable";
-import CustomerDocumentUploader from "@/components/customers/CustomerDocumentUploader";
+import CustomerRepositoryExplorer from "@/components/customers/CustomerRepositoryExplorer";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
@@ -18,13 +19,11 @@ import {
   getServiceTierChecklist,
   getServiceTiers,
 } from "@/lib/service-tiers";
-import { getJobStatusLabel } from "@/lib/constants";
 import { getRouteDayRange, queueTechDigestItem } from "@/lib/notifications/techDigest";
 import { createNotification } from "@/lib/notifications/create";
 import { formatCustomerName } from "@/lib/customers/format";
 import { sendCustomerInvite } from "@/lib/customers/invite";
 import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
-import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizePropertyAddress } from "@/lib/routing/address";
@@ -200,8 +199,9 @@ async function deleteProperty(formData: FormData) {
 
   const propertyId = String(formData.get("propertyId"));
   const customerId = String(formData.get("customerId"));
+  const confirmDelete = String(formData.get("confirmDelete") ?? "no");
 
-  if (!propertyId || !customerId) {
+  if (!propertyId || !customerId || confirmDelete !== "yes") {
     return;
   }
 
@@ -653,17 +653,6 @@ export default async function CustomerDetailPage({
           },
         },
       },
-      documents: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          uploadedBy: {
-            select: {
-              fullName: true,
-              role: true,
-            },
-          },
-        },
-      },
     },
   });
 
@@ -714,9 +703,6 @@ export default async function CustomerDetailPage({
     serviceTiers.map((tier) => [tier.id, tier.name])
   );
 
-  const formatDateInput = (value: Date) =>
-    value.toLocaleDateString("en-CA");
-  const formatTimeInput = (value: Date) => value.toTimeString().slice(0, 5);
   const jobsRows = customer.jobs.map((job) => ({
     id: job.id,
     scheduledDate: job.scheduledDate.toISOString(),
@@ -749,21 +735,31 @@ export default async function CustomerDetailPage({
     notes: plan.notes,
     customerId: customer.id,
   }));
-  const repositoryFilesCount =
-    customer.documents.length +
-    customer.invoices.filter((invoice) => Boolean(invoice.pdfUrl)).length;
-  const formatBytes = (value: number | null) => {
-    if (!value || value <= 0) {
-      return "Size N/A";
-    }
-    if (value < 1024) {
-      return `${value} B`;
-    }
-    if (value < 1024 * 1024) {
-      return `${(value / 1024).toFixed(1)} KB`;
-    }
-    return `${(value / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const propertyRows = customer.properties.map((property) => ({
+    id: property.id,
+    name: property.name,
+    address: property.address,
+    poolType: property.poolType,
+    sanitizerType: property.sanitizerType,
+    poolVolumeGallons: property.poolVolumeGallons,
+    waterType: property.waterType,
+    filterType: property.filterType,
+    hasSpa: property.hasSpa,
+    accessInfo: property.accessInfo,
+    locationNotes: property.locationNotes,
+  }));
+  const invoicesRows = customer.invoices.map((invoice) => ({
+    id: invoice.id,
+    number: invoice.number,
+    status: invoice.status,
+    theme: invoice.theme,
+    total: Number(invoice.total),
+    createdAt: invoice.createdAt.toISOString(),
+    jobLabel: invoice.job
+      ? `${invoice.job.scheduledDate.toLocaleDateString(locale)} - ${invoice.job.technician?.user.fullName ?? t("admin.invoices.list.noTech")}`
+      : null,
+    pdfUrl: invoice.pdfUrl,
+  }));
 
   return (
     <AppShell
@@ -886,942 +882,318 @@ export default async function CustomerDetailPage({
                   <p className="text-xs text-slate-500">
                     {t("admin.customers.detail.sections.profileSubtitle")}
                   </p>
-                  <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}>
+                  <span
+                    className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}
+                  >
                     {portalStatusLabel}
                   </span>
                 </div>
                 <form action={inviteCustomer}>
                   <input type="hidden" name="customerId" value={customer.id} />
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300">
                     {t("admin.customers.detail.actions.sendInvite")}
                   </button>
                 </form>
               </div>
 
-              <form action={updateCustomer} className="mt-5 space-y-5">
-                <input type="hidden" name="customerId" value={customer.id} />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.firstName")}
-                    </label>
-                    <input
-                      name="nombre"
-                      defaultValue={customer.nombre}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.lastName")}
-                    </label>
-                    <input
-                      name="apellidos"
-                      defaultValue={customer.apellidos ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.email")}
-                    </label>
-                    <input
-                      name="email"
-                      type="email"
-                      defaultValue={customer.email}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.language")}
-                    </label>
-                    <select
-                      name="idiomaPreferencia"
-                      defaultValue={customer.idiomaPreferencia}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Perfil
+                    </p>
+                    <label
+                      htmlFor="edit-customer"
+                      className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
                     >
-                      <option value="ES">{t("common.language.es")}</option>
-                      <option value="EN">{t("common.language.en")}</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.phone")}
+                      {t("common.actions.edit")}
                     </label>
-                    <input
-                      name="telefono"
-                      defaultValue={formatUsPhone(customer.telefono) ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      required
-                    />
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("common.labels.phoneSecondary")}
+                  <p className="mt-3 text-sm font-semibold text-slate-900">{customerName}</p>
+                  <p className="mt-1 text-xs text-slate-600">{customer.email}</p>
+                  <p className="text-xs text-slate-600">
+                    {formatUsPhone(customer.telefono) || t("admin.routes.labels.noPhone")}
+                  </p>
+                  {customer.telefonoSecundario ? (
+                    <p className="text-xs text-slate-500">
+                      Alt: {formatUsPhone(customer.telefonoSecundario)}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs text-slate-500">
+                    {customer.tipoCliente === "COMMERCIAL"
+                      ? t("admin.customers.types.commercial")
+                      : t("admin.customers.types.residential")}
+                    {" | "}
+                    {customer.idiomaPreferencia === "EN"
+                      ? t("common.language.en")
+                      : t("common.language.es")}
+                  </p>
+                </article>
+
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      Direccion
+                    </p>
+                    <label
+                      htmlFor="edit-customer"
+                      className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                    >
+                      {t("common.actions.edit")}
                     </label>
-                    <input
-                      name="telefonoSecundario"
-                      defaultValue={formatUsPhone(customer.telefonoSecundario) ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
                   </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.customers.new.fields.status")}
-                    </label>
-                    <select
-                      name="estadoCuenta"
-                      defaultValue={customer.estadoCuenta}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="ACTIVE">
-                        {t("common.status.active")}
-                      </option>
-                      <option value="INACTIVE">
-                        {t("common.status.inactive")}
-                      </option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.customers.new.fields.type")}
-                    </label>
-                    <select
-                      name="tipoCliente"
-                      defaultValue={customer.tipoCliente}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="RESIDENTIAL">
-                        {t("admin.customers.types.residential")}
-                      </option>
-                      <option value="COMMERCIAL">
-                        {t("admin.customers.types.commercial")}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <label className="flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
-                  <input
-                    type="checkbox"
-                    name="allowWeekendBooking"
-                    defaultChecked={Boolean(customer.allowWeekendBooking)}
-                    className="mt-0.5 h-4 w-4"
-                  />
-                  <span>
-                    {t("admin.customers.new.fields.allowWeekendBooking")}
-                  </span>
-                </label>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <h3 className="text-sm font-semibold text-slate-800">
-                    {t("address.sectionTitle")}
-                  </h3>
-                  <div className="mt-4">
-                    <AddressAutocomplete
-                      defaultValue={{
-                        line1: customer.direccionLinea1,
-                        line2: customer.direccionLinea2,
-                        city: customer.ciudad,
-                        state: customer.estadoProvincia,
-                        postalCode: customer.codigoPostal,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("common.labels.notes")}
-                  </label>
-                  <textarea
-                    name="notas"
-                    defaultValue={customer.notas ?? ""}
-                    className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  />
-                </div>
-
-                <div className="flex justify-end">
-                  <FormSubmitButton
-                    idleLabel={t("admin.customers.detail.actions.saveChanges")}
-                    pendingLabel={t("admin.customers.detail.actions.saving")}
-                  />
-                </div>
-              </form>
-            </div>
-          </div>
-          <div className="space-y-6">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.customers.detail.sections.propertiesTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.sections.propertiesSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="new-property"
-                className="cursor-pointer rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
-              >
-                {t("admin.customers.detail.actions.addProperty")}
-              </label>
-            </div>
-            <div className="mt-4 space-y-3">
-              {customer.properties.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.properties.empty")}
-                </p>
-              ) : (
-                customer.properties.map((property) => {
-                  const poolTypeOptions = [
-                    { value: "Concreto", label: t("admin.customers.detail.properties.options.concrete") },
-                    { value: "Fibra", label: t("admin.customers.detail.properties.options.fiberglass") },
-                    { value: "Vinilo", label: t("admin.customers.detail.properties.options.vinyl") },
-                    {
-                      value: "Material alternativo",
-                      label: t("admin.customers.detail.properties.options.altMaterial"),
-                    },
-                  ];
-                  const sanitizerOptions = [
-                    { value: "Sal", label: t("admin.customers.detail.properties.options.salt") },
-                    { value: "Cloro", label: t("admin.customers.detail.properties.options.chlorine") },
-                    { value: "Otro", label: t("admin.customers.detail.properties.options.other") },
-                  ];
-                  const poolTypeValue = property.poolType ?? "";
-                  const sanitizerValue = property.sanitizerType ?? "";
-                  const hasCustomPoolType =
-                    Boolean(poolTypeValue) &&
-                    !poolTypeOptions.some((option) => option.value === poolTypeValue);
-                  const hasCustomSanitizer =
-                    Boolean(sanitizerValue) &&
-                    !sanitizerOptions.some((option) => option.value === sanitizerValue);
-
-                  return (
-                    <div
-                      key={property.id}
-                      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4"
-                    >
-                      <div>
-                        <p className="text-base font-semibold text-slate-900">
-                          {property.name || t("admin.customers.detail.properties.nameFallback")}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">{property.address}</p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {property.poolType || t("admin.customers.detail.properties.poolFallback")}
-                          {" · "}
-                          {property.sanitizerType || t("admin.customers.detail.properties.systemFallback")}
-                          {" · "}
-                          {property.poolVolumeGallons
-                            ? `${property.poolVolumeGallons} gal`
-                            : t("admin.customers.detail.properties.volumeFallback")}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-start">
-                        <details className="group text-xs text-slate-600">
-                          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 font-semibold transition hover:border-slate-300 [&::-webkit-details-marker]:hidden">
-                            <span>{t("admin.customers.detail.properties.edit.summary")}</span>
-                            <svg
-                              viewBox="0 0 20 20"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.8"
-                              className="h-3.5 w-3.5 text-slate-500 transition group-open:rotate-180"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 8l5 5 5-5" />
-                            </svg>
-                          </summary>
-
-                          <form
-                            action={updateProperty}
-                            className="mt-3 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"
-                          >
-                            <input type="hidden" name="propertyId" value={property.id} />
-                            <input type="hidden" name="customerId" value={customer.id} />
-
-                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                {t("admin.customers.detail.properties.edit.sections.identity")}
-                              </p>
-                              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.customers.detail.properties.fields.name")}
-                                  </label>
-                                  <input
-                                    name="name"
-                                    defaultValue={property.name ?? ""}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.name")}
-                                  />
-                                </div>
-                                <AddressAutocompleteSingle
-                                  name="address"
-                                  label={t("admin.routes.labels.address")}
-                                  defaultValue={property.address}
-                                  placeholder={t("admin.customers.detail.properties.placeholders.address")}
-                                  required
-                                  size="compact"
-                                  showHelper={false}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                {t("admin.customers.detail.properties.edit.sections.specs")}
-                              </p>
-                              <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.routes.labels.poolType")}
-                                  </label>
-                                  <select
-                                    name="poolType"
-                                    defaultValue={poolTypeValue}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                  >
-                                    <option value="">
-                                      {t("admin.customers.detail.properties.options.select")}
-                                    </option>
-                                    {poolTypeOptions.map((option) => (
-                                      <option key={option.value} value={option.value}>
-                                        {option.label}
-                                      </option>
-                                    ))}
-                                    {hasCustomPoolType ? <option value={poolTypeValue}>{poolTypeValue}</option> : null}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.customers.detail.properties.fields.sanitizerType")}
-                                  </label>
-                                  <select
-                                    name="sanitizerType"
-                                    defaultValue={sanitizerValue}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                  >
-                                    <option value="">
-                                      {t("admin.customers.detail.properties.options.select")}
-                                    </option>
-                                    {sanitizerOptions.map((option) => (
-                                      <option key={option.value} value={option.value}>
-                                        {option.label}
-                                      </option>
-                                    ))}
-                                    {hasCustomSanitizer ? <option value={sanitizerValue}>{sanitizerValue}</option> : null}
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.routes.labels.poolVolume")}
-                                  </label>
-                                  <input
-                                    name="poolVolumeGallons"
-                                    type="number"
-                                    defaultValue={property.poolVolumeGallons ?? ""}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.volume")}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.routes.labels.filterType")}
-                                  </label>
-                                  <input
-                                    name="filterType"
-                                    defaultValue={property.filterType ?? ""}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.filterType")}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.routes.labels.waterType")}
-                                  </label>
-                                  <input
-                                    name="waterType"
-                                    defaultValue={property.waterType ?? ""}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.waterType")}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.customers.detail.properties.fields.spa")}
-                                  </label>
-                                  <select
-                                    name="hasSpa"
-                                    defaultValue={property.hasSpa ? "yes" : "no"}
-                                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                  >
-                                    <option value="no">{t("common.labels.no")}</option>
-                                    <option value="yes">{t("common.labels.yes")}</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                {t("admin.customers.detail.properties.edit.sections.access")}
-                              </p>
-                              <div className="mt-2 space-y-3">
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.customers.detail.properties.fields.accessInfo")}
-                                  </label>
-                                  <textarea
-                                    name="accessInfo"
-                                    defaultValue={property.accessInfo ?? ""}
-                                    className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.accessInfo")}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    {t("admin.customers.detail.properties.fields.locationNotes")}
-                                  </label>
-                                  <textarea
-                                    name="locationNotes"
-                                    defaultValue={property.locationNotes ?? ""}
-                                    className="mt-1 min-h-[72px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                                    placeholder={t("admin.customers.detail.properties.placeholders.locationNotes")}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <FormSubmitButton
-                              idleLabel={t("admin.customers.detail.actions.saveChanges")}
-                              pendingLabel={t("admin.customers.detail.actions.saving")}
-                              className="w-full px-4 py-2 text-xs sm:w-auto sm:px-5"
-                            />
-                          </form>
-                        </details>
-
-                        <form action={deleteProperty} className="sm:pt-0.5">
-                          <input type="hidden" name="propertyId" value={property.id} />
-                          <input type="hidden" name="customerId" value={customer.id} />
-                          <button className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100">
-                            {t("common.actions.delete")}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.customers.detail.sections.plansTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.sections.plansSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="new-plan"
-                className="cursor-pointer rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
-              >
-                {t("admin.customers.detail.actions.newPlan")}
-              </label>
-            </div>
-            <div className="mt-4 space-y-3 text-sm">
-              {customer.servicePlans.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.plans.empty")}
-                </p>
-              ) : (
-                customer.servicePlans.map((plan) => {
-                  const serviceOption = serviceTypeOptions.find(
-                    (option) => option.value === plan.serviceType
-                  );
-                  const serviceLabel =
-                    serviceOption?.labelKey
-                      ? t(serviceOption.labelKey)
-                      : serviceOption?.label ?? plan.serviceType;
-                  const nextDate = formatDateInput(plan.nextRunAt);
-                  const nextTime = plan.preferredTime || formatTimeInput(plan.nextRunAt);
-                  return (
-                    <div
-                      key={plan.id}
-                      className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {plan.name}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {plan.property.address}{" · "}{serviceLabel}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {t("admin.customers.detail.plans.nextRun")} {" "}
-                            {plan.nextRunAt.toLocaleDateString(locale)} {" · "}
-                            {nextTime}
-                          </p>
-                        </div>
-                        <Badge
-                          label={plan.isActive ? t("common.status.active") : t("admin.customers.detail.plans.paused")}
-                          tone={plan.isActive ? "success" : "warning"}
-                        />
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Badge
-                          label={
-                            plan.frequency === "BIWEEKLY"
-                              ? t("plans.frequency.biweekly")
-                              : plan.frequency === "MONTHLY"
-                                ? t("plans.frequency.monthly")
-                                : t("plans.frequency.weekly")
-                          }
-                          tone="info"
-                        />
-                        <Badge
-                          label={plan.priority === "URGENT" ? t("jobs.priority.urgent") : t("jobs.priority.normal")}
-                          tone={plan.priority === "URGENT" ? "warning" : "neutral"}
-                        />
-                        <Badge
-                          label={
-                            plan.technician?.user.fullName ?? t("jobs.detail.noTech")
-                          }
-                          tone="neutral"
-                        />
-                      </div>
-                      {plan.notes ? (
-                        <p className="mt-3 text-xs text-slate-500">
-                          {plan.notes}
-                        </p>
+                  {customer.direccionLinea1 ? (
+                    <>
+                      <p className="mt-3 text-sm font-semibold text-slate-900">
+                        {customer.direccionLinea1}
+                      </p>
+                      {customer.direccionLinea2 ? (
+                        <p className="text-sm text-slate-700">{customer.direccionLinea2}</p>
                       ) : null}
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <form action={createJobFromPlan} className="flex flex-wrap items-center gap-2">
-                          <input type="hidden" name="planId" value={plan.id} />
-                          <input
-                            name="scheduledDate"
-                            type="date"
-                            defaultValue={nextDate}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                          />
-                          <input
-                            name="scheduledTime"
-                            type="time"
-                            defaultValue={nextTime}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
-                          />
-                          <button className="rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white">
-                            {t("admin.customers.detail.actions.createJob")}
-                          </button>
-                        </form>
-                        <form action={toggleServicePlan}>
-                          <input type="hidden" name="planId" value={plan.id} />
-                          <input type="hidden" name="customerId" value={customer.id} />
-                          <input
-                            type="hidden"
-                            name="isActive"
-                            value={plan.isActive ? "false" : "true"}
-                          />
-                          <button className="rounded-full border border-slate-200 px-3 py-2 text-xs text-slate-600">
-                            {plan.isActive ? t("admin.customers.detail.actions.pause") : t("admin.customers.detail.actions.activate")}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                      <p className="text-sm text-slate-700">
+                        {[customer.ciudad, customer.estadoProvincia, customer.codigoPostal]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">Sin direccion registrada.</p>
+                  )}
+                  <p className="mt-2 text-xs text-slate-500">
+                    {customer.allowWeekendBooking
+                      ? t("admin.customers.new.fields.allowWeekendBooking")
+                      : "Sin fines de semana"}
+                  </p>
+                </article>
+              </div>
             </div>
+
+            <CustomerInvoicesTable rows={invoicesRows} />
+
+            <CustomerJobsTable
+              rows={jobsRows}
+              actionTargetId="new-job"
+              onDeleteJob={deleteJob}
+              customerId={customer.id}
+            />
+
+            <CustomerPlansTable
+              rows={plansRows}
+              onToggle={toggleServicePlan}
+              onCreateJob={createJobFromPlan}
+              actionTargetId="new-plan"
+            />
           </div>
 
-          <div className="hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                {t("admin.customers.detail.sections.jobsTitle")}
-              </h2>
-              <span className="text-xs text-slate-400">
-                {t("admin.customers.detail.labels.total", {
-                  count: customer.jobs.length,
-                })}
-              </span>
-            </div>
-            <div className="mt-4 space-y-3">
-              {customer.jobs.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.jobs.empty")}
-                </p>
-              ) : (
-                customer.jobs.map((job) => {
-                  const jobServiceOption = serviceTypeOptions.find(
-                    (option) => option.value === job.serviceType
-                  );
-                  const jobServiceLabel = jobServiceOption?.labelKey
-                    ? t(jobServiceOption.labelKey)
-                    : jobServiceOption?.label ?? job.serviceType;
-                  return (
-                    <div
-                      key={job.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-                    >
-                      <Link href={`/admin/routes/${job.id}`}>
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {job.property.address}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {job.scheduledDate.toLocaleDateString(locale)} |{" "}
-                            {getJobStatusLabel(job.status, t)}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {jobServiceLabel} |{" "}
-                            {job.estimatedDurationMinutes
-                              ? `${job.estimatedDurationMinutes} min`
-                              : t("jobs.detail.durationEmpty")}
-                          </p>
-                        </div>
-                      </Link>
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          label={
-                            job.priority === "URGENT"
-                              ? t("jobs.priority.urgent")
-                              : t("jobs.priority.normal")
-                          }
-                          tone={
-                            job.priority === "URGENT" ? "warning" : "neutral"
-                          }
-                        />
-                        <span className="text-xs text-slate-400">
-                          {job.technician?.user.fullName ??
-                            t("jobs.detail.noTech")}
-                        </span>
-                        <form action={deleteJob}>
-                          <input type="hidden" name="jobId" value={job.id} />
-                          <input
-                            type="hidden"
-                            name="customerId"
-                            value={customer.id}
-                          />
-                          <button className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600">
-                            {t("common.actions.delete")}
-                          </button>
-                        </form>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                {t("admin.invoices.title")}
-              </h2>
-              <span className="text-xs text-slate-400">
-                {t("admin.invoices.list.total", {
-                  count: customer.invoices.length,
-                })}
-              </span>
-            </div>
-            <div className="mt-4 space-y-3 text-sm">
-              {customer.invoices.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.invoices.list.empty")}
-                </p>
-              ) : (
-                customer.invoices.map((invoice) => {
-                  const themeLabel =
-                    invoice.theme === "SPECIAL"
-                      ? t("admin.invoices.theme.special")
-                      : invoice.theme === "ESTIMATE"
-                        ? t("admin.invoices.theme.estimate")
-                        : t("admin.invoices.theme.standard");
-                  const statusLabel = t(
-                    `admin.invoices.status.${invoice.status.toLowerCase()}`
-                  );
-                  return (
-                    <div
-                      key={invoice.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
-                    >
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          {invoice.number}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {invoice.createdAt.toLocaleDateString(locale)} -{" "}
-                          {statusLabel}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <Badge
-                            label={`${t("admin.invoices.list.theme")}: ${themeLabel}`}
-                            tone="info"
-                          />
-                        </div>
-                        {invoice.job ? (
-                          <p className="text-xs text-slate-500">
-                            {t("admin.invoices.list.job")}:{" "}
-                            {invoice.job.scheduledDate.toLocaleDateString(locale)} -{" "}
-                            {invoice.job.technician?.user.fullName ??
-                              t("admin.invoices.list.noTech")}
-                          </p>
-                        ) : (
-                          <p className="text-xs text-slate-400">
-                            {t("admin.invoices.list.noJob")}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-900">
-                          ${invoice.total.toFixed(2)}
-                        </p>
-                        {invoice.pdfUrl ? (
-                          <a
-                            href={getAssetUrl(invoice.pdfUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-slate-600 underline"
-                          >
-                            {t("admin.invoices.list.viewPdf")}
-                          </a>
-                        ) : null}
-                        <Link
-                          href={`/admin/invoices/${invoice.id}`}
-                          className="ml-2 text-xs font-semibold text-sky-700 underline"
-                        >
-                          Editar
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+          <div className="space-y-6">
+            <AdminCustomerProperties
+              customerId={customer.id}
+              rows={propertyRows}
+              addPropertyTargetId="new-property"
+              onUpdateProperty={updateProperty}
+              onDeleteProperty={deleteProperty}
+            />
+            <CustomerRepositoryExplorer customerId={customer.id} />
           </div>
         </div>
-
-        
       </section>
 
-      <CustomerJobsTable
-        rows={jobsRows}
-        actionTargetId="new-job"
-        onDeleteJob={deleteJob}
-        customerId={customer.id}
-      />
-
-      <CustomerPlansTable
-        rows={plansRows}
-        onToggle={toggleServicePlan}
-        onCreateJob={createJobFromPlan}
-        actionTargetId="new-plan"
-      />
-
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">
-            {t("admin.invoices.title")}
-          </h2>
-          <span className="text-xs text-slate-400">
-            {t("admin.invoices.list.total", {
-              count: customer.invoices.length,
-            })}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3 text-sm">
-          {customer.invoices.length === 0 ? (
-            <p className="text-sm text-slate-500">
-              {t("admin.invoices.list.empty")}
-            </p>
-          ) : (
-            customer.invoices.map((invoice) => {
-              const themeLabel =
-                invoice.theme === "SPECIAL"
-                  ? t("admin.invoices.theme.special")
-                  : invoice.theme === "ESTIMATE"
-                    ? t("admin.invoices.theme.estimate")
-                    : t("admin.invoices.theme.standard");
-              const statusLabel = t(
-                `admin.invoices.status.${invoice.status.toLowerCase()}`
-              );
-              return (
-                <div
-                  key={invoice.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+      <input id="edit-customer" type="checkbox" className="peer/profile hidden" />
+      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/profile:flex">
+        <label
+          htmlFor="edit-customer"
+          className="absolute inset-0 bg-slate-900/60"
+        />
+        <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  {t("admin.customers.detail.sections.profileTitle")}
+                </p>
+                <h2 className="text-lg font-semibold">
+                  {t("admin.customers.detail.actions.saveChanges")}
+                </h2>
+                <p className="text-sm text-slate-500">{customerName}</p>
+              </div>
+              <label
+                htmlFor="edit-customer"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                aria-label={t("common.actions.close")}
+                title={t("common.actions.close")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
                 >
-                  <div>
-                    <p className="font-medium text-slate-900">{invoice.number}</p>
-                    <p className="text-xs text-slate-500">
-                      {invoice.createdAt.toLocaleDateString(locale)} - {statusLabel}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Badge
-                        label={`${t("admin.invoices.list.theme")}: ${themeLabel}`}
-                        tone="info"
-                      />
-                    </div>
-                    {invoice.job ? (
-                      <p className="text-xs text-slate-500">
-                        {t("admin.invoices.list.job")}:{" "}
-                        {invoice.job.scheduledDate.toLocaleDateString(locale)}{" "}
-                        -{" "}
-                        {invoice.job.technician?.user.fullName ??
-                          t("admin.invoices.list.noTech")}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-slate-400">
-                        {t("admin.invoices.list.noJob")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">
-                      ${invoice.total.toFixed(2)}
-                    </p>
-                    {invoice.pdfUrl ? (
-                      <a
-                        href={getAssetUrl(invoice.pdfUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-slate-600 underline"
-                      >
-                        {t("admin.invoices.list.viewPdf")}
-                      </a>
-                    ) : null}
-                    <Link
-                      href={`/admin/invoices/${invoice.id}`}
-                      className="ml-2 text-xs font-semibold text-sky-700 underline"
-                    >
-                      Editar
-                    </Link>
-                  </div>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                </svg>
+              </label>
+            </div>
+            <form action={updateCustomer} className="mt-5 space-y-5">
+              <input type="hidden" name="customerId" value={customer.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.firstName")}
+                  </label>
+                  <input
+                    name="nombre"
+                    defaultValue={customer.nombre}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    required
+                  />
                 </div>
-              );
-            })
-          )}
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.lastName")}
+                  </label>
+                  <input
+                    name="apellidos"
+                    defaultValue={customer.apellidos ?? ""}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.email")}
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    defaultValue={customer.email}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.language")}
+                  </label>
+                  <select
+                    name="idiomaPreferencia"
+                    defaultValue={customer.idiomaPreferencia}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="ES">{t("common.language.es")}</option>
+                    <option value="EN">{t("common.language.en")}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.phone")}
+                  </label>
+                  <input
+                    name="telefono"
+                    defaultValue={formatUsPhone(customer.telefono) ?? ""}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.phoneSecondary")}
+                  </label>
+                  <input
+                    name="telefonoSecundario"
+                    defaultValue={formatUsPhone(customer.telefonoSecundario) ?? ""}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.new.fields.status")}
+                  </label>
+                  <select
+                    name="estadoCuenta"
+                    defaultValue={customer.estadoCuenta}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="ACTIVE">{t("common.status.active")}</option>
+                    <option value="INACTIVE">{t("common.status.inactive")}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.new.fields.type")}
+                  </label>
+                  <select
+                    name="tipoCliente"
+                    defaultValue={customer.tipoCliente}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="RESIDENTIAL">
+                      {t("admin.customers.types.residential")}
+                    </option>
+                    <option value="COMMERCIAL">
+                      {t("admin.customers.types.commercial")}
+                    </option>
+                  </select>
+                </div>
+              </div>
+
+              <label className="flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                <input
+                  type="checkbox"
+                  name="allowWeekendBooking"
+                  defaultChecked={Boolean(customer.allowWeekendBooking)}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span>{t("admin.customers.new.fields.allowWeekendBooking")}</span>
+              </label>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  {t("address.sectionTitle")}
+                </h3>
+                <div className="mt-4">
+                  <AddressAutocomplete
+                    defaultValue={{
+                      line1: customer.direccionLinea1,
+                      line2: customer.direccionLinea2,
+                      city: customer.ciudad,
+                      state: customer.estadoProvincia,
+                      postalCode: customer.codigoPostal,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("common.labels.notes")}
+                </label>
+                <textarea
+                  name="notas"
+                  defaultValue={customer.notas ?? ""}
+                  className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <FormSubmitButton
+                  idleLabel={t("admin.customers.detail.actions.saveChanges")}
+                  pendingLabel={t("admin.customers.detail.actions.saving")}
+                />
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
-              Repositorio del cliente
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Archivos por cliente: invoices PDF y documentos subidos por admin o tecnico.
-            </p>
-          </div>
-          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">
-            {repositoryFilesCount} archivos
-          </span>
-        </div>
-
-        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-          <CustomerDocumentUploader
-            customerId={customer.id}
-            title="Subir documento al repositorio"
-            subtitle="Disponible para este cliente desde la vista admin."
-            buttonLabel="Subir al repositorio"
-          />
-
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Invoices guardadas
-              </h3>
-              {customer.invoices.filter((invoice) => invoice.pdfUrl).length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">
-                  No hay PDFs de invoice para este cliente.
-                </p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {customer.invoices
-                    .filter((invoice) => invoice.pdfUrl)
-                    .map((invoice) => (
-                      <a
-                        key={invoice.id}
-                        href={getAssetUrl(invoice.pdfUrl ?? "")}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:border-sky-200"
-                      >
-                        <span className="font-medium">{invoice.number}</span>
-                        <span className="text-xs text-slate-500">
-                          {invoice.createdAt.toLocaleDateString(locale)}
-                        </span>
-                      </a>
-                    ))}
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Documentos subidos
-              </h3>
-              {customer.documents.length === 0 ? (
-                <p className="mt-2 text-xs text-slate-500">
-                  Aun no hay documentos en el repositorio.
-                </p>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  {customer.documents.map((doc) => (
-                    <a
-                      key={doc.id}
-                      href={getAssetUrl(doc.fileUrl)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="block rounded-xl border border-slate-200 bg-white px-3 py-2 transition hover:border-sky-200"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-slate-800">{doc.title}</p>
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                          {doc.category}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {doc.createdAt.toLocaleDateString(locale)} - {formatBytes(doc.sizeBytes)}
-                      </p>
-                      {doc.description ? (
-                        <p className="mt-1 text-xs text-slate-500">{doc.description}</p>
-                      ) : null}
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        Subido por: {doc.uploadedBy?.fullName ?? "Usuario"} (
-                        {doc.uploadedBy?.role ?? "N/A"})
-                      </p>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
         <label
           htmlFor="new-property"
           className="absolute inset-0 bg-slate-900/60"
@@ -2010,7 +1382,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
         <label
           htmlFor="new-job"
           className="absolute inset-0 bg-slate-900/60"
@@ -2198,7 +1570,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
         <label
           htmlFor="new-plan"
           className="absolute inset-0 bg-slate-900/60"
