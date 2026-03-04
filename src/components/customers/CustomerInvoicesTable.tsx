@@ -33,7 +33,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
   }, [currentPage, rows]);
 
   return (
-    <section className="ui-panel p-6">
+    <section className="ui-panel h-full min-w-0 overflow-hidden p-6 lg:min-h-[440px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{t("admin.invoices.title")}</h2>

@@ -157,7 +157,7 @@ export default function CustomerJobsTable({
   }, [currentPage, filtered]);
 
   return (
-    <div className="ui-panel p-6">
+    <div className="ui-panel min-w-0 overflow-hidden p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">

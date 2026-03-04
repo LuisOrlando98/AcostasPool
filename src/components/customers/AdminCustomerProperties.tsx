@@ -74,7 +74,7 @@ export default function AdminCustomerProperties({
 
   return (
     <>
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="h-full min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">

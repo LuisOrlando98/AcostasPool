@@ -871,9 +871,9 @@ export default async function CustomerDetailPage({
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="min-w-0">
+            <div className="h-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">
@@ -967,25 +967,9 @@ export default async function CustomerDetailPage({
                 </article>
               </div>
             </div>
-
-            <CustomerInvoicesTable rows={invoicesRows} />
-
-            <CustomerJobsTable
-              rows={jobsRows}
-              actionTargetId="new-job"
-              onDeleteJob={deleteJob}
-              customerId={customer.id}
-            />
-
-            <CustomerPlansTable
-              rows={plansRows}
-              onToggle={toggleServicePlan}
-              onCreateJob={createJobFromPlan}
-              actionTargetId="new-plan"
-            />
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0">
             <AdminCustomerProperties
               customerId={customer.id}
               rows={propertyRows}
@@ -993,8 +977,31 @@ export default async function CustomerDetailPage({
               onUpdateProperty={updateProperty}
               onDeleteProperty={deleteProperty}
             />
+          </div>
+
+          <div className="min-w-0">
+            <CustomerInvoicesTable rows={invoicesRows} />
+          </div>
+
+          <div className="min-w-0">
             <CustomerRepositoryExplorer customerId={customer.id} />
           </div>
+        </div>
+
+        <div className="space-y-6">
+          <CustomerJobsTable
+            rows={jobsRows}
+            actionTargetId="new-job"
+            onDeleteJob={deleteJob}
+            customerId={customer.id}
+          />
+
+          <CustomerPlansTable
+            rows={plansRows}
+            onToggle={toggleServicePlan}
+            onCreateJob={createJobFromPlan}
+            actionTargetId="new-plan"
+          />
         </div>
       </section>
 
