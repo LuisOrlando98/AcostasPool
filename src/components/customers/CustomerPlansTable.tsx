@@ -108,7 +108,7 @@ export default function CustomerPlansTable({
   }, [currentPage, filtered]);
 
   return (
-    <div className="ui-panel min-w-0 overflow-hidden p-6">
+    <div className="ui-panel flex min-w-0 flex-col overflow-hidden p-6 lg:min-h-[460px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">
@@ -190,7 +190,7 @@ export default function CustomerPlansTable({
         </select>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 min-h-0 flex-1 overflow-auto">
         <table className="min-w-[900px] w-full text-left text-xs text-slate-600">
           <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
             <tr className="border-b border-slate-100">
@@ -308,7 +308,7 @@ export default function CustomerPlansTable({
       </div>
 
       {filtered.length > 0 ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="sticky bottom-0 z-[1] mt-4 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white pt-3 text-xs text-slate-500">
           <span>
             {`${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(
               currentPage * PAGE_SIZE,

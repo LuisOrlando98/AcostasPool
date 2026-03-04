@@ -22,7 +22,6 @@ type RepositoryEntry = {
 
 type RepositoryResponse = {
   currentPath: string;
-  parentPath: string | null;
   entries: RepositoryEntry[];
 };
 
@@ -205,7 +204,6 @@ export default function CustomerRepositoryExplorer({
 }: CustomerRepositoryExplorerProps) {
   const { t, locale } = useI18n();
   const [currentPath, setCurrentPath] = useState("");
-  const [parentPath, setParentPath] = useState<string | null>(null);
   const [entries, setEntries] = useState<RepositoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -345,7 +343,6 @@ export default function CustomerRepositoryExplorer({
         if (safePath !== currentPath) {
           setCurrentPath(safePath);
         }
-        setParentPath(payload.parentPath ?? null);
         setEntries(Array.isArray(payload.entries) ? payload.entries : []);
         hydrateTreeNode(safePath, payload.entries);
         setExpanded((prev) => {
@@ -594,14 +591,6 @@ export default function CustomerRepositoryExplorer({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => navigateToPath(parentPath ?? "")}
-            disabled={!parentPath || submitting}
-            className="ui-button-ghost px-3 py-2 text-xs font-semibold disabled:opacity-50"
-          >
-            {t("common.actions.back")}
-          </button>
-          <button
-            type="button"
             onClick={refresh}
             disabled={submitting}
             className="ui-button-ghost px-3 py-2 text-xs font-semibold"
@@ -641,18 +630,27 @@ export default function CustomerRepositoryExplorer({
       <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <div className="flex flex-wrap items-center gap-1.5">
           {breadcrumbs.map((crumb, index) => (
-            <button
+            <span
               key={`${crumb.path || "root"}-${index}`}
-              type="button"
-              className={`rounded px-1.5 py-0.5 transition ${
-                index === breadcrumbs.length - 1
-                  ? "bg-slate-200 font-semibold text-slate-800"
-                  : "hover:bg-slate-200"
-              }`}
-              onClick={() => navigateToPath(crumb.path)}
+              className="inline-flex items-center gap-1"
             >
-              {crumb.label}
-            </button>
+              {index > 0 ? (
+                <span className="text-slate-400" aria-hidden="true">
+                  /
+                </span>
+              ) : null}
+              <button
+                type="button"
+                className={`rounded px-1.5 py-0.5 transition ${
+                  index === breadcrumbs.length - 1
+                    ? "bg-slate-200 font-semibold text-slate-800"
+                    : "hover:bg-slate-200"
+                }`}
+                onClick={() => navigateToPath(crumb.path)}
+              >
+                {crumb.label}
+              </button>
+            </span>
           ))}
         </div>
       </div>
@@ -670,84 +668,86 @@ export default function CustomerRepositoryExplorer({
       ) : null}
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="grid min-h-[420px] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="grid h-[460px] min-h-[420px] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 lg:border-b-0 lg:border-r">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
               Folder Tree
             </p>
-            <div className="max-h-[460px] overflow-y-auto pr-1">
+            <div className="h-full max-h-[420px] overflow-auto pr-1 lg:max-h-none">
               {renderTreeNode("")}
             </div>
           </aside>
 
-          <section className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
-              <div className="flex min-w-[230px] flex-1 items-center gap-2">
-                <p className="max-w-[420px] truncate text-xs text-slate-600">
-                  {currentPath ? currentPath : "Repository"}
-                </p>
-                <span className="hidden rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:inline-flex">
-                  Details
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <label className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] text-slate-500">
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    className="mr-1.5 h-3.5 w-3.5"
-                  >
-                    <path
-                      d="m14.25 14.25 3 3m-1.5-8a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Search"
-                    className="w-28 bg-transparent text-[11px] text-slate-700 outline-none placeholder:text-slate-400 sm:w-36"
-                  />
-                </label>
-                {selectedEntry ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void handleOpenEntry(selectedEntry)}
-                      className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+          <section className="flex min-h-0 min-w-0 flex-col">
+            <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex min-w-[230px] flex-1 items-center gap-2">
+                  <p className="max-w-[420px] truncate text-xs text-slate-600">
+                    {currentPath ? currentPath : "Repository"}
+                  </p>
+                  <span className="hidden rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:inline-flex">
+                    Details
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex items-center rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] text-slate-500">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      className="mr-1.5 h-3.5 w-3.5"
                     >
-                      Open
-                    </button>
-                    {canMutateSelected ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => void handleRename(selectedEntry)}
-                          disabled={submitting}
-                          className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(selectedEntry)}
-                          disabled={submitting}
-                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
-                        >
-                          {t("common.actions.delete")}
-                        </button>
-                      </>
-                    ) : null}
-                  </div>
-                ) : null}
+                      <path
+                        d="m14.25 14.25 3 3m-1.5-8a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Search"
+                      className="w-28 bg-transparent text-[11px] text-slate-700 outline-none placeholder:text-slate-400 sm:w-36"
+                    />
+                  </label>
+                  {selectedEntry ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleOpenEntry(selectedEntry)}
+                        className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                      >
+                        Open
+                      </button>
+                      {canMutateSelected ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void handleRename(selectedEntry)}
+                            disabled={submitting}
+                            className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                          >
+                            Rename
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(selectedEntry)}
+                            disabled={submitting}
+                            className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                          >
+                            {t("common.actions.delete")}
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="w-full overflow-x-auto">
+            <div className="min-h-0 flex-1 overflow-auto">
               <table className="w-full min-w-[680px] text-left text-xs text-slate-600">
                 <thead className="bg-white text-[11px] uppercase tracking-[0.14em] text-slate-500">
                   <tr>
@@ -819,7 +819,7 @@ export default function CustomerRepositoryExplorer({
               </table>
             </div>
 
-            <div className="border-t border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
+            <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p>
                   {visibleEntries.length} item

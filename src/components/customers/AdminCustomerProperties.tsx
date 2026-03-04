@@ -74,7 +74,7 @@ export default function AdminCustomerProperties({
 
   return (
     <>
-      <section className="h-full min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
+      <section className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
@@ -92,7 +92,7 @@ export default function AdminCustomerProperties({
           </label>
         </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
           {pagedRows.length === 0 ? (
             <p className="text-sm text-slate-500">
               {t("admin.customers.detail.properties.empty")}
@@ -143,7 +143,7 @@ export default function AdminCustomerProperties({
         </div>
 
         {rows.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="sticky bottom-0 z-[1] mt-4 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white pt-3 text-xs text-slate-500">
             <span>
               {`${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(
                 currentPage * PAGE_SIZE,
