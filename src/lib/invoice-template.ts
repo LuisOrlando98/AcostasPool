@@ -64,23 +64,23 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   themes: {
     STANDARD: {
       label: "INVOICE",
-      brandHex: "#2F4A88",
-      accentHex: "#8FA5D4",
-      lightHex: "#EEF2FB",
+      brandHex: "#304B88",
+      accentHex: "#FFFFFF",
+      lightHex: "#EAF0FB",
       watermarkText: "",
     },
     SPECIAL: {
       label: "SPECIAL INVOICE",
-      brandHex: "#2b1f14",
-      accentHex: "#d2a640",
-      lightHex: "#fcf7ec",
+      brandHex: "#304B88",
+      accentHex: "#FFFFFF",
+      lightHex: "#EAF0FB",
       watermarkText: "",
     },
     ESTIMATE: {
       label: "ESTIMATE",
-      brandHex: "#4b5966",
-      accentHex: "#728396",
-      lightHex: "#f3f6f9",
+      brandHex: "#304B88",
+      accentHex: "#FFFFFF",
+      lightHex: "#EAF0FB",
       watermarkText: "ESTIMATE",
     },
   },
@@ -304,6 +304,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
     issuerAddress,
     compactLine(template.companyEmail),
     compactLine(template.companyPhone),
+    compactLine(template.companyWebsite),
+    compactLine(template.companyTaxId),
   ].filter(Boolean);
 
   const itemRows = input.items.length
@@ -330,6 +332,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       : "";
 
   const notesContent = compactLine(input.notes) || compactLine(template.footerNote);
+  const clausesMarkup = template.legalClauses
+    .slice(0, 6)
+    .map((clause) => `<li>${escapeHtml(clause)}</li>`)
+    .join("");
 
   return `<!doctype html>
 <html lang="en">
@@ -347,10 +353,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         --accent: ${resolvedTheme.accentHex};
         --light: ${resolvedTheme.lightHex};
         --paper: #ffffff;
-        --soft: #f3f6fb;
-        --line: #d9e3ef;
-        --text: #0f1d2e;
-        --muted: #4f637a;
+        --soft: #f4f7fd;
+        --line: #d5deea;
+        --line-strong: #b8c7db;
+        --text: #0f1e30;
+        --muted: #58708a;
+        --ink: #20344c;
       }
 
       * {
@@ -364,7 +372,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       body {
-        background: #e8edf4;
+        background: #e2e8f2;
         color: var(--text);
         font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
@@ -380,30 +388,40 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         overflow: hidden;
       }
 
+      .sheet::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 90% -5%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 34%),
+          radial-gradient(circle at 8% 104%, rgba(48, 75, 136, 0.06) 0%, rgba(48, 75, 136, 0) 35%);
+        pointer-events: none;
+      }
+
       .header {
-        background: var(--brand);
+        background: linear-gradient(135deg, var(--brand) 0%, #263f74 100%);
         color: #ffffff;
-        padding: 30px 46px 28px;
-        border-bottom: 6px solid var(--accent);
+        padding: 28px 44px 26px;
+        border-bottom: 4px solid rgba(255, 255, 255, 0.92);
       }
 
       .header-grid {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 24px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 320px;
+        width: 336px;
         text-align: center;
       }
 
       .brand-word {
         margin: 0;
         font-weight: 800;
-        font-size: 62px;
-        letter-spacing: 0.03em;
+        font-size: 60px;
+        letter-spacing: 0.024em;
         line-height: 0.9;
         text-transform: uppercase;
       }
@@ -413,15 +431,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-rule {
-        margin-top: 11px;
-        height: 6px;
+        margin-top: 10px;
+        height: 5px;
         background: #ffffff;
       }
 
       .brand-subtitle {
-        margin-top: 10px;
-        font-size: 16px;
-        letter-spacing: 0.26em;
+        margin-top: 9px;
+        font-size: 15px;
+        letter-spacing: 0.24em;
         font-weight: 400;
         text-transform: uppercase;
       }
@@ -432,7 +450,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-label {
         margin: 0;
-        font-size: 44px;
+        font-size: 42px;
         line-height: 1;
         letter-spacing: 0.03em;
         font-weight: 800;
@@ -440,10 +458,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .invoice-meta {
-        margin-top: 10px;
-        font-size: 16px;
+        margin-top: 11px;
+        font-size: 14px;
         font-weight: 600;
         color: rgba(236, 245, 255, 0.98);
+        display: grid;
+        gap: 5px;
       }
 
       .invoice-meta p {
@@ -451,72 +471,87 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .invoice-body {
-        padding: 24px 46px 30px;
+        position: relative;
+        z-index: 1;
+        padding: 22px 42px 30px;
       }
 
       .info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 12px;
       }
 
       .info-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #f8fbff;
-        padding: 14px 14px 13px;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        padding: 13px 14px 14px;
       }
 
       .card-title {
         margin: 0;
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 0.13em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
       .card-line {
-        margin: 7px 0 0;
+        margin: 6px 0 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.32;
         word-break: break-word;
       }
 
       .card-line-strong {
-        color: var(--text);
-        font-size: 18px;
+        color: var(--ink);
+        font-size: 17px;
         line-height: 1.2;
-        margin-top: 10px;
+        margin-top: 9px;
         font-weight: 700;
+      }
+
+      .surface {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
       }
 
       .items {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 16px;
-        font-size: 13px;
+        margin: 0;
+        font-size: 12px;
       }
 
       .items thead tr {
-        background: var(--light);
+        background: linear-gradient(180deg, var(--light) 0%, #f7faff 100%);
       }
 
       .items th {
-        border: 1px solid var(--line);
+        border-bottom: 1px solid var(--line-strong);
         color: var(--brand);
         text-transform: uppercase;
         letter-spacing: 0.06em;
         font-size: 11px;
         font-weight: 800;
-        padding: 9px 10px;
+        padding: 10px 10px;
       }
 
       .items td {
-        border-bottom: 1px solid #e8eef5;
+        border-bottom: 1px solid #e7eef7;
         padding: 10px 10px;
-        font-size: 13px;
+        font-size: 12px;
+        color: var(--ink);
+      }
+
+      .items tbody tr:nth-child(even) td {
+        background: #fbfdff;
       }
 
       .col-index {
@@ -529,31 +564,46 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .col-qty {
-        width: 64px;
+        width: 68px;
         text-align: center;
       }
 
       .col-money {
-        width: 132px;
+        width: 120px;
         text-align: right;
         white-space: nowrap;
       }
 
       .col-money-strong {
-        font-weight: 700;
+        font-weight: 800;
       }
 
       .empty-row {
         text-align: center;
         padding: 14px 12px;
-        color: #6b7f96;
+        color: #6f8299;
+      }
+
+      .finance-grid {
+        margin-top: 14px;
+        display: flex;
+        justify-content: flex-end;
       }
 
       .totals {
-        margin-top: 14px;
-        margin-left: auto;
-        width: 270px;
-        font-size: 14px;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        background: #fbfdff;
+        padding: 12px 14px;
+      }
+
+      .totals-title {
+        margin: 0 0 10px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        text-transform: uppercase;
       }
 
       .totals-row {
@@ -562,6 +612,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         align-items: baseline;
         margin: 0;
         color: var(--muted);
+        font-size: 13px;
       }
 
       .totals-row + .totals-row {
@@ -569,34 +620,34 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .totals-row strong {
-        color: var(--text);
+        color: var(--ink);
         font-weight: 700;
-      }
-
-      .totals-row-total {
-        margin-top: 11px;
-        font-size: 31px;
-        font-weight: 800;
-        color: var(--brand);
       }
 
       .totals-row-total strong {
         color: var(--brand);
-        font-size: 35px;
-        letter-spacing: 0.02em;
+        font-size: 28px;
+        letter-spacing: 0.01em;
+        font-weight: 800;
+      }
+
+      .totals-row-total span {
+        color: var(--brand);
+        font-size: 22px;
+        font-weight: 800;
       }
 
       .detail-grid {
-        margin-top: 16px;
+        margin-top: 14px;
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 12px;
       }
 
       .detail-card {
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        background: #f8fbff;
+        border: 1px solid var(--line-strong);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         padding: 12px 14px;
       }
 
@@ -611,37 +662,74 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .detail-main {
         margin: 7px 0 0;
-        font-size: 13px;
-        color: var(--text);
+        font-size: 12px;
+        color: var(--ink);
         line-height: 1.35;
       }
 
       .detail-sub {
-        margin: 6px 0 0;
-        font-size: 12px;
+        margin: 5px 0 0;
+        font-size: 11px;
         color: #61768d;
         line-height: 1.35;
       }
 
       .footer {
-        margin-top: 26px;
+        margin-top: 16px;
         border-top: 1px solid var(--line);
-        padding-top: 12px;
+        padding-top: 11px;
       }
 
       .footer-title {
         margin: 0;
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
-      .footer-line {
-        margin: 4px 0 0;
-        font-size: 10.5px;
-        line-height: 1.4;
+      .footer-list {
+        margin: 7px 0 0;
+        padding-left: 18px;
+      }
+
+      .footer-list li {
+        margin: 3px 0 0;
+        font-size: 10px;
+        line-height: 1.42;
+        color: #60748a;
+      }
+
+      .signature-row {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: end;
+      }
+
+      .signature-line {
+        border-top: 1px solid #9fb0c6;
+        padding-top: 4px;
+        font-size: 10px;
+        color: #5f738a;
+      }
+
+      .signature-issuer {
+        text-align: right;
+      }
+
+      .signature-name {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .signature-role {
+        margin: 2px 0 0;
+        font-size: 10px;
         color: #60748a;
       }
 
@@ -656,8 +744,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         font-weight: 800;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.65);
-        text-shadow: 0 0 1px rgba(70, 83, 98, 0.2);
+        color: rgba(48, 75, 136, 0.13);
+        text-shadow: 0 0 1px rgba(70, 83, 98, 0.05);
         transform: rotate(-14deg);
       }
     </style>
@@ -706,31 +794,36 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           </section>
         </div>
 
-        <table class="items">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>${escapeHtml(template.tableDescriptionLabel)}</th>
-              <th>Qty</th>
-              <th>Unit Price</th>
-              <th>${escapeHtml(template.tableAmountLabel)}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemRows}
-          </tbody>
-        </table>
+        <div class="surface">
+          <table class="items">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${escapeHtml(template.tableDescriptionLabel)}</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>${escapeHtml(template.tableAmountLabel)}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+        </div>
 
-        <div class="totals">
-          <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
-            input.subtotal
-          )}</strong></p>
-          <p class="totals-row"><span>${escapeHtml(template.taxLabel)} (7%):</span><strong>${money(
-            input.tax
-          )}</strong></p>
-          <p class="totals-row totals-row-total"><span>${escapeHtml(
-            template.totalLabel
-          )}:</span><strong>${money(input.total)}</strong></p>
+        <div class="finance-grid">
+          <aside class="totals">
+            <p class="totals-title">Invoice Summary</p>
+            <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
+              input.subtotal
+            )}</strong></p>
+            <p class="totals-row"><span>${escapeHtml(template.taxLabel)} (7%):</span><strong>${money(
+              input.tax
+            )}</strong></p>
+            <p class="totals-row totals-row-total"><span>${escapeHtml(
+              template.totalLabel
+            )}:</span><strong>${money(input.total)}</strong></p>
+          </aside>
         </div>
 
         <div class="detail-grid">
@@ -747,10 +840,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
         <footer class="footer">
           <p class="footer-title">${escapeHtml(template.clausesTitle)}</p>
-          ${template.legalClauses
-            .slice(0, 4)
-            .map((clause) => `<p class="footer-line">${escapeHtml(clause)}</p>`)
-            .join("")}
+          <ul class="footer-list">${clausesMarkup}</ul>
+
+          <div class="signature-row">
+            <div class="signature-line">Authorized signature</div>
+            <div class="signature-issuer">
+              <p class="signature-name">${escapeHtml(template.companyName)}</p>
+              <p class="signature-role">Billing Team</p>
+            </div>
+          </div>
         </footer>
       </section>
 

@@ -5,6 +5,7 @@ import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
   normalizeInvoiceTemplateConfig,
   renderInvoiceTemplateHtml,
+  toPdfRgbTuple,
   type InvoiceTemplateConfig,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
@@ -114,14 +115,116 @@ function normalizeItems(items: InvoiceLineItem[]) {
 
 async function generateInvoicePdfWithPdfLib(
   input: InvoicePdfInput,
-  items: ReturnType<typeof normalizeItems>
+  items: ReturnType<typeof normalizeItems>,
+  template: InvoiceTemplateConfig,
+  theme: InvoiceTemplateTheme
 ) {
   const pdfDoc = await PDFDocument.create();
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const resolvedTheme = template.themes[theme];
+  const [brandR, brandG, brandB] = toPdfRgbTuple(resolvedTheme.brandHex);
+  const [lightR, lightG, lightB] = toPdfRgbTuple(resolvedTheme.lightHex);
+  const brandColor = rgb(brandR, brandG, brandB);
+  const lightColor = rgb(lightR, lightG, lightB);
+  const whiteColor = rgb(1, 1, 1);
 
   let page = pdfDoc.addPage([612, 792]);
-  let cursorY = 752;
+  const drawHeader = () => {
+    const { width, height } = page.getSize();
+    const headerHeight = 164;
+    const headerBottom = height - headerHeight;
+
+    page.drawRectangle({
+      x: 0,
+      y: headerBottom,
+      width,
+      height: headerHeight,
+      color: brandColor,
+    });
+
+    page.drawText("ACOSTA'S", {
+      x: 42,
+      y: height - 76,
+      size: 50,
+      font: boldFont,
+      color: whiteColor,
+    });
+    page.drawText("POOL", {
+      x: 164,
+      y: height - 128,
+      size: 50,
+      font: boldFont,
+      color: whiteColor,
+    });
+    page.drawLine({
+      start: { x: 42, y: height - 138 },
+      end: { x: 340, y: height - 138 },
+      thickness: 2.2,
+      color: whiteColor,
+    });
+    page.drawText("REPAIR AND MAINTENANCE", {
+      x: 42,
+      y: height - 160,
+      size: 15,
+      font: regularFont,
+      color: whiteColor,
+    });
+
+    page.drawText(resolvedTheme.label, {
+      x: 390,
+      y: height - 72,
+      size: 29,
+      font: boldFont,
+      color: whiteColor,
+    });
+    page.drawText(`Invoice #: ${input.invoiceNumber}`, {
+      x: 390,
+      y: height - 96,
+      size: 11,
+      font: boldFont,
+      color: whiteColor,
+    });
+    page.drawText(`Issue date: ${input.issueDate.toLocaleDateString("en-US")}`, {
+      x: 390,
+      y: height - 114,
+      size: 11,
+      font: boldFont,
+      color: whiteColor,
+    });
+
+    page.drawRectangle({
+      x: 0,
+      y: headerBottom - 5,
+      width,
+      height: 5,
+      color: whiteColor,
+    });
+  };
+
+  drawHeader();
+  let cursorY = 598;
+
+  const wrapText = (value: string, maxChars: number) => {
+    const clean = value.trim();
+    if (!clean) return [];
+    const words = clean.split(/\s+/);
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length > maxChars && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = next;
+      }
+    }
+    if (current) {
+      lines.push(current);
+    }
+    return lines;
+  };
 
   const drawText = (
     value: string,
@@ -143,7 +246,8 @@ async function generateInvoicePdfWithPdfLib(
 
     if (cursorY < 60) {
       page = pdfDoc.addPage([612, 792]);
-      cursorY = 752;
+      drawHeader();
+      cursorY = 598;
     }
 
     page.drawText(text, {
@@ -156,22 +260,96 @@ async function generateInvoicePdfWithPdfLib(
     cursorY -= needed;
   };
 
-  drawText("INVOICE", { size: 24, bold: true });
-  drawText(`Invoice #: ${input.invoiceNumber}`, { bold: true });
-  drawText(`Issue date: ${input.issueDate.toLocaleDateString("en-US")}`);
-  cursorY -= 4;
+  const drawInfoCard = (x: number, title: string, primary: string, secondary: string[]) => {
+    const cardTop = cursorY;
+    const cardHeight = 92;
+    const cardBottom = cardTop - cardHeight;
+    const cardWidth = 248;
 
-  drawText("Bill To", { bold: true, size: 13 });
-  drawText(input.customerName, { bold: true });
-  if (input.customerAddress) drawText(input.customerAddress);
-  if (input.customerEmail) drawText(input.customerEmail);
-  if (input.customerPhone) drawText(input.customerPhone);
-  cursorY -= 6;
+    page.drawRectangle({
+      x,
+      y: cardBottom,
+      width: cardWidth,
+      height: cardHeight,
+      color: rgb(0.98, 0.99, 1),
+      borderColor: rgb(0.79, 0.85, 0.92),
+      borderWidth: 1,
+    });
 
-  drawText("Description", { x: 48, bold: true, size: 12 });
-  drawText("Qty", { x: 340, bold: true, size: 12 });
-  drawText("Price", { x: 400, bold: true, size: 12 });
-  drawText("Amount", { x: 490, bold: true, size: 12 });
+    page.drawText(title, {
+      x: x + 10,
+      y: cardTop - 14,
+      size: 9,
+      font: boldFont,
+      color: rgb(brandR, brandG, brandB),
+    });
+
+    page.drawText(primary, {
+      x: x + 10,
+      y: cardTop - 32,
+      size: 11,
+      font: boldFont,
+      color: rgb(0.07, 0.13, 0.22),
+    });
+
+    let lineY = cardTop - 46;
+    for (const line of secondary) {
+      if (lineY < cardBottom + 8) {
+        break;
+      }
+      for (const wrapped of wrapText(line, 38)) {
+        if (lineY < cardBottom + 8) {
+          break;
+        }
+        page.drawText(wrapped, {
+          x: x + 10,
+          y: lineY,
+          size: 9,
+          font: regularFont,
+          color: rgb(0.3, 0.4, 0.52),
+        });
+        lineY -= 11;
+      }
+    }
+  };
+
+  const billPrimary = input.customerName.trim() || "Customer";
+  const billSecondary = [
+    input.customerAddress ?? "",
+    input.customerEmail ?? "",
+    input.customerPhone ?? "",
+  ].filter(Boolean);
+
+  const issuerAddress = [template.companyAddressLine1, template.companyAddressLine2]
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(", ");
+  const issuerPrimary = template.companyName.trim() || "Issuer";
+  const issuerSecondary = [
+    issuerAddress,
+    template.companyEmail,
+    template.companyPhone,
+    template.companyWebsite,
+    template.companyTaxId,
+  ]
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  drawInfoCard(48, "Bill To", billPrimary, billSecondary);
+  drawInfoCard(316, "Issued By", issuerPrimary, issuerSecondary);
+  cursorY -= 114;
+
+  page.drawRectangle({
+    x: 48,
+    y: cursorY - 2,
+    width: 516,
+    height: 20,
+    color: lightColor,
+  });
+  drawText("Description", { x: 56, bold: true, size: 11, color: [brandR, brandG, brandB] });
+  drawText("Qty", { x: 350, bold: true, size: 11, color: [brandR, brandG, brandB] });
+  drawText("Price", { x: 410, bold: true, size: 11, color: [brandR, brandG, brandB] });
+  drawText("Amount", { x: 500, bold: true, size: 11, color: [brandR, brandG, brandB] });
   cursorY -= 2;
 
   for (const item of items) {
@@ -182,18 +360,94 @@ async function generateInvoicePdfWithPdfLib(
   }
 
   cursorY -= 6;
-  drawText(`Subtotal: $${input.subtotal.toFixed(2)}`, { x: 400, bold: true });
-  drawText(`Tax: $${input.tax.toFixed(2)}`, { x: 400, bold: true });
+  drawText(`Subtotal: $${input.subtotal.toFixed(2)}`, {
+    x: 400,
+    bold: true,
+    color: [brandR, brandG, brandB],
+  });
+  drawText(`Tax: $${input.tax.toFixed(2)}`, {
+    x: 400,
+    bold: true,
+    color: [brandR, brandG, brandB],
+  });
   drawText(`Total: $${input.total.toFixed(2)}`, {
     x: 400,
     bold: true,
     size: 13,
+    color: [brandR, brandG, brandB],
   });
 
-  if (input.notes) {
-    cursorY -= 10;
-    drawText("Notes", { bold: true, size: 12 });
-    drawText(input.notes, { size: 10, color: [0.2, 0.25, 0.3] });
+  const detailTop = cursorY - 8;
+  const detailHeight = 58;
+  const drawDetailCard = (x: number, title: string, main: string, sub?: string) => {
+    const width = 248;
+    const bottom = detailTop - detailHeight;
+    page.drawRectangle({
+      x,
+      y: bottom,
+      width,
+      height: detailHeight,
+      color: rgb(0.98, 0.99, 1),
+      borderColor: rgb(0.79, 0.85, 0.92),
+      borderWidth: 1,
+    });
+    page.drawText(title, {
+      x: x + 10,
+      y: detailTop - 13,
+      size: 9,
+      font: boldFont,
+      color: rgb(brandR, brandG, brandB),
+    });
+    const mainLines = wrapText(main, 44).slice(0, 2);
+    let mainY = detailTop - 27;
+    for (const line of mainLines) {
+      page.drawText(line, {
+        x: x + 10,
+        y: mainY,
+        size: 9,
+        font: regularFont,
+        color: rgb(0.11, 0.19, 0.31),
+      });
+      mainY -= 11;
+    }
+    if (sub) {
+      page.drawText(sub, {
+        x: x + 10,
+        y: detailTop - 49,
+        size: 8,
+        font: regularFont,
+        color: rgb(0.38, 0.47, 0.58),
+      });
+    }
+  };
+
+  drawDetailCard(
+    48,
+    "Payment Method",
+    "Credit | Debit | ACH | Check",
+    "We accept: Visa, MasterCard, Zelle and Cash"
+  );
+  drawDetailCard(
+    316,
+    "Notes",
+    (input.notes ?? template.footerNote).trim() || "Thank you for trusting AcostasPool.",
+    ""
+  );
+  cursorY = detailTop - detailHeight - 12;
+
+  drawText(template.clausesTitle, {
+    bold: true,
+    size: 10,
+    color: [brandR, brandG, brandB],
+  });
+  for (const clause of template.legalClauses.slice(0, 4)) {
+    for (const line of wrapText(clause, 100)) {
+      drawText(`- ${line}`, {
+        size: 8,
+        color: [0.37, 0.45, 0.56],
+        lineGap: 3,
+      });
+    }
   }
 
   const bytes = await pdfDoc.save();
@@ -256,6 +510,6 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       `[invoices] Playwright PDF generation failed, using pdf-lib fallback for ${input.invoiceNumber}.`,
       error
     );
-    return generateInvoicePdfWithPdfLib(input, items);
+    return generateInvoicePdfWithPdfLib(input, items, template, theme);
   }
 }
