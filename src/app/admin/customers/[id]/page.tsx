@@ -1821,7 +1821,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked/property:flex">
+      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
         <label
           htmlFor="new-property"
           className="absolute inset-0 bg-slate-900/60"
@@ -2010,7 +2010,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked/job:flex">
+      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
         <label
           htmlFor="new-job"
           className="absolute inset-0 bg-slate-900/60"
@@ -2198,7 +2198,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked/plan:flex">
+      <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
         <label
           htmlFor="new-plan"
           className="absolute inset-0 bg-slate-900/60"

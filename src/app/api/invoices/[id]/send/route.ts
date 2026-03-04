@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { createNotification } from "@/lib/notifications/create";
-import { getEmailTemplatesConfig } from "@/lib/site-settings";
+import { getEmailTemplatesConfig, getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { readStoredAsset } from "@/lib/storage/object-store";
 import { logAuditEvent } from "@/lib/audit/log";
+import { generateInvoicePdf } from "@/lib/invoices/pdf";
+import { normalizeInvoiceLineItems } from "@/lib/invoices/line-items";
 
 export const runtime = "nodejs";
 
@@ -34,8 +36,12 @@ export async function POST(
     include: { customer: true },
   });
 
-  if (!invoice || !invoice.pdfUrl) {
-    return NextResponse.json({ error: "Invoice not ready" }, { status: 400 });
+  if (!invoice) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
+  if (!invoice.customer?.email) {
+    return NextResponse.json({ error: "Customer email missing" }, { status: 400 });
   }
 
   const host = process.env.SMTP_HOST;
@@ -58,6 +64,10 @@ export async function POST(
     customer_name_html: escapeHtml(customerName),
     invoice_number: invoice.number,
   });
+  const lineItems = normalizeInvoiceLineItems(invoice.lineItems);
+  if (lineItems.length === 0) {
+    return NextResponse.json({ error: "Invoice line items missing" }, { status: 400 });
+  }
 
   try {
     const transporter = nodemailer.createTransport({
@@ -67,7 +77,25 @@ export async function POST(
       auth: { user, pass },
     });
 
-    const pdfBuffer = await readStoredAsset(invoice.pdfUrl);
+    const invoiceTemplate = await getInvoiceTemplateConfig();
+    const regeneratedPdfUrl = await generateInvoicePdf({
+      customerId: invoice.customerId,
+      invoiceNumber: invoice.number,
+      issueDate: invoice.createdAt,
+      customerName,
+      customerEmail: invoice.customer.email,
+      customerPhone: invoice.customer.telefono,
+      customerAddress: formatCustomerAddress(invoice.customer),
+      items: lineItems,
+      subtotal: Number(invoice.subtotal),
+      tax: Number(invoice.tax),
+      total: Number(invoice.total),
+      notes: invoice.notes,
+      theme: invoice.theme,
+      template: invoiceTemplate,
+    });
+
+    const pdfBuffer = await readStoredAsset(regeneratedPdfUrl);
 
     await transporter.sendMail({
       from,
@@ -88,6 +116,7 @@ export async function POST(
       data: {
         status: "SENT",
         sentAt: new Date(),
+        pdfUrl: regeneratedPdfUrl,
       },
     });
 

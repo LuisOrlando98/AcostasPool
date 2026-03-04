@@ -113,7 +113,7 @@ export default function TechRoutePlannerButton({
       </button>
 
       {isOpen ? (
-        <div className="fixed inset-0 z-[1100] flex items-end justify-center p-3 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-[1300] flex items-end justify-center overflow-y-auto p-3 sm:p-6">
           <div
             className="absolute inset-0 bg-slate-900/55"
             onClick={() => setIsOpen(false)}

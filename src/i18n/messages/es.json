@@ -918,6 +918,8 @@
         },
         "table": {
           "customer": "Cliente",
+          "phone": "Telefono",
+          "address": "Direccion",
           "status": "Estado",
           "properties": "Propiedades",
           "jobs": "Trabajos",

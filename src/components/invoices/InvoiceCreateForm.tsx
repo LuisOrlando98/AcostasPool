@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
@@ -62,6 +63,7 @@ export default function InvoiceCreateForm({
   createInvoiceAction,
 }: Props) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const [selectedCustomerId, setSelectedCustomerId] = useState(customers[0]?.id ?? "");
   const [selectedJobId, setSelectedJobId] = useState(() => {
     const firstCustomerId = customers[0]?.id ?? "";
@@ -173,7 +175,17 @@ export default function InvoiceCreateForm({
     }).format(value);
 
   return (
-    <form action={createInvoiceAction} className="mt-5 space-y-4">
+    <form
+      action={async (formData) => {
+        await createInvoiceAction(formData);
+        const toggle = document.getElementById("new-invoice");
+        if (toggle instanceof HTMLInputElement) {
+          toggle.checked = false;
+        }
+        router.refresh();
+      }}
+      className="mt-5 space-y-4"
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         <label>
           <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">

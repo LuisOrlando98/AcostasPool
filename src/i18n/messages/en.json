@@ -918,6 +918,8 @@
         },
         "table": {
           "customer": "Customer",
+          "phone": "Phone",
+          "address": "Address",
           "status": "Status",
           "properties": "Properties",
           "jobs": "Jobs",

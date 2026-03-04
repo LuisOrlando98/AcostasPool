@@ -3,7 +3,7 @@ import AppShell from "@/components/layout/AppShell";
 import CustomersClient from "@/app/admin/customers/CustomersClient";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { sendCustomerInvite } from "@/lib/customers/invite";
 import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
@@ -174,6 +174,20 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           nombre: true,
           apellidos: true,
           email: true,
+          telefono: true,
+          direccionLinea1: true,
+          direccionLinea2: true,
+          ciudad: true,
+          estadoProvincia: true,
+          codigoPostal: true,
+          properties: {
+            select: {
+              name: true,
+              address: true,
+            },
+            orderBy: { createdAt: "asc" },
+            take: 6,
+          },
           estadoCuenta: true,
           _count: {
             select: {
@@ -201,6 +215,11 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           id: customer.id,
           name: formatCustomerName(customer),
           email: customer.email,
+          phone: customer.telefono,
+          address: formatCustomerAddress(customer),
+          propertyNames: customer.properties
+            .map((property) => property.name?.trim() || property.address?.trim() || "")
+            .filter(Boolean),
           status: customer.estadoCuenta,
           properties: customer._count.properties,
           jobs: customer._count.jobs,

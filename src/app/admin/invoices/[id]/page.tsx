@@ -5,7 +5,7 @@ import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems, roundCurrency } from "@/lib/invoices/line-items";
 import {
@@ -103,6 +103,8 @@ async function updateInvoice(formData: FormData) {
     issueDate: currentInvoice.createdAt,
     customerName: formatCustomerName(currentInvoice.customer),
     customerEmail: currentInvoice.customer.email,
+    customerPhone: currentInvoice.customer.telefono,
+    customerAddress: formatCustomerAddress(currentInvoice.customer),
     items: lineItems,
     subtotal,
     tax,

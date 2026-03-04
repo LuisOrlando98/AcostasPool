@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
 import { storePublicAsset } from "@/lib/storage/object-store";
+import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import sharp from "sharp";
 import {
   buildCustomerJobPhotoAssetPath,
@@ -45,6 +48,111 @@ function resolvePhotoContentType(file: File) {
   return null;
 }
 
+function formatDateTimeLabel(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+async function sendCompletedJobEmailNow(input: {
+  notificationId: string;
+  customerId: string;
+  jobId: string;
+  customerEmail: string;
+  customerName: string;
+  technicianName: string;
+  completedAt: Date;
+  propertyAddress: string;
+}) {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT ?? "587");
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const from = process.env.SMTP_FROM || user;
+
+  if (!host || !user || !pass || !from) {
+    return false;
+  }
+
+  const templates = await getEmailTemplatesConfig();
+  const completedLabel = formatDateTimeLabel(input.completedAt);
+  const rendered = renderEmailTemplate(templates.CUSTOMER_JOB_COMPLETED, {
+    customer_name: input.customerName,
+    customer_name_html: escapeHtml(input.customerName),
+    technician_name: input.technicianName,
+    technician_name_html: escapeHtml(input.technicianName),
+    completed_label: completedLabel,
+    completed_label_html: escapeHtml(completedLabel),
+    job_address: input.propertyAddress,
+    job_address_html: escapeHtml(input.propertyAddress),
+  });
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: false,
+      auth: { user, pass },
+    });
+
+    await transporter.sendMail({
+      from,
+      to: input.customerEmail,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+    });
+
+    await prisma.emailLog.create({
+      data: {
+        recipientEmail: input.customerEmail,
+        recipientName: input.customerName,
+        recipientRole: "CUSTOMER",
+        subject: rendered.subject,
+        bodyText: rendered.text,
+        bodyHtml: rendered.html,
+        status: "SENT",
+        sentAt: new Date(),
+        customerId: input.customerId,
+        jobId: input.jobId,
+        metadata: {
+          notificationId: input.notificationId,
+          eventType: "JOB_COMPLETED",
+          immediate: true,
+        },
+      },
+    });
+
+    return true;
+  } catch (error) {
+    await prisma.emailLog.create({
+      data: {
+        recipientEmail: input.customerEmail,
+        recipientName: input.customerName,
+        recipientRole: "CUSTOMER",
+        subject: rendered.subject,
+        bodyText: rendered.text,
+        bodyHtml: rendered.html,
+        status: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        customerId: input.customerId,
+        jobId: input.jobId,
+        metadata: {
+          notificationId: input.notificationId,
+          eventType: "JOB_COMPLETED",
+          immediate: true,
+        },
+      },
+    });
+
+    return false;
+  }
+}
+
 export async function POST(
   request: Request,
   context: RouteContext
@@ -59,7 +167,8 @@ export async function POST(
     where: { id: jobId },
     include: {
       technician: { include: { user: true } },
-      customer: { select: { nombre: true, apellidos: true } },
+      customer: { select: { nombre: true, apellidos: true, email: true } },
+      property: { select: { address: true } },
       photos: { select: { id: true } },
     },
   });
@@ -227,6 +336,46 @@ export async function POST(
       where: { id: jobId },
       data: updateData,
     });
+  }
+
+  if (isCompleting) {
+    const customerNotification = await createNotification({
+      customerId: job.customerId,
+      recipientRole: "CUSTOMER",
+      eventType: "JOB_COMPLETED",
+      severity: "INFO",
+      actorUserId: session.sub,
+      payload: {
+        jobId: job.id,
+        technicianName,
+        completedAt: completedAt.toISOString(),
+        scheduledDate: job.scheduledDate.toISOString(),
+      },
+    });
+
+    const customerEmail = job.customer.email?.trim() ?? "";
+    if (customerEmail) {
+      const sentNow = await sendCompletedJobEmailNow({
+        notificationId: customerNotification.id,
+        customerId: job.customerId,
+        jobId: job.id,
+        customerEmail,
+        customerName: customerName || "Customer",
+        technicianName,
+        completedAt,
+        propertyAddress: job.property.address || "Address not available",
+      });
+
+      if (sentNow) {
+        await prisma.notification.update({
+          where: { id: customerNotification.id },
+          data: {
+            status: "SENT",
+            sentAt: new Date(),
+          },
+        });
+      }
+    }
   }
 
   if (session.role === "TECH" && isCompleting) {

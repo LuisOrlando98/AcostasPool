@@ -325,7 +325,7 @@ export default async function TechniciansPage() {
         <input id="new-tech" type="checkbox" className="peer hidden" />
         <TechniciansOverview rows={rows} deleteTechnicianAction={deleteTechnician} />
 
-        <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked:flex">
+        <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
           <label
             htmlFor="new-tech"
             className="absolute inset-0 bg-slate-900/60"

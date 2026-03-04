@@ -2161,7 +2161,7 @@ export default function RoutesCalendar({
       </section>
 
       {selectedDate ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
           <div className="absolute inset-0 bg-slate-900/60" />
           <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
@@ -2432,7 +2432,7 @@ export default function RoutesCalendar({
       {mounted && jobModal
         ? createPortal(
             <div
-              className="fixed inset-0 z-[999] overflow-y-auto bg-slate-900/60"
+              className="fixed inset-0 z-[1310] overflow-y-auto bg-slate-900/60"
               onClick={() => setJobModal(null)}
             >
               <div className="flex min-h-screen items-start justify-center px-4 py-6 sm:items-center sm:px-6 sm:py-10">

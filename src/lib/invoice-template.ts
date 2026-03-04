@@ -264,7 +264,8 @@ export function renderInvoiceTemplatePreview(
 
   const itemRows = items
     .map(
-      (item) => `<tr>
+      (item, index) => `<tr>
+  <td style="text-align:center;">${index + 1}</td>
   <td>${escapeHtml(item.label)}</td>
   <td style="text-align:center;">${item.quantity}</td>
   <td style="text-align:right;">$${item.unitPrice.toFixed(2)}</td>
@@ -272,6 +273,22 @@ export function renderInvoiceTemplatePreview(
 </tr>`
     )
     .join("");
+
+  const billToLines = [
+    "Sample Customer",
+    "123 Palm Ave, Miami, FL 33101",
+    "customer@example.com",
+    "+1 (786) 555-0199",
+  ];
+  const issuedByLines = [
+    template.companyName,
+    [template.companyAddressLine1, template.companyAddressLine2]
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(", "),
+    template.companyEmail,
+    template.companyPhone,
+  ].filter(Boolean);
 
   const watermark =
     theme === "ESTIMATE" &&
@@ -286,19 +303,17 @@ export function renderInvoiceTemplatePreview(
 
   return `<!doctype html>
 <html>
-  <body style="margin:0;padding:24px;background:#edf2f7;font-family:Arial,sans-serif;color:#0f172a;">
-    <article style="position:relative;max-width:860px;margin:0 auto;border:1px solid #dbe4ee;border-radius:18px;overflow:hidden;background:#fff;">
-      <header style="background:${resolvedTheme.brandHex};padding:24px 28px 22px;border-bottom:1px solid rgba(255,255,255,.2);">
+  <body style="margin:0;padding:24px;background:#e9eef5;font-family:Arial,sans-serif;color:#0f172a;">
+    <article style="position:relative;max-width:880px;margin:0 auto;border:1px solid #d6e0ec;border-radius:18px;overflow:hidden;background:#ffffff;box-shadow:0 14px 28px rgba(15,23,42,.12);">
+      <header style="background:${resolvedTheme.brandHex};padding:24px 28px 26px;border-bottom:6px solid ${resolvedTheme.accentHex};">
         <div style="display:flex;justify-content:space-between;gap:24px;align-items:flex-start;">
           <div>
             <img src="/h-logo.png" alt="AcostasPool" style="display:block;max-width:190px;height:auto;" />
-            <p style="margin:10px 0 0;color:#dbe7f3;font-size:13px;">${escapeHtml(template.headerSubtitle)}</p>
-            <p style="margin:6px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
-              template.companyPhone
-            )} | ${escapeHtml(template.companyEmail)}</p>
           </div>
           <div style="text-align:right;">
-            <p style="margin:0;color:#ffffff;font:700 17px/1.2 Arial,sans-serif;">${escapeHtml(resolvedTheme.label)}</p>
+            <p style="margin:0;color:#ffffff;font:700 28px/1.05 Arial,sans-serif;">${escapeHtml(
+              resolvedTheme.label
+            )}</p>
             <p style="margin:6px 0 0;color:#dbe7f3;font-size:12px;">${escapeHtml(
               template.invoiceNumberLabel
             )}: INV-2026-1042</p>
@@ -308,18 +323,44 @@ export function renderInvoiceTemplatePreview(
           </div>
         </div>
       </header>
-      <section style="padding:22px 28px;">
-        <p style="margin:0 0 10px;font:700 12px/1.2 Arial,sans-serif;color:#475569;text-transform:uppercase;letter-spacing:.09em;">${escapeHtml(template.billToLabel)}</p>
-        <p style="margin:0;font:600 15px/1.3 Arial,sans-serif;color:#0f172a;">Sample Customer</p>
-        <p style="margin:4px 0 0;color:#64748b;font-size:13px;">customer@example.com</p>
+      <section style="padding:20px 28px 22px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="border:1px solid #dde6f2;border-radius:12px;background:#f9fcff;padding:12px 13px;">
+            <p style="margin:0;font:700 11px/1.2 Arial,sans-serif;color:#5f6f81;text-transform:uppercase;letter-spacing:.09em;">${escapeHtml(
+              template.billToLabel
+            )}</p>
+            ${billToLines
+              .map((line, index) =>
+                index === 0
+                  ? `<p style="margin:${index === 0 ? "10px" : "6px"} 0 0;font:700 15px/1.25 Arial,sans-serif;color:#0f172a;">${escapeHtml(line)}</p>`
+                  : `<p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(line)}</p>`
+              )
+              .join("")}
+          </div>
+          <div style="border:1px solid #dde6f2;border-radius:12px;background:#f9fcff;padding:12px 13px;">
+            <p style="margin:0;font:700 11px/1.2 Arial,sans-serif;color:#5f6f81;text-transform:uppercase;letter-spacing:.09em;">Issued By</p>
+            ${issuedByLines
+              .map((line, index) =>
+                index === 0
+                  ? `<p style="margin:${index === 0 ? "10px" : "6px"} 0 0;font:700 15px/1.25 Arial,sans-serif;color:#0f172a;">${escapeHtml(line)}</p>`
+                  : `<p style="margin:6px 0 0;color:#475569;font-size:13px;">${escapeHtml(line)}</p>`
+              )
+              .join("")}
+          </div>
+        </div>
 
-        <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:13px;">
+        <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:13px;">
           <thead>
-            <tr style="background:${resolvedTheme.lightHex};">
-              <th style="text-align:left;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">${escapeHtml(template.tableDescriptionLabel)}</th>
-              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">Qty</th>
-              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">Price</th>
-              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #e2e8f0;">${escapeHtml(template.tableAmountLabel)}</th>
+            <tr style="background:${resolvedTheme.lightHex};border:1px solid #dbe5f0;">
+              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:42px;">#</th>
+              <th style="text-align:left;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;">${escapeHtml(
+                template.tableDescriptionLabel
+              )}</th>
+              <th style="text-align:center;padding:10px 8px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:64px;">Qty</th>
+              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:120px;">Unit Price</th>
+              <th style="text-align:right;padding:10px 12px;color:${resolvedTheme.brandHex};font-weight:700;border:1px solid #dbe5f0;width:120px;">${escapeHtml(
+                template.tableAmountLabel
+              )}</th>
             </tr>
           </thead>
           <tbody>
@@ -327,18 +368,27 @@ export function renderInvoiceTemplatePreview(
           </tbody>
         </table>
 
-        <div style="margin-top:20px;display:grid;justify-content:end;">
+        <div style="margin-top:16px;display:grid;justify-content:end;">
           <p style="margin:0;color:#475569;font-size:13px;">${escapeHtml(template.subtotalLabel)}: <strong>$${subtotal.toFixed(2)}</strong></p>
           <p style="margin:7px 0 0;color:#475569;font-size:13px;">${escapeHtml(template.taxLabel)} (7%): <strong>$${tax.toFixed(2)}</strong></p>
           <p style="margin:9px 0 0;color:${resolvedTheme.brandHex};font:700 16px/1.2 Arial,sans-serif;">${escapeHtml(template.totalLabel)}: $${total.toFixed(2)}</p>
         </div>
 
-        <div style="margin-top:18px;padding:12px 14px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
-          <p style="margin:0 0 6px;color:#475569;font:700 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;">${escapeHtml(template.notesLabel)}</p>
-          <p style="margin:0;color:#64748b;font-size:13px;">Service completed and balanced. Thank you for trusting us.</p>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="padding:12px 14px;border-radius:12px;background:#f8fbff;border:1px solid #dde6f2;">
+            <p style="margin:0 0 6px;color:#5f6f81;font:700 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;">Payment Method</p>
+            <p style="margin:0;color:#0f172a;font-size:13px;">Credit | Debit | ACH | Check</p>
+            <p style="margin:6px 0 0;color:#64748b;font-size:12px;">We accept: Visa, MasterCard, Zelle and Cash</p>
+          </div>
+          <div style="padding:12px 14px;border-radius:12px;background:#f8fbff;border:1px solid #dde6f2;">
+            <p style="margin:0 0 6px;color:#5f6f81;font:700 12px/1.2 Arial,sans-serif;text-transform:uppercase;letter-spacing:.08em;">${escapeHtml(
+              template.notesLabel
+            )}</p>
+            <p style="margin:0;color:#64748b;font-size:13px;">Service completed and balanced. Thank you for trusting us.</p>
+          </div>
         </div>
       </section>
-      <footer style="padding:14px 28px;border-top:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:12px;">
+      <footer style="padding:14px 28px;border-top:1px solid #dbe5f0;background:#f8fafc;color:#64748b;font-size:12px;">
         <p style="margin:0 0 6px;font-size:12px;color:#5c6e83;">${escapeHtml(template.footerNote)}</p>
         <p style="margin:0 0 4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#718096;">${escapeHtml(
           template.clausesTitle
@@ -352,7 +402,6 @@ export function renderInvoiceTemplatePreview(
           )
           .join("")}
       </footer>
-      <div style="position:absolute;top:0;left:0;width:8px;height:100%;background:${resolvedTheme.accentHex};"></div>
       ${watermark}
     </article>
   </body>

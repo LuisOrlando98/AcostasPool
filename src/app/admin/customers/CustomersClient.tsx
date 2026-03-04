@@ -11,6 +11,9 @@ type CustomerRow = {
   id: string;
   name: string;
   email: string;
+  phone: string;
+  address: string;
+  propertyNames: string[];
   status: string;
   properties: number;
   jobs: number;
@@ -85,7 +88,7 @@ export default function CustomersClient({
     }
 
     return createPortal(
-      <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6">
+      <div className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
         <button
           type="button"
           className="absolute inset-0 bg-slate-900/60"

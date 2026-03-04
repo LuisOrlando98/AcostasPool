@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
 
@@ -9,6 +8,9 @@ type CustomerRow = {
   id: string;
   name: string;
   email: string;
+  phone: string;
+  address: string;
+  propertyNames: string[];
   status: string;
   properties: number;
   jobs: number;
@@ -219,67 +221,94 @@ export default function CustomersOverview({
         </div>
 
         <div className="mt-4 overflow-x-auto">
-          <table className="min-w-[720px] w-full text-left text-xs text-slate-600">
+          <table className="min-w-[1080px] w-full text-left text-xs text-slate-600">
             <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
               <tr className="border-b border-slate-100">
                 <th className="pb-3">{t("admin.customers.overview.table.customer")}</th>
-                <th className="pb-3">{t("admin.customers.overview.table.status")}</th>
+                <th className="pb-3">{t("admin.customers.overview.table.phone")}</th>
+                <th className="pb-3">{t("admin.customers.overview.table.address")}</th>
                 <th className="pb-3">{t("admin.customers.overview.table.properties")}</th>
                 <th className="pb-3">{t("admin.customers.overview.table.jobs")}</th>
                 <th className="pb-3">{t("admin.customers.overview.table.invoices")}</th>
-                <th className="pb-3 text-right">{t("admin.customers.overview.table.action")}</th>
+                <th className="pb-3">{t("admin.customers.overview.table.status")}</th>
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="py-6 text-center text-sm text-slate-500">
                     {t("admin.customers.overview.empty")}
                   </td>
                 </tr>
               ) : (
-                rows.map((customer) => (
-                  <tr key={customer.id} className="border-b border-slate-100">
-                    <td className="py-3">
-                      <p className="font-semibold text-slate-900">
-                        {customer.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        {customer.email}
-                      </p>
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
-                          customer.status === "ACTIVE"
-                            ? "border-teal-200 bg-teal-50 text-teal-700"
-                            : "border-indigo-200 bg-indigo-50 text-indigo-700"
-                        }`}
-                      >
-                        {customer.status === "ACTIVE"
-                          ? t("common.status.active")
-                          : t("common.status.inactive")}
-                      </span>
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {customer.properties}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {customer.jobs}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {customer.invoices}
-                    </td>
-                    <td className="py-3 text-right">
-                      <Link
-                        href={`/admin/customers/${customer.id}`}
-                        className="rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 hover:border-slate-300"
-                      >
-                        {t("admin.customers.overview.actions.viewProfile")}
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                rows.map((customer) => {
+                  const propertiesPreview = customer.propertyNames.join(", ");
+                  return (
+                    <tr
+                      key={customer.id}
+                      className="cursor-pointer border-b border-slate-100 transition hover:bg-sky-50/45"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => router.push(`/admin/customers/${customer.id}`)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          router.push(`/admin/customers/${customer.id}`);
+                        }
+                      }}
+                    >
+                      <td className="py-3">
+                        <p className="font-semibold text-slate-900">
+                          {customer.name}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {customer.email}
+                        </p>
+                      </td>
+                      <td className="py-3 text-[11px] text-slate-600">
+                        {customer.phone || t("common.labels.notAvailable")}
+                      </td>
+                      <td className="py-3">
+                        <p
+                          className="max-w-[20rem] truncate text-[11px] text-slate-600"
+                          title={customer.address || ""}
+                        >
+                          {customer.address || t("common.labels.notAvailable")}
+                        </p>
+                      </td>
+                      <td className="py-3">
+                        <p className="text-[11px] font-semibold text-slate-700">
+                          {customer.properties}
+                        </p>
+                        <p
+                          className="mt-0.5 max-w-[18rem] truncate text-[11px] text-slate-500"
+                          title={propertiesPreview}
+                        >
+                          {propertiesPreview || t("admin.routes.labels.noProperties")}
+                        </p>
+                      </td>
+                      <td className="py-3 text-[11px] text-slate-500">
+                        {customer.jobs}
+                      </td>
+                      <td className="py-3 text-[11px] text-slate-500">
+                        {customer.invoices}
+                      </td>
+                      <td className="py-3">
+                        <span
+                          className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                            customer.status === "ACTIVE"
+                              ? "border-teal-200 bg-teal-50 text-teal-700"
+                              : "border-indigo-200 bg-indigo-50 text-indigo-700"
+                          }`}
+                        >
+                          {customer.status === "ACTIVE"
+                            ? t("common.status.active")
+                            : t("common.status.inactive")}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

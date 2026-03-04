@@ -6,7 +6,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 const TZ = "America/New_York";
-const CUSTOMER_EVENTS = ["SERVICE_SCHEDULED", "SERVICE_RESCHEDULED"];
+const CUSTOMER_EVENTS = ["SERVICE_SCHEDULED", "SERVICE_RESCHEDULED", "JOB_COMPLETED"];
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 const TEMPLATE_CACHE_MS = 60 * 1000;
 
@@ -44,6 +44,26 @@ const EMAIL_TEMPLATE_DEFAULTS = {
       '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
       '<h3 style="margin:0 0 10px;color:#0b1f35;">Servicio reprogramado</h3>',
       '<p style="margin:0 0 10px;color:#334155;">Hola {{customer_name_html}}, tu servicio ha sido reprogramado para <strong>{{scheduled_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Direccion: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+  CUSTOMER_JOB_COMPLETED: {
+    subject: "Servicio completado - {{completed_label}}",
+    text: [
+      "Hola {{customer_name}},",
+      "",
+      "Tu servicio fue completado por {{technician_name}}.",
+      "Hora de finalizacion: {{completed_label}}.",
+      "",
+      "Direccion: {{job_address}}",
+      "Puedes revisar las evidencias en tu portal de cliente.",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Servicio completado</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hola {{customer_name_html}}, tu servicio fue completado por <strong>{{technician_name_html}}</strong>.</p>',
+      '<p style="margin:0 0 10px;color:#334155;">Hora de finalizacion: <strong>{{completed_label_html}}</strong>.</p>',
       '<p style="margin:0;color:#64748b;">Direccion: {{job_address_html}}</p>',
       "</div>",
     ].join(""),
@@ -91,6 +111,7 @@ const EMAIL_TEMPLATE_DEFAULTS = {
 const EMAIL_TEMPLATE_LABELS = {
   CUSTOMER_SERVICE_SCHEDULED: "Service scheduled",
   CUSTOMER_SERVICE_RESCHEDULED: "Service rescheduled",
+  CUSTOMER_JOB_COMPLETED: "Job completed",
   TECH_DAILY_DIGEST: "Daily route digest",
   TECH_CHANGE_DIGEST: "Route changes digest",
 };
@@ -313,18 +334,41 @@ const getCustomerName = (customer) => {
 };
 
 const buildCustomerEmail = async (notification, job) => {
+  const payload =
+    notification.payload && typeof notification.payload === "object"
+      ? notification.payload
+      : {};
+  const completedAtFromPayload =
+    typeof payload.completedAt === "string" ? new Date(payload.completedAt) : null;
+  const completedAt =
+    completedAtFromPayload && !Number.isNaN(completedAtFromPayload.getTime())
+      ? completedAtFromPayload
+      : job.completedAt || notification.createdAt;
   const scheduledLabel = formatDateTime(job.scheduledDate);
+  const completedLabel = formatDateTime(completedAt);
   const customerName = getCustomerName(job.customer);
+  const technicianNameFromPayload =
+    typeof payload.technicianName === "string" ? payload.technicianName : null;
+  const technicianName =
+    technicianNameFromPayload ||
+    job.technician?.user?.fullName ||
+    "Equipo de servicio";
   const templateId =
     notification.eventType === "SERVICE_RESCHEDULED"
       ? "CUSTOMER_SERVICE_RESCHEDULED"
-      : "CUSTOMER_SERVICE_SCHEDULED";
+      : notification.eventType === "JOB_COMPLETED"
+        ? "CUSTOMER_JOB_COMPLETED"
+        : "CUSTOMER_SERVICE_SCHEDULED";
 
   return renderTemplateById(templateId, {
     customer_name: customerName,
     customer_name_html: escapeHtml(customerName),
     scheduled_label: scheduledLabel,
     scheduled_label_html: escapeHtml(scheduledLabel),
+    completed_label: completedLabel,
+    completed_label_html: escapeHtml(completedLabel),
+    technician_name: technicianName,
+    technician_name_html: escapeHtml(technicianName),
     job_address: job.property.address,
     job_address_html: escapeHtml(job.property.address),
   });
@@ -471,7 +515,13 @@ const processCustomerNotifications = async () => {
 
     const job = await prisma.job.findUnique({
       where: { id: jobId },
-      include: { customer: true, property: true },
+      include: {
+        customer: true,
+        property: true,
+        technician: {
+          include: { user: { select: { fullName: true } } },
+        },
+      },
     });
     if (!job) {
       await prisma.notification.update({

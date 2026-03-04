@@ -11,7 +11,7 @@ import {
   normalizeInvoiceLineItems,
   roundCurrency,
 } from "@/lib/invoices/line-items";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
@@ -93,6 +93,8 @@ async function createInvoice(formData: FormData) {
     issueDate: invoice.createdAt,
     customerName,
     customerEmail: customer.email,
+    customerPhone: customer.telefono,
+    customerAddress: formatCustomerAddress(customer),
     items: lineItems,
     subtotal,
     tax,
@@ -390,7 +392,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           ) : null}
         </div>
 
-        <div className="fixed inset-0 z-[90] hidden items-center justify-center p-4 sm:p-6 peer-checked:flex">
+        <div className="fixed inset-0 z-[1300] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
           <label
             htmlFor="new-invoice"
             className="absolute inset-0 bg-slate-900/60"

@@ -773,27 +773,30 @@ export default function NotificationsBell() {
                                           void openNotification(item);
                                         }}
                                         data-severity={item.severity ?? "INFO"}
-                                        className={`notification-item relative w-full px-4 py-3 text-left transition ${
+                                        className={`notification-item relative w-full px-3 py-3 text-left transition sm:px-4 ${
                                           isRead
                                             ? "bg-white hover:bg-slate-50"
                                             : "bg-sky-50 hover:bg-sky-100/80"
                                         }`}
                                         style={{ touchAction: "pan-y" }}
                                       >
-                                        <div className="flex items-start justify-between gap-3 pr-8">
-                                          <div className="min-w-0">
-                                            <p className="truncate text-sm font-semibold text-slate-900">
+                                        <div className="flex items-start gap-3 pr-8 sm:justify-between">
+                                          <div className="min-w-0 flex-1">
+                                            <p className="break-words text-sm font-semibold text-slate-900 sm:truncate">
                                               {getNotificationSource(item, t)}
                                             </p>
-                                            <p className="truncate text-xs text-slate-500">
+                                            <p className="mt-0.5 break-words text-xs text-slate-500 sm:truncate">
                                               {detail}
                                             </p>
                                           </div>
-                                          <span className="shrink-0 text-[11px] text-slate-400">
+                                          <span className="hidden shrink-0 text-[11px] text-slate-400 sm:inline">
                                             {timeLabel}
                                           </span>
                                         </div>
-                                        <div className="mt-2 flex items-center gap-2">
+                                        <p className="mt-1 text-[11px] text-slate-400 sm:hidden">
+                                          {timeLabel}
+                                        </p>
+                                        <div className="mt-2 flex flex-wrap items-center gap-2">
                                           <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                                             {title}
                                           </span>
@@ -835,9 +838,9 @@ export default function NotificationsBell() {
 
       {liveAlert && canUseDom
         ? createPortal(
-            <div className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+0.75rem)] z-[1200] w-[min(94vw,34rem)] -translate-x-1/2 px-1">
+            <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[1200] px-2 sm:left-1/2 sm:right-auto sm:top-[calc(env(safe-area-inset-top)+0.75rem)] sm:w-[min(94vw,34rem)] sm:-translate-x-1/2 sm:px-0">
               <div
-                className="pointer-events-auto rounded-2xl border border-sky-200 bg-white/95 px-4 py-3 shadow-contrast backdrop-blur"
+                className="pointer-events-auto rounded-xl border border-sky-200 bg-white/95 px-3 py-2.5 shadow-contrast backdrop-blur sm:rounded-2xl sm:px-4 sm:py-3"
                 onTouchStart={(event) => {
                   const touch = event.touches[0];
                   if (!touch) return;
@@ -874,25 +877,27 @@ export default function NotificationsBell() {
                     : "transform 220ms ease, opacity 220ms ease",
                 }}
               >
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-2.5 sm:gap-3">
                   <span className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      {t("userMenu.notifications")}
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                        {t("userMenu.notifications")}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => dismissLiveAlert()}
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                        aria-label={t("common.actions.close")}
+                      >
+                        <CloseIcon />
+                      </button>
+                    </div>
+                    <p className="mt-1 break-words text-sm font-semibold text-slate-900">
                       {liveAlert.title}
                     </p>
-                    <p className="mt-1 text-xs text-slate-600">{liveAlert.body}</p>
+                    <p className="mt-1 break-words text-xs text-slate-600">{liveAlert.body}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => dismissLiveAlert()}
-                    className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-700 md:inline-flex"
-                    aria-label={t("common.actions.close")}
-                  >
-                    <CloseIcon />
-                  </button>
                 </div>
               </div>
             </div>,

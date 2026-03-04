@@ -6,21 +6,25 @@ Plataforma web para administracion de servicios a piscinas: rutas, evidencias e 
 Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 
 ## Deploy en Render
-1. Crea servicios con `render.yaml` (web + postgres).
+1. Crea servicios con `render.yaml` (web + worker + postgres).
 2. Define estas variables en el servicio web:
    - `AUTH_SECRET`
    - `APP_URL`
    - `STORAGE_DRIVER` (`local` o `s3`)
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-3. Si activas S3, agrega:
+3. Define estas variables en el worker (`acostaspool-cron-worker`):
+   - `APP_URL`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+4. Si activas S3, agrega:
    - `AWS_REGION`
    - `AWS_S3_BUCKET`
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `NEXT_PUBLIC_CDN_URL`
-4. Haz deploy y valida:
+5. Haz deploy y valida:
    - `GET /api/health`
    - `GET /api/health/db`
+   - Logs del worker: ejecuciones cada 2 minutos para procesar notificaciones a clientes
 
 ## Instalacion como app (PWA)
 1. Publica la app en HTTPS (por ejemplo Render).
