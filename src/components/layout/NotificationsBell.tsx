@@ -4,9 +4,9 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  type PointerEvent,
   useRef,
   useState,
-  type TouchEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
@@ -45,6 +45,7 @@ type PanelPlacement = {
 const ALERT_AUTO_CLOSE_MS = 4000;
 const ALERT_HIDE_DURATION_MS = 220;
 const ALERT_SWIPE_CLOSE_THRESHOLD = -60;
+const ROW_SWIPE_OPEN_THRESHOLD = -36;
 const ROW_SWIPE_DELETE_THRESHOLD = -56;
 const ROW_SWIPE_MAX = -92;
 
@@ -129,6 +130,7 @@ export default function NotificationsBell() {
     startX: number;
     startY: number;
     isHorizontal: boolean;
+    pointerId: number;
   } | null>(null);
   const rowSwipeConsumedIdRef = useRef<string | null>(null);
 
@@ -500,29 +502,39 @@ export default function NotificationsBell() {
     setClearing(false);
   }, [clearing, load, notifications, t, unreadCount]);
 
-  const handleRowTouchStart = (itemId: string, touch: Touch) => {
-    if (typeof window !== "undefined" && window.innerWidth >= 768) {
+  const handleRowPointerDown = (
+    itemId: string,
+    event: PointerEvent<HTMLButtonElement>
+  ) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
     rowSwipeRef.current = {
       id: itemId,
-      startX: touch.clientX,
-      startY: touch.clientY,
+      startX: event.clientX,
+      startY: event.clientY,
       isHorizontal: false,
+      pointerId: event.pointerId,
     };
+    setSwipeOffsets((current) => {
+      if (Object.keys(current).length === 0) {
+        return current;
+      }
+      const currentOffset = current[itemId] ?? 0;
+      return currentOffset === 0 ? { [itemId]: 0 } : { [itemId]: currentOffset };
+    });
   };
 
-  const handleRowTouchMove = (itemId: string, event: TouchEvent<HTMLButtonElement>) => {
+  const handleRowPointerMove = (
+    itemId: string,
+    event: PointerEvent<HTMLButtonElement>
+  ) => {
     const start = rowSwipeRef.current;
-    if (!start || start.id !== itemId) {
+    if (!start || start.id !== itemId || start.pointerId !== event.pointerId) {
       return;
     }
-    const touch = event.touches[0];
-    if (!touch) {
-      return;
-    }
-    const dx = touch.clientX - start.startX;
-    const dy = touch.clientY - start.startY;
+    const dx = event.clientX - start.startX;
+    const dy = event.clientY - start.startY;
 
     if (!start.isHorizontal) {
       if (Math.abs(dx) < 8) {
@@ -544,12 +556,22 @@ export default function NotificationsBell() {
     }
   };
 
-  const handleRowTouchEnd = (item: NotificationItem) => {
-    const offset = swipeOffsets[item.id] ?? 0;
+  const handleRowPointerEnd = (
+    item: NotificationItem,
+    event: PointerEvent<HTMLButtonElement>
+  ) => {
+    const start = rowSwipeRef.current;
+    if (!start || start.id !== item.id || start.pointerId !== event.pointerId) {
+      return;
+    }
+    const dx = event.clientX - start.startX;
+    const offset = start.isHorizontal
+      ? Math.max(ROW_SWIPE_MAX, Math.min(0, dx))
+      : swipeOffsets[item.id] ?? 0;
     rowSwipeRef.current = null;
-    if (offset <= ROW_SWIPE_DELETE_THRESHOLD) {
+    if (offset <= ROW_SWIPE_OPEN_THRESHOLD) {
+      setSwipeOffsets((current) => ({ ...current, [item.id]: ROW_SWIPE_MAX }));
       rowSwipeConsumedIdRef.current = item.id;
-      void handleDeleteNotification(item);
       return;
     }
     setSwipeOffsets((current) => ({ ...current, [item.id]: 0 }));
@@ -652,16 +674,36 @@ export default function NotificationsBell() {
                                 const detail = getNotificationDetail(item, locale, t);
                                 const offset = swipeOffsets[item.id] ?? 0;
                                 const timeLabel = formatRelativeDate(item.createdAt, locale);
+                                const railOpen = offset <= ROW_SWIPE_OPEN_THRESHOLD;
+                                const railArmed = offset <= ROW_SWIPE_DELETE_THRESHOLD;
 
                                 return (
                                   <div
                                     key={item.id}
                                     className="relative overflow-hidden rounded-xl border border-slate-200 bg-white"
                                   >
-                                    <div className="absolute inset-y-0 right-0 flex w-[92px] items-center justify-center bg-rose-600 px-2 text-white">
-                                      <span className="text-[11px] font-semibold">
+                                    <div
+                                      className={`absolute inset-y-0 right-0 flex w-[92px] items-center justify-center border-l border-rose-200 bg-rose-50 px-2 transition-opacity duration-150 ${
+                                        railOpen
+                                          ? "opacity-100 pointer-events-auto"
+                                          : "opacity-0 pointer-events-none"
+                                      }`}
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          void handleDeleteNotification(item);
+                                        }}
+                                        disabled={deletingId === item.id}
+                                        className={`inline-flex min-h-8 items-center justify-center rounded-full px-3 text-xs font-semibold text-white transition disabled:opacity-60 ${
+                                          railArmed
+                                            ? "bg-rose-600 hover:bg-rose-700"
+                                            : "bg-rose-500 hover:bg-rose-600"
+                                        }`}
+                                      >
                                         {t("common.actions.delete")}
-                                      </span>
+                                      </button>
                                     </div>
 
                                     <div
@@ -675,16 +717,34 @@ export default function NotificationsBell() {
                                     >
                                       <button
                                         type="button"
-                                        onTouchStart={(event) => {
-                                          const touch = event.touches[0];
-                                          if (!touch) return;
-                                          handleRowTouchStart(item.id, touch);
-                                        }}
-                                        onTouchMove={(event) => handleRowTouchMove(item.id, event)}
-                                        onTouchEnd={() => handleRowTouchEnd(item)}
+                                        onPointerDown={(event) =>
+                                          handleRowPointerDown(item.id, event)
+                                        }
+                                        onPointerMove={(event) =>
+                                          handleRowPointerMove(item.id, event)
+                                        }
+                                        onPointerUp={(event) =>
+                                          handleRowPointerEnd(item, event)
+                                        }
+                                        onPointerCancel={(event) =>
+                                          handleRowPointerEnd(item, event)
+                                        }
                                         onClick={() => {
                                           if (rowSwipeConsumedIdRef.current === item.id) {
                                             rowSwipeConsumedIdRef.current = null;
+                                            if ((swipeOffsets[item.id] ?? 0) < 0) {
+                                              setSwipeOffsets((current) => ({
+                                                ...current,
+                                                [item.id]: 0,
+                                              }));
+                                            }
+                                            return;
+                                          }
+                                          if (railOpen) {
+                                            setSwipeOffsets((current) => ({
+                                              ...current,
+                                              [item.id]: 0,
+                                            }));
                                             return;
                                           }
                                           void openNotification(item);
@@ -693,8 +753,9 @@ export default function NotificationsBell() {
                                         className={`notification-item relative w-full px-4 py-3 text-left transition ${
                                           isRead
                                             ? "bg-white hover:bg-slate-50"
-                                            : "bg-sky-50/40 hover:bg-sky-50/60"
+                                            : "bg-sky-50 hover:bg-sky-100/80"
                                         }`}
+                                        style={{ touchAction: "pan-y" }}
                                       >
                                         <div className="flex items-start justify-between gap-3 pr-8">
                                           <div className="min-w-0">
@@ -719,20 +780,6 @@ export default function NotificationsBell() {
                                             </span>
                                           ) : null}
                                         </div>
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          void handleDeleteNotification(item);
-                                        }}
-                                        disabled={deletingId === item.id}
-                                        className="absolute right-3 top-3 hidden h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 md:inline-flex"
-                                        aria-label={t("common.actions.delete")}
-                                        title={t("common.actions.delete")}
-                                      >
-                                        <CloseIcon />
                                       </button>
                                     </div>
                                   </div>
