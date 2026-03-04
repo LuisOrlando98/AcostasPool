@@ -220,14 +220,20 @@ export default function CustomerRepositoryExplorer({
 
   const canManageCurrentPath =
     currentPath === "files" || currentPath.startsWith("files/");
+  const isInvoicesCurrentPath =
+    currentPath === "invoices" || currentPath.startsWith("invoices/");
 
   const selectedEntry = useMemo(
     () => entries.find((entry) => entry.path === selectedPath) ?? null,
     [entries, selectedPath]
   );
 
-  const canMutateSelected =
+  const canRenameSelected =
     Boolean(selectedEntry) && canManageCurrentPath && !selectedEntry?.readOnly;
+  const canDeleteSelected =
+    Boolean(selectedEntry) &&
+    !selectedEntry?.readOnly &&
+    (canManageCurrentPath || (isInvoicesCurrentPath && selectedEntry?.type === "file"));
 
   const visibleEntries = useMemo(() => {
     const query = normalizeText(searchTerm);
@@ -494,7 +500,13 @@ export default function CustomerRepositoryExplorer({
       return;
     }
     if (entry.url) {
-      window.open(entry.url, "_blank", "noopener,noreferrer");
+      const link = document.createElement("a");
+      link.href = entry.url;
+      link.download = entry.name;
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -668,12 +680,12 @@ export default function CustomerRepositoryExplorer({
       ) : null}
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <div className="grid h-[460px] min-h-[420px] grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 lg:border-b-0 lg:border-r">
+        <div className="grid min-h-[420px] grid-cols-1 xl:h-[500px] xl:grid-cols-[minmax(220px,28%)_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 xl:border-b-0 xl:border-r">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
               Folder Tree
             </p>
-            <div className="h-full max-h-[420px] overflow-auto pr-1 lg:max-h-none">
+            <div className="max-h-[240px] overflow-auto pr-1 xl:h-full xl:max-h-none">
               {renderTreeNode("")}
             </div>
           </aside>
@@ -681,8 +693,8 @@ export default function CustomerRepositoryExplorer({
           <section className="flex min-h-0 min-w-0 flex-col">
             <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex min-w-[230px] flex-1 items-center gap-2">
-                  <p className="max-w-[420px] truncate text-xs text-slate-600">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <p className="max-w-[300px] truncate text-xs text-slate-600 sm:max-w-[420px]">
                     {currentPath ? currentPath : "Repository"}
                   </p>
                   <span className="hidden rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:inline-flex">
@@ -719,26 +731,30 @@ export default function CustomerRepositoryExplorer({
                         onClick={() => void handleOpenEntry(selectedEntry)}
                         className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
                       >
-                        Open
+                        {selectedEntry.type === "file" ? "Download" : "Open"}
                       </button>
-                      {canMutateSelected ? (
+                      {canRenameSelected || canDeleteSelected ? (
                         <>
-                          <button
-                            type="button"
-                            onClick={() => void handleRename(selectedEntry)}
-                            disabled={submitting}
-                            className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                          >
-                            Rename
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDelete(selectedEntry)}
-                            disabled={submitting}
-                            className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
-                          >
-                            {t("common.actions.delete")}
-                          </button>
+                          {canRenameSelected ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleRename(selectedEntry)}
+                              disabled={submitting}
+                              className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                            >
+                              Rename
+                            </button>
+                          ) : null}
+                          {canDeleteSelected ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(selectedEntry)}
+                              disabled={submitting}
+                              className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
+                            >
+                              {t("common.actions.delete")}
+                            </button>
+                          ) : null}
                         </>
                       ) : null}
                     </div>
@@ -748,14 +764,20 @@ export default function CustomerRepositoryExplorer({
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full min-w-[680px] text-left text-xs text-slate-600">
+              <table className="w-full min-w-[420px] text-left text-xs text-slate-600 sm:min-w-[560px]">
                 <thead className="bg-white text-[11px] uppercase tracking-[0.14em] text-slate-500">
                   <tr>
                     <th className="px-3 py-2 font-semibold">Name</th>
                     <th className="px-3 py-2 font-semibold">Type</th>
-                    <th className="px-3 py-2 font-semibold">Extension</th>
-                    <th className="px-3 py-2 font-semibold">Size</th>
-                    <th className="px-3 py-2 font-semibold">Modified</th>
+                    <th className="hidden px-3 py-2 font-semibold sm:table-cell">
+                      Extension
+                    </th>
+                    <th className="hidden px-3 py-2 font-semibold md:table-cell">
+                      Size
+                    </th>
+                    <th className="hidden px-3 py-2 font-semibold lg:table-cell">
+                      Modified
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -787,7 +809,7 @@ export default function CustomerRepositoryExplorer({
                           onDoubleClick={() => handleOpenEntry(entry)}
                         >
                           <td className="px-3 py-2.5">
-                            <div className="inline-flex max-w-[26rem] items-center gap-2">
+                            <div className="inline-flex max-w-[12rem] items-center gap-2 sm:max-w-[18rem] lg:max-w-[26rem]">
                               {entry.type === "folder" ? (
                                 <FolderGlyph />
                               ) : (
@@ -802,11 +824,11 @@ export default function CustomerRepositoryExplorer({
                             {entry.type}
                             {entry.readOnly ? " | lock" : ""}
                           </td>
-                          <td className="px-3 py-2.5">{extension}</td>
-                          <td className="px-3 py-2.5">
+                          <td className="hidden px-3 py-2.5 sm:table-cell">{extension}</td>
+                          <td className="hidden px-3 py-2.5 md:table-cell">
                             {entry.type === "file" ? formatBytes(entry.size) : "--"}
                           </td>
-                          <td className="px-3 py-2.5">
+                          <td className="hidden px-3 py-2.5 lg:table-cell">
                             {entry.lastModified
                               ? new Date(entry.lastModified).toLocaleString(locale)
                               : "--"}

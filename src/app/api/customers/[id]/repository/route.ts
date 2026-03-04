@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { getAssetUrl } from "@/lib/assets";
 import {
   buildCustomerRepositoryRoot,
   removePrefix,
@@ -12,7 +11,6 @@ import {
 import {
   deleteStoredAsset,
   deleteStoredPrefix,
-  getPublicAssetUrl,
   listStoredAssets,
   moveStoredAsset,
   storePublicAsset,
@@ -34,6 +32,10 @@ type ExplorerEntry = {
   url?: string;
   readOnly?: boolean;
 };
+
+function buildDownloadUrl(customerId: string, path: string) {
+  return `/api/customers/${customerId}/repository/download?path=${encodeURIComponent(path)}`;
+}
 
 function toStoragePath(raw: string) {
   const value = raw.trim();
@@ -105,7 +107,6 @@ function collectDirectChildrenFromObjects(
         path: `${visiblePrefix}${remainder}`,
         size: object.size,
         lastModified: object.lastModified,
-        url: getPublicAssetUrl(object.key),
         readOnly,
       });
       continue;
@@ -133,10 +134,6 @@ function computeParentPath(path: string) {
 }
 
 async function listInvoiceEntries(customerId: string, currentPath: string) {
-  type InvoiceRepositoryObject = StoredAssetItem & {
-    originalPath: string | null;
-  };
-
   const invoices = await prisma.invoice.findMany({
     where: {
       customerId,
@@ -145,27 +142,21 @@ async function listInvoiceEntries(customerId: string, currentPath: string) {
     },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true,
       number: true,
-      pdfUrl: true,
       createdAt: true,
     },
   });
 
-  const invoiceObjects: InvoiceRepositoryObject[] = invoices
-    .filter((invoice) => Boolean(invoice.pdfUrl))
-    .map((invoice) => {
-      const month = String(invoice.createdAt.getUTCMonth() + 1).padStart(2, "0");
-      const year = String(invoice.createdAt.getUTCFullYear());
-      const storagePath = toStoragePath(invoice.pdfUrl ?? "");
-      const fileName = `${invoice.number}.pdf`;
-      return {
-        key: `invoices/${year}/${month}/${fileName}`,
-        size: null,
-        lastModified: invoice.createdAt.toISOString(),
-        originalPath: storagePath,
-      };
-    });
+  const invoiceObjects: StoredAssetItem[] = invoices.map((invoice) => {
+    const month = String(invoice.createdAt.getUTCMonth() + 1).padStart(2, "0");
+    const year = String(invoice.createdAt.getUTCFullYear());
+    const fileName = `${invoice.number}.pdf`;
+    return {
+      key: `invoices/${year}/${month}/${fileName}`,
+      size: null,
+      lastModified: invoice.createdAt.toISOString(),
+    };
+  });
 
   const visiblePrefix = currentPath === "invoices" ? "invoices/" : `${currentPath}/`;
   const objects = invoiceObjects.filter((item) => item.key.startsWith(visiblePrefix));
@@ -174,16 +165,14 @@ async function listInvoiceEntries(customerId: string, currentPath: string) {
     objects,
     visiblePrefix,
     visiblePrefix,
-    true
-  ).map((entry) => {
+    false
+  ).map((entry): ExplorerEntry => {
     if (entry.type !== "file") {
       return entry;
     }
-    const match = invoiceObjects.find((item) => item.key === entry.path);
-    const url = match?.originalPath ? getAssetUrl(match.originalPath) : undefined;
     return {
       ...entry,
-      url,
+      url: buildDownloadUrl(customerId, entry.path),
     };
   });
 
@@ -244,7 +233,15 @@ export async function GET(request: Request, context: RouteContext) {
       absolutePrefix,
       visiblePrefix,
       false
-    );
+    ).map((entry): ExplorerEntry => {
+      if (entry.type !== "file") {
+        return entry;
+      }
+      return {
+        ...entry,
+        url: buildDownloadUrl(customerId, entry.path),
+      };
+    });
 
     return NextResponse.json({
       currentPath: safePath,
@@ -292,8 +289,57 @@ export async function POST(request: Request, context: RouteContext) {
   const rootPrefix = buildCustomerRepositoryRoot(customerId);
   const actionPath = sanitizeRepositoryPath(payload.path ?? "");
 
-  if (!isFilesPath(actionPath)) {
-    return NextResponse.json({ error: "Only files tree can be modified" }, { status: 400 });
+  const isFileTreeAction = isFilesPath(actionPath);
+  const isInvoiceTreeAction = isInvoicesPath(actionPath);
+
+  if (!isFileTreeAction && !isInvoiceTreeAction) {
+    return NextResponse.json(
+      { error: "Only files and invoices trees can be modified" },
+      { status: 400 }
+    );
+  }
+
+  if (payload.action === "delete" && isInvoiceTreeAction) {
+    const entryType = payload.type === "folder" ? "folder" : "file";
+    if (entryType !== "file") {
+      return NextResponse.json(
+        { error: "Only invoice files can be deleted" },
+        { status: 400 }
+      );
+    }
+
+    const fileName = actionPath.split("/").pop() ?? "";
+    if (!fileName.toLowerCase().endsWith(".pdf")) {
+      return NextResponse.json({ error: "Invalid invoice file" }, { status: 400 });
+    }
+
+    const invoiceNumber = fileName.slice(0, -4);
+    if (!invoiceNumber) {
+      return NextResponse.json({ error: "Invalid invoice file" }, { status: 400 });
+    }
+
+    const invoice = await prisma.invoice.findFirst({
+      where: { customerId, number: invoiceNumber },
+      select: { id: true, pdfUrl: true },
+    });
+
+    if (!invoice) {
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+    }
+
+    const storagePath = toStoragePath(invoice.pdfUrl ?? "");
+    if (storagePath) {
+      await deleteStoredAsset(storagePath);
+    }
+
+    await prisma.invoice.delete({
+      where: { id: invoice.id },
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!isFileTreeAction) {
+    return NextResponse.json({ error: "Only files tree supports this action" }, { status: 400 });
   }
 
   if (payload.action === "createFolder") {

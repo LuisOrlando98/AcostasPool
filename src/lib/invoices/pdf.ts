@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
@@ -51,6 +52,19 @@ function loadChromium(): ChromiumLauncher {
   }
 }
 
+async function storeInvoicePdfBuffer(input: InvoicePdfInput, bytes: Uint8Array | Buffer) {
+  return storePublicAsset({
+    relativePath: buildInvoicePdfAssetPath(
+      input.customerId,
+      input.invoiceNumber,
+      input.issueDate
+    ),
+    buffer: Buffer.from(bytes),
+    contentType: "application/pdf",
+    cacheControl: "public, max-age=31536000, immutable",
+  });
+}
+
 export type InvoiceLineItem = {
   label: string;
   quantity?: number;
@@ -98,8 +112,95 @@ function normalizeItems(items: InvoiceLineItem[]) {
     .filter((item) => item.label.length > 0);
 }
 
+async function generateInvoicePdfWithPdfLib(
+  input: InvoicePdfInput,
+  items: ReturnType<typeof normalizeItems>
+) {
+  const pdfDoc = await PDFDocument.create();
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  let page = pdfDoc.addPage([612, 792]);
+  let cursorY = 752;
+
+  const drawText = (
+    value: string,
+    opts?: {
+      x?: number;
+      size?: number;
+      bold?: boolean;
+      color?: [number, number, number];
+      lineGap?: number;
+    }
+  ) => {
+    const text = value.trim();
+    if (!text) return;
+    const x = opts?.x ?? 48;
+    const size = opts?.size ?? 11;
+    const font = opts?.bold ? boldFont : regularFont;
+    const [r, g, b] = opts?.color ?? [0.06, 0.09, 0.16];
+    const needed = (opts?.lineGap ?? 6) + size;
+
+    if (cursorY < 60) {
+      page = pdfDoc.addPage([612, 792]);
+      cursorY = 752;
+    }
+
+    page.drawText(text, {
+      x,
+      y: cursorY,
+      size,
+      font,
+      color: rgb(r, g, b),
+    });
+    cursorY -= needed;
+  };
+
+  drawText("INVOICE", { size: 24, bold: true });
+  drawText(`Invoice #: ${input.invoiceNumber}`, { bold: true });
+  drawText(`Issue date: ${input.issueDate.toLocaleDateString("en-US")}`);
+  cursorY -= 4;
+
+  drawText("Bill To", { bold: true, size: 13 });
+  drawText(input.customerName, { bold: true });
+  if (input.customerAddress) drawText(input.customerAddress);
+  if (input.customerEmail) drawText(input.customerEmail);
+  if (input.customerPhone) drawText(input.customerPhone);
+  cursorY -= 6;
+
+  drawText("Description", { x: 48, bold: true, size: 12 });
+  drawText("Qty", { x: 340, bold: true, size: 12 });
+  drawText("Price", { x: 400, bold: true, size: 12 });
+  drawText("Amount", { x: 490, bold: true, size: 12 });
+  cursorY -= 2;
+
+  for (const item of items) {
+    drawText(item.label, { x: 48, size: 10 });
+    drawText(String(item.quantity), { x: 340, size: 10 });
+    drawText(`$${item.unitPrice.toFixed(2)}`, { x: 400, size: 10 });
+    drawText(`$${item.amount.toFixed(2)}`, { x: 490, size: 10 });
+  }
+
+  cursorY -= 6;
+  drawText(`Subtotal: $${input.subtotal.toFixed(2)}`, { x: 400, bold: true });
+  drawText(`Tax: $${input.tax.toFixed(2)}`, { x: 400, bold: true });
+  drawText(`Total: $${input.total.toFixed(2)}`, {
+    x: 400,
+    bold: true,
+    size: 13,
+  });
+
+  if (input.notes) {
+    cursorY -= 10;
+    drawText("Notes", { bold: true, size: 12 });
+    drawText(input.notes, { size: 10, color: [0.2, 0.25, 0.3] });
+  }
+
+  const bytes = await pdfDoc.save();
+  return storeInvoicePdfBuffer(input, bytes);
+}
+
 export async function generateInvoicePdf(input: InvoicePdfInput) {
-  const chromium = loadChromium();
   const template = normalizeInvoiceTemplateConfig(input.template);
   const theme = input.theme ?? "STANDARD";
   const items = normalizeItems(input.items);
@@ -120,42 +221,41 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     notes: input.notes,
   });
 
-  const browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-  });
-
   try {
-    const page = await browser.newPage({
-      viewport: { width: 816, height: 1056 },
+    const chromium = loadChromium();
+    const browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     });
+    try {
+      const page = await browser.newPage({
+        viewport: { width: 816, height: 1056 },
+      });
 
-    await page.setContent(html, { waitUntil: "networkidle" });
-    await page.emulateMedia({ media: "screen" });
+      await page.setContent(html, { waitUntil: "networkidle" });
+      await page.emulateMedia({ media: "screen" });
 
-    const pdfBytes = await page.pdf({
-      format: "Letter",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "0in",
-        right: "0in",
-        bottom: "0in",
-        left: "0in",
-      },
-    });
+      const pdfBytes = await page.pdf({
+        format: "Letter",
+        printBackground: true,
+        preferCSSPageSize: true,
+        margin: {
+          top: "0in",
+          right: "0in",
+          bottom: "0in",
+          left: "0in",
+        },
+      });
 
-    return storePublicAsset({
-      relativePath: buildInvoicePdfAssetPath(
-        input.customerId,
-        input.invoiceNumber,
-        input.issueDate
-      ),
-      buffer: Buffer.from(pdfBytes),
-      contentType: "application/pdf",
-      cacheControl: "public, max-age=31536000, immutable",
-    });
-  } finally {
-    await browser.close();
+      return storeInvoicePdfBuffer(input, pdfBytes);
+    } finally {
+      await browser.close();
+    }
+  } catch (error) {
+    console.error(
+      `[invoices] Playwright PDF generation failed, using pdf-lib fallback for ${input.invoiceNumber}.`,
+      error
+    );
+    return generateInvoicePdfWithPdfLib(input, items);
   }
 }
