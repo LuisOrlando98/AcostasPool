@@ -283,6 +283,20 @@ export default function NotificationsBell() {
   }, [open, updatePanelPlacement]);
 
   useEffect(() => {
+    if (!open || !canUseDom) {
+      return;
+    }
+    const resetDesktopRows = () => {
+      if (window.innerWidth >= 768) {
+        setSwipeOffsets({});
+      }
+    };
+    resetDesktopRows();
+    window.addEventListener("resize", resetDesktopRows);
+    return () => window.removeEventListener("resize", resetDesktopRows);
+  }, [canUseDom, open]);
+
+  useEffect(() => {
     if (usePusher && userId) {
       let channel: any;
       let pusher: any;
@@ -506,7 +520,10 @@ export default function NotificationsBell() {
     itemId: string,
     event: PointerEvent<HTMLButtonElement>
   ) => {
-    if (event.pointerType === "mouse" && event.button !== 0) {
+    if (event.pointerType !== "touch") {
+      return;
+    }
+    if (event.button !== 0) {
       return;
     }
     rowSwipeRef.current = {
@@ -529,6 +546,9 @@ export default function NotificationsBell() {
     itemId: string,
     event: PointerEvent<HTMLButtonElement>
   ) => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
     const start = rowSwipeRef.current;
     if (!start || start.id !== itemId || start.pointerId !== event.pointerId) {
       return;
@@ -560,6 +580,9 @@ export default function NotificationsBell() {
     item: NotificationItem,
     event: PointerEvent<HTMLButtonElement>
   ) => {
+    if (event.pointerType !== "touch") {
+      return;
+    }
     const start = rowSwipeRef.current;
     if (!start || start.id !== item.id || start.pointerId !== event.pointerId) {
       return;
@@ -683,7 +706,7 @@ export default function NotificationsBell() {
                                     className="relative overflow-hidden rounded-xl border border-slate-200 bg-white"
                                   >
                                     <div
-                                      className={`absolute inset-y-0 right-0 flex w-[92px] items-center justify-center border-l border-rose-200 bg-rose-50 px-2 transition-opacity duration-150 ${
+                                      className={`absolute inset-y-0 right-0 flex w-[92px] items-center justify-center border-l border-rose-200 bg-rose-50 px-2 transition-opacity duration-150 md:hidden ${
                                         railOpen
                                           ? "opacity-100 pointer-events-auto"
                                           : "opacity-0 pointer-events-none"
@@ -780,6 +803,19 @@ export default function NotificationsBell() {
                                             </span>
                                           ) : null}
                                         </div>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          void handleDeleteNotification(item);
+                                        }}
+                                        disabled={deletingId === item.id}
+                                        className="absolute right-2 top-2 hidden h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 md:inline-flex"
+                                        aria-label={t("common.actions.delete")}
+                                        title={t("common.actions.delete")}
+                                      >
+                                        <CloseIcon />
                                       </button>
                                     </div>
                                   </div>
