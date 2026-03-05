@@ -146,11 +146,14 @@ async function generateInvoicePdfWithPdfLib(
     amount: marginX + 456,
     right: marginX + contentWidth,
   };
-  const companyDisplay = template.companyName.trim() || "ACOSTASPOOL";
-  const notesContent = (input.notes ?? template.footerNote).trim() || "Thank you for trusting us.";
+  const notesBody = (input.notes ?? "").trim();
+  const thankYouNote = template.footerNote.trim() || "Thank you for trusting AcostasPool.";
+  const notesDisplay = notesBody || "No additional notes.";
   const paymentTerms = template.legalClauses[0]
     ? `Payment terms: ${template.legalClauses[0]}`
     : "Payment terms: Due upon receipt.";
+  const logoLineOne = "ACOSTA'S";
+  const logoLineTwo = "POOL";
 
   const wrapText = (
     value: string,
@@ -211,7 +214,9 @@ async function generateInvoicePdfWithPdfLib(
   const drawHeader = () => {
     const headerHeight = 158;
     const headerBottom = pageHeight - headerHeight;
-    const brandLines = wrapText(companyDisplay, 324, 48, boldFont).slice(0, 2);
+    const logoAreaX = marginX;
+    const logoAreaW = 356;
+    const logoSize = 44;
 
     page.drawRectangle({
       x: 0,
@@ -221,34 +226,45 @@ async function generateInvoicePdfWithPdfLib(
       color: brandColor,
     });
 
-    let brandY = pageHeight - 78;
-    for (const line of brandLines) {
-      page.drawText(line.toUpperCase(), {
-        x: marginX,
-        y: brandY,
-        size: 48,
-        font: boldFont,
-        color: whiteColor,
-      });
-      brandY -= 46;
-    }
+    const logoLineOneX =
+      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineOne, logoSize)) / 2;
+    const logoLineTwoX =
+      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineTwo, logoSize)) / 2;
+    page.drawText(logoLineOne, {
+      x: logoLineOneX,
+      y: pageHeight - 78,
+      size: logoSize,
+      font: boldFont,
+      color: whiteColor,
+    });
+    page.drawText(logoLineTwo, {
+      x: logoLineTwoX,
+      y: pageHeight - 120,
+      size: logoSize,
+      font: boldFont,
+      color: whiteColor,
+    });
 
-    const subtitle = template.headerSubtitle.trim() || "Service Administration System";
+    const subtitle = template.headerSubtitle.trim() || "REPAIR AND MAINTENANCE";
     page.drawLine({
-      start: { x: marginX, y: pageHeight - 140 },
-      end: { x: 360, y: pageHeight - 140 },
+      start: { x: logoAreaX + 4, y: pageHeight - 140 },
+      end: { x: logoAreaX + logoAreaW - 4, y: pageHeight - 140 },
       thickness: 2,
       color: whiteColor,
     });
-    page.drawText(subtitle.toUpperCase(), {
-      x: marginX,
+    const subtitleText = subtitle.toUpperCase();
+    const subtitleSize = 11;
+    const subtitleX =
+      logoAreaX + (logoAreaW - regularFont.widthOfTextAtSize(subtitleText, subtitleSize)) / 2;
+    page.drawText(subtitleText, {
+      x: subtitleX,
       y: pageHeight - 155,
-      size: 11,
+      size: subtitleSize,
       font: regularFont,
       color: whiteColor,
     });
 
-    const labelSize = resolvedTheme.label.length > 12 ? 22 : 30;
+    const labelSize = resolvedTheme.label.length > 12 ? 20 : 28;
     drawRightText(
       resolvedTheme.label,
       marginX + contentWidth,
@@ -434,7 +450,7 @@ async function generateInvoicePdfWithPdfLib(
         tableColumns.qty - tableColumns.description - 8,
         10
       ).slice(0, 3);
-      const rowHeight = Math.max(20, labelLines.length * 12 + 6);
+      const rowHeight = Math.max(22, labelLines.length * 12 + 10);
 
       if (cursorY - rowHeight < 220) {
         startNewPage();
@@ -476,42 +492,9 @@ async function generateInvoicePdfWithPdfLib(
     }
   }
 
-  cursorY -= 10;
-  ensureSpace(170);
+  cursorY -= 12;
+  ensureSpace(100);
   const summaryTop = cursorY;
-  const noteWidth = 302;
-
-  page.drawText("SERVICE NOTES", {
-    x: marginX,
-    y: summaryTop,
-    size: 9,
-    font: boldFont,
-    color: mutedColor,
-  });
-
-  let notesY = summaryTop - 14;
-  for (const line of wrapText(notesContent, noteWidth, 10)) {
-    page.drawText(line, {
-      x: marginX,
-      y: notesY,
-      size: 10,
-      font: regularFont,
-      color: textSoftColor,
-    });
-    notesY -= 12;
-  }
-  notesY -= 3;
-  for (const line of wrapText(paymentTerms, noteWidth, 9.5)) {
-    page.drawText(line, {
-      x: marginX,
-      y: notesY,
-      size: 9.5,
-      font: regularFont,
-      color: mutedColor,
-    });
-    notesY -= 11;
-  }
-
   const totalsX = marginX + 340;
   page.drawLine({
     start: { x: totalsX - 16, y: summaryTop + 4 },
@@ -550,13 +533,13 @@ async function generateInvoicePdfWithPdfLib(
     color: brandColor,
   });
   drawRightText(`$${input.total.toFixed(2)}`, marginX + contentWidth, summaryTop - 56, 24, boldFont, brandColor);
-  cursorY = Math.min(notesY, summaryTop - 84) - 6;
+  cursorY = summaryTop - 88;
 
   ensureSpace(140);
   const servicesTop = cursorY;
-  const servicesHeight = 82;
+  const servicesHeight = 86;
   const sectionGap = 12;
-  const sectionWidth = (contentWidth - sectionGap * 2) / 3;
+  const sectionWidth = (contentWidth - sectionGap) / 2;
 
   page.drawRectangle({
     x: marginX,
@@ -615,26 +598,17 @@ async function generateInvoicePdfWithPdfLib(
     marginX + 4,
     "PAYMENT METHODS",
     "Credit | Debit | ACH | Check | Zelle | Cash",
-    "Use invoice number as payment reference."
+    paymentTerms
   );
   drawServiceSection(
     marginX + sectionWidth + sectionGap + 4,
     "NOTES",
-    notesContent,
-    template.footerNote.trim() || "Thank you for trusting us."
-  );
-  drawServiceSection(
-    marginX + (sectionWidth + sectionGap) * 2 + 4,
-    "BILLING SUPPORT",
-    [template.companyEmail, template.companyPhone, template.companyWebsite]
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .join(" | ") || "Contact our billing team for assistance.",
-    template.companyTaxId.trim() || "Business tax information available upon request."
+    notesDisplay,
+    thankYouNote
   );
   cursorY = servicesTop - servicesHeight - 14;
 
-  ensureSpace(120);
+  ensureSpace(150);
   page.drawText(template.clausesTitle, {
     x: marginX,
     y: cursorY,
@@ -642,9 +616,50 @@ async function generateInvoicePdfWithPdfLib(
     font: boldFont,
     color: brandColor,
   });
-  let clauseY = cursorY - 14;
-  for (const clause of template.legalClauses.slice(0, 5)) {
-    const lines = wrapText(`- ${clause}`, contentWidth, 8.5);
+  const footerHeadY = cursorY - 16;
+  page.drawText("Payment Method:", {
+    x: marginX,
+    y: footerHeadY,
+    size: 12.5,
+    font: boldFont,
+    color: textColor,
+  });
+  page.drawText("Credit / Debit / ACH / Check", {
+    x: marginX,
+    y: footerHeadY - 15,
+    size: 11,
+    font: regularFont,
+    color: textSoftColor,
+  });
+  page.drawText("We accept: Visa, MasterCard, Zelle, Cash", {
+    x: marginX,
+    y: footerHeadY - 29,
+    size: 11,
+    font: regularFont,
+    color: textSoftColor,
+  });
+
+  drawRightText("Luis Acostas", marginX + contentWidth, footerHeadY - 1, 15, boldFont, textColor);
+  drawRightText("President / Owner", marginX + contentWidth, footerHeadY - 17, 11.5, regularFont, textSoftColor);
+
+  page.drawText("Regulation Disclaimer:", {
+    x: marginX,
+    y: footerHeadY - 50,
+    size: 9,
+    font: boldFont,
+    color: mutedColor,
+  });
+  page.drawText("Authorization & Payment Terms:", {
+    x: marginX,
+    y: footerHeadY - 63,
+    size: 9.5,
+    font: boldFont,
+    color: textColor,
+  });
+
+  let clauseY = footerHeadY - 76;
+  for (const clause of template.legalClauses.slice(0, 4)) {
+    const lines = wrapText(clause, contentWidth, 8.5);
     for (const line of lines) {
       if (clauseY < 66) {
         break;
@@ -658,24 +673,8 @@ async function generateInvoicePdfWithPdfLib(
       });
       clauseY -= 10;
     }
+    clauseY -= 2;
   }
-
-  const signatureY = Math.max(56, clauseY - 12);
-  page.drawLine({
-    start: { x: marginX, y: signatureY },
-    end: { x: marginX + 250, y: signatureY },
-    thickness: 1,
-    color: lineStrongColor,
-  });
-  page.drawText("Authorized signature", {
-    x: marginX,
-    y: signatureY - 11,
-    size: 9,
-    font: regularFont,
-    color: mutedColor,
-  });
-  drawRightText(companyDisplay, marginX + contentWidth, signatureY + 2, 11, boldFont, textSoftColor);
-  drawRightText("Billing Team", marginX + contentWidth, signatureY - 11, 9, regularFont, mutedColor);
 
   if (theme === "ESTIMATE" && template.showEstimateWatermark && resolvedTheme.watermarkText.trim()) {
     const watermarkText = resolvedTheme.watermarkText.trim().toUpperCase();

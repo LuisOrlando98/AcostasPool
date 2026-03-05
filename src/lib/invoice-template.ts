@@ -43,7 +43,7 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   companyAddressLine1: "Miami, Florida",
   companyAddressLine2: "United States",
   companyTaxId: "Tax ID: 00-0000000",
-  headerSubtitle: "Service Administration System",
+  headerSubtitle: "REPAIR AND MAINTENANCE",
   footerNote: "Thank you for trusting AcostasPool.",
   invoiceNumberLabel: "Invoice #",
   issueDateLabel: "Issue date",
@@ -331,19 +331,17 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       ? `<div class="watermark">${escapeHtml(resolvedTheme.watermarkText)}</div>`
       : "";
 
-  const notesContent = compactLine(input.notes) || compactLine(template.footerNote);
-  const companyDisplay = compactLine(template.companyName) || "ACOSTASPOOL";
-  const companyEmail = compactLine(template.companyEmail);
-  const companyPhone = compactLine(template.companyPhone);
-  const companyWebsite = compactLine(template.companyWebsite);
-  const companyTaxId = compactLine(template.companyTaxId);
+  const notesBody = compactLine(input.notes);
+  const thankYouNote = compactLine(template.footerNote) || "Thank you for trusting AcostasPool.";
+  const notesDisplay = notesBody || "No additional notes.";
   const paymentTerms = template.legalClauses[0]
     ? `Payment terms: ${template.legalClauses[0]}`
     : "Payment terms: Due upon receipt.";
-  const supportLines = [companyEmail, companyPhone, companyWebsite].filter(Boolean);
-  const clausesMarkup = template.legalClauses
-    .slice(0, 6)
-    .map((clause) => `<li>${escapeHtml(clause)}</li>`)
+  const logoLineOne = "ACOSTA'S";
+  const logoLineTwo = "POOL";
+  const legalParagraphs = template.legalClauses
+    .slice(0, 4)
+    .map((clause) => `<p class="legal-copy">${escapeHtml(clause)}</p>`)
     .join("");
 
   return `<!doctype html>
@@ -423,30 +421,35 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-lockup {
-        max-width: 420px;
+        width: 392px;
+        text-align: center;
       }
 
-      .brand-title {
+      .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 54px;
-        line-height: 0.92;
-        letter-spacing: 0.02em;
+        font-size: 46px;
+        line-height: 0.94;
+        letter-spacing: 0.018em;
         text-transform: uppercase;
       }
 
+      .brand-word + .brand-word {
+        margin-top: 2px;
+      }
+
       .brand-rule {
-        margin-top: 14px;
+        margin-top: 10px;
         height: 3px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
-        margin-top: 10px;
+        margin-top: 8px;
         font-size: 13px;
         font-weight: 500;
-        letter-spacing: 0.19em;
+        letter-spacing: 0.21em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
@@ -458,7 +461,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-label {
         margin: 0;
-        font-size: 38px;
+        font-size: 34px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: 0.03em;
@@ -557,7 +560,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .items td {
-        padding: 11px 8px;
+        padding: 9px 8px 12px;
         border-bottom: 1px solid #e5edf8;
         font-size: 12px;
         color: var(--ink-soft);
@@ -597,22 +600,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .summary-grid {
         margin-top: 16px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 248px;
-        gap: 18px;
-        align-items: start;
-      }
-
-      .summary-note {
-        margin: 0;
-        padding-top: 4px;
-        font-size: 12px;
-        line-height: 1.5;
-        color: var(--ink-soft);
-      }
-
-      .summary-note strong {
-        color: var(--text);
+        display: flex;
+        justify-content: flex-end;
       }
 
       .totals {
@@ -662,7 +651,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .service-grid {
         margin-top: 18px;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
         padding: 14px 0;
         border-top: 1px solid var(--line);
@@ -696,6 +685,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .footer {
         margin-top: 14px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
       }
 
       .footer-title {
@@ -707,47 +698,65 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         color: var(--muted);
       }
 
-      .footer-list {
-        margin: 8px 0 0;
-        padding-left: 18px;
-      }
-
-      .footer-list li {
-        margin: 3px 0 0;
-        font-size: 10px;
-        line-height: 1.42;
-        color: #60748a;
-      }
-
-      .signature-row {
-        margin-top: 18px;
+      .footer-head {
+        margin-top: 8px;
         display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 14px;
-        align-items: end;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: start;
       }
 
-      .signature-line {
-        border-top: 1px solid #a7b8ce;
-        padding-top: 4px;
-        font-size: 10px;
-        color: #5f738a;
+      .payment-title {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text);
       }
 
-      .signature-issuer {
+      .payment-line {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: var(--ink-soft);
+        line-height: 1.4;
+      }
+
+      .owner-box {
         text-align: right;
       }
 
-      .signature-name {
+      .owner-name {
         margin: 0;
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .owner-role {
+        margin: 2px 0 0;
         font-size: 12px;
+        color: var(--ink-soft);
+      }
+
+      .legal-label {
+        margin: 12px 0 0;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .legal-title {
+        margin: 6px 0 0;
+        font-size: 11px;
         font-weight: 700;
         color: var(--text);
       }
 
-      .signature-role {
-        margin: 2px 0 0;
+      .legal-copy {
+        margin: 5px 0 0;
         font-size: 10px;
+        line-height: 1.42;
         color: #60748a;
       }
 
@@ -773,7 +782,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       <header class="header">
         <div class="header-grid">
           <div class="brand-lockup">
-            <p class="brand-title">${escapeHtml(companyDisplay)}</p>
+            <p class="brand-word">${escapeHtml(logoLineOne)}</p>
+            <p class="brand-word">${escapeHtml(logoLineTwo)}</p>
             <div class="brand-rule"></div>
             <p class="brand-subtitle">${escapeHtml(template.headerSubtitle)}</p>
           </div>
@@ -829,10 +839,6 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         </div>
 
         <div class="summary-grid">
-          <p class="summary-note">
-            <strong>Service notes:</strong> ${escapeHtml(notesContent)}<br />
-            ${escapeHtml(paymentTerms)}
-          </p>
           <aside class="totals">
             <p class="totals-title">Invoice Summary</p>
             <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
@@ -851,33 +857,31 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           <section>
             <p class="service-title">Payment Methods</p>
             <p class="service-main">Credit | Debit | ACH | Check | Zelle | Cash</p>
-            <p class="service-sub">Use invoice number as payment reference.</p>
+            <p class="service-sub">${escapeHtml(paymentTerms)}</p>
           </section>
           <section>
             <p class="service-title">${escapeHtml(template.notesLabel)}</p>
-            <p class="service-main">${escapeHtml(notesContent)}</p>
-            <p class="service-sub">${escapeHtml(template.footerNote)}</p>
-          </section>
-          <section>
-            <p class="service-title">Billing Support</p>
-            <p class="service-main">${supportLines.map(escapeHtml).join("<br />") || "Contact our billing team for assistance."}</p>
-            <p class="service-sub">${escapeHtml(
-              companyTaxId || "Business tax information available upon request."
-            )}</p>
+            <p class="service-main">${escapeHtml(notesDisplay)}</p>
+            <p class="service-sub">${escapeHtml(thankYouNote)}</p>
           </section>
         </div>
 
         <footer class="footer">
           <p class="footer-title">${escapeHtml(template.clausesTitle)}</p>
-          <ul class="footer-list">${clausesMarkup}</ul>
-
-          <div class="signature-row">
-            <div class="signature-line">Authorized signature</div>
-            <div class="signature-issuer">
-              <p class="signature-name">${escapeHtml(companyDisplay)}</p>
-              <p class="signature-role">Billing Team</p>
+          <div class="footer-head">
+            <div>
+              <p class="payment-title">Payment Method:</p>
+              <p class="payment-line">Credit / Debit / ACH / Check</p>
+              <p class="payment-line">We accept: Visa, MasterCard, Zelle, Cash</p>
+            </div>
+            <div class="owner-box">
+              <p class="owner-name">Luis Acostas</p>
+              <p class="owner-role">President / Owner</p>
             </div>
           </div>
+          <p class="legal-label">Regulation Disclaimer:</p>
+          <p class="legal-title">Authorization & Payment Terms:</p>
+          ${legalParagraphs}
         </footer>
       </section>
 
