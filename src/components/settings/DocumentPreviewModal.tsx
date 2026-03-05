@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 
 type DocumentPreviewModalProps = {
@@ -22,11 +23,16 @@ export default function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const frameId = useId();
   const closeLabel = t("common.actions.close");
   const frameSrc = srcDoc ? undefined : src;
   const frameSrcDoc = srcDoc ?? undefined;
   const frameSandbox = srcDoc ? "" : undefined;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -79,8 +85,9 @@ export default function DocumentPreviewModal({
         </div>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-slate-950/75 p-2 sm:p-6">
+      {mounted && open
+        ? createPortal(
+        <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-950/75 p-2 sm:p-6">
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -120,8 +127,10 @@ export default function DocumentPreviewModal({
               srcDoc={frameSrcDoc}
             />
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body
+          )
+        : null}
     </>
   );
 }
