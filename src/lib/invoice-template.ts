@@ -416,21 +416,21 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 26px;
+        gap: 20px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 392px;
-        text-align: center;
+        width: 324px;
+        text-align: left;
       }
 
       .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 46px;
-        line-height: 0.94;
-        letter-spacing: 0.018em;
+        font-size: 38px;
+        line-height: 0.95;
+        letter-spacing: 0.014em;
         text-transform: uppercase;
       }
 
@@ -439,7 +439,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-rule {
-        margin-top: 10px;
+        margin-top: 8px;
         height: 3px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
@@ -447,9 +447,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .brand-subtitle {
         margin-top: 8px;
-        font-size: 13px;
+        font-size: 10px;
         font-weight: 500;
-        letter-spacing: 0.21em;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
@@ -461,7 +461,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-label {
         margin: 0;
-        font-size: 34px;
+        font-size: 32px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: 0.03em;
@@ -483,6 +483,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-body {
         padding: 26px 46px 30px;
+        min-height: calc(11in - 210px);
+        display: flex;
+        flex-direction: column;
       }
 
       .info-grid {
@@ -649,7 +652,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .service-grid {
-        margin-top: 18px;
+        margin-top: 16px;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 18px;
@@ -684,26 +687,21 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .footer {
-        margin-top: 14px;
+        margin-top: 10px;
         border-top: 1px solid var(--line);
         padding-top: 12px;
       }
 
-      .footer-title {
-        margin: 0;
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        color: var(--muted);
-      }
-
       .footer-head {
-        margin-top: 8px;
+        margin-top: 2px;
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         gap: 18px;
         align-items: start;
+      }
+
+      .bottom-stack {
+        margin-top: auto;
       }
 
       .payment-title {
@@ -853,36 +851,37 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           </aside>
         </div>
 
-        <div class="service-grid">
-          <section>
-            <p class="service-title">Payment Methods</p>
-            <p class="service-main">Credit | Debit | ACH | Check | Zelle | Cash</p>
-            <p class="service-sub">${escapeHtml(paymentTerms)}</p>
-          </section>
-          <section>
-            <p class="service-title">${escapeHtml(template.notesLabel)}</p>
-            <p class="service-main">${escapeHtml(notesDisplay)}</p>
-            <p class="service-sub">${escapeHtml(thankYouNote)}</p>
-          </section>
-        </div>
-
-        <footer class="footer">
-          <p class="footer-title">${escapeHtml(template.clausesTitle)}</p>
-          <div class="footer-head">
-            <div>
-              <p class="payment-title">Payment Method:</p>
-              <p class="payment-line">Credit / Debit / ACH / Check</p>
-              <p class="payment-line">We accept: Visa, MasterCard, Zelle, Cash</p>
-            </div>
-            <div class="owner-box">
-              <p class="owner-name">Luis Acostas</p>
-              <p class="owner-role">President / Owner</p>
-            </div>
+        <div class="bottom-stack">
+          <div class="service-grid">
+            <section>
+              <p class="service-title">Payment Methods</p>
+              <p class="service-main">Credit | Debit | ACH | Check | Zelle | Cash</p>
+              <p class="service-sub">${escapeHtml(paymentTerms)}</p>
+            </section>
+            <section>
+              <p class="service-title">${escapeHtml(template.notesLabel)}</p>
+              <p class="service-main">${escapeHtml(notesDisplay)}</p>
+              <p class="service-sub">${escapeHtml(thankYouNote)}</p>
+            </section>
           </div>
-          <p class="legal-label">Regulation Disclaimer:</p>
-          <p class="legal-title">Authorization & Payment Terms:</p>
-          ${legalParagraphs}
-        </footer>
+
+          <footer class="footer">
+            <div class="footer-head">
+              <div>
+                <p class="payment-title">Payment Method:</p>
+                <p class="payment-line">Credit / Debit / ACH / Check</p>
+                <p class="payment-line">We accept: Visa, MasterCard, Zelle, Cash</p>
+              </div>
+              <div class="owner-box">
+                <p class="owner-name">Luis Acostas</p>
+                <p class="owner-role">President / Owner</p>
+              </div>
+            </div>
+            <p class="legal-label">Regulation Disclaimer:</p>
+            <p class="legal-title">Authorization & Payment Terms:</p>
+            ${legalParagraphs}
+          </footer>
+        </div>
       </section>
 
       ${watermark}

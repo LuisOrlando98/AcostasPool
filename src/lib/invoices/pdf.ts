@@ -215,8 +215,8 @@ async function generateInvoicePdfWithPdfLib(
     const headerHeight = 158;
     const headerBottom = pageHeight - headerHeight;
     const logoAreaX = marginX;
-    const logoAreaW = 356;
-    const logoSize = 44;
+    const logoAreaW = 300;
+    const logoSize = 36;
 
     page.drawRectangle({
       x: 0,
@@ -226,20 +226,18 @@ async function generateInvoicePdfWithPdfLib(
       color: brandColor,
     });
 
-    const logoLineOneX =
-      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineOne, logoSize)) / 2;
-    const logoLineTwoX =
-      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineTwo, logoSize)) / 2;
+    const logoLineOneX = logoAreaX + 8;
+    const logoLineTwoX = logoAreaX + 52;
     page.drawText(logoLineOne, {
       x: logoLineOneX,
-      y: pageHeight - 78,
+      y: pageHeight - 74,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
     });
     page.drawText(logoLineTwo, {
       x: logoLineTwoX,
-      y: pageHeight - 120,
+      y: pageHeight - 109,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
@@ -253,12 +251,11 @@ async function generateInvoicePdfWithPdfLib(
       color: whiteColor,
     });
     const subtitleText = subtitle.toUpperCase();
-    const subtitleSize = 11;
-    const subtitleX =
-      logoAreaX + (logoAreaW - regularFont.widthOfTextAtSize(subtitleText, subtitleSize)) / 2;
+    const subtitleSize = 9.5;
+    const subtitleX = logoAreaX + 6;
     page.drawText(subtitleText, {
       x: subtitleX,
-      y: pageHeight - 155,
+      y: pageHeight - 154,
       size: subtitleSize,
       font: regularFont,
       color: whiteColor,
@@ -534,8 +531,12 @@ async function generateInvoicePdfWithPdfLib(
   });
   drawRightText(`$${input.total.toFixed(2)}`, marginX + contentWidth, summaryTop - 56, 24, boldFont, brandColor);
   cursorY = summaryTop - 88;
+  const bottomAnchorY = 238;
+  if (cursorY > bottomAnchorY) {
+    cursorY = bottomAnchorY;
+  }
 
-  ensureSpace(140);
+  ensureSpace(200);
   const servicesTop = cursorY;
   const servicesHeight = 86;
   const sectionGap = 12;
@@ -608,15 +609,7 @@ async function generateInvoicePdfWithPdfLib(
   );
   cursorY = servicesTop - servicesHeight - 14;
 
-  ensureSpace(150);
-  page.drawText(template.clausesTitle, {
-    x: marginX,
-    y: cursorY,
-    size: 10,
-    font: boldFont,
-    color: brandColor,
-  });
-  const footerHeadY = cursorY - 16;
+  const footerHeadY = cursorY - 12;
   page.drawText("Payment Method:", {
     x: marginX,
     y: footerHeadY,
