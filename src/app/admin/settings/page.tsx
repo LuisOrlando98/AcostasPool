@@ -362,7 +362,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const showInvoicePreview = templateMode !== "code";
   const invoiceLayoutClass =
     showInvoiceEditor && showInvoicePreview
-      ? "grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+      ? "grid gap-6 2xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
       : "space-y-6";
 
   return (
@@ -371,9 +371,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       subtitle={t("admin.settings.subtitle")}
       role="ADMIN"
     >
-      <section className="space-y-6">
-        <div className="app-card p-4 shadow-contrast">
-          <div className="ui-segment flex w-full flex-wrap gap-1">
+      <section className="space-y-4 sm:space-y-6">
+        <div className="app-card p-3 shadow-contrast sm:p-4">
+          <div className="ui-segment flex w-full flex-nowrap gap-1 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
             {SETTINGS_TABS.map((tab) => {
               const params = new URLSearchParams({ tab: tab.id });
               if (tab.id === "email-templates") {
@@ -391,7 +391,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 <Link
                   key={tab.id}
                   href={`/admin/settings?${params.toString()}`}
-                  className={`ui-segment-item ${isActive ? "is-active" : ""}`}
+                  className={`ui-segment-item shrink-0 text-xs sm:text-sm ${isActive ? "is-active" : ""}`}
                 >
                   {tab.label}
                 </Link>
@@ -401,7 +401,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </div>
 
         {currentTab === "social" ? (
-          <div className="app-card p-6 shadow-contrast">
+          <div className="app-card p-4 shadow-contrast sm:p-6">
             <h2 className="text-lg font-semibold">{t("admin.settings.social.title")}</h2>
             <p className="mt-2 text-sm text-slate-600">{t("admin.settings.social.subtitle")}</p>
             <form action={saveSocialLinks} className="mt-5 space-y-4">
@@ -429,13 +429,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </label>
                 ))}
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500">{t("admin.settings.social.footerHint")}</p>
                 <FormSubmitButton
                   idleLabel={t("admin.settings.social.actions.save")}
                   pendingLabel={t("common.feedback.saving")}
                   successLabel={t("common.feedback.saved")}
-                  className="px-5 py-2.5"
+                  className="w-full px-5 py-2.5 sm:w-auto"
                 />
               </div>
             </form>
@@ -443,7 +443,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : null}
 
         {currentTab === "landing" ? (
-          <div className="app-card p-6 shadow-contrast">
+          <div className="app-card p-4 shadow-contrast sm:p-6">
             <h2 className="text-lg font-semibold">Landing page configuration</h2>
             <p className="mt-2 text-sm text-slate-600">
               Edit the promotion text and set the full YouTube URL shown in the video section.
@@ -464,7 +464,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </p>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 xl:grid-cols-2">
                 {localeSections.map((localeSection) => {
                   const localePromo = landingConfig.promo[localeSection.key];
                   const suffix = localeSection.key === "en" ? "En" : "Es";
@@ -544,12 +544,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 })}
               </div>
 
-              <div className="flex items-center justify-end">
+              <div className="flex justify-stretch sm:justify-end">
                 <FormSubmitButton
                   idleLabel="Save landing configuration"
                   pendingLabel={t("common.feedback.saving")}
                   successLabel={t("common.feedback.saved")}
-                  className="px-5 py-2.5"
+                  className="w-full px-5 py-2.5 sm:w-auto"
                 />
               </div>
             </form>
@@ -558,42 +558,46 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
         {currentTab === "email-templates" ? (
           <div className="space-y-6">
-            <div className="app-card p-4 shadow-contrast">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="ui-segment">
+            <div className="app-card p-4 shadow-contrast sm:p-5">
+              <div className="grid gap-3 xl:grid-cols-2 xl:items-center">
+                <div className="overflow-x-auto pb-1">
+                  <div className="ui-segment inline-flex min-w-max">
                   <Link
                     href={buildTemplateHref({ kind: "email" })}
-                    className={`ui-segment-item ${templateKind === "email" ? "is-active" : ""}`}
+                    className={`ui-segment-item shrink-0 ${templateKind === "email" ? "is-active" : ""}`}
                   >
                     Email templates
                   </Link>
                   <Link
                     href={buildTemplateHref({ kind: "invoice" })}
-                    className={`ui-segment-item ${templateKind === "invoice" ? "is-active" : ""}`}
+                    className={`ui-segment-item shrink-0 ${templateKind === "invoice" ? "is-active" : ""}`}
                   >
                     Invoice template
                   </Link>
+                  </div>
                 </div>
 
-                <div className="ui-segment">
+                <div className="overflow-x-auto pb-1 lg:justify-self-end">
+                  <div className="ui-segment inline-flex min-w-max">
                   <Link
                     href={buildTemplateHref({ mode: "code" })}
-                    className={`ui-segment-item ${templateMode === "code" ? "is-active" : ""}`}
+                    className={`ui-segment-item shrink-0 ${templateMode === "code" ? "is-active" : ""}`}
                   >
                     Editor
                   </Link>
                   <Link
                     href={buildTemplateHref({ mode: "web" })}
-                    className={`ui-segment-item ${templateMode === "web" ? "is-active" : ""}`}
+                    className={`ui-segment-item shrink-0 ${templateMode === "web" ? "is-active" : ""}`}
                   >
                     Vista final
                   </Link>
                   <Link
                     href={buildTemplateHref({ mode: "split" })}
-                    className={`ui-segment-item ${templateMode === "split" ? "is-active" : ""}`}
+                    className={`ui-segment-item shrink-0 ${templateMode === "split" ? "is-active" : ""}`}
                   >
                     Ambas
                   </Link>
+                  </div>
                 </div>
               </div>
 
@@ -602,12 +606,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </p>
 
               {templateKind === "invoice" ? (
-                <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+                <div className="mt-3 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center">
                   <span>Preview theme:</span>
-                  <div className="ui-segment">
+                  <div className="overflow-x-auto pb-1">
+                    <div className="ui-segment inline-flex min-w-max">
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "STANDARD" })}
-                      className={`ui-segment-item ${
+                      className={`ui-segment-item shrink-0 ${
                         invoiceThemePreview === "STANDARD" ? "is-active" : ""
                       }`}
                     >
@@ -615,7 +620,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "SPECIAL" })}
-                      className={`ui-segment-item ${
+                      className={`ui-segment-item shrink-0 ${
                         invoiceThemePreview === "SPECIAL" ? "is-active" : ""
                       }`}
                     >
@@ -623,19 +628,20 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "ESTIMATE" })}
-                      className={`ui-segment-item ${
+                      className={`ui-segment-item shrink-0 ${
                         invoiceThemePreview === "ESTIMATE" ? "is-active" : ""
                       }`}
                     >
                       Estimate
                     </Link>
+                    </div>
                   </div>
                 </div>
               ) : null}
             </div>
 
             {templateKind === "email" ? (
-              <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+              <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
                 <div className="app-card p-4 shadow-contrast">
                   <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Email templates
@@ -668,7 +674,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                 <div className="space-y-6">
                   {templateMode !== "web" ? (
-                    <div className="app-card p-6 shadow-contrast">
+                    <div className="app-card p-4 shadow-contrast sm:p-6">
                       <h2 className="text-lg font-semibold">
                         Email template editor: {selectedTemplateMeta.label}
                       </h2>
@@ -715,12 +721,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           El diseno HTML se genera automaticamente con estilo premium.
                         </p>
 
-                        <div className="flex items-center justify-end">
+                        <div className="flex justify-stretch sm:justify-end">
                           <FormSubmitButton
                             idleLabel="Save email template"
                             pendingLabel={t("common.feedback.saving")}
                             successLabel={t("common.feedback.saved")}
-                            className="px-5 py-2.5"
+                            className="w-full px-5 py-2.5 sm:w-auto"
                           />
                         </div>
                       </form>
@@ -728,7 +734,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   ) : null}
 
                   {templateMode !== "code" ? (
-                    <div className="app-card p-6 shadow-contrast">
+                    <div className="app-card p-4 shadow-contrast sm:p-6">
                       <h3 className="text-base font-semibold">Vista final del email</h3>
                       <p className="mt-2 text-sm text-slate-600">
                         Asi se vera exactamente en la bandeja y el contenido del correo.
@@ -744,7 +750,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       </div>
                       <iframe
                         title={`preview-${selectedTemplateId}`}
-                        className="mt-4 h-[620px] w-full rounded-xl border border-slate-200 bg-white"
+                        className="mt-4 h-[440px] w-full rounded-xl border border-slate-200 bg-white sm:h-[620px]"
                         sandbox=""
                         srcDoc={`<!doctype html><html><body style="margin:0;padding:16px;background:#f8fafc;">${selectedTemplatePreview.html}</body></html>`}
                       />
@@ -755,7 +761,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             ) : (
               <div className={invoiceLayoutClass}>
                 {showInvoiceEditor ? (
-                  <div className="app-card p-6 shadow-contrast">
+                  <div className="app-card p-4 shadow-contrast sm:p-6">
                     <h2 className="text-lg font-semibold">Invoice template (admin-friendly)</h2>
                     <p className="mt-2 text-sm text-slate-600">
                       Configura datos de empresa, etiquetas y clausulas sin editar codigo.
@@ -1068,7 +1074,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <p className="text-xs text-slate-500">
                           Los line items se mantienen en el editor de invoices y no se modifican aqui.
                         </p>
@@ -1076,7 +1082,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           idleLabel="Guardar template de invoice"
                           pendingLabel={t("common.feedback.saving")}
                           successLabel={t("common.feedback.saved")}
-                          className="px-5 py-2.5"
+                          className="w-full px-5 py-2.5 sm:w-auto"
                         />
                       </div>
                     </form>
@@ -1084,14 +1090,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 ) : null}
 
                 {showInvoicePreview ? (
-                  <div className="app-card p-6 shadow-contrast xl:sticky xl:top-24 xl:h-fit">
+                  <div className="app-card p-4 shadow-contrast sm:p-6 xl:sticky xl:top-24 xl:h-fit">
                     <h3 className="text-base font-semibold">Vista final del invoice</h3>
                     <p className="mt-2 text-sm text-slate-600">
                       Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.
                     </p>
                     <iframe
                       title={`invoice-template-preview-${invoiceThemePreview}`}
-                      className="mt-4 h-[680px] w-full rounded-xl border border-slate-200 bg-white"
+                      className="mt-4 h-[520px] w-full rounded-xl border border-slate-200 bg-white sm:h-[680px]"
                       sandbox=""
                       srcDoc={invoiceTemplatePreview}
                     />
@@ -1103,7 +1109,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : null}
 
         {currentTab === "compliance" ? (
-          <div className="grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+          <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
             <div className="app-card p-4 shadow-contrast">
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Compliance documents
@@ -1135,7 +1141,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </div>
 
             <div className="space-y-6">
-              <div className="app-card p-6 shadow-contrast">
+              <div className="app-card p-4 shadow-contrast sm:p-6">
                 <h2 className="text-lg font-semibold">
                   Compliance editor: {selectedComplianceMeta.label}
                 </h2>
@@ -1146,7 +1152,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 <form action={saveComplianceDoc} className="mt-5 space-y-6">
                   <input type="hidden" name="docId" value={selectedComplianceDocId} />
 
-                  <div className="grid gap-5 lg:grid-cols-2">
+                  <div className="grid gap-5 xl:grid-cols-2">
                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <h3 className="text-sm font-semibold text-slate-900">English</h3>
                       <div className="mt-3 space-y-3">
@@ -1246,14 +1252,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </section>
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-xs text-slate-500">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <div className="text-xs text-slate-500 break-words">
                       Public pages:
                       <a
                         href="/legal"
                         target="_blank"
                         rel="noreferrer"
-                        className="ml-1 font-semibold text-sky-700 hover:text-sky-800"
+                        className="ml-1 inline-block font-semibold text-sky-700 hover:text-sky-800"
                       >
                         /legal
                       </a>
@@ -1262,7 +1268,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         href={`/legal/${selectedComplianceMeta.slug}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-semibold text-sky-700 hover:text-sky-800"
+                        className="inline-block font-semibold text-sky-700 hover:text-sky-800"
                       >
                         /legal/{selectedComplianceMeta.slug}
                       </a>
@@ -1271,7 +1277,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       idleLabel="Save compliance document"
                       pendingLabel={t("common.feedback.saving")}
                       successLabel={t("common.feedback.saved")}
-                      className="px-5 py-2.5"
+                      className="w-full px-5 py-2.5 sm:w-auto"
                     />
                   </div>
                 </form>
@@ -1281,7 +1287,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : null}
 
         {currentTab === "tiers" ? (
-          <div className="app-card p-6 shadow-contrast">
+          <div className="app-card p-4 shadow-contrast sm:p-6">
             <h2 className="text-lg font-semibold">{t("admin.settings.tiers.title")}</h2>
             <p className="mt-3 text-sm text-slate-600">{t("admin.settings.tiers.subtitle")}</p>
             <div className="mt-4">
@@ -1291,7 +1297,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         ) : null}
 
         {currentTab === "notifications" ? (
-          <div className="app-card p-6 shadow-contrast">
+          <div className="app-card p-4 shadow-contrast sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">{t("admin.settings.notifications.title")}</h2>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">

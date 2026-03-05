@@ -361,7 +361,7 @@ export default function ServiceTiersManager() {
         <button
           type="button"
           onClick={addTier}
-          className="app-button-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+          className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
         >
           {t("admin.settings.tiers.actions.add")}
         </button>
@@ -392,13 +392,13 @@ export default function ServiceTiersManager() {
                 >
                   <div className="flex flex-1 flex-col gap-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
                         <input
                           value={tier.name}
                           onChange={(event) =>
                             updateTier(tier.id, { name: event.target.value })
                           }
-                          className="app-input flex-1 min-w-[10rem] px-3 py-2 text-sm"
+                          className="app-input w-full min-w-0 flex-1 px-3 py-2 text-sm sm:min-w-[10rem]"
                           placeholder={t(
                             "admin.settings.tiers.placeholders.name"
                           )}
@@ -493,12 +493,12 @@ export default function ServiceTiersManager() {
                                 }}
                                 onDrop={handleDropOnItem(tier, index)}
                               >
-                                <div className="flex items-center gap-2">
+                                <div className="flex min-w-0 flex-1 items-start gap-2">
                                   <span
                                     className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-400"
                                     aria-hidden="true"
                                   />
-                                  <span className="text-slate-700">{item}</span>
+                                  <span className="break-words text-slate-700">{item}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <button
@@ -528,7 +528,7 @@ export default function ServiceTiersManager() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <input
                         value={tier.newItemText ?? ""}
                         onChange={(event) =>
@@ -542,7 +542,7 @@ export default function ServiceTiersManager() {
                             addChecklistItem(tier);
                           }
                         }}
-                        className="app-input flex-1 px-3 py-2 text-sm"
+                        className="app-input w-full flex-1 px-3 py-2 text-sm"
                         placeholder={t(
                           "admin.settings.tiers.placeholders.checklist"
                         )}
@@ -550,7 +550,7 @@ export default function ServiceTiersManager() {
                       <button
                         type="button"
                         onClick={() => addChecklistItem(tier)}
-                        className="app-button-secondary px-3 py-2 text-xs font-semibold"
+                        className="app-button-secondary w-full px-3 py-2 text-xs font-semibold sm:w-auto"
                       >
                         {t("common.actions.add")}
                       </button>

@@ -49,6 +49,16 @@ function contentTypeFromFileName(fileName: string) {
   return "application/octet-stream";
 }
 
+function sanitizeDownloadName(value: string, fallback: string) {
+  const clean = value
+    .trim()
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
+    .replace(/\s+/g, " ")
+    .replace(/^\.+/, "")
+    .replace(/\.+$/, "");
+  return clean || fallback;
+}
+
 export async function GET(request: Request, context: RouteContext) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -70,40 +80,68 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { searchParams } = new URL(request.url);
   const safePath = sanitizeRepositoryPath(searchParams.get("path"));
+  const invoiceId = (searchParams.get("invoiceId") ?? "").trim();
   if (!safePath) {
     return NextResponse.json({ error: "Path is required" }, { status: 400 });
   }
 
   try {
     if (isInvoicesPath(safePath)) {
-      const fileName = safePath.split("/").pop() ?? "";
-      if (!fileName.toLowerCase().endsWith(".pdf")) {
-        return NextResponse.json({ error: "Invalid invoice file" }, { status: 400 });
-      }
+      const invoice = invoiceId
+        ? await prisma.invoice.findFirst({
+            where: {
+              id: invoiceId,
+              customerId,
+              pdfUrl: { not: null },
+            },
+            select: {
+              number: true,
+              pdfUrl: true,
+            },
+          })
+        : null;
 
-      const invoiceNumber = fileName.slice(0, -4);
-      const invoice = await prisma.invoice.findFirst({
-        where: {
-          customerId,
-          number: invoiceNumber,
-          pdfUrl: { not: null },
-        },
-        select: {
-          number: true,
-          pdfUrl: true,
-        },
-      });
-      if (!invoice?.pdfUrl) {
+      const fallbackInvoice = !invoice
+        ? await (async () => {
+            const fileName = safePath.split("/").pop() ?? "";
+            if (!fileName.toLowerCase().endsWith(".pdf")) {
+              return null;
+            }
+
+            const invoiceNumber = fileName.slice(0, -4);
+            if (!invoiceNumber) {
+              return null;
+            }
+
+            return prisma.invoice.findFirst({
+              where: {
+                customerId,
+                number: invoiceNumber,
+                pdfUrl: { not: null },
+              },
+              select: {
+                number: true,
+                pdfUrl: true,
+              },
+            });
+          })()
+        : null;
+
+      const resolvedInvoice = invoice ?? fallbackInvoice;
+      if (!resolvedInvoice?.pdfUrl) {
         return NextResponse.json({ error: "Invoice file not found" }, { status: 404 });
       }
 
-      const storagePath = toStoragePath(invoice.pdfUrl);
+      const storagePath = toStoragePath(resolvedInvoice.pdfUrl);
       if (!storagePath) {
         return NextResponse.json({ error: "Invoice file not found" }, { status: 404 });
       }
 
       const buffer = await readStoredAsset(storagePath);
-      const downloadName = `${invoice.number}.pdf`;
+      const downloadName = sanitizeDownloadName(
+        `${resolvedInvoice.number}.pdf`,
+        "invoice.pdf"
+      );
       return new NextResponse(buffer, {
         headers: {
           "content-type": "application/pdf",
@@ -122,7 +160,8 @@ export async function GET(request: Request, context: RouteContext) {
       const rootPrefix = buildCustomerRepositoryRoot(customerId);
       const storagePath = `${rootPrefix}${sourceSubPath}`;
       const buffer = await readStoredAsset(storagePath);
-      const downloadName = sourceSubPath.split("/").pop() ?? "download.bin";
+      const rawName = sourceSubPath.split("/").pop() ?? "download.bin";
+      const downloadName = sanitizeDownloadName(rawName, "download.bin");
       return new NextResponse(buffer, {
         headers: {
           "content-type": contentTypeFromFileName(downloadName),

@@ -38,15 +38,21 @@ export const getReportFilters = (
   };
 
   const rangeParam = param("range");
+  const normalizedRange = (rangeParam ?? "").toLowerCase();
   const rawFrom = parseDate(param("from"));
   const rawTo = parseDate(param("to"));
   const days = rangeParam ? Number(rangeParam) : Number.NaN;
+  const isTodayRange = normalizedRange === "today";
+  const isDayPreset = !Number.isNaN(days) && days > 0;
   const now = new Date();
 
   let from = rawFrom;
   let to = rawTo;
 
-  if (!Number.isNaN(days) && days > 0) {
+  if (isTodayRange) {
+    from = now;
+    to = now;
+  } else if (isDayPreset) {
     const start = new Date(now);
     start.setDate(start.getDate() - (days - 1));
     from = start;
@@ -59,11 +65,19 @@ export const getReportFilters = (
   }
 
   const range =
-    !Number.isNaN(days) && days > 0
+    isTodayRange
+      ? "today"
+      : isDayPreset
       ? String(days)
       : rawFrom || rawTo
         ? "custom"
         : "30";
+
+  if ((from ?? now) > (to ?? now)) {
+    const swap = from;
+    from = to;
+    to = swap;
+  }
 
   const technicianId = param("technicianId") || undefined;
   const serviceType = param("serviceType") || undefined;

@@ -31,10 +31,16 @@ type ExplorerEntry = {
   lastModified: string | null;
   url?: string;
   readOnly?: boolean;
+  invoiceId?: string;
 };
 
-function buildDownloadUrl(customerId: string, path: string) {
-  return `/api/customers/${customerId}/repository/download?path=${encodeURIComponent(path)}`;
+function buildDownloadUrl(customerId: string, path: string, invoiceId?: string) {
+  const query = new URLSearchParams();
+  query.set("path", path);
+  if (invoiceId) {
+    query.set("invoiceId", invoiceId);
+  }
+  return `/api/customers/${customerId}/repository/download?${query.toString()}`;
 }
 
 function toStoragePath(raw: string) {
@@ -133,50 +139,94 @@ function computeParentPath(path: string) {
   return parts.join("/");
 }
 
+const INVOICE_NUMBER_PATTERN = /[^a-zA-Z0-9-_]/g;
+
+function sanitizeInvoiceNumber(value: string, fallback: string) {
+  const normalized = value.trim().replace(INVOICE_NUMBER_PATTERN, "_");
+  return normalized || fallback;
+}
+
 async function listInvoiceEntries(customerId: string, currentPath: string) {
   const invoices = await prisma.invoice.findMany({
     where: {
       customerId,
       pdfUrl: { not: null },
-      status: { in: ["SENT", "PAID", "OVERDUE"] },
     },
     orderBy: { createdAt: "desc" },
     select: {
+      id: true,
       number: true,
       createdAt: true,
     },
   });
 
-  const invoiceObjects: StoredAssetItem[] = invoices.map((invoice) => {
+  const usedPaths = new Set<string>();
+  const invoiceRecords = invoices.map((invoice) => {
     const month = String(invoice.createdAt.getUTCMonth() + 1).padStart(2, "0");
     const year = String(invoice.createdAt.getUTCFullYear());
-    const fileName = `${invoice.number}.pdf`;
-    return {
-      key: `invoices/${year}/${month}/${fileName}`,
-      size: null,
-      lastModified: invoice.createdAt.toISOString(),
-    };
-  });
-
-  const visiblePrefix = currentPath === "invoices" ? "invoices/" : `${currentPath}/`;
-  const objects = invoiceObjects.filter((item) => item.key.startsWith(visiblePrefix));
-
-  const entries = collectDirectChildrenFromObjects(
-    objects,
-    visiblePrefix,
-    visiblePrefix,
-    false
-  ).map((entry): ExplorerEntry => {
-    if (entry.type !== "file") {
-      return entry;
+    const safeNumber = sanitizeInvoiceNumber(invoice.number, `invoice-${invoice.id.slice(0, 8)}`);
+    let fileName = `${safeNumber}.pdf`;
+    let path = `invoices/${year}/${month}/${fileName}`;
+    if (usedPaths.has(path)) {
+      fileName = `${safeNumber}-${invoice.id.slice(0, 6)}.pdf`;
+      path = `invoices/${year}/${month}/${fileName}`;
     }
+    usedPaths.add(path);
     return {
-      ...entry,
-      url: buildDownloadUrl(customerId, entry.path),
+      invoiceId: invoice.id,
+      createdAt: invoice.createdAt,
+      year,
+      month,
+      fileName,
+      path,
     };
   });
 
-  return entries;
+  if (currentPath === "invoices") {
+    const years = Array.from(new Set(invoiceRecords.map((item) => item.year))).sort(
+      (a, b) => Number(b) - Number(a)
+    );
+    return years.map((year) =>
+      buildFolderEntry(`invoices/${year}`, year, false)
+    );
+  }
+
+  const yearMatch = /^invoices\/(\d{4})$/.exec(currentPath);
+  if (yearMatch) {
+    const year = yearMatch[1];
+    const months = Array.from(
+      new Set(
+        invoiceRecords
+          .filter((item) => item.year === year)
+          .map((item) => item.month)
+      )
+    ).sort((a, b) => Number(b) - Number(a));
+    return months.map((month) =>
+      buildFolderEntry(`invoices/${year}/${month}`, month, false)
+    );
+  }
+
+  const monthMatch = /^invoices\/(\d{4})\/(\d{2})$/.exec(currentPath);
+  if (monthMatch) {
+    const [, year, month] = monthMatch;
+    return invoiceRecords
+      .filter((item) => item.year === year && item.month === month)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map(
+        (item): ExplorerEntry => ({
+          type: "file",
+          name: item.fileName,
+          path: item.path,
+          size: null,
+          lastModified: item.createdAt.toISOString(),
+          url: buildDownloadUrl(customerId, item.path, item.invoiceId),
+          readOnly: false,
+          invoiceId: item.invoiceId,
+        })
+      );
+  }
+
+  return [];
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -279,6 +329,7 @@ export async function POST(request: Request, context: RouteContext) {
         type?: "folder" | "file";
         name?: string;
         newName?: string;
+        invoiceId?: string;
       }
     | null;
 
@@ -308,32 +359,46 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
-    const fileName = actionPath.split("/").pop() ?? "";
-    if (!fileName.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json({ error: "Invalid invoice file" }, { status: 400 });
-    }
+    const invoiceId =
+      typeof payload.invoiceId === "string" ? payload.invoiceId.trim() : "";
 
-    const invoiceNumber = fileName.slice(0, -4);
-    if (!invoiceNumber) {
-      return NextResponse.json({ error: "Invalid invoice file" }, { status: 400 });
-    }
+    const invoice = invoiceId
+      ? await prisma.invoice.findFirst({
+          where: { id: invoiceId, customerId },
+          select: { id: true, pdfUrl: true },
+        })
+      : null;
 
-    const invoice = await prisma.invoice.findFirst({
-      where: { customerId, number: invoiceNumber },
-      select: { id: true, pdfUrl: true },
-    });
+    const fallbackInvoice = !invoice
+      ? await (async () => {
+          const fileName = actionPath.split("/").pop() ?? "";
+          if (!fileName.toLowerCase().endsWith(".pdf")) {
+            return null;
+          }
+          const invoiceNumber = fileName.slice(0, -4);
+          if (!invoiceNumber) {
+            return null;
+          }
+          return prisma.invoice.findFirst({
+            where: { customerId, number: invoiceNumber },
+            select: { id: true, pdfUrl: true },
+          });
+        })()
+      : null;
 
-    if (!invoice) {
+    const resolvedInvoice = invoice ?? fallbackInvoice;
+
+    if (!resolvedInvoice) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
-    const storagePath = toStoragePath(invoice.pdfUrl ?? "");
+    const storagePath = toStoragePath(resolvedInvoice.pdfUrl ?? "");
     if (storagePath) {
       await deleteStoredAsset(storagePath);
     }
 
     await prisma.invoice.delete({
-      where: { id: invoice.id },
+      where: { id: resolvedInvoice.id },
     });
     return NextResponse.json({ ok: true });
   }

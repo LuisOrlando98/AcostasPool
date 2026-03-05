@@ -88,27 +88,35 @@ async function createInvoice(formData: FormData) {
     },
   });
 
-  const pdfUrl = await generateInvoicePdf({
-    customerId: customer.id,
-    invoiceNumber: invoice.number,
-    issueDate: invoice.createdAt,
-    customerName,
-    customerEmail: customer.email,
-    customerPhone: customer.telefono,
-    customerAddress: formatCustomerAddress(customer),
-    items: lineItems,
-    subtotal,
-    tax,
-    total,
-    notes: notes || null,
-    theme,
-    template: invoiceTemplate,
-  });
+  try {
+    const pdfUrl = await generateInvoicePdf({
+      customerId: customer.id,
+      invoiceNumber: invoice.number,
+      issueDate: invoice.createdAt,
+      customerName,
+      customerEmail: customer.email,
+      customerPhone: customer.telefono,
+      customerAddress: formatCustomerAddress(customer),
+      items: lineItems,
+      subtotal,
+      tax,
+      total,
+      notes: notes || null,
+      theme,
+      template: invoiceTemplate,
+    });
 
-  await prisma.invoice.update({
-    where: { id: invoice.id },
-    data: { pdfUrl },
-  });
+    await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { pdfUrl },
+    });
+  } catch (error) {
+    await prisma.invoice.delete({
+      where: { id: invoice.id },
+    });
+    console.error(`[invoices] Failed to generate PDF for ${invoice.number}`, error);
+    return;
+  }
 
   await logAuditEvent({
     userId: session.sub,
@@ -128,6 +136,8 @@ async function createInvoice(formData: FormData) {
   });
 
   revalidatePath("/admin/invoices");
+  revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/client/invoices");
 }
 
 async function deleteInvoice(formData: FormData) {

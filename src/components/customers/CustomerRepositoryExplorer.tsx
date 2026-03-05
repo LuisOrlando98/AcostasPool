@@ -18,6 +18,7 @@ type RepositoryEntry = {
   lastModified: string | null;
   url?: string;
   readOnly?: boolean;
+  invoiceId?: string;
 };
 
 type RepositoryResponse = {
@@ -458,6 +459,7 @@ export default function CustomerRepositoryExplorer({
       action: "delete",
       path: entry.path,
       type: entry.type,
+      invoiceId: entry.invoiceId,
     });
     if (ok) {
       setMessage("Deleted successfully.");
