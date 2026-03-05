@@ -1535,6 +1535,11 @@
           "failed": "Failed",
           "clear": "Clear",
           "apply": "Apply"
+        },
+        "actions": {
+          "clearFiltered": "Clear filtered history",
+          "cleared": "{{count}} history records were deleted.",
+          "noneToClear": "No records matched the current filter."
         }
       }
     },

@@ -7,6 +7,8 @@ import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   buildJobWhere,
   buildQueryParams,
@@ -23,6 +25,67 @@ type LogsFilters = {
   query: string;
   status: "ALL" | "QUEUED" | "SENT" | "FAILED";
 };
+
+function readFormString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeLogsStatus(value: string): LogsFilters["status"] {
+  const upper = value.toUpperCase();
+  if (upper === "QUEUED" || upper === "SENT" || upper === "FAILED") {
+    return upper;
+  }
+  return "ALL";
+}
+
+async function clearEmailLogsAction(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const filters = getReportFilters({
+    from: readFormString(formData, "from") || undefined,
+    to: readFormString(formData, "to") || undefined,
+    range: readFormString(formData, "range") || undefined,
+    technicianId: readFormString(formData, "technicianId") || undefined,
+    serviceType: readFormString(formData, "serviceType") || undefined,
+    priority: readFormString(formData, "priority") || undefined,
+  });
+  const logsFilters: LogsFilters = {
+    query: readFormString(formData, "logsQ"),
+    status: normalizeLogsStatus(readFormString(formData, "logsStatus")),
+  };
+
+  const result = await prisma.emailLog.deleteMany({
+    where: buildLogsWhere(filters, logsFilters),
+  });
+
+  revalidatePath("/admin/reports");
+
+  const params = new URLSearchParams();
+  params.set("from", formatDateInput(filters.from));
+  params.set("to", formatDateInput(filters.to));
+  if (filters.range && filters.range !== "custom") {
+    params.set("range", filters.range);
+  }
+  if (filters.technicianId) {
+    params.set("technicianId", filters.technicianId);
+  }
+  if (filters.serviceType) {
+    params.set("serviceType", filters.serviceType);
+  }
+  if (filters.priority) {
+    params.set("priority", filters.priority);
+  }
+  if (logsFilters.query) {
+    params.set("logsQ", logsFilters.query);
+  }
+  if (logsFilters.status !== "ALL") {
+    params.set("logsStatus", logsFilters.status);
+  }
+  params.set("logsCleared", String(result.count));
+  redirect(`/admin/reports?${params.toString()}`);
+}
 
 async function getReportSnapshot(filters: ReportFilters) {
   const jobWhere = buildJobWhere(filters);
@@ -243,12 +306,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const filters = getReportFilters(resolvedSearchParams);
   const logsQuery = (readParam("logsQ") ?? "").trim();
   const logsStatusRaw = (readParam("logsStatus") ?? "ALL").toUpperCase();
-  const logsStatus: LogsFilters["status"] =
-    logsStatusRaw === "QUEUED" ||
-    logsStatusRaw === "SENT" ||
-    logsStatusRaw === "FAILED"
-      ? (logsStatusRaw as LogsFilters["status"])
-      : "ALL";
+  const logsStatus = normalizeLogsStatus(logsStatusRaw);
+  const logsClearedRaw = readParam("logsCleared");
+  const logsCleared = Number(logsClearedRaw);
+  const hasLogsClearedParam = Boolean(logsClearedRaw);
   const logsFilters: LogsFilters = {
     query: logsQuery,
     status: logsStatus,
@@ -723,6 +784,28 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                     </button>
                   </div>
                 </form>
+                <form action={clearEmailLogsAction} className="mt-3 border-t border-slate-100 pt-3">
+                  <input type="hidden" name="from" value={formatDateInput(filters.from)} />
+                  <input type="hidden" name="to" value={formatDateInput(filters.to)} />
+                  <input type="hidden" name="range" value={filters.range} />
+                  {filters.technicianId ? (
+                    <input type="hidden" name="technicianId" value={filters.technicianId} />
+                  ) : null}
+                  {filters.serviceType ? (
+                    <input type="hidden" name="serviceType" value={filters.serviceType} />
+                  ) : null}
+                  {filters.priority ? (
+                    <input type="hidden" name="priority" value={filters.priority} />
+                  ) : null}
+                  <input type="hidden" name="logsQ" value={logsFilters.query} />
+                  <input type="hidden" name="logsStatus" value={logsFilters.status} />
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100"
+                  >
+                    {t("admin.reports.emails.actions.clearFiltered")}
+                  </button>
+                </form>
               </div>
             </details>
           </div>
@@ -733,6 +816,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             {t("admin.reports.emails.smtp.help", {
               keys: smtpMissingKeys.join(", "),
             })}
+          </div>
+        ) : null}
+        {hasLogsClearedParam ? (
+          <div className="mt-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+            {logsCleared > 0
+              ? t("admin.reports.emails.actions.cleared", {
+                  count: String(logsCleared),
+                })
+              : t("admin.reports.emails.actions.noneToClear")}
           </div>
         ) : null}
 

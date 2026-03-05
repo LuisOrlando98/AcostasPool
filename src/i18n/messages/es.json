@@ -1535,6 +1535,11 @@
           "failed": "Fallido",
           "clear": "Limpiar",
           "apply": "Aplicar"
+        },
+        "actions": {
+          "clearFiltered": "Borrar historial filtrado",
+          "cleared": "Se borraron {{count}} registros del historial.",
+          "noneToClear": "No habia registros para borrar con ese filtro."
         }
       }
     },

@@ -690,12 +690,12 @@ export default function CustomerRepositoryExplorer({
       ) : null}
 
       <div className="customers-table-shell ui-table-shell mt-4 overflow-hidden">
-        <div className="grid min-h-[420px] grid-cols-1 xl:h-[500px] xl:grid-cols-[minmax(220px,28%)_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 xl:border-b-0 xl:border-r">
+        <div className="grid h-[500px] min-h-[420px] grid-cols-[minmax(170px,38%)_minmax(0,1fr)] md:grid-cols-[minmax(220px,30%)_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="min-w-0 border-r border-slate-200 bg-slate-50/80 p-3">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
               {t("admin.customers.repository.tree")}
             </p>
-            <div className="max-h-[240px] overflow-auto pr-1 xl:h-full xl:max-h-none">
+            <div className="h-full overflow-auto pr-1">
               {renderTreeNode("")}
             </div>
           </aside>
