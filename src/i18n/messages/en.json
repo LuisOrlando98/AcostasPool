@@ -1686,7 +1686,7 @@
           "addressLine2": "Address line 2",
           "footerNote": "Footer note",
           "clausesTitle": "Clauses title",
-          "legalClauses": "Legal clauses (one per line, small footer text)"
+          "legalClauses": "Payment authorization consent (one per line)"
         },
         "watermarkHint": "Control whether the ESTIMATE watermark is shown.",
         "showWatermark": "Show estimate watermark",
@@ -1696,7 +1696,7 @@
         },
         "preview": {
           "title": "Final invoice view",
-          "subtitle": "Real preview for page/PDF including small clauses.",
+          "subtitle": "Real preview for page/PDF.",
           "modalTitle": "Invoice preview - {{theme}}",
           "previewLabel": "Full page",
           "previewHint": "The full sheet is shown as a thumbnail. Tap to open fullscreen.",

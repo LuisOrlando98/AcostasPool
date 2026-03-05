@@ -4,6 +4,7 @@ import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
   getInvoiceTemplateLocaleCopy,
+  localizeInvoiceNotes,
   localizeInvoiceTemplate,
   normalizeInvoiceTemplateConfig,
   renderInvoiceTemplateHtml,
@@ -156,7 +157,7 @@ async function generateInvoicePdfWithPdfLibBytes(
     amount: marginX + 456,
     right: marginX + contentWidth,
   };
-  const notesBody = (input.notes ?? "").trim();
+  const notesBody = localizeInvoiceNotes(input.notes, locale);
   const thankYouNote = template.footerNote.trim() || localeCopy.thankYouFallback;
   const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
   const paymentTerms = template.legalClauses[0]
@@ -677,40 +678,6 @@ async function generateInvoicePdfWithPdfLibBytes(
     regularFont,
     textSoftColor
   );
-
-  page.drawText(localeCopy.regulationDisclaimerLabel, {
-    x: marginX,
-    y: footerHeadY - 50,
-    size: 9,
-    font: boldFont,
-    color: mutedColor,
-  });
-  page.drawText(localeCopy.authorizationPaymentTermsLabel, {
-    x: marginX,
-    y: footerHeadY - 63,
-    size: 9.5,
-    font: boldFont,
-    color: textColor,
-  });
-
-  let clauseY = footerHeadY - 76;
-  for (const clause of template.legalClauses.slice(0, 4)) {
-    const lines = wrapText(clause, contentWidth, 8.5);
-    for (const line of lines) {
-      if (clauseY < 66) {
-        break;
-      }
-      page.drawText(line, {
-        x: marginX,
-        y: clauseY,
-        size: 8.5,
-        font: regularFont,
-        color: mutedColor,
-      });
-      clauseY -= 10;
-    }
-    clauseY -= 2;
-  }
 
   if (theme === "ESTIMATE" && template.showEstimateWatermark && resolvedTheme.watermarkText.trim()) {
     const watermarkText = resolvedTheme.watermarkText.trim().toUpperCase();

@@ -65,8 +65,6 @@ type InvoiceTemplateLocaleCopy = {
   paymentMethodLine: string;
   paymentAcceptLine: string;
   ownerRoleLabel: string;
-  regulationDisclaimerLabel: string;
-  authorizationPaymentTermsLabel: string;
   noLineItemsLabel: string;
   noAdditionalNotesLabel: string;
   paymentTermsPrefix: string;
@@ -110,12 +108,10 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
     paymentMethodLine: "Credit / Debit / ACH / Check",
     paymentAcceptLine: "We accept: Visa, MasterCard, Zelle, Cash",
     ownerRoleLabel: "President / Owner",
-    regulationDisclaimerLabel: "Regulation Disclaimer:",
-    authorizationPaymentTermsLabel: "Authorization & Payment Terms:",
     noLineItemsLabel: "No line items",
     noAdditionalNotesLabel: "No additional notes.",
-    paymentTermsPrefix: "Payment terms",
-    paymentTermsFallback: "Due upon receipt.",
+    paymentTermsPrefix: "Payment authorization consent",
+    paymentTermsFallback: "Payment is due upon receipt unless otherwise agreed in writing.",
     thankYouFallback: "Thank you for trusting AcostasPool.",
   },
   ES: {
@@ -153,12 +149,10 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
     paymentMethodLine: "Credito / Debito / ACH / Cheque",
     paymentAcceptLine: "Aceptamos: Visa, MasterCard, Zelle, Efectivo",
     ownerRoleLabel: "Presidente / Propietario",
-    regulationDisclaimerLabel: "Aviso regulatorio:",
-    authorizationPaymentTermsLabel: "Autorizacion y terminos de pago:",
     noLineItemsLabel: "Sin conceptos",
     noAdditionalNotesLabel: "Sin notas adicionales.",
-    paymentTermsPrefix: "Terminos de pago",
-    paymentTermsFallback: "Pago al recibir.",
+    paymentTermsPrefix: "Consentimiento de autorizacion de pago",
+    paymentTermsFallback: "El pago vence al recibir esta factura salvo acuerdo por escrito.",
     thankYouFallback: "Gracias por confiar en AcostasPool.",
   },
 };
@@ -456,6 +450,52 @@ function compactLine(value: string | null | undefined) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+type InvoiceNotePair = {
+  en: string;
+  es: string;
+};
+
+const LOCALIZABLE_INVOICE_NOTES: InvoiceNotePair[] = [
+  {
+    en: "Service completed and balanced. Thank you for trusting us.",
+    es: "Servicio completado y balanceado. Gracias por confiar en nosotros.",
+  },
+  {
+    en: "Service completed and balanced.",
+    es: "Servicio completado y balanceado.",
+  },
+  {
+    en: "No additional notes.",
+    es: "Sin notas adicionales.",
+  },
+];
+
+function normalizeComparableNote(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+export function localizeInvoiceNotes(
+  value: string | null | undefined,
+  locale: InvoiceTemplateLocale
+) {
+  const clean = compactLine(value);
+  if (!clean) {
+    return "";
+  }
+
+  const normalized = normalizeComparableNote(clean);
+  for (const pair of LOCALIZABLE_INVOICE_NOTES) {
+    if (
+      normalized === normalizeComparableNote(pair.en) ||
+      normalized === normalizeComparableNote(pair.es)
+    ) {
+      return locale === "ES" ? pair.es : pair.en;
+    }
+  }
+
+  return clean;
+}
+
 function money(value: number) {
   return `$${value.toFixed(2)}`;
 }
@@ -512,7 +552,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       ? `<div class="watermark">${escapeHtml(resolvedTheme.watermarkText)}</div>`
       : "";
 
-  const notesBody = compactLine(input.notes);
+  const notesBody = localizeInvoiceNotes(input.notes, locale);
   const thankYouNote = compactLine(template.footerNote) || localeCopy.thankYouFallback;
   const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
   const paymentTerms = template.legalClauses[0]
@@ -520,10 +560,6 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
     : `${localeCopy.paymentTermsPrefix}: ${localeCopy.paymentTermsFallback}`;
   const logoLineOne = "ACOSTA'S";
   const logoLineTwo = "POOL";
-  const legalParagraphs = template.legalClauses
-    .slice(0, 4)
-    .map((clause) => `<p class="legal-copy">${escapeHtml(clause)}</p>`)
-    .join("");
 
   return `<!doctype html>
 <html lang="${localeCopy.htmlLang}">
@@ -937,29 +973,6 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         color: var(--ink-soft);
       }
 
-      .legal-label {
-        margin: 9px 0 0;
-        font-size: 8px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-      }
-
-      .legal-title {
-        margin: 4px 0 0;
-        font-size: 8.5px;
-        font-weight: 700;
-        color: var(--text);
-      }
-
-      .legal-copy {
-        margin: 3px 0 0;
-        font-size: 8px;
-        line-height: 1.3;
-        color: #60748a;
-      }
-
       .watermark {
         position: absolute;
         inset: 0;
@@ -1081,9 +1094,6 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
                 <p class="owner-role">${escapeHtml(localeCopy.ownerRoleLabel)}</p>
               </div>
             </div>
-            <p class="legal-label">${escapeHtml(localeCopy.regulationDisclaimerLabel)}</p>
-            <p class="legal-title">${escapeHtml(localeCopy.authorizationPaymentTermsLabel)}</p>
-            ${legalParagraphs}
           </footer>
         </div>
       </section>

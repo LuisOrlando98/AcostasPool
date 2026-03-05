@@ -1686,7 +1686,7 @@
           "addressLine2": "Direccion linea 2",
           "footerNote": "Nota de footer",
           "clausesTitle": "Titulo de clausulas",
-          "legalClauses": "Clausulas legales (una por linea, texto pequeno en footer)"
+          "legalClauses": "Consentimiento de autorizacion de pago (una por linea)"
         },
         "watermarkHint": "Controla si la marca de agua de ESTIMATE se muestra o no.",
         "showWatermark": "Mostrar marca de agua de estimate",
@@ -1696,7 +1696,7 @@
         },
         "preview": {
           "title": "Vista final de la factura",
-          "subtitle": "Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.",
+          "subtitle": "Preview real de como se ve en pagina/PDF.",
           "modalTitle": "Preview de factura - {{theme}}",
           "previewLabel": "Pagina completa",
           "previewHint": "Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa.",

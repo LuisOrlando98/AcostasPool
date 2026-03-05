@@ -295,7 +295,7 @@ async function saveInvoiceTemplate(formData: FormData) {
     subtotalLabel: current.subtotalLabel,
     taxLabel: current.taxLabel,
     totalLabel: current.totalLabel,
-    clausesTitle: pick("clausesTitle", current.clausesTitle),
+    clausesTitle: current.clausesTitle,
     legalClauses: legalClauses.length > 0 ? legalClauses : current.legalClauses,
     showEstimateWatermark: readBool("showEstimateWatermark"),
     themes: current.themes,
@@ -1046,16 +1046,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                             <input
                               name="footerNote"
                               defaultValue={invoiceTemplate.footerNote}
-                              className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              {t("admin.settings.invoiceEditor.fields.clausesTitle")}
-                            </span>
-                            <input
-                              name="clausesTitle"
-                              defaultValue={invoiceTemplate.clausesTitle}
                               className="app-input mt-2 w-full px-4 py-3 text-sm"
                             />
                           </label>
