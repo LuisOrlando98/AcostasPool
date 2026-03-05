@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { LOCALE_COOKIE } from "@/i18n/config";
 import {
-  LANDING_LOCALE_MAX_AGE_SECONDS,
   LANDING_LOCALE_STORAGE_KEY,
   LANDING_THEME_STORAGE_KEY,
   getInitialLandingLocale,
@@ -35,7 +33,6 @@ export function useLandingPreferences() {
 
   useEffect(() => {
     window.localStorage.setItem(LANDING_LOCALE_STORAGE_KEY, language);
-    document.cookie = `${LOCALE_COOKIE}=${language}; path=/; max-age=${LANDING_LOCALE_MAX_AGE_SECONDS}`;
     document.documentElement.lang = language;
   }, [language]);
 

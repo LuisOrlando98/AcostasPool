@@ -43,6 +43,7 @@ const LANDING_COPY: Record<
       callPrefix: string;
       responseTime: string;
       satisfaction: string;
+      yearsValue: string;
       yearsService: string;
       mediaNote: string;
     };
@@ -54,6 +55,13 @@ const LANDING_COPY: Record<
     };
     visit: {
       title: string;
+      kicker: string;
+      heading: string;
+      subtitle: string;
+      listA: [string, string];
+      listB: [string, string];
+      tags: [string, string, string];
+      action: string;
     };
     reviews: {
       title: string;
@@ -81,6 +89,7 @@ const LANDING_COPY: Record<
       callPrefix: "Call",
       responseTime: "Average response time",
       satisfaction: "Client satisfaction",
+      yearsValue: "5+ years",
       yearsService: "South Florida service",
       mediaNote: "Every visit can include service photos, chemistry checks, and equipment notes.",
     },
@@ -92,6 +101,14 @@ const LANDING_COPY: Record<
     },
     visit: {
       title: "What each visit includes.",
+      kicker: "Visit protocol",
+      heading: "Quality checks in every routine service",
+      subtitle:
+        "Every stop follows a consistent sequence so your water quality, equipment performance, and presentation remain under control.",
+      listA: ["Water chemistry testing and balancing", "Skimming, brushing, and vacuum workflow"],
+      listB: ["Pump, filter, and circulation review", "Short report with key findings"],
+      tags: ["Checklist-based execution", "Photo-ready finish quality", "Preventive equipment focus"],
+      action: "Learn more about our process",
     },
     reviews: {
       title: "Premium homeowner reviews.",
@@ -118,6 +135,7 @@ const LANDING_COPY: Record<
       callPrefix: "Llamar",
       responseTime: "Tiempo promedio de respuesta",
       satisfaction: "Satisfaccion del cliente",
+      yearsValue: "5+ anos",
       yearsService: "Servicio en South Florida",
       mediaNote:
         "Cada visita puede incluir fotos del servicio, chequeo quimico y notas de equipos.",
@@ -130,6 +148,24 @@ const LANDING_COPY: Record<
     },
     visit: {
       title: "Que incluye cada visita.",
+      kicker: "Protocolo de visita",
+      heading: "Chequeos de calidad en cada servicio rutinario",
+      subtitle:
+        "Cada parada sigue una secuencia consistente para mantener controlados la calidad del agua, el rendimiento de equipos y la presentacion.",
+      listA: [
+        "Prueba y balanceo de quimica del agua",
+        "Limpieza de superficie, cepillado y aspirado",
+      ],
+      listB: [
+        "Revision de bomba, filtro y circulacion",
+        "Reporte corto con hallazgos clave",
+      ],
+      tags: [
+        "Ejecucion con checklist",
+        "Acabado visual listo para fotos",
+        "Enfoque preventivo en equipos",
+      ],
+      action: "Conoce mas sobre nuestro proceso",
     },
     reviews: {
       title: "Resenas de propietarios premium.",
@@ -157,82 +193,161 @@ const PAGE_NAV_ITEMS = [
   { href: "/login", key: "login" },
 ] as const;
 
-const TRUST_SIGNALS: Array<{ title: string; detail: string; icon: TrustSignalIconName }> = [
-  {
-    title: "Licensed and insured",
-    detail: "Florida-compliant operation for residential pool care and service accountability.",
-    icon: "shield",
-  },
-  {
-    title: "Photo-backed notes",
-    detail: "Each visit includes a visual service log with chemistry and equipment observations.",
-    icon: "camera",
-  },
-  {
-    title: "Predictable weekly routes",
-    detail: "Structured cadence and route discipline for clean, consistent weekly results.",
-    icon: "route",
-  },
-];
+const TRUST_SIGNALS_COPY: Record<
+  LandingLocale,
+  Array<{ title: string; detail: string; icon: TrustSignalIconName }>
+> = {
+  en: [
+    {
+      title: "Licensed and insured",
+      detail: "Florida-compliant operation for residential pool care and service accountability.",
+      icon: "shield",
+    },
+    {
+      title: "Photo-backed notes",
+      detail: "Each visit includes a visual service log with chemistry and equipment observations.",
+      icon: "camera",
+    },
+    {
+      title: "Predictable weekly routes",
+      detail: "Structured cadence and route discipline for clean, consistent weekly results.",
+      icon: "route",
+    },
+  ],
+  es: [
+    {
+      title: "Licenciados y asegurados",
+      detail: "Operacion alineada con Florida para servicio residencial y trazabilidad de atencion.",
+      icon: "shield",
+    },
+    {
+      title: "Notas con evidencia fotografica",
+      detail: "Cada visita incluye bitacora visual con observaciones de quimica y equipos.",
+      icon: "camera",
+    },
+    {
+      title: "Rutas semanales predecibles",
+      detail: "Cadencia estructurada y disciplina de ruta para resultados limpios y consistentes.",
+      icon: "route",
+    },
+  ],
+};
 
-const SERVICE_PILLARS: Array<{
-  title: string;
-  subtitle: string;
-  image: string;
-  icon: ServicePillarIconName;
-  points: string[];
-}> = [
-  {
-    title: "One-Month Pool Cleaning",
-    subtitle: "A one-month reset to bring your pool back to clear, comfortable condition.",
-    image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
-    icon: "clean",
-    points: [
-      "Deep cleaning visit",
-      "Debris and algae removal",
-      "Full vacuum and brushing",
-      "Filter system check",
-      "Perfect for events or a seasonal reset",
-    ],
-  },
-  {
-    title: "Regular Maintenance",
-    subtitle: "Consistent weekly care that keeps water balanced and equipment performing right.",
-    image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
-    icon: "spark",
-    points: [
-      "Full cleaning and vacuum",
-      "Water chemistry balancing",
-      "Equipment inspection",
-      "Basket and surface cleaning",
-      "Ongoing maintenance plan",
-    ],
-  },
-  {
-    title: "Pool Cleaning + Leak Detection",
-    subtitle: "Detailed cleaning with early leak diagnostics to protect pool structure and flow.",
-    image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
-    icon: "chemistry",
-    points: [
-      "Leak diagnostics and targeted repair",
-      "Filter wash and flow optimization",
-      "Wall and tile scrubbing",
-      "Precision vacuum service",
-    ],
-  },
-  {
-    title: "Equipment Repair",
-    subtitle: "Diagnosis and repair support for pumps, filters, heaters, and circulation systems.",
-    image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
-    icon: "repair",
-    points: [
-      "Leak and pressure diagnostics",
-      "Pump and motor troubleshooting",
-      "Filter and circulation repairs",
-      "Heater and control system review",
-    ],
-  },
-];
+const SERVICE_PILLARS_COPY: Record<
+  LandingLocale,
+  Array<{
+    title: string;
+    subtitle: string;
+    image: string;
+    icon: ServicePillarIconName;
+    points: string[];
+  }>
+> = {
+  en: [
+    {
+      title: "One-Month Pool Cleaning",
+      subtitle: "A one-month reset to bring your pool back to clear, comfortable condition.",
+      image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
+      icon: "clean",
+      points: [
+        "Deep cleaning visit",
+        "Debris and algae removal",
+        "Full vacuum and brushing",
+        "Filter system check",
+        "Perfect for events or a seasonal reset",
+      ],
+    },
+    {
+      title: "Regular Maintenance",
+      subtitle: "Consistent weekly care that keeps water balanced and equipment performing right.",
+      image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
+      icon: "spark",
+      points: [
+        "Full cleaning and vacuum",
+        "Water chemistry balancing",
+        "Equipment inspection",
+        "Basket and surface cleaning",
+        "Ongoing maintenance plan",
+      ],
+    },
+    {
+      title: "Pool Cleaning + Leak Detection",
+      subtitle: "Detailed cleaning with early leak diagnostics to protect pool structure and flow.",
+      image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+      icon: "chemistry",
+      points: [
+        "Leak diagnostics and targeted repair",
+        "Filter wash and flow optimization",
+        "Wall and tile scrubbing",
+        "Precision vacuum service",
+      ],
+    },
+    {
+      title: "Equipment Repair",
+      subtitle: "Diagnosis and repair support for pumps, filters, heaters, and circulation systems.",
+      image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
+      icon: "repair",
+      points: [
+        "Leak and pressure diagnostics",
+        "Pump and motor troubleshooting",
+        "Filter and circulation repairs",
+        "Heater and control system review",
+      ],
+    },
+  ],
+  es: [
+    {
+      title: "Limpieza de piscina por un mes",
+      subtitle: "Reinicio de un mes para devolver tu piscina a una condicion clara y comoda.",
+      image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
+      icon: "clean",
+      points: [
+        "Visita de limpieza profunda",
+        "Remocion de residuos y algas",
+        "Aspirado y cepillado completo",
+        "Revision del sistema de filtracion",
+        "Ideal para eventos o reinicio de temporada",
+      ],
+    },
+    {
+      title: "Mantenimiento regular",
+      subtitle: "Cuidado semanal consistente para mantener el agua balanceada y los equipos operando bien.",
+      image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
+      icon: "spark",
+      points: [
+        "Limpieza completa y aspirado",
+        "Balanceo de quimica del agua",
+        "Inspeccion de equipos",
+        "Limpieza de canastas y superficie",
+        "Plan continuo de mantenimiento",
+      ],
+    },
+    {
+      title: "Limpieza de piscina + deteccion de fugas",
+      subtitle: "Limpieza detallada con diagnostico temprano de fugas para proteger estructura y flujo.",
+      image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+      icon: "chemistry",
+      points: [
+        "Diagnostico de fugas y reparacion dirigida",
+        "Lavado de filtro y optimizacion de flujo",
+        "Cepillado de paredes y azulejos",
+        "Servicio de aspirado de precision",
+      ],
+    },
+    {
+      title: "Reparacion de equipos",
+      subtitle: "Diagnostico y soporte de reparacion para bombas, filtros, calentadores y circulacion.",
+      image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
+      icon: "repair",
+      points: [
+        "Diagnostico de fugas y presion",
+        "Revision de bomba y motor",
+        "Reparacion de filtro y circulacion",
+        "Revision de calentador y controles",
+      ],
+    },
+  ],
+};
 
 const SERVICES_BACKGROUND_IMAGE = "/landing/media/curated/images/pool-home-services-hero-technician.jpg";
 const DEFAULT_SERVICES_BACKGROUND_VIDEO =
@@ -247,55 +362,123 @@ const SERVICES_BACKGROUND_VIDEO_ENABLED =
   (process.env.NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED ?? "true").toLowerCase() !==
   "false";
 
-const GALLERY_SLIDES = [
-  {
-    id: "pool-1",
-    title: "Resort-level finish, every week",
-    image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
-  },
-  {
-    id: "pool-2",
-    title: "Balanced chemistry and healthy circulation",
-    image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
-  },
-  {
-    id: "pool-3",
-    title: "Clean presentation for premium properties",
-    image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
-  },
-  {
-    id: "pool-4",
-    title: "Equipment health and preventive checks",
-    image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
-  },
-];
+const GALLERY_SLIDES_COPY: Record<
+  LandingLocale,
+  Array<{
+    id: string;
+    title: string;
+    image: string;
+  }>
+> = {
+  en: [
+    {
+      id: "pool-1",
+      title: "Resort-level finish, every week",
+      image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
+    },
+    {
+      id: "pool-2",
+      title: "Balanced chemistry and healthy circulation",
+      image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
+    },
+    {
+      id: "pool-3",
+      title: "Clean presentation for premium properties",
+      image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
+    },
+    {
+      id: "pool-4",
+      title: "Equipment health and preventive checks",
+      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+    },
+  ],
+  es: [
+    {
+      id: "pool-1",
+      title: "Acabado tipo resort, cada semana",
+      image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
+    },
+    {
+      id: "pool-2",
+      title: "Quimica balanceada y circulacion saludable",
+      image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
+    },
+    {
+      id: "pool-3",
+      title: "Presentacion limpia para propiedades premium",
+      image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
+    },
+    {
+      id: "pool-4",
+      title: "Salud de equipos y chequeos preventivos",
+      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+    },
+  ],
+};
 
-const REVIEWS = [
-  {
-    author: "R. Martinez",
-    zone: "Coral Gables",
-    rating: 5,
-    plan: "Regular Maintenance",
-    quote:
-      "Consistent service quality every week. The team keeps communication clean and direct.",
-  },
-  {
-    author: "S. Henderson",
-    zone: "Kendall",
-    rating: 5,
-    plan: "Pool Cleaning + Leak Detection",
-    quote:
-      "They solved recurring water issues fast and documented every recommendation clearly.",
-  },
-  {
-    author: "A. Patel",
-    zone: "Doral",
-    rating: 5,
-    plan: "Equipment Repair",
-    quote:
-      "Excellent detail level. Our pool looks polished and equipment checks are always on point.",
-  },
-];
+const REVIEWS_COPY: Record<
+  LandingLocale,
+  Array<{
+    author: string;
+    zone: string;
+    rating: number;
+    plan: string;
+    quote: string;
+  }>
+> = {
+  en: [
+    {
+      author: "R. Martinez",
+      zone: "Coral Gables",
+      rating: 5,
+      plan: "Regular Maintenance",
+      quote:
+        "Consistent service quality every week. The team keeps communication clean and direct.",
+    },
+    {
+      author: "S. Henderson",
+      zone: "Kendall",
+      rating: 5,
+      plan: "Pool Cleaning + Leak Detection",
+      quote:
+        "They solved recurring water issues fast and documented every recommendation clearly.",
+    },
+    {
+      author: "A. Patel",
+      zone: "Doral",
+      rating: 5,
+      plan: "Equipment Repair",
+      quote:
+        "Excellent detail level. Our pool looks polished and equipment checks are always on point.",
+    },
+  ],
+  es: [
+    {
+      author: "R. Martinez",
+      zone: "Coral Gables",
+      rating: 5,
+      plan: "Mantenimiento regular",
+      quote:
+        "Calidad de servicio consistente cada semana. El equipo mantiene una comunicacion clara y directa.",
+    },
+    {
+      author: "S. Henderson",
+      zone: "Kendall",
+      rating: 5,
+      plan: "Limpieza de piscina + deteccion de fugas",
+      quote:
+        "Resolvieron problemas recurrentes del agua rapido y documentaron cada recomendacion con claridad.",
+    },
+    {
+      author: "A. Patel",
+      zone: "Doral",
+      rating: 5,
+      plan: "Reparacion de equipos",
+      quote:
+        "Excelente nivel de detalle. Nuestra piscina se ve impecable y siempre revisan equipos a fondo.",
+    },
+  ],
+};
 
 function SunIcon() {
   return (
@@ -412,17 +595,27 @@ export default function ClientLanding({
   const servicesIntroRef = useRef<HTMLDivElement | null>(null);
   const servicesVideoRef = useRef<HTMLVideoElement | null>(null);
   const copy = LANDING_COPY[language];
+  const trustSignals = TRUST_SIGNALS_COPY[language];
+  const servicePillars = SERVICE_PILLARS_COPY[language];
+  const gallerySlides = GALLERY_SLIDES_COPY[language];
+  const reviews = REVIEWS_COPY[language];
   const promoCopy = landingConfig?.promo[language] ?? DEFAULT_LANDING_PROMO_COPY[language];
 
   const cityParam = (searchParams.get("city") ?? "").trim();
-  const servingLine = cityParam ? `${cityParam} and South Florida` : "South Florida";
+  const servingRegion = cityParam
+    ? language === "es"
+      ? `${cityParam} y South Florida`
+      : `${cityParam} and South Florida`
+    : "South Florida";
 
   const defaultWhatsAppLink = useMemo(() => {
     const text = encodeURIComponent(
-      "Hi AcostasPool, I want a premium maintenance plan for my pool."
+      language === "es"
+        ? "Hola AcostasPool, quiero un plan premium de mantenimiento para mi piscina."
+        : "Hi AcostasPool, I want a premium maintenance plan for my pool."
     );
     return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${text}`;
-  }, []);
+  }, [language]);
   const whatsappLink = socialLinks?.whatsappUrl || defaultWhatsAppLink;
 
   const youtubeSrc = getLandingYoutubeEmbedSrc(
@@ -563,10 +756,10 @@ export default function ClientLanding({
       return;
     }
     const timer = window.setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % GALLERY_SLIDES.length);
+      setActiveSlide((prev) => (prev + 1) % gallerySlides.length);
     }, 5500);
     return () => window.clearInterval(timer);
-  }, [pauseCarousel]);
+  }, [gallerySlides.length, pauseCarousel]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -728,8 +921,8 @@ export default function ClientLanding({
             <article className="lp-hero-copy lp-surface" data-lp-reveal>
               <p className="lp-kicker">
                 {language === "es"
-                  ? `Sirviendo hogares premium en ${servingLine}`
-                  : `Serving ${servingLine} premium homes`}
+                  ? `Sirviendo hogares premium en ${servingRegion}`
+                  : `Serving ${servingRegion} premium homes`}
               </p>
               <h1>{copy.hero.title}</h1>
               <p>{copy.hero.subtitle}</p>
@@ -756,7 +949,7 @@ export default function ClientLanding({
                   <span>{copy.hero.satisfaction}</span>
                 </div>
                 <div>
-                  <strong>5+ years</strong>
+                  <strong>{copy.hero.yearsValue}</strong>
                   <span>{copy.hero.yearsService}</span>
                 </div>
               </div>
@@ -839,7 +1032,7 @@ export default function ClientLanding({
                 </div>
 
                 <div className="lp-services-intro-trust">
-                  {TRUST_SIGNALS.map((item) => (
+                  {trustSignals.map((item) => (
                     <article key={item.title} className="lp-services-intro-trust-card">
                       <span className="lp-services-trust-icon" aria-hidden="true">
                         <TrustSignalIcon id={item.icon} />
@@ -870,7 +1063,7 @@ export default function ClientLanding({
             </aside>
 
             <div className="lp-service-plan-grid" data-lp-reveal>
-              {SERVICE_PILLARS.map((pillar) => (
+              {servicePillars.map((pillar) => (
                 <article key={pillar.title} className="lp-service-plan-card">
                   <div className="lp-service-plan-media">
                     <img
@@ -912,15 +1105,15 @@ export default function ClientLanding({
               onMouseEnter={() => setPauseCarousel(true)}
               onMouseLeave={() => setPauseCarousel(false)}
             >
-              {GALLERY_SLIDES.map((slide, index) => (
+              {gallerySlides.map((slide, index) => (
                 <article key={slide.id} className="lp-slide" data-active={activeSlide === index}>
                   <img src={slide.image} alt={slide.title} />
                 </article>
               ))}
 
-              <div className="lp-slide-caption">{GALLERY_SLIDES[activeSlide]?.title}</div>
+              <div className="lp-slide-caption">{gallerySlides[activeSlide]?.title}</div>
               <div className="lp-carousel-counter" aria-live="polite">
-                {activeSlide + 1} / {GALLERY_SLIDES.length}
+                {activeSlide + 1} / {gallerySlides.length}
               </div>
 
               <button
@@ -929,7 +1122,7 @@ export default function ClientLanding({
                 data-dir="prev"
                 onClick={() =>
                   setActiveSlide(
-                    (prev) => (prev - 1 + GALLERY_SLIDES.length) % GALLERY_SLIDES.length
+                    (prev) => (prev - 1 + gallerySlides.length) % gallerySlides.length
                   )
                 }
                 aria-label={language === "es" ? "Imagen anterior" : "Previous image"}
@@ -941,7 +1134,7 @@ export default function ClientLanding({
                 type="button"
                 className="lp-slide-nav"
                 data-dir="next"
-                onClick={() => setActiveSlide((prev) => (prev + 1) % GALLERY_SLIDES.length)}
+                onClick={() => setActiveSlide((prev) => (prev + 1) % gallerySlides.length)}
                 aria-label={language === "es" ? "Siguiente imagen" : "Next image"}
               >
                 <span>{">"}</span>
@@ -949,7 +1142,7 @@ export default function ClientLanding({
             </div>
 
             <div className="lp-slide-dots">
-              {GALLERY_SLIDES.map((slide, index) => (
+              {gallerySlides.map((slide, index) => (
                 <button
                   key={slide.id}
                   type="button"
@@ -987,29 +1180,26 @@ export default function ClientLanding({
               </div>
 
               <article className="lp-video-copy lp-surface">
-                <p className="lp-kicker">Visit protocol</p>
-                <h3>Quality checks in every routine service</h3>
-                <p>
-                  Every stop follows a consistent sequence so your water quality, equipment
-                  performance, and presentation remain under control.
-                </p>
+                <p className="lp-kicker">{copy.visit.kicker}</p>
+                <h3>{copy.visit.heading}</h3>
+                <p>{copy.visit.subtitle}</p>
                 <div className="lp-video-copy-lists">
                   <ul>
-                    <li>Water chemistry testing and balancing</li>
-                    <li>Skimming, brushing, and vacuum workflow</li>
+                    <li>{copy.visit.listA[0]}</li>
+                    <li>{copy.visit.listA[1]}</li>
                   </ul>
                   <ul>
-                    <li>Pump, filter, and circulation review</li>
-                    <li>Short report with key findings</li>
+                    <li>{copy.visit.listB[0]}</li>
+                    <li>{copy.visit.listB[1]}</li>
                   </ul>
                 </div>
                 <div className="lp-video-copy-tags">
-                  <span>Checklist-based execution</span>
-                  <span>Photo-ready finish quality</span>
-                  <span>Preventive equipment focus</span>
+                  <span>{copy.visit.tags[0]}</span>
+                  <span>{copy.visit.tags[1]}</span>
+                  <span>{copy.visit.tags[2]}</span>
                 </div>
                 <Link href="/about" className="lp-btn lp-btn-soft">
-                  Learn more about our process
+                  {copy.visit.action}
                 </Link>
               </article>
             </div>
@@ -1023,7 +1213,7 @@ export default function ClientLanding({
             </div>
 
             <div className="lp-review-grid">
-              {REVIEWS.map((review) => {
+              {reviews.map((review) => {
                 const initials = review.author
                   .split(" ")
                   .map((token) => token.charAt(0))
