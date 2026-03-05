@@ -116,6 +116,17 @@ type SortKey =
   | "service"
   | "address";
 
+type ScheduledFiltersState = {
+  statusFilter: string;
+  techFilter: string;
+  priorityFilter: string;
+  searchFilter: string;
+  rangeFilter: "WEEK" | "MONTH" | "CUSTOM";
+  customStart: string;
+  customEnd: string;
+  density: "comfortable" | "compact";
+};
+
 type RoutesCalendarProps = {
   jobs: JobItem[];
   technicians: Technician[];
@@ -259,6 +270,7 @@ export default function RoutesCalendar({
   const [activeTechJobId, setActiveTechJobId] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [jobModal, setJobModal] = useState<JobModalState | null>(null);
+  const [mobileDayKey, setMobileDayKey] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [techFilter, setTechFilter] = useState("ALL");
@@ -272,6 +284,17 @@ export default function RoutesCalendar({
   const [density, setDensity] = useState<"comfortable" | "compact">(
     "comfortable"
   );
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersDraft, setFiltersDraft] = useState<ScheduledFiltersState>({
+    statusFilter: "ALL",
+    techFilter: "ALL",
+    priorityFilter: "ALL",
+    searchFilter: "",
+    rangeFilter: "WEEK",
+    customStart: toDateKey(new Date()),
+    customEnd: toDateKey(new Date()),
+    density: "comfortable",
+  });
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const router = useRouter();
@@ -320,6 +343,42 @@ export default function RoutesCalendar({
   }, []);
 
   useEffect(() => {
+    if (!filtersOpen) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFiltersOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = original;
+    };
+  }, [filtersOpen]);
+
+  useEffect(() => {
+    if (!mobileDayKey) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileDayKey(null);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = original;
+    };
+  }, [mobileDayKey]);
+
+  useEffect(() => {
     if (!editMode) {
       setActiveTechJobId(null);
       setSelectedJobId(null);
@@ -339,6 +398,7 @@ export default function RoutesCalendar({
     setErrorMessage(null);
     setSaveSuccess(false);
     setJobModal(null);
+    setMobileDayKey(null);
     setActiveTechJobId(null);
     setSelectedJobId(null);
     setDraggingJobId(null);
@@ -620,6 +680,80 @@ export default function RoutesCalendar({
   const rangeLabel = `${formatRangeDate(rangeStart)} - ${formatRangeDate(
     rangeEnd
   )}`;
+  const activeFiltersCount = [
+    rangeFilter !== "WEEK",
+    statusFilter !== "ALL",
+    techFilter !== "ALL",
+    priorityFilter !== "ALL",
+    searchFilter.trim().length > 0,
+    density !== "comfortable",
+  ].filter(Boolean).length;
+
+  const openFiltersModal = () => {
+    setFiltersDraft({
+      statusFilter,
+      techFilter,
+      priorityFilter,
+      searchFilter,
+      rangeFilter,
+      customStart,
+      customEnd,
+      density,
+    });
+    setFiltersOpen(true);
+  };
+
+  const applyScheduledFilters = () => {
+    const next = { ...filtersDraft };
+    if (next.rangeFilter === "CUSTOM") {
+      if (!next.customStart && next.customEnd) {
+        next.customStart = next.customEnd;
+      }
+      if (!next.customEnd && next.customStart) {
+        next.customEnd = next.customStart;
+      }
+      if (!next.customStart || !next.customEnd) {
+        next.rangeFilter = "WEEK";
+        next.customStart = toDateKey(weekStart);
+        next.customEnd = toDateKey(weekEnd);
+      } else if (next.customStart > next.customEnd) {
+        next.customEnd = next.customStart;
+      }
+    }
+    setStatusFilter(next.statusFilter);
+    setTechFilter(next.techFilter);
+    setPriorityFilter(next.priorityFilter);
+    setSearchFilter(next.searchFilter);
+    setRangeFilter(next.rangeFilter);
+    setCustomStart(next.customStart);
+    setCustomEnd(next.customEnd);
+    setDensity(next.density);
+    setFiltersOpen(false);
+  };
+
+  const resetScheduledFilters = () => {
+    const defaultStart = toDateKey(weekStart);
+    const defaultEnd = toDateKey(weekEnd);
+    setStatusFilter("ALL");
+    setTechFilter("ALL");
+    setPriorityFilter("ALL");
+    setSearchFilter("");
+    setRangeFilter("WEEK");
+    setCustomStart(defaultStart);
+    setCustomEnd(defaultEnd);
+    setDensity("comfortable");
+    setFiltersDraft({
+      statusFilter: "ALL",
+      techFilter: "ALL",
+      priorityFilter: "ALL",
+      searchFilter: "",
+      rangeFilter: "WEEK",
+      customStart: defaultStart,
+      customEnd: defaultEnd,
+      density: "comfortable",
+    });
+    setFiltersOpen(false);
+  };
 
   const handleSort = (key: SortKey) => {
     setSortKey((current) => {
@@ -632,20 +766,54 @@ export default function RoutesCalendar({
     });
   };
 
-  const renderSortButton = (label: string, key: SortKey) => (
+  const renderSortButton = (
+    label: string,
+    key: SortKey,
+    variant: "light" | "dark" = "light"
+  ) => (
     <button
       type="button"
       onClick={() => handleSort(key)}
-      className="group flex w-full items-center justify-between gap-1 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+      className={`group flex w-full items-center justify-between gap-1 text-left text-[11px] font-semibold uppercase tracking-[0.2em] ${
+        variant === "dark"
+          ? "text-slate-100/80 hover:text-white"
+          : "text-slate-500 hover:text-slate-700"
+      }`}
     >
       <span>{label}</span>
       {sortKey === key ? (
-        <span className="text-[10px] text-slate-300">
+        <span
+          className={`text-[10px] ${
+            variant === "dark" ? "text-white/80" : "text-slate-400"
+          }`}
+        >
           {sortDir === "asc" ? "^" : "v"}
         </span>
       ) : null}
     </button>
   );
+
+  const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
+  const getCapacityRatio = (jobsCount: number) =>
+    Math.max(0, Math.min(1, jobsCount / dayCapacity));
+  const getCapacityColor = (jobsCount: number) => {
+    const ratio = getCapacityRatio(jobsCount);
+    const hue = Math.round(135 - ratio * 135);
+    return `hsl(${hue} 72% 44%)`;
+  };
+  const getCapacitySoftColor = (jobsCount: number) => {
+    const ratio = getCapacityRatio(jobsCount);
+    const hue = Math.round(135 - ratio * 135);
+    return `hsl(${hue} 78% 95%)`;
+  };
+
+  const mobileDayJobs = useMemo(
+    () => (mobileDayKey ? sortJobsForDay(jobsByDate.get(mobileDayKey) ?? []) : []),
+    [mobileDayKey, jobsByDate]
+  );
+  const mobileDayDate = mobileDayKey
+    ? new Date(`${mobileDayKey}T00:00:00`)
+    : null;
 
   const isCompact = density === "compact";
   const cellPadding = isCompact ? "px-4 py-2" : "px-4 py-3";
@@ -1417,10 +1585,101 @@ export default function RoutesCalendar({
           </div>
         ) : null}
 
-        <div className="mt-6 overflow-x-auto pb-2 lg:overflow-visible">
-          <div className="grid min-w-[700px] grid-cols-7 gap-2 md:min-w-[760px] xl:min-w-[820px] 2xl:min-w-0">
+        <div className="mt-6 xl:hidden">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
+            <p className="text-[11px] text-slate-500">
+              {t("admin.routes.calendarMobile.helper")}
+            </p>
+            <div className="mt-3 grid grid-cols-7 gap-1">
+              {daysShort.map((label) => (
+                <div
+                  key={`wd-${label}`}
+                  className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500"
+                >
+                  {label}
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 grid grid-cols-7 gap-1">
+              {calendarDays.map((day) => {
+                const key = toDateKey(day);
+                const isCurrentMonth =
+                  day.getMonth() === monthStart.getMonth() &&
+                  day.getFullYear() === monthStart.getFullYear();
+                const jobsForDay = sortJobsForDay(jobsByDate.get(key) ?? []);
+                const jobsCount = jobsForDay.length;
+                const isToday = key === toDateKey(startOfToday);
+                const isSelected = mobileDayKey === key;
+                const capacityColor = getCapacityColor(jobsCount);
+                const capacitySoft = getCapacitySoftColor(jobsCount);
+                const itemTone = !isCurrentMonth
+                  ? "border-transparent bg-transparent text-slate-300"
+                  : isSelected
+                    ? "text-slate-900 shadow-sm"
+                    : "border-slate-200 bg-white text-slate-700";
+
+                return (
+                  <button
+                    key={`mobile-day-${key}`}
+                    type="button"
+                    disabled={!isCurrentMonth}
+                    onClick={() => {
+                      setMobileDayKey(key);
+                    }}
+                    className={`relative h-12 overflow-hidden rounded-lg border px-1 py-1 text-center transition sm:h-14 ${
+                      isCurrentMonth
+                        ? "hover:border-sky-300 hover:bg-sky-50/60"
+                        : "cursor-default"
+                    } ${itemTone} ${isToday ? "ring-1 ring-sky-400" : ""}`}
+                    style={
+                      isCurrentMonth
+                        ? {
+                            borderColor: isSelected ? capacityColor : undefined,
+                            backgroundColor: isSelected ? capacitySoft : undefined,
+                          }
+                        : undefined
+                    }
+                    title={
+                      isCurrentMonth
+                        ? t("admin.routes.labels.capacity", {
+                            used: String(jobsCount),
+                            total: String(dayCapacity),
+                          })
+                        : undefined
+                    }
+                  >
+                    <span className="block text-sm font-semibold leading-none">
+                      {day.getDate()}
+                    </span>
+                    {isCurrentMonth ? (
+                      <span
+                        className="absolute right-1 top-1 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold text-white"
+                        style={{ backgroundColor: capacityColor }}
+                      >
+                        {jobsCount}
+                      </span>
+                    ) : null}
+                    {isCurrentMonth ? (
+                      <span
+                        className="absolute bottom-1 left-1 right-1 h-1 rounded-full"
+                        style={{ backgroundColor: capacityColor }}
+                      />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-500">
+              <span>{t("admin.routes.calendarMobile.loadLow")}</span>
+              <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
+              <span>{t("admin.routes.calendarMobile.loadHigh")}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 hidden overflow-x-auto pb-2 xl:block xl:overflow-visible">
+          <div className="grid min-w-[980px] grid-cols-7 gap-2 2xl:min-w-0">
           {(() => {
-            const dayCapacity = Math.max(1, technicians.length * TECH_DAILY_CAPACITY);
             return calendarDays.map((day) => {
               const key = toDateKey(day);
               const isCurrentMonth =
@@ -1801,117 +2060,21 @@ export default function RoutesCalendar({
               })}
             </p>
           </div>
-          <div className="ui-filter-bar flex flex-wrap items-center gap-1.5 px-2 py-2 text-xs">
-            <div className="ui-search flex items-center gap-1.5 px-2 py-1.5">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                className="ui-search-icon h-4 w-4"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M20 20l-3-3"
-                />
-              </svg>
-              <input
-                value={searchFilter}
-                onChange={(event) => setSearchFilter(event.target.value)}
-                placeholder={t("admin.routes.filters.search")}
-                className="ui-search-input w-44 sm:w-52"
-              />
-            </div>
-            <select
-              value={rangeFilter}
-              onChange={(event) =>
-                setRangeFilter(event.target.value as "WEEK" | "MONTH" | "CUSTOM")
-              }
-              className="ui-select px-2.5 py-1.5 text-xs"
-            >
-              <option value="WEEK">{t("admin.routes.filters.rangeWeek")}</option>
-              <option value="MONTH">{t("admin.routes.filters.rangeMonth")}</option>
-              <option value="CUSTOM">
-                {t("admin.routes.filters.rangeCustom")}
-              </option>
-            </select>
-            {rangeFilter === "CUSTOM" ? (
-              <div className="ui-search flex items-center gap-1.5 px-2 py-1">
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={(event) => setCustomStart(event.target.value)}
-                  className="ui-search-input text-xs"
-                />
-                <span className="text-slate-300">-</span>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={(event) => setCustomEnd(event.target.value)}
-                  className="ui-search-input text-xs"
-                />
-              </div>
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
+            {activeFiltersCount > 0 ? (
+              <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                {t("admin.routes.filters.activeCount", {
+                  count: activeFiltersCount,
+                })}
+              </span>
             ) : null}
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="ui-select px-2.5 py-1.5 text-xs"
+            <button
+              type="button"
+              onClick={openFiltersModal}
+              className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
             >
-              <option value="ALL">{t("admin.routes.filters.statusAll")}</option>
-              <option value="SCHEDULED">{t("jobs.status.scheduled")}</option>
-              <option value="PENDING">{t("jobs.status.pending")}</option>
-              <option value="ON_THE_WAY">{t("jobs.status.onTheWay")}</option>
-              <option value="IN_PROGRESS">{t("jobs.status.inProgress")}</option>
-              <option value="COMPLETED">{t("jobs.status.completed")}</option>
-            </select>
-            <select
-              value={techFilter}
-              onChange={(event) => setTechFilter(event.target.value)}
-              className="ui-select px-2.5 py-1.5 text-xs"
-            >
-              <option value="ALL">{t("admin.routes.filters.techAll")}</option>
-              <option value="UNASSIGNED">{t("jobs.detail.noTech")}</option>
-              {technicians.map((tech) => (
-                <option key={tech.id} value={tech.id}>
-                  {tech.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={priorityFilter}
-              onChange={(event) => setPriorityFilter(event.target.value)}
-              className="ui-select px-2.5 py-1.5 text-xs"
-            >
-              <option value="ALL">{t("admin.routes.filters.priorityAll")}</option>
-              <option value="NORMAL">{t("jobs.priority.normal")}</option>
-              <option value="URGENT">{t("jobs.priority.urgent")}</option>
-            </select>
-            <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5">
-              <button
-                type="button"
-                onClick={() => setDensity("comfortable")}
-                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
-                  density === "comfortable"
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-500"
-                }`}
-              >
-                {t("admin.routes.labels.densityNormal")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setDensity("compact")}
-                className={`rounded-full px-2 py-1 text-[10px] font-semibold ${
-                  density === "compact"
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-500"
-                }`}
-              >
-                {t("admin.routes.labels.densityCompact")}
-              </button>
-            </div>
+              {t("admin.routes.filters.open")}
+            </button>
           </div>
         </div>
 
@@ -1921,34 +2084,209 @@ export default function RoutesCalendar({
               {t("admin.routes.labels.noJobsInRange")}
             </div>
           ) : (
-            <div className="max-h-[520px] overflow-auto">
+            <>
+              <div className="space-y-3 p-3 xl:hidden">
+                {sortedRangeJobs.map((job) => {
+                  const serviceOption = serviceTypeOptions.find(
+                    (option) => option.value === job.serviceType
+                  );
+                  const serviceLabel = serviceOption?.labelKey
+                    ? t(serviceOption.labelKey)
+                    : serviceOption?.label ?? job.serviceType;
+                  const tierLabel = job.serviceTierId
+                    ? serviceTiersById.get(job.serviceTierId)?.name ?? null
+                    : null;
+                  const isHighlighted = highlightJobId === job.id;
+                  const isSelected = selectedJobId === job.id;
+                  const scheduled = new Date(job.scheduledDate);
+                  const dateLabel = scheduled.toLocaleDateString(locale, {
+                    day: "2-digit",
+                    month: "short",
+                  });
+                  const timeLabel = scheduled.toLocaleTimeString(locale, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  const propertyName =
+                    job.property.name?.trim() ||
+                    job.property.address.split(",")[0]?.trim() ||
+                    t("admin.routes.labels.propertyFallback");
+                  const statusInfo =
+                    statusMeta[job.status] ??
+                    ({
+                      label: job.status,
+                      className: "border-slate-200 bg-slate-50 text-slate-600",
+                    } as const);
+                  const priorityInfo =
+                    priorityMeta[job.priority] ??
+                    ({
+                      label: job.priority,
+                      className: "border-slate-200 bg-slate-50 text-slate-600",
+                    } as const);
+                  const techInfo = job.technicianId
+                    ? techniciansById.get(job.technicianId)
+                    : null;
+                  const techColor = techInfo?.color ?? null;
+                  const techDotStyle = techColor
+                    ? { backgroundColor: techColor }
+                    : { backgroundColor: job.technicianId ? "#64748b" : "#fb7185" };
+                  const contactPhone = job.customer.phone
+                    ? formatUsPhone(job.customer.phone) ?? job.customer.phone
+                    : null;
+                  const contactLine = [job.customer.email, contactPhone]
+                    .filter(Boolean)
+                    .join(" / ");
+
+                  return (
+                    <article
+                      key={`mobile-${job.id}`}
+                      onClick={() => {
+                        if (!editMode) {
+                          return;
+                        }
+                        setSelectedJobId((current) =>
+                          current === job.id ? null : job.id
+                        );
+                      }}
+                      className={`rounded-2xl border p-4 transition ${
+                        isSelected
+                          ? "border-rose-200 bg-rose-50/70"
+                          : isHighlighted
+                            ? "border-sky-200 bg-sky-50/70"
+                            : "border-slate-200 bg-white"
+                      } ${job.status === "COMPLETED" ? "opacity-70" : ""} ${
+                        editMode ? "cursor-pointer" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full" style={techDotStyle} />
+                            <p className="truncate text-sm font-semibold text-slate-900">
+                              {job.customer.name}
+                            </p>
+                          </div>
+                          {contactLine ? (
+                            <p className="truncate text-[11px] text-slate-500" title={contactLine}>
+                              {contactLine}
+                            </p>
+                          ) : (
+                            <p className="text-[11px] text-slate-400">
+                              {t("admin.routes.labels.noContact")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-sm font-semibold text-slate-900">{dateLabel}</p>
+                          <p className="text-[11px] text-slate-500">{timeLabel}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {t("admin.routes.table.property")}
+                          </p>
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {propertyName}
+                          </p>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                              job.property.address
+                            )}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="mt-0.5 block truncate text-[11px] text-slate-500 hover:text-slate-700"
+                            title={job.property.address}
+                          >
+                            {job.property.address}
+                          </a>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {t("admin.routes.table.service")}
+                          </p>
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {serviceLabel}
+                          </p>
+                          {tierLabel ? (
+                            <p className="text-[11px] text-slate-500">{tierLabel}</p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                        >
+                          {priorityInfo.label}
+                        </span>
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          {job.type === "ON_DEMAND"
+                            ? t("jobs.type.onDemand")
+                            : t("jobs.type.routine")}
+                        </span>
+                        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-600">
+                          <span className="h-2 w-2 rounded-full" style={techDotStyle} />
+                          <span className="max-w-[120px] truncate font-medium">
+                            {techInfo?.name ??
+                              job.technician?.name ??
+                              t("jobs.detail.noTech")}
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openJobModal(job);
+                          }}
+                          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        >
+                          {t("common.actions.view")}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="hidden max-h-[520px] overflow-auto xl:block">
               <table
                 className={`min-w-[980px] w-full text-left ${tableTextSize}`}
               >
-                <thead className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
-                  <tr className="text-slate-400">
+                <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 backdrop-blur">
+                  <tr>
                     <th className={`${cellPadding} w-[20%]`}>
-                      {renderSortButton(t("admin.routes.table.customer"), "customer")}
+                      {renderSortButton(t("admin.routes.table.customer"), "customer", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[22%]`}>
-                      {renderSortButton(t("admin.routes.table.property"), "address")}
+                      {renderSortButton(t("admin.routes.table.property"), "address", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[14%]`}>
-                      {renderSortButton(t("admin.routes.table.dateTime"), "date")}
+                      {renderSortButton(t("admin.routes.table.dateTime"), "date", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[16%]`}>
-                      {renderSortButton(t("admin.routes.table.service"), "service")}
+                      {renderSortButton(t("admin.routes.table.service"), "service", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[10%]`}>
-                      {renderSortButton(t("admin.routes.table.status"), "status")}
+                      {renderSortButton(t("admin.routes.table.status"), "status", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[10%]`}>
-                      {renderSortButton(t("admin.routes.table.priority"), "priority")}
+                      {renderSortButton(t("admin.routes.table.priority"), "priority", "dark")}
                     </th>
                     <th className={`${cellPadding} w-[14%]`}>
-                      {renderSortButton(t("admin.routes.table.technician"), "technician")}
+                      {renderSortButton(t("admin.routes.table.technician"), "technician", "dark")}
                     </th>
-                    <th className={`${cellPadding} w-[8%] text-right`}>
+                    <th className={`${cellPadding} w-[8%] text-right text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-100/80`}>
                       {t("admin.routes.table.actions")}
                     </th>
                   </tr>
@@ -2156,9 +2494,443 @@ export default function RoutesCalendar({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </section>
+
+      {mounted && filtersOpen
+        ? createPortal(
+            <div className="fixed inset-0 z-[1295] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-6">
+              <button
+                type="button"
+                className="absolute inset-0"
+                aria-label={t("common.actions.close")}
+                onClick={() => setFiltersOpen(false)}
+              />
+              <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
+                <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        {t("admin.routes.filters.toolbar")}
+                      </p>
+                      <h2 className="text-lg font-semibold text-slate-900">
+                        {t("admin.routes.filters.modalTitle")}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        {t("admin.routes.filters.modalSubtitle")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFiltersOpen(false)}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                    >
+                      {t("common.actions.close")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-[75vh] overflow-y-auto px-4 py-4 sm:px-6">
+                  <div className="space-y-5">
+                    <section>
+                      <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("admin.routes.filters.searchLabel")}
+                      </label>
+                      <div className="mt-2 ui-search flex items-center gap-1.5 px-2 py-1.5">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          className="ui-search-icon h-4 w-4"
+                        >
+                          <circle cx="11" cy="11" r="7" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M20 20l-3-3"
+                          />
+                        </svg>
+                        <input
+                          value={filtersDraft.searchFilter}
+                          onChange={(event) =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              searchFilter: event.target.value,
+                            }))
+                          }
+                          placeholder={t("admin.routes.filters.search")}
+                          className="ui-search-input w-full"
+                        />
+                      </div>
+                    </section>
+
+                    <section>
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("admin.routes.filters.range")}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(
+                          [
+                            {
+                              value: "WEEK",
+                              label: t("admin.routes.filters.rangeWeek"),
+                            },
+                            {
+                              value: "MONTH",
+                              label: t("admin.routes.filters.rangeMonth"),
+                            },
+                            {
+                              value: "CUSTOM",
+                              label: t("admin.routes.filters.rangeCustom"),
+                            },
+                          ] as const
+                        ).map((item) => (
+                          <button
+                            key={item.value}
+                            type="button"
+                            onClick={() =>
+                              setFiltersDraft((current) => ({
+                                ...current,
+                                rangeFilter: item.value,
+                              }))
+                            }
+                            className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                              filtersDraft.rangeFilter === item.value
+                                ? "border-sky-300 bg-sky-50 text-sky-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+
+                    {filtersDraft.rangeFilter === "CUSTOM" ? (
+                      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          {t("admin.routes.filters.dateRange")}
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="text-xs font-semibold text-slate-600">
+                            {t("admin.routes.filters.from")}
+                            <input
+                              type="date"
+                              value={filtersDraft.customStart}
+                              onChange={(event) =>
+                                setFiltersDraft((current) => ({
+                                  ...current,
+                                  customStart: event.target.value,
+                                }))
+                              }
+                              className="app-input mt-1 w-full px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="text-xs font-semibold text-slate-600">
+                            {t("admin.routes.filters.to")}
+                            <input
+                              type="date"
+                              value={filtersDraft.customEnd}
+                              onChange={(event) =>
+                                setFiltersDraft((current) => ({
+                                  ...current,
+                                  customEnd: event.target.value,
+                                }))
+                              }
+                              className="app-input mt-1 w-full px-3 py-2 text-sm"
+                            />
+                          </label>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    <section className="grid gap-3 sm:grid-cols-3">
+                      <label className="text-xs font-semibold text-slate-600">
+                        {t("admin.routes.table.status")}
+                        <select
+                          value={filtersDraft.statusFilter}
+                          onChange={(event) =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              statusFilter: event.target.value,
+                            }))
+                          }
+                          className="app-input mt-1 w-full px-3 py-2 text-sm"
+                        >
+                          <option value="ALL">{t("admin.routes.filters.statusAll")}</option>
+                          <option value="SCHEDULED">{t("jobs.status.scheduled")}</option>
+                          <option value="PENDING">{t("jobs.status.pending")}</option>
+                          <option value="ON_THE_WAY">{t("jobs.status.onTheWay")}</option>
+                          <option value="IN_PROGRESS">{t("jobs.status.inProgress")}</option>
+                          <option value="COMPLETED">{t("jobs.status.completed")}</option>
+                        </select>
+                      </label>
+                      <label className="text-xs font-semibold text-slate-600">
+                        {t("admin.routes.table.technician")}
+                        <select
+                          value={filtersDraft.techFilter}
+                          onChange={(event) =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              techFilter: event.target.value,
+                            }))
+                          }
+                          className="app-input mt-1 w-full px-3 py-2 text-sm"
+                        >
+                          <option value="ALL">{t("admin.routes.filters.techAll")}</option>
+                          <option value="UNASSIGNED">{t("jobs.detail.noTech")}</option>
+                          {technicians.map((tech) => (
+                            <option key={tech.id} value={tech.id}>
+                              {tech.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs font-semibold text-slate-600">
+                        {t("admin.routes.table.priority")}
+                        <select
+                          value={filtersDraft.priorityFilter}
+                          onChange={(event) =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              priorityFilter: event.target.value,
+                            }))
+                          }
+                          className="app-input mt-1 w-full px-3 py-2 text-sm"
+                        >
+                          <option value="ALL">{t("admin.routes.filters.priorityAll")}</option>
+                          <option value="NORMAL">{t("jobs.priority.normal")}</option>
+                          <option value="URGENT">{t("jobs.priority.urgent")}</option>
+                        </select>
+                      </label>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("admin.routes.filters.density")}
+                      </p>
+                      <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-white p-0.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              density: "comfortable",
+                            }))
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            filtersDraft.density === "comfortable"
+                              ? "bg-slate-900 text-white"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          {t("admin.routes.labels.densityNormal")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFiltersDraft((current) => ({
+                              ...current,
+                              density: "compact",
+                            }))
+                          }
+                          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                            filtersDraft.density === "compact"
+                              ? "bg-slate-900 text-white"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          {t("admin.routes.labels.densityCompact")}
+                        </button>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  <button
+                    type="button"
+                    onClick={resetScheduledFilters}
+                    className="app-button-ghost w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                  >
+                    {t("admin.routes.filters.reset")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyScheduledFilters}
+                    className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                  >
+                    {t("admin.routes.filters.apply")}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {mounted && mobileDayKey
+        ? createPortal(
+            <div className="fixed inset-0 z-[1298] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-6">
+              <button
+                type="button"
+                className="absolute inset-0"
+                aria-label={t("common.actions.close")}
+                onClick={() => setMobileDayKey(null)}
+              />
+              <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
+                <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        {t("admin.routes.sections.scheduledJobs")}
+                      </p>
+                      <h2 className="text-lg font-semibold text-slate-900">
+                        {mobileDayDate
+                          ? mobileDayDate.toLocaleDateString(locale, {
+                              weekday: "long",
+                              month: "long",
+                              day: "numeric",
+                            })
+                          : mobileDayKey}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        {t("admin.routes.labels.capacity", {
+                          used: String(mobileDayJobs.length),
+                          total: String(dayCapacity),
+                        })}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMobileDayKey(null)}
+                      className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                    >
+                      {t("common.actions.close")}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-[72vh] overflow-y-auto px-4 py-4 sm:px-6">
+                  {mobileDayJobs.length === 0 ? (
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                      {t("admin.routes.calendarMobile.empty")}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {mobileDayJobs.map((job) => {
+                        const serviceOption = serviceTypeOptions.find(
+                          (option) => option.value === job.serviceType
+                        );
+                        const serviceLabel = serviceOption?.labelKey
+                          ? t(serviceOption.labelKey)
+                          : serviceOption?.label ?? job.serviceType;
+                        const tierLabel = job.serviceTierId
+                          ? serviceTiersById.get(job.serviceTierId)?.name ?? null
+                          : null;
+                        const timeLabel = new Date(job.scheduledDate).toLocaleTimeString(
+                          locale,
+                          {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        );
+                        const statusInfo =
+                          statusMeta[job.status] ??
+                          ({
+                            label: job.status,
+                            className: "border-slate-200 bg-slate-50 text-slate-600",
+                          } as const);
+                        const priorityInfo =
+                          priorityMeta[job.priority] ??
+                          ({
+                            label: job.priority,
+                            className: "border-slate-200 bg-slate-50 text-slate-600",
+                          } as const);
+
+                        return (
+                          <button
+                            key={`mobile-day-job-${job.id}`}
+                            type="button"
+                            onClick={() => {
+                              setMobileDayKey(null);
+                              openJobModal(job);
+                            }}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50/30"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {job.customer.name}
+                                </p>
+                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                  {job.property.address}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                                {timeLabel}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {tierLabel ? `${tierLabel} - ` : ""}
+                              {serviceLabel}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                              >
+                                {statusInfo.label}
+                              </span>
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                              >
+                                {priorityInfo.label}
+                              </span>
+                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {job.type === "ON_DEMAND"
+                                  ? t("jobs.type.onDemand")
+                                  : t("jobs.type.routine")}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                  {editMode && mobileDayDate ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetDate = mobileDayDate;
+                        setMobileDayKey(null);
+                        openModalForDate(targetDate);
+                      }}
+                      className="app-button-secondary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                    >
+                      {t("admin.routes.actions.assignJobs")}
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setMobileDayKey(null)}
+                    className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                  >
+                    {t("common.actions.close")}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
 
       {selectedDate ? (
         <div className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">

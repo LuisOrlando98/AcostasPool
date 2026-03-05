@@ -538,7 +538,35 @@
       "todayRoute": {
         "title": "Today's route",
         "count": "{{count}} jobs",
-        "empty": "No jobs scheduled for today."
+        "empty": "No jobs scheduled for today.",
+        "viewAll": "View all"
+      },
+      "interactive": {
+        "searchPlaceholder": "Search customer, email, or address...",
+        "sortLabel": "Sort by",
+        "sortTime": "Time",
+        "sortCustomer": "Customer",
+        "emptyFiltered": "No jobs match the active filters.",
+        "filters": {
+          "all": "All",
+          "pending": "Pending",
+          "inProgress": "In progress",
+          "completed": "Completed",
+          "onDemand": "On-demand"
+        }
+      },
+      "quickActions": {
+        "title": "Quick actions",
+        "routes": "Routes",
+        "invoices": "Invoices",
+        "customers": "Customers",
+        "reports": "Reports"
+      },
+      "progress": {
+        "title": "Operational pulse",
+        "completionRate": "Completion rate",
+        "withEvidence": "Completed with evidence: {{count}} ({{rate}}%)",
+        "onDemandLoad": "On-demand load today: {{count}}"
       },
       "alerts": {
         "title": "Critical alerts",
@@ -547,7 +575,14 @@
       },
       "recentInvoices": {
         "title": "Recent invoices",
-        "empty": "No recent invoices."
+        "empty": "No recent invoices.",
+        "viewAll": "Open invoices",
+        "emptyFiltered": "No invoices match the selected filter.",
+        "filters": {
+          "all": "All",
+          "open": "Open",
+          "paid": "Paid"
+        }
       }
     },
     "routes": {
@@ -636,13 +671,26 @@
         "deleteJobFailed": "Unable to delete the selected job."
       },
       "filters": {
+        "toolbar": "Filters",
+        "open": "Open filters",
+        "modalTitle": "Scheduled jobs filters",
+        "modalSubtitle": "Organize the table with cleaner filters and responsive view options.",
+        "activeCount": "{{count}} active",
+        "searchLabel": "Search",
+        "range": "Range",
+        "dateRange": "Custom dates",
+        "from": "From",
+        "to": "To",
+        "density": "Density",
         "statusAll": "Status: All",
         "priorityAll": "Priority: All",
         "techAll": "Technician: All",
         "search": "Search customer, address, technician...",
         "rangeWeek": "Week",
         "rangeMonth": "Month",
-        "rangeCustom": "Custom"
+        "rangeCustom": "Custom",
+        "apply": "Apply",
+        "reset": "Reset"
       },
       "table": {
         "customer": "Customer",
@@ -659,6 +707,12 @@
         "schedule": "Scheduling",
         "propertyAccess": "Property & access",
         "jobDetail": "Job details"
+      },
+      "calendarMobile": {
+        "helper": "Tap a day to see routes in detail.",
+        "loadLow": "Low load",
+        "loadHigh": "High load",
+        "empty": "No routes scheduled for this day."
       },
       "actions": {
         "creating": "Creating...",

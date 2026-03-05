@@ -538,7 +538,35 @@
       "todayRoute": {
         "title": "Ruta de hoy",
         "count": "{{count}} trabajos",
-        "empty": "No hay trabajos programados hoy."
+        "empty": "No hay trabajos programados hoy.",
+        "viewAll": "Ver todos"
+      },
+      "interactive": {
+        "searchPlaceholder": "Buscar cliente, email o direccion...",
+        "sortLabel": "Ordenar por",
+        "sortTime": "Hora",
+        "sortCustomer": "Cliente",
+        "emptyFiltered": "No hay trabajos que coincidan con los filtros activos.",
+        "filters": {
+          "all": "Todos",
+          "pending": "Pendientes",
+          "inProgress": "En progreso",
+          "completed": "Completados",
+          "onDemand": "On-demand"
+        }
+      },
+      "quickActions": {
+        "title": "Acciones rapidas",
+        "routes": "Rutas",
+        "invoices": "Facturas",
+        "customers": "Clientes",
+        "reports": "Reportes"
+      },
+      "progress": {
+        "title": "Pulso operativo",
+        "completionRate": "Tasa de finalizacion",
+        "withEvidence": "Completados con evidencia: {{count}} ({{rate}}%)",
+        "onDemandLoad": "Carga on-demand hoy: {{count}}"
       },
       "alerts": {
         "title": "Alertas criticas",
@@ -547,7 +575,14 @@
       },
       "recentInvoices": {
         "title": "Facturas recientes",
-        "empty": "No hay facturas recientes."
+        "empty": "No hay facturas recientes.",
+        "viewAll": "Abrir facturas",
+        "emptyFiltered": "No hay facturas que coincidan con el filtro seleccionado.",
+        "filters": {
+          "all": "Todas",
+          "open": "Abiertas",
+          "paid": "Pagadas"
+        }
       }
     },
     "routes": {
@@ -636,13 +671,26 @@
         "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado."
       },
       "filters": {
+        "toolbar": "Filtros",
+        "open": "Abrir filtros",
+        "modalTitle": "Filtros de trabajos programados",
+        "modalSubtitle": "Organiza la tabla con filtros mas limpios y opciones responsive.",
+        "activeCount": "{{count}} activos",
+        "searchLabel": "Buscar",
+        "range": "Rango",
+        "dateRange": "Fechas personalizadas",
+        "from": "Desde",
+        "to": "Hasta",
+        "density": "Densidad",
         "statusAll": "Estado: Todos",
         "priorityAll": "Prioridad: Todas",
         "techAll": "Tecnico: Todos",
         "search": "Buscar cliente, direccion, tecnico...",
         "rangeWeek": "Semana",
         "rangeMonth": "Mes",
-        "rangeCustom": "Personalizado"
+        "rangeCustom": "Personalizado",
+        "apply": "Aplicar",
+        "reset": "Limpiar"
       },
       "table": {
         "customer": "Cliente",
@@ -659,6 +707,12 @@
         "schedule": "Programacion",
         "propertyAccess": "Propiedad y acceso",
         "jobDetail": "Detalle de trabajo"
+      },
+      "calendarMobile": {
+        "helper": "Toca un dia para ver las rutas en detalle.",
+        "loadLow": "Carga baja",
+        "loadHigh": "Carga alta",
+        "empty": "No hay rutas programadas para este dia."
       },
       "actions": {
         "creating": "Creando...",
