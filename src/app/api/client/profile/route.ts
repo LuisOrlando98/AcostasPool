@@ -110,6 +110,8 @@ export async function PATCH(request: Request) {
       httpOnly: false,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      priority: "medium",
+      maxAge: 60 * 60 * 24 * 30,
       path: "/",
     });
 

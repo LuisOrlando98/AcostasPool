@@ -283,7 +283,7 @@ async function saveInvoiceTemplate(formData: FormData) {
     companyWebsite: pick("companyWebsite", current.companyWebsite),
     companyAddressLine1: pick("companyAddressLine1", current.companyAddressLine1),
     companyAddressLine2: pick("companyAddressLine2", current.companyAddressLine2),
-    companyTaxId: pick("companyTaxId", current.companyTaxId),
+    companyTaxId: current.companyTaxId,
     headerSubtitle: pick("headerSubtitle", current.headerSubtitle),
     footerNote: pick("footerNote", current.footerNote),
     invoiceNumberLabel: current.invoiceNumberLabel,
@@ -1000,16 +1000,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           <input
                             name="companyWebsite"
                             defaultValue={invoiceTemplate.companyWebsite}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            {t("admin.settings.invoiceEditor.fields.taxId")}
-                          </span>
-                          <input
-                            name="companyTaxId"
-                            defaultValue={invoiceTemplate.companyTaxId}
                             className="app-input mt-2 w-full px-4 py-3 text-sm"
                           />
                         </label>

@@ -9,6 +9,7 @@ import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type JobItem = {
   id: string;
@@ -347,11 +348,10 @@ export default function RoutesCalendar({
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = original;
+      unlock();
     };
   }, [filtersOpen]);
 
@@ -365,11 +365,10 @@ export default function RoutesCalendar({
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = original;
+      unlock();
     };
   }, [mobileDayKey]);
 

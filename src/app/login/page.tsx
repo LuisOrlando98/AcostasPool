@@ -36,7 +36,9 @@ export default function LoginPage() {
 
     setSwitchingLocale(true);
     window.localStorage.setItem(LANDING_LOCALE_STORAGE_KEY, nextLocale);
-    document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=2592000`;
+    const secureCookie =
+      window.location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=2592000; samesite=lax${secureCookie}`;
     window.location.reload();
   };
 

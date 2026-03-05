@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -133,18 +134,17 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
+    const unlock = lockBodyScroll();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setIsGuideOpen(false);
       }
     };
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [isGuideOpen]);

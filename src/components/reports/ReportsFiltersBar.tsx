@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type ReportsFiltersBarProps = {
   technicians: Array<{ id: string; name: string }>;
@@ -108,11 +110,10 @@ export default function ReportsFiltersBar({
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = original;
+      unlock();
     };
   }, [open]);
 
@@ -248,8 +249,8 @@ export default function ReportsFiltersBar({
   return (
     <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5">
       <div className="flex w-full flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-700">
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <p className="inline-flex min-w-max items-center whitespace-nowrap text-sm text-slate-700">
             <span className="font-semibold">{t("admin.reports.filters.showing")}:</span>
             <span className="ml-2 font-semibold">{rangeLabel}</span>
             <span className="mx-2 text-slate-400">-</span>
@@ -289,8 +290,9 @@ export default function ReportsFiltersBar({
         <p className="w-full text-[11px] text-slate-500">{t("common.feedback.updating")}</p>
       ) : null}
 
-      {open ? (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
+      {open
+        ? createPortal(
+        <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
           <button
             type="button"
             className="absolute inset-0"
@@ -498,8 +500,10 @@ export default function ReportsFiltersBar({
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body
+          )
+        : null}
     </section>
   );
 }

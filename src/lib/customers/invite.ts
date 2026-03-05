@@ -10,6 +10,7 @@ import {
 } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
+import { hashPasswordResetToken } from "@/lib/auth/reset-token";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -96,6 +97,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
 
   const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashPasswordResetToken(token);
   const expiresAt = new Date(
     Date.now() + 1000 * 60 * 60 * DEFAULT_INVITE_HOURS
   );
@@ -114,7 +116,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   await prisma.passwordResetToken.create({
     data: {
       userId: user.id,
-      token,
+      token: tokenHash,
       purpose: "INVITE",
       expiresAt,
     },

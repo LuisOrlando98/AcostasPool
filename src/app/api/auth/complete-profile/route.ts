@@ -4,9 +4,10 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { formatCustomerName } from "@/lib/customers/format";
 import { normalizeUsPhone } from "@/lib/phones";
+import { hashPasswordResetToken } from "@/lib/auth/reset-token";
 
 const completeSchema = z.object({
-  token: z.string().min(10),
+  token: z.string().min(10).max(512),
   password: z.string().min(10),
   nombre: z.string().trim().min(1),
   apellidos: z.string().trim().min(1),
@@ -30,25 +31,35 @@ function splitFullName(fullName: string) {
   return { nombre, apellidos: parts.join(" ") };
 }
 
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token") ?? "";
     if (!token) {
-      return NextResponse.json({ error: "Token requerido" }, { status: 400 });
+      return json({ error: "Token requerido" }, 400);
     }
+    const tokenHash = hashPasswordResetToken(token);
 
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: {
+        OR: [{ token: tokenHash }, { token }],
+      },
       include: { user: { include: { customer: true, technician: true } } },
     });
 
     if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
-      return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+      return json({ error: "Token invalido" }, 400);
     }
 
     if (resetToken.expiresAt < new Date()) {
-      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+      return json({ error: "Token expirado" }, 400);
     }
 
     const user = resetToken.user;
@@ -56,11 +67,11 @@ export async function GET(request: Request) {
     const technician = user?.technician;
 
     if (!user) {
-      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+      return json({ error: "Invitacion invalida" }, 400);
     }
 
     if (user.role === "CUSTOMER" && customer) {
-      return NextResponse.json({
+      return json({
         accountType: "CUSTOMER",
         customer: {
           nombre: customer.nombre,
@@ -80,7 +91,7 @@ export async function GET(request: Request) {
 
     if (user.role === "TECH" && technician) {
       const splitName = splitFullName(user.fullName);
-      return NextResponse.json({
+      return json({
         accountType: "TECH",
         technician: {
           nombre: splitName.nombre,
@@ -92,13 +103,10 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+    return json({ error: "Invitacion invalida" }, 400);
   } catch (error) {
     console.error("Complete profile GET failed:", error);
-    return NextResponse.json(
-      { error: "No se pudo validar la invitacion. Intenta de nuevo." },
-      { status: 500 }
-    );
+    return json({ error: "No se pudo validar la invitacion. Intenta de nuevo." }, 500);
   }
 }
 
@@ -107,7 +115,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     const parsed = completeSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Datos invalidos" }, { status: 400 });
+      return json({ error: "Datos invalidos" }, 400);
     }
 
     const {
@@ -124,10 +132,11 @@ export async function POST(request: Request) {
       estadoProvincia,
       codigoPostal,
     } = parsed.data;
+    const tokenHash = hashPasswordResetToken(token);
 
     const telefono = normalizeUsPhone(telefonoRaw);
     if (!telefono) {
-      return NextResponse.json({ error: "Telefono invalido" }, { status: 400 });
+      return json({ error: "Telefono invalido" }, 400);
     }
 
     const telefonoSecundarioClean = telefonoSecundarioRaw?.trim() ?? "";
@@ -135,23 +144,22 @@ export async function POST(request: Request) {
       ? normalizeUsPhone(telefonoSecundarioClean)
       : null;
     if (telefonoSecundarioClean && !telefonoSecundario) {
-      return NextResponse.json(
-        { error: "Telefono secundario invalido" },
-        { status: 400 }
-      );
+      return json({ error: "Telefono secundario invalido" }, 400);
     }
 
-    const resetToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
+    const resetToken = await prisma.passwordResetToken.findFirst({
+      where: {
+        OR: [{ token: tokenHash }, { token }],
+      },
       include: { user: { include: { customer: true, technician: true } } },
     });
 
     if (!resetToken || resetToken.purpose !== "INVITE" || resetToken.usedAt) {
-      return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+      return json({ error: "Token invalido" }, 400);
     }
 
     if (resetToken.expiresAt < new Date()) {
-      return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+      return json({ error: "Token expirado" }, 400);
     }
 
     const user = resetToken.user;
@@ -159,7 +167,7 @@ export async function POST(request: Request) {
     const technician = user?.technician;
 
     if (!user) {
-      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+      return json({ error: "Invitacion invalida" }, 400);
     }
 
     if (user.role === "TECH" && technician) {
@@ -188,11 +196,11 @@ export async function POST(request: Request) {
         }),
       ]);
 
-      return NextResponse.json({ ok: true });
+      return json({ ok: true });
     }
 
     if (user.role !== "CUSTOMER" || !customer) {
-      return NextResponse.json({ error: "Invitacion invalida" }, { status: 400 });
+      return json({ error: "Invitacion invalida" }, 400);
     }
 
     const passwordHash = await hashPassword(password);
@@ -229,12 +237,9 @@ export async function POST(request: Request) {
       }),
     ]);
 
-    return NextResponse.json({ ok: true });
+    return json({ ok: true });
   } catch (error) {
     console.error("Complete profile POST failed:", error);
-    return NextResponse.json(
-      { error: "No se pudo completar el perfil. Intenta nuevamente." },
-      { status: 500 }
-    );
+    return json({ error: "No se pudo completar el perfil. Intenta nuevamente." }, 500);
   }
 }

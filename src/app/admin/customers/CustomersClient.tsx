@@ -6,6 +6,7 @@ import CustomersOverview from "@/components/customers/CustomersOverview";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useI18n } from "@/i18n/client";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type CustomerRow = {
   id: string;
@@ -75,10 +76,9 @@ export default function CustomersClient({
     if (!open) {
       return;
     }
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
-      document.body.style.overflow = original;
+      unlock();
     };
   }, [open]);
 

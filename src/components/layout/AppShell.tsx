@@ -10,6 +10,7 @@ import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 export type NavItem = {
   label: string;
@@ -22,6 +23,9 @@ type MobileUser = {
   email?: string;
   avatarUrl?: string | null;
 };
+
+const MOBILE_USER_CACHE_KEY = "ap:me-cache:v1";
+const MOBILE_USER_CACHE_TTL_MS = 5 * 60 * 1000;
 
 const iconClassName = "h-5 w-5";
 
@@ -430,18 +434,17 @@ export default function AppShell({
     if (!mobileNavOpen || typeof window === "undefined") {
       return;
     }
-    const previousOverflow = document.body.style.overflow;
+    const unlock = lockBodyScroll();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setMobileNavOpen(false);
       }
     };
 
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [mobileNavOpen]);
@@ -450,17 +453,49 @@ export default function AppShell({
     let cancelled = false;
 
     const loadUser = async () => {
-      const response = await fetch("/api/auth/me");
+      if (typeof window !== "undefined") {
+        try {
+          const cached = window.sessionStorage.getItem(MOBILE_USER_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached) as {
+              ts?: number;
+              user?: MobileUser | null;
+            };
+            if (
+              parsed?.ts &&
+              Date.now() - parsed.ts < MOBILE_USER_CACHE_TTL_MS &&
+              parsed.user
+            ) {
+              setMobileUser(parsed.user);
+            }
+          }
+        } catch {
+          // Ignore cache parsing failures.
+        }
+      }
+
+      const response = await fetch("/api/auth/me", { cache: "no-store" });
       const data = await response.json().catch(() => ({ user: null }));
       if (cancelled) {
         return;
       }
       if (data?.user) {
-        setMobileUser({
+        const nextUser = {
           name: data.user.name,
           email: data.user.email,
           avatarUrl: data.user.avatarUrl ?? null,
-        });
+        };
+        setMobileUser(nextUser);
+        if (typeof window !== "undefined") {
+          try {
+            window.sessionStorage.setItem(
+              MOBILE_USER_CACHE_KEY,
+              JSON.stringify({ ts: Date.now(), user: nextUser })
+            );
+          } catch {
+            // Ignore cache write failures.
+          }
+        }
       }
     };
 
@@ -494,7 +529,7 @@ export default function AppShell({
         onChange={(event) => setCollapsed(event.target.checked)}
       />
       <div
-        className={`relative min-h-screen lg:grid lg:h-screen lg:overflow-hidden lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
+        className={`relative min-h-screen lg:grid lg:min-h-screen lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
       >
         <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -808,7 +843,7 @@ export default function AppShell({
         ) : null}
 
         <main
-          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto lg:gap-8 lg:py-10`}
+          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
         >
           {children}
         </main>

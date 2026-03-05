@@ -3,12 +3,18 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
-import { filterTechNotificationsForUser } from "@/lib/notifications/tech";
+import { buildTechRecipientWhere } from "@/lib/notifications/tech";
 
 export async function GET() {
+  const json = (data: unknown, status = 200) =>
+    NextResponse.json(data, {
+      status,
+      headers: { "Cache-Control": "no-store" },
+    });
+
   const session = await getSession();
   if (!session) {
-    return NextResponse.json({ notifications: [] });
+    return json({ notifications: [] });
   }
 
   if (session.role === "ADMIN") {
@@ -18,7 +24,7 @@ export async function GET() {
     );
     const filtered = allowed.filter((eventType) => !disabled.has(eventType));
     if (filtered.length === 0) {
-      return NextResponse.json({ notifications: [] });
+      return json({ notifications: [] });
     }
     const notifications = await prisma.notification.findMany({
       where: {
@@ -30,7 +36,7 @@ export async function GET() {
       take: 20,
       include: { customer: true },
     });
-    return NextResponse.json({
+    return json({
       notifications: notifications.map((item) => ({
         id: item.id,
         eventType: item.eventType,
@@ -51,7 +57,7 @@ export async function GET() {
       where: { userId: session.sub },
     });
     if (!customer) {
-      return NextResponse.json({ notifications: [] });
+      return json({ notifications: [] });
     }
     const { disabled } = await getNotificationPreferences(
       session.sub,
@@ -66,7 +72,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       take: 20,
     });
-    return NextResponse.json({
+    return json({
       notifications: notifications.map((item) => ({
         id: item.id,
         eventType: item.eventType,
@@ -87,19 +93,16 @@ export async function GET() {
       session.sub,
       session.role
     );
-    const candidates = await prisma.notification.findMany({
+    const notifications = await prisma.notification.findMany({
       where: {
         recipientRole: "TECH",
+        AND: buildTechRecipientWhere(session.sub),
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: 120,
+      take: 20,
     });
-    const notifications = filterTechNotificationsForUser(candidates, session.sub).slice(
-      0,
-      20
-    );
-    return NextResponse.json({
+    return json({
       notifications: notifications.map((item) => ({
         id: item.id,
         eventType: item.eventType,
@@ -115,7 +118,7 @@ export async function GET() {
     });
   }
 
-  return NextResponse.json({ notifications: [] });
+  return json({ notifications: [] });
 }
 
 function getNotificationLink(

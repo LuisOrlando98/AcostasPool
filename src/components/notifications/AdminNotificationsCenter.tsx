@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 import {
   getNotificationDetail,
   getNotificationSource,
@@ -240,6 +242,23 @@ export default function AdminNotificationsCenter({
   useEffect(() => {
     setPage(1);
   }, [filters]);
+
+  useEffect(() => {
+    if (!filtersOpen) {
+      return;
+    }
+    const unlock = lockBodyScroll();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFiltersOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      unlock();
+    };
+  }, [filtersOpen]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -598,8 +617,9 @@ export default function AdminNotificationsCenter({
         ) : null}
       </section>
 
-      {filtersOpen ? (
-        <div className="fixed inset-0 z-[2300] flex items-center justify-center bg-slate-900/60 p-3 sm:p-6">
+      {filtersOpen && typeof document !== "undefined"
+        ? createPortal(
+        <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/60 p-3 sm:p-6">
           <button
             type="button"
             onClick={() => setFiltersOpen(false)}
@@ -826,8 +846,10 @@ export default function AdminNotificationsCenter({
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

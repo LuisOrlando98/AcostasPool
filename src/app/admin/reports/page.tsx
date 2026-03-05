@@ -611,7 +611,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </div>
       </section>
 
-      <section className="app-card p-6 shadow-contrast">
+      <section className="app-card overflow-visible p-6 shadow-contrast">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">

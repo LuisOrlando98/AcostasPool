@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
-import { filterTechNotificationsForUser } from "@/lib/notifications/tech";
+import { buildTechRecipientWhere } from "@/lib/notifications/tech";
 
 export async function GET() {
+  const json = (data: unknown, status = 200) =>
+    NextResponse.json(data, {
+      status,
+      headers: { "Cache-Control": "no-store" },
+    });
   const session = await getSession();
   if (!session) {
-    return NextResponse.json({ unread: 0 });
+    return json({ unread: 0 });
   }
 
   if (session.role === "ADMIN") {
@@ -17,7 +22,7 @@ export async function GET() {
     );
     const filtered = allowed.filter((eventType) => !disabled.has(eventType));
     if (filtered.length === 0) {
-      return NextResponse.json({ unread: 0 });
+      return json({ unread: 0 });
     }
     const unread = await prisma.notification.count({
       where: {
@@ -27,7 +32,7 @@ export async function GET() {
         OR: [{ actorUserId: null }, { actorUserId: { not: session.sub } }],
       },
     });
-    return NextResponse.json({ unread });
+    return json({ unread });
   }
 
   if (session.role === "CUSTOMER") {
@@ -35,7 +40,7 @@ export async function GET() {
       where: { userId: session.sub },
     });
     if (!customer) {
-      return NextResponse.json({ unread: 0 });
+      return json({ unread: 0 });
     }
     const since = new Date();
     since.setDate(since.getDate() - 7);
@@ -52,7 +57,7 @@ export async function GET() {
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
     });
-    return NextResponse.json({ unread });
+    return json({ unread });
   }
 
   if (session.role === "TECH") {
@@ -62,18 +67,17 @@ export async function GET() {
       session.sub,
       session.role
     );
-    const candidates = await prisma.notification.findMany({
+    const unread = await prisma.notification.count({
       where: {
         recipientRole: "TECH",
+        AND: buildTechRecipientWhere(session.sub),
         readAt: null,
         createdAt: { gte: since },
         ...(disabled.size > 0 ? { eventType: { notIn: [...disabled] } } : {}),
       },
-      select: { id: true, payload: true },
     });
-    const unread = filterTechNotificationsForUser(candidates, session.sub).length;
-    return NextResponse.json({ unread });
+    return json({ unread });
   }
 
-  return NextResponse.json({ unread: 0 });
+  return json({ unread: 0 });
 }

@@ -78,6 +78,8 @@ async function updateProfile(formData: FormData) {
     httpOnly: false,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
+    priority: "medium",
+    maxAge: 60 * 60 * 24 * 30,
     path: "/",
   });
 }

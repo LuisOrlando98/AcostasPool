@@ -48,6 +48,8 @@ const ALERT_SWIPE_CLOSE_THRESHOLD = -60;
 const ROW_SWIPE_OPEN_THRESHOLD = -36;
 const ROW_SWIPE_DELETE_THRESHOLD = -56;
 const ROW_SWIPE_MAX = -92;
+const NOTIFICATIONS_CACHE_KEY = "ap:notifications:recent:v1";
+const NOTIFICATIONS_CACHE_TTL_MS = 30 * 1000;
 
 function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
   const aTime = new Date(a.createdAt).getTime();
@@ -187,6 +189,29 @@ export default function NotificationsBell() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      if (typeof window !== "undefined") {
+        try {
+          const cached = window.sessionStorage.getItem(NOTIFICATIONS_CACHE_KEY);
+          if (cached) {
+            const parsed = JSON.parse(cached) as {
+              ts?: number;
+              unread?: number;
+              notifications?: NotificationItem[];
+            };
+            if (
+              parsed?.ts &&
+              Date.now() - parsed.ts < NOTIFICATIONS_CACHE_TTL_MS &&
+              Array.isArray(parsed.notifications)
+            ) {
+              setUnreadCount(typeof parsed.unread === "number" ? parsed.unread : 0);
+              setNotifications([...parsed.notifications].sort(byCreatedDesc));
+            }
+          }
+        } catch {
+          // Ignore cache read failures.
+        }
+      }
+
       const cacheBust = Date.now().toString();
       const [unreadRes, notificationsRes] = await Promise.all([
         fetch(`/api/notifications/unread?cb=${cacheBust}`, { cache: "no-store" }),
@@ -204,6 +229,20 @@ export default function NotificationsBell() {
         ? (notificationsData.notifications as NotificationItem[])
         : [];
       setNotifications([...resolved].sort(byCreatedDesc));
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            NOTIFICATIONS_CACHE_KEY,
+            JSON.stringify({
+              ts: Date.now(),
+              unread: typeof unreadData.unread === "number" ? unreadData.unread : 0,
+              notifications: resolved,
+            })
+          );
+        } catch {
+          // Ignore cache write failures.
+        }
+      }
 
       if (!userId) {
         const meRes = await fetch("/api/auth/me", { cache: "no-store" });

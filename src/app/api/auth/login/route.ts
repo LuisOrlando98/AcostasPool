@@ -91,11 +91,13 @@ export async function POST(request: Request) {
       role: user.role,
       name: user.fullName,
     });
+    response.headers.set("Cache-Control", "no-store");
 
     response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      priority: "high",
       path: "/",
       ...(remember ? { maxAge: AUTH_COOKIE_MAX_AGE } : {}),
     });
@@ -105,6 +107,7 @@ export async function POST(request: Request) {
       httpOnly: false,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+      priority: "medium",
       maxAge: AUTH_COOKIE_MAX_AGE,
       path: "/",
     });

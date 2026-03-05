@@ -15,6 +15,18 @@ const GENERIC_RESPONSE = {
 };
 
 export async function POST(request: Request) {
+  const json = (
+    data: unknown,
+    options?: { status?: number; headers?: Record<string, string> }
+  ) =>
+    NextResponse.json(data, {
+      status: options?.status,
+      headers: {
+        "Cache-Control": "no-store",
+        ...(options?.headers ?? {}),
+      },
+    });
+
   const ip = getClientIp(request);
   const ipRate = await checkRateLimit({
     key: `auth:forgot:ip:${ip}`,
@@ -22,7 +34,7 @@ export async function POST(request: Request) {
     windowMs: 60 * 60_000,
   });
   if (!ipRate.allowed) {
-    return NextResponse.json(
+    return json(
       { error: "Too many attempts. Please try again later." },
       {
         status: 429,
@@ -34,7 +46,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = forgotSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json(GENERIC_RESPONSE);
+    return json(GENERIC_RESPONSE);
   }
 
   const email = normalizeEmail(parsed.data.email);
@@ -44,7 +56,7 @@ export async function POST(request: Request) {
     windowMs: 60 * 60_000,
   });
   if (!emailRate.allowed) {
-    return NextResponse.json(GENERIC_RESPONSE);
+    return json(GENERIC_RESPONSE);
   }
 
   const user = await prisma.user.findFirst({
@@ -70,5 +82,5 @@ export async function POST(request: Request) {
     });
   }
 
-  return NextResponse.json(GENERIC_RESPONSE);
+  return json(GENERIC_RESPONSE);
 }

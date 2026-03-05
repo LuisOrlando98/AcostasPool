@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAssetUrl } from "@/lib/assets";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type EvidencePhoto = {
   id: string;
@@ -30,17 +31,16 @@ export default function ClientJobEvidenceGallery({
     if (!activePhoto) {
       return;
     }
-    const previousOverflow = document.body.style.overflow;
+    const unlock = lockBodyScroll();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setActivePhoto(null);
       }
     };
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlock();
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [activePhoto]);

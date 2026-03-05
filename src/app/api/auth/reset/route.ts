@@ -3,13 +3,26 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { hashPasswordResetToken } from "@/lib/auth/reset-token";
 
 const resetSchema = z.object({
-  token: z.string().min(10),
+  token: z.string().min(10).max(512),
   password: z.string().min(10),
 });
 
 export async function POST(request: Request) {
+  const json = (
+    data: unknown,
+    options?: { status?: number; headers?: Record<string, string> }
+  ) =>
+    NextResponse.json(data, {
+      status: options?.status,
+      headers: {
+        "Cache-Control": "no-store",
+        ...(options?.headers ?? {}),
+      },
+    });
+
   const ip = getClientIp(request);
   const rate = await checkRateLimit({
     key: `auth:reset:ip:${ip}`,
@@ -17,7 +30,7 @@ export async function POST(request: Request) {
     windowMs: 15 * 60_000,
   });
   if (!rate.allowed) {
-    return NextResponse.json(
+    return json(
       { error: "Too many attempts. Please try again later." },
       {
         status: 429,
@@ -29,12 +42,15 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = resetSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    return json({ error: "Invalid data" }, { status: 400 });
   }
 
   const { token, password } = parsed.data;
-  const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
+  const tokenHash = hashPasswordResetToken(token);
+  const resetToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      OR: [{ token: tokenHash }, { token }],
+    },
     include: { user: { include: { customer: true } } },
   });
 
@@ -43,11 +59,11 @@ export async function POST(request: Request) {
     resetToken.purpose !== "PASSWORD_RESET" ||
     resetToken.usedAt
   ) {
-    return NextResponse.json({ error: "Token invalido" }, { status: 400 });
+    return json({ error: "Token invalido" }, { status: 400 });
   }
 
   if (resetToken.expiresAt < new Date()) {
-    return NextResponse.json({ error: "Token expirado" }, { status: 400 });
+    return json({ error: "Token expirado" }, { status: 400 });
   }
 
   const passwordHash = await hashPassword(password);
@@ -70,5 +86,5 @@ export async function POST(request: Request) {
     data: { usedAt: new Date() },
   });
 
-  return NextResponse.json({ ok: true });
+  return json({ ok: true });
 }

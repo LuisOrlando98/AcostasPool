@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
+import { hashPasswordResetToken } from "@/lib/auth/reset-token";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -36,6 +37,7 @@ export async function sendTechnicianInvite(technicianId: string): Promise<Invite
   }
 
   const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashPasswordResetToken(token);
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * DEFAULT_INVITE_HOURS);
 
   await prisma.passwordResetToken.updateMany({
@@ -52,7 +54,7 @@ export async function sendTechnicianInvite(technicianId: string): Promise<Invite
   await prisma.passwordResetToken.create({
     data: {
       userId: technician.userId,
-      token,
+      token: tokenHash,
       purpose: "INVITE",
       expiresAt,
     },

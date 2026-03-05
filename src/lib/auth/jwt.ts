@@ -30,8 +30,16 @@ export async function signSessionToken(payload: SessionPayload) {
 export async function verifySessionToken(token: string) {
   try {
     const secret = getSecret();
-    const { payload } = await jwtVerify(token, secret);
-    if (!payload.sub || typeof payload.role !== "string") {
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: ["HS256"],
+    });
+    const role = payload.role;
+    if (
+      typeof payload.sub !== "string" ||
+      typeof payload.email !== "string" ||
+      typeof payload.name !== "string" ||
+      (role !== "ADMIN" && role !== "TECH" && role !== "CUSTOMER")
+    ) {
       return null;
     }
     return payload as SessionPayload;

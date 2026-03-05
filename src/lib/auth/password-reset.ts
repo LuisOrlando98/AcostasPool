@@ -7,6 +7,7 @@ import {
   resolveEmailTemplateLocale,
 } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
+import { hashPasswordResetToken } from "@/lib/auth/reset-token";
 
 const PASSWORD_RESET_HOURS = 2;
 
@@ -22,6 +23,7 @@ type SendPasswordResetEmailResult = { ok: true } | { ok: false; error: string };
 
 async function issuePasswordResetToken(userId: string) {
   const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashPasswordResetToken(token);
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * PASSWORD_RESET_HOURS);
 
   await prisma.passwordResetToken.updateMany({
@@ -30,7 +32,7 @@ async function issuePasswordResetToken(userId: string) {
   });
 
   await prisma.passwordResetToken.create({
-    data: { userId, token, purpose: "PASSWORD_RESET", expiresAt },
+    data: { userId, token: tokenHash, purpose: "PASSWORD_RESET", expiresAt },
   });
 
   return { token, expiresAt };

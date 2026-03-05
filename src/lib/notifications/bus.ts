@@ -51,12 +51,14 @@ export function broadcastNotification(event: NotificationEventPayload) {
       continue;
     }
     if (
-      subscriber.role === "CUSTOMER" &&
-      subscriber.customerId &&
-      event.customerId &&
-      subscriber.customerId !== event.customerId
+      subscriber.role === "CUSTOMER"
     ) {
-      continue;
+      if (!subscriber.customerId || !event.customerId) {
+        continue;
+      }
+      if (subscriber.customerId !== event.customerId) {
+        continue;
+      }
     }
     if (
       subscriber.allowedEventTypes &&

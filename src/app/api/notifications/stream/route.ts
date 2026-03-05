@@ -21,6 +21,12 @@ export async function GET() {
       select: { id: true },
     });
     customerId = customer?.id ?? null;
+    if (!customerId) {
+      return NextResponse.json(
+        { error: "Customer account is not linked." },
+        { status: 403 }
+      );
+    }
   }
 
   const { allowed, disabled } = await getNotificationPreferences(

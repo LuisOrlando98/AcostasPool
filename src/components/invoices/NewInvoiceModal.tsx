@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import InvoiceCreateForm from "@/components/invoices/InvoiceCreateForm";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type CustomerOption = {
   id: string;
@@ -49,8 +50,7 @@ export default function NewInvoiceModal({
       return;
     }
 
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -61,7 +61,7 @@ export default function NewInvoiceModal({
     window.addEventListener("keydown", handleEscape);
     return () => {
       window.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = originalOverflow;
+      unlock();
     };
   }, [isOpen]);
 

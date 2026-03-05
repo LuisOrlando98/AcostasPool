@@ -160,10 +160,12 @@ export async function POST(request: Request) {
   });
 
   const response = NextResponse.json({ ok: true, avatarUrl });
+  response.headers.set("Cache-Control", "no-store");
   response.cookies.set(AUTH_COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
+    priority: "high",
     maxAge: AUTH_COOKIE_MAX_AGE,
     path: "/",
   });

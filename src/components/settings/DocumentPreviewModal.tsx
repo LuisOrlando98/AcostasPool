@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
+import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type DocumentPreviewModalProps = {
   srcDoc?: string;
@@ -44,11 +45,10 @@ export default function DocumentPreviewModal({
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = originalOverflow;
+      unlock();
     };
   }, [open]);
 
