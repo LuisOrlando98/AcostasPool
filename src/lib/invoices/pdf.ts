@@ -127,93 +127,46 @@ async function generateInvoicePdfWithPdfLib(
   const [lightR, lightG, lightB] = toPdfRgbTuple(resolvedTheme.lightHex);
   const brandColor = rgb(brandR, brandG, brandB);
   const lightColor = rgb(lightR, lightG, lightB);
+  const lineColor = rgb(0.84, 0.89, 0.94);
+  const lineStrongColor = rgb(0.71, 0.78, 0.86);
+  const textColor = rgb(0.09, 0.14, 0.22);
+  const textSoftColor = rgb(0.18, 0.28, 0.4);
+  const mutedColor = rgb(0.37, 0.45, 0.56);
+  const backgroundColor = rgb(0.95, 0.97, 1);
   const whiteColor = rgb(1, 1, 1);
-
-  let page = pdfDoc.addPage([612, 792]);
-  const drawHeader = () => {
-    const { width, height } = page.getSize();
-    const headerHeight = 164;
-    const headerBottom = height - headerHeight;
-
-    page.drawRectangle({
-      x: 0,
-      y: headerBottom,
-      width,
-      height: headerHeight,
-      color: brandColor,
-    });
-
-    page.drawText("ACOSTA'S", {
-      x: 42,
-      y: height - 76,
-      size: 50,
-      font: boldFont,
-      color: whiteColor,
-    });
-    page.drawText("POOL", {
-      x: 164,
-      y: height - 128,
-      size: 50,
-      font: boldFont,
-      color: whiteColor,
-    });
-    page.drawLine({
-      start: { x: 42, y: height - 138 },
-      end: { x: 340, y: height - 138 },
-      thickness: 2.2,
-      color: whiteColor,
-    });
-    page.drawText("REPAIR AND MAINTENANCE", {
-      x: 42,
-      y: height - 160,
-      size: 15,
-      font: regularFont,
-      color: whiteColor,
-    });
-
-    page.drawText(resolvedTheme.label, {
-      x: 390,
-      y: height - 72,
-      size: 29,
-      font: boldFont,
-      color: whiteColor,
-    });
-    page.drawText(`Invoice #: ${input.invoiceNumber}`, {
-      x: 390,
-      y: height - 96,
-      size: 11,
-      font: boldFont,
-      color: whiteColor,
-    });
-    page.drawText(`Issue date: ${input.issueDate.toLocaleDateString("en-US")}`, {
-      x: 390,
-      y: height - 114,
-      size: 11,
-      font: boldFont,
-      color: whiteColor,
-    });
-
-    page.drawRectangle({
-      x: 0,
-      y: headerBottom - 5,
-      width,
-      height: 5,
-      color: whiteColor,
-    });
+  const pageWidth = 612;
+  const pageHeight = 792;
+  const marginX = 46;
+  const contentWidth = pageWidth - marginX * 2;
+  const tableColumns = {
+    index: marginX + 6,
+    description: marginX + 36,
+    qty: marginX + 304,
+    unitPrice: marginX + 370,
+    amount: marginX + 456,
+    right: marginX + contentWidth,
   };
+  const companyDisplay = template.companyName.trim() || "ACOSTASPOOL";
+  const notesContent = (input.notes ?? template.footerNote).trim() || "Thank you for trusting us.";
+  const paymentTerms = template.legalClauses[0]
+    ? `Payment terms: ${template.legalClauses[0]}`
+    : "Payment terms: Due upon receipt.";
 
-  drawHeader();
-  let cursorY = 598;
-
-  const wrapText = (value: string, maxChars: number) => {
+  const wrapText = (
+    value: string,
+    maxWidth: number,
+    size: number,
+    font: typeof regularFont | typeof boldFont = regularFont
+  ) => {
     const clean = value.trim();
     if (!clean) return [];
+
     const words = clean.split(/\s+/);
     const lines: string[] = [];
     let current = "";
     for (const word of words) {
       const next = current ? `${current} ${word}` : word;
-      if (next.length > maxChars && current) {
+      if (font.widthOfTextAtSize(next, size) > maxWidth && current) {
         lines.push(current);
         current = word;
       } else {
@@ -226,92 +179,170 @@ async function generateInvoicePdfWithPdfLib(
     return lines;
   };
 
-  const drawText = (
-    value: string,
-    opts?: {
-      x?: number;
-      size?: number;
-      bold?: boolean;
-      color?: [number, number, number];
-      lineGap?: number;
-    }
+  let page = pdfDoc.addPage([pageWidth, pageHeight]);
+  let cursorY = 0;
+
+  const drawRightText = (
+    text: string,
+    xRight: number,
+    y: number,
+    size: number,
+    font: typeof regularFont | typeof boldFont,
+    color = textColor
   ) => {
-    const text = value.trim();
-    if (!text) return;
-    const x = opts?.x ?? 48;
-    const size = opts?.size ?? 11;
-    const font = opts?.bold ? boldFont : regularFont;
-    const [r, g, b] = opts?.color ?? [0.06, 0.09, 0.16];
-    const needed = (opts?.lineGap ?? 6) + size;
-
-    if (cursorY < 60) {
-      page = pdfDoc.addPage([612, 792]);
-      drawHeader();
-      cursorY = 598;
-    }
-
     page.drawText(text, {
-      x,
-      y: cursorY,
+      x: xRight - font.widthOfTextAtSize(text, size),
+      y,
       size,
       font,
-      color: rgb(r, g, b),
+      color,
     });
-    cursorY -= needed;
   };
 
-  const drawInfoCard = (x: number, title: string, primary: string, secondary: string[]) => {
-    const cardTop = cursorY;
-    const cardHeight = 92;
-    const cardBottom = cardTop - cardHeight;
-    const cardWidth = 248;
+  const drawDivider = (y: number, thickness = 1, color = lineColor) => {
+    page.drawLine({
+      start: { x: marginX, y },
+      end: { x: marginX + contentWidth, y },
+      thickness,
+      color,
+    });
+  };
+
+  const drawHeader = () => {
+    const headerHeight = 158;
+    const headerBottom = pageHeight - headerHeight;
+    const brandLines = wrapText(companyDisplay, 324, 48, boldFont).slice(0, 2);
 
     page.drawRectangle({
-      x,
-      y: cardBottom,
-      width: cardWidth,
-      height: cardHeight,
-      color: rgb(0.98, 0.99, 1),
-      borderColor: rgb(0.79, 0.85, 0.92),
-      borderWidth: 1,
+      x: 0,
+      y: headerBottom,
+      width: pageWidth,
+      height: headerHeight,
+      color: brandColor,
     });
 
-    page.drawText(title, {
-      x: x + 10,
-      y: cardTop - 14,
-      size: 9,
-      font: boldFont,
-      color: rgb(brandR, brandG, brandB),
-    });
+    let brandY = pageHeight - 78;
+    for (const line of brandLines) {
+      page.drawText(line.toUpperCase(), {
+        x: marginX,
+        y: brandY,
+        size: 48,
+        font: boldFont,
+        color: whiteColor,
+      });
+      brandY -= 46;
+    }
 
-    page.drawText(primary, {
-      x: x + 10,
-      y: cardTop - 32,
+    const subtitle = template.headerSubtitle.trim() || "Service Administration System";
+    page.drawLine({
+      start: { x: marginX, y: pageHeight - 140 },
+      end: { x: 360, y: pageHeight - 140 },
+      thickness: 2,
+      color: whiteColor,
+    });
+    page.drawText(subtitle.toUpperCase(), {
+      x: marginX,
+      y: pageHeight - 155,
       size: 11,
-      font: boldFont,
-      color: rgb(0.07, 0.13, 0.22),
+      font: regularFont,
+      color: whiteColor,
     });
 
-    let lineY = cardTop - 46;
-    for (const line of secondary) {
-      if (lineY < cardBottom + 8) {
-        break;
-      }
-      for (const wrapped of wrapText(line, 38)) {
-        if (lineY < cardBottom + 8) {
-          break;
-        }
-        page.drawText(wrapped, {
-          x: x + 10,
-          y: lineY,
-          size: 9,
-          font: regularFont,
-          color: rgb(0.3, 0.4, 0.52),
-        });
-        lineY -= 11;
-      }
+    const labelSize = resolvedTheme.label.length > 12 ? 22 : 30;
+    drawRightText(
+      resolvedTheme.label,
+      marginX + contentWidth,
+      pageHeight - 70,
+      labelSize,
+      boldFont,
+      whiteColor
+    );
+    drawRightText(
+      `${template.invoiceNumberLabel}: ${input.invoiceNumber}`,
+      marginX + contentWidth,
+      pageHeight - 97,
+      11,
+      boldFont,
+      whiteColor
+    );
+    drawRightText(
+      `${template.issueDateLabel}: ${input.issueDate.toLocaleDateString("en-US")}`,
+      marginX + contentWidth,
+      pageHeight - 114,
+      11,
+      boldFont,
+      whiteColor
+    );
+
+    page.drawLine({
+      start: { x: marginX, y: headerBottom },
+      end: { x: marginX + contentWidth, y: headerBottom },
+      thickness: 2,
+      color: whiteColor,
+    });
+
+    cursorY = headerBottom - 34;
+  };
+
+  const startNewPage = () => {
+    page = pdfDoc.addPage([pageWidth, pageHeight]);
+    drawHeader();
+  };
+
+  const ensureSpace = (required: number) => {
+    if (cursorY - required < 54) {
+      startNewPage();
     }
   };
+
+  const drawTableHeader = () => {
+    page.drawLine({
+      start: { x: marginX, y: cursorY },
+      end: { x: marginX + contentWidth, y: cursorY },
+      thickness: 1.8,
+      color: brandColor,
+    });
+    cursorY -= 6;
+    page.drawRectangle({
+      x: marginX,
+      y: cursorY - 16,
+      width: contentWidth,
+      height: 18,
+      color: lightColor,
+    });
+    page.drawText("#", {
+      x: tableColumns.index,
+      y: cursorY - 11,
+      size: 10,
+      font: boldFont,
+      color: brandColor,
+    });
+    page.drawText(template.tableDescriptionLabel, {
+      x: tableColumns.description,
+      y: cursorY - 11,
+      size: 10,
+      font: boldFont,
+      color: brandColor,
+    });
+    page.drawText("Qty", {
+      x: tableColumns.qty,
+      y: cursorY - 11,
+      size: 10,
+      font: boldFont,
+      color: brandColor,
+    });
+    page.drawText("Unit Price", {
+      x: tableColumns.unitPrice,
+      y: cursorY - 11,
+      size: 10,
+      font: boldFont,
+      color: brandColor,
+    });
+    drawRightText(template.tableAmountLabel, tableColumns.right - 8, cursorY - 11, 10, boldFont, brandColor);
+    cursorY -= 20;
+  };
+
+  drawHeader();
 
   const billPrimary = input.customerName.trim() || "Customer";
   const billSecondary = [
@@ -335,119 +366,329 @@ async function generateInvoicePdfWithPdfLib(
     .map((line) => line.trim())
     .filter(Boolean);
 
-  drawInfoCard(48, "Bill To", billPrimary, billSecondary);
-  drawInfoCard(316, "Issued By", issuerPrimary, issuerSecondary);
-  cursorY -= 114;
-
-  page.drawRectangle({
-    x: 48,
-    y: cursorY - 2,
-    width: 516,
-    height: 20,
-    color: lightColor,
-  });
-  drawText("Description", { x: 56, bold: true, size: 11, color: [brandR, brandG, brandB] });
-  drawText("Qty", { x: 350, bold: true, size: 11, color: [brandR, brandG, brandB] });
-  drawText("Price", { x: 410, bold: true, size: 11, color: [brandR, brandG, brandB] });
-  drawText("Amount", { x: 500, bold: true, size: 11, color: [brandR, brandG, brandB] });
-  cursorY -= 2;
-
-  for (const item of items) {
-    drawText(item.label, { x: 48, size: 10 });
-    drawText(String(item.quantity), { x: 340, size: 10 });
-    drawText(`$${item.unitPrice.toFixed(2)}`, { x: 400, size: 10 });
-    drawText(`$${item.amount.toFixed(2)}`, { x: 490, size: 10 });
-  }
-
-  cursorY -= 6;
-  drawText(`Subtotal: $${input.subtotal.toFixed(2)}`, {
-    x: 400,
-    bold: true,
-    color: [brandR, brandG, brandB],
-  });
-  drawText(`Tax: $${input.tax.toFixed(2)}`, {
-    x: 400,
-    bold: true,
-    color: [brandR, brandG, brandB],
-  });
-  drawText(`Total: $${input.total.toFixed(2)}`, {
-    x: 400,
-    bold: true,
-    size: 13,
-    color: [brandR, brandG, brandB],
-  });
-
-  const detailTop = cursorY - 8;
-  const detailHeight = 58;
-  const drawDetailCard = (x: number, title: string, main: string, sub?: string) => {
-    const width = 248;
-    const bottom = detailTop - detailHeight;
-    page.drawRectangle({
-      x,
-      y: bottom,
-      width,
-      height: detailHeight,
-      color: rgb(0.98, 0.99, 1),
-      borderColor: rgb(0.79, 0.85, 0.92),
-      borderWidth: 1,
+  const drawInfoBlock = (x: number, title: string, primary: string, secondary: string[]) => {
+    const startY = cursorY;
+    const blockWidth = 248;
+    page.drawLine({
+      start: { x, y: startY + 2 },
+      end: { x, y: startY - 62 },
+      thickness: 2,
+      color: brandColor,
     });
-    page.drawText(title, {
+    page.drawText(title.toUpperCase(), {
       x: x + 10,
-      y: detailTop - 13,
+      y: startY,
       size: 9,
       font: boldFont,
-      color: rgb(brandR, brandG, brandB),
+      color: mutedColor,
     });
-    const mainLines = wrapText(main, 44).slice(0, 2);
-    let mainY = detailTop - 27;
-    for (const line of mainLines) {
-      page.drawText(line, {
-        x: x + 10,
-        y: mainY,
-        size: 9,
-        font: regularFont,
-        color: rgb(0.11, 0.19, 0.31),
-      });
-      mainY -= 11;
-    }
-    if (sub) {
-      page.drawText(sub, {
-        x: x + 10,
-        y: detailTop - 49,
-        size: 8,
-        font: regularFont,
-        color: rgb(0.38, 0.47, 0.58),
-      });
+    page.drawText(primary, {
+      x: x + 10,
+      y: startY - 19,
+      size: 15,
+      font: boldFont,
+      color: textColor,
+    });
+    let lineY = startY - 33;
+    for (const entry of secondary) {
+      const wrapped = wrapText(entry, blockWidth - 16, 9.5);
+      for (const line of wrapped) {
+        if (lineY < startY - 66) {
+          break;
+        }
+        page.drawText(line, {
+          x: x + 10,
+          y: lineY,
+          size: 9.5,
+          font: regularFont,
+          color: textSoftColor,
+        });
+        lineY -= 11;
+      }
     }
   };
 
-  drawDetailCard(
-    48,
-    "Payment Method",
-    "Credit | Debit | ACH | Check",
-    "We accept: Visa, MasterCard, Zelle and Cash"
-  );
-  drawDetailCard(
-    316,
-    "Notes",
-    (input.notes ?? template.footerNote).trim() || "Thank you for trusting AcostasPool.",
-    ""
-  );
-  cursorY = detailTop - detailHeight - 12;
+  drawInfoBlock(marginX, template.billToLabel, billPrimary, billSecondary);
+  drawInfoBlock(marginX + 272, "Issued By", issuerPrimary, issuerSecondary);
+  cursorY -= 78;
+  drawDivider(cursorY, 1, lineColor);
+  cursorY -= 14;
 
-  drawText(template.clausesTitle, {
-    bold: true,
-    size: 10,
-    color: [brandR, brandG, brandB],
-  });
-  for (const clause of template.legalClauses.slice(0, 4)) {
-    for (const line of wrapText(clause, 100)) {
-      drawText(`- ${line}`, {
-        size: 8,
-        color: [0.37, 0.45, 0.56],
-        lineGap: 3,
+  drawTableHeader();
+
+  if (items.length === 0) {
+    page.drawText("No line items", {
+      x: tableColumns.description,
+      y: cursorY - 10,
+      size: 10,
+      font: regularFont,
+      color: mutedColor,
+    });
+    cursorY -= 20;
+    drawDivider(cursorY, 1, lineColor);
+  } else {
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      const labelLines = wrapText(
+        item.label,
+        tableColumns.qty - tableColumns.description - 8,
+        10
+      ).slice(0, 3);
+      const rowHeight = Math.max(20, labelLines.length * 12 + 6);
+
+      if (cursorY - rowHeight < 220) {
+        startNewPage();
+        drawTableHeader();
+      }
+
+      const rowTop = cursorY - 2;
+      page.drawText(String(index + 1), {
+        x: tableColumns.index,
+        y: rowTop - 10,
+        size: 10,
+        font: regularFont,
+        color: mutedColor,
       });
+      let lineY = rowTop - 10;
+      for (const line of labelLines) {
+        page.drawText(line, {
+          x: tableColumns.description,
+          y: lineY,
+          size: 10,
+          font: regularFont,
+          color: textColor,
+        });
+        lineY -= 12;
+      }
+      page.drawText(String(item.quantity), {
+        x: tableColumns.qty,
+        y: rowTop - 10,
+        size: 10,
+        font: regularFont,
+        color: textSoftColor,
+      });
+      drawRightText(`$${item.unitPrice.toFixed(2)}`, tableColumns.amount - 8, rowTop - 10, 10, regularFont, textSoftColor);
+      drawRightText(`$${item.amount.toFixed(2)}`, tableColumns.right - 8, rowTop - 10, 10, boldFont, textColor);
+
+      cursorY -= rowHeight;
+      drawDivider(cursorY, 1, lineColor);
+      cursorY -= 2;
     }
+  }
+
+  cursorY -= 10;
+  ensureSpace(170);
+  const summaryTop = cursorY;
+  const noteWidth = 302;
+
+  page.drawText("SERVICE NOTES", {
+    x: marginX,
+    y: summaryTop,
+    size: 9,
+    font: boldFont,
+    color: mutedColor,
+  });
+
+  let notesY = summaryTop - 14;
+  for (const line of wrapText(notesContent, noteWidth, 10)) {
+    page.drawText(line, {
+      x: marginX,
+      y: notesY,
+      size: 10,
+      font: regularFont,
+      color: textSoftColor,
+    });
+    notesY -= 12;
+  }
+  notesY -= 3;
+  for (const line of wrapText(paymentTerms, noteWidth, 9.5)) {
+    page.drawText(line, {
+      x: marginX,
+      y: notesY,
+      size: 9.5,
+      font: regularFont,
+      color: mutedColor,
+    });
+    notesY -= 11;
+  }
+
+  const totalsX = marginX + 340;
+  page.drawLine({
+    start: { x: totalsX - 16, y: summaryTop + 4 },
+    end: { x: totalsX - 16, y: summaryTop - 74 },
+    thickness: 2,
+    color: lineStrongColor,
+  });
+  page.drawText("INVOICE SUMMARY", {
+    x: totalsX,
+    y: summaryTop,
+    size: 9,
+    font: boldFont,
+    color: mutedColor,
+  });
+  page.drawText(template.subtotalLabel, {
+    x: totalsX,
+    y: summaryTop - 17,
+    size: 11,
+    font: regularFont,
+    color: mutedColor,
+  });
+  drawRightText(`$${input.subtotal.toFixed(2)}`, marginX + contentWidth, summaryTop - 17, 11, boldFont, textColor);
+  page.drawText(`${template.taxLabel} (7%)`, {
+    x: totalsX,
+    y: summaryTop - 33,
+    size: 11,
+    font: regularFont,
+    color: mutedColor,
+  });
+  drawRightText(`$${input.tax.toFixed(2)}`, marginX + contentWidth, summaryTop - 33, 11, boldFont, textColor);
+  page.drawText(template.totalLabel, {
+    x: totalsX,
+    y: summaryTop - 56,
+    size: 20,
+    font: boldFont,
+    color: brandColor,
+  });
+  drawRightText(`$${input.total.toFixed(2)}`, marginX + contentWidth, summaryTop - 56, 24, boldFont, brandColor);
+  cursorY = Math.min(notesY, summaryTop - 84) - 6;
+
+  ensureSpace(140);
+  const servicesTop = cursorY;
+  const servicesHeight = 82;
+  const sectionGap = 12;
+  const sectionWidth = (contentWidth - sectionGap * 2) / 3;
+
+  page.drawRectangle({
+    x: marginX,
+    y: servicesTop - servicesHeight,
+    width: contentWidth,
+    height: servicesHeight,
+    color: backgroundColor,
+  });
+  drawDivider(servicesTop, 1, lineColor);
+  drawDivider(servicesTop - servicesHeight, 1, lineColor);
+
+  const drawServiceSection = (
+    x: number,
+    title: string,
+    main: string,
+    sub: string
+  ) => {
+    page.drawText(title, {
+      x,
+      y: servicesTop - 13,
+      size: 8.5,
+      font: boldFont,
+      color: mutedColor,
+    });
+    let mainY = servicesTop - 27;
+    for (const line of wrapText(main, sectionWidth - 4, 9.5)) {
+      page.drawText(line, {
+        x,
+        y: mainY,
+        size: 9.5,
+        font: regularFont,
+        color: textColor,
+      });
+      mainY -= 11;
+      if (mainY < servicesTop - 53) {
+        break;
+      }
+    }
+    let subY = servicesTop - 58;
+    for (const line of wrapText(sub, sectionWidth - 4, 8.5)) {
+      page.drawText(line, {
+        x,
+        y: subY,
+        size: 8.5,
+        font: regularFont,
+        color: mutedColor,
+      });
+      subY -= 10;
+      if (subY < servicesTop - 78) {
+        break;
+      }
+    }
+  };
+
+  drawServiceSection(
+    marginX + 4,
+    "PAYMENT METHODS",
+    "Credit | Debit | ACH | Check | Zelle | Cash",
+    "Use invoice number as payment reference."
+  );
+  drawServiceSection(
+    marginX + sectionWidth + sectionGap + 4,
+    "NOTES",
+    notesContent,
+    template.footerNote.trim() || "Thank you for trusting us."
+  );
+  drawServiceSection(
+    marginX + (sectionWidth + sectionGap) * 2 + 4,
+    "BILLING SUPPORT",
+    [template.companyEmail, template.companyPhone, template.companyWebsite]
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(" | ") || "Contact our billing team for assistance.",
+    template.companyTaxId.trim() || "Business tax information available upon request."
+  );
+  cursorY = servicesTop - servicesHeight - 14;
+
+  ensureSpace(120);
+  page.drawText(template.clausesTitle, {
+    x: marginX,
+    y: cursorY,
+    size: 10,
+    font: boldFont,
+    color: brandColor,
+  });
+  let clauseY = cursorY - 14;
+  for (const clause of template.legalClauses.slice(0, 5)) {
+    const lines = wrapText(`- ${clause}`, contentWidth, 8.5);
+    for (const line of lines) {
+      if (clauseY < 66) {
+        break;
+      }
+      page.drawText(line, {
+        x: marginX,
+        y: clauseY,
+        size: 8.5,
+        font: regularFont,
+        color: mutedColor,
+      });
+      clauseY -= 10;
+    }
+  }
+
+  const signatureY = Math.max(56, clauseY - 12);
+  page.drawLine({
+    start: { x: marginX, y: signatureY },
+    end: { x: marginX + 250, y: signatureY },
+    thickness: 1,
+    color: lineStrongColor,
+  });
+  page.drawText("Authorized signature", {
+    x: marginX,
+    y: signatureY - 11,
+    size: 9,
+    font: regularFont,
+    color: mutedColor,
+  });
+  drawRightText(companyDisplay, marginX + contentWidth, signatureY + 2, 11, boldFont, textSoftColor);
+  drawRightText("Billing Team", marginX + contentWidth, signatureY - 11, 9, regularFont, mutedColor);
+
+  if (theme === "ESTIMATE" && template.showEstimateWatermark && resolvedTheme.watermarkText.trim()) {
+    const watermarkText = resolvedTheme.watermarkText.trim().toUpperCase();
+    const size = 90;
+    const textWidth = boldFont.widthOfTextAtSize(watermarkText, size);
+    page.drawText(watermarkText, {
+      x: (pageWidth - textWidth) / 2,
+      y: (pageHeight - size) / 2,
+      size,
+      font: boldFont,
+      color: rgb(brandR * 0.8 + 0.2, brandG * 0.8 + 0.2, brandB * 0.8 + 0.2),
+      opacity: 0.12,
+    });
   }
 
   const bytes = await pdfDoc.save();

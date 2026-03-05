@@ -332,6 +332,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       : "";
 
   const notesContent = compactLine(input.notes) || compactLine(template.footerNote);
+  const companyDisplay = compactLine(template.companyName) || "ACOSTASPOOL";
+  const companyEmail = compactLine(template.companyEmail);
+  const companyPhone = compactLine(template.companyPhone);
+  const companyWebsite = compactLine(template.companyWebsite);
+  const companyTaxId = compactLine(template.companyTaxId);
+  const paymentTerms = template.legalClauses[0]
+    ? `Payment terms: ${template.legalClauses[0]}`
+    : "Payment terms: Due upon receipt.";
+  const supportLines = [companyEmail, companyPhone, companyWebsite].filter(Boolean);
   const clausesMarkup = template.legalClauses
     .slice(0, 6)
     .map((clause) => `<li>${escapeHtml(clause)}</li>`)
@@ -353,12 +362,11 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         --accent: ${resolvedTheme.accentHex};
         --light: ${resolvedTheme.lightHex};
         --paper: #ffffff;
-        --soft: #f4f7fd;
-        --line: #d5deea;
-        --line-strong: #b8c7db;
-        --text: #0f1e30;
-        --muted: #58708a;
-        --ink: #20344c;
+        --line: #d6e0ee;
+        --line-strong: #b5c5da;
+        --text: #142236;
+        --muted: #5f738d;
+        --ink-soft: #2f4868;
       }
 
       * {
@@ -372,9 +380,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       body {
-        background: #e2e8f2;
+        background: #dbe4f0;
         color: var(--text);
-        font-family: "Montserrat", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+        font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         text-rendering: geometricPrecision;
       }
@@ -384,86 +392,86 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         width: 8.5in;
         min-height: 11in;
         margin: 0 auto;
-        background: var(--paper);
         overflow: hidden;
-      }
-
-      .sheet::before {
-        content: "";
-        position: absolute;
-        inset: 0;
         background:
-          radial-gradient(circle at 90% -5%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 34%),
-          radial-gradient(circle at 8% 104%, rgba(48, 75, 136, 0.06) 0%, rgba(48, 75, 136, 0) 35%);
-        pointer-events: none;
+          radial-gradient(circle at 87% -8%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 36%),
+          linear-gradient(180deg, rgba(240, 246, 255, 0.72) 0%, rgba(255, 255, 255, 0.96) 22%, #ffffff 100%);
       }
 
       .header {
-        background: linear-gradient(135deg, var(--brand) 0%, #263f74 100%);
+        background: linear-gradient(135deg, var(--brand) 0%, #223a69 100%);
         color: #ffffff;
-        padding: 28px 44px 26px;
-        border-bottom: 4px solid rgba(255, 255, 255, 0.92);
+        padding: 32px 46px 30px;
+        position: relative;
+      }
+
+      .header::after {
+        content: "";
+        position: absolute;
+        left: 46px;
+        right: 46px;
+        bottom: 0;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.42) 60%, rgba(255, 255, 255, 0.06) 100%);
       }
 
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 24px;
+        gap: 26px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 336px;
-        text-align: center;
+        max-width: 420px;
       }
 
-      .brand-word {
+      .brand-title {
         margin: 0;
-        font-weight: 800;
-        font-size: 60px;
-        letter-spacing: 0.024em;
-        line-height: 0.9;
+        font-weight: 900;
+        font-size: 54px;
+        line-height: 0.92;
+        letter-spacing: 0.02em;
         text-transform: uppercase;
-      }
-
-      .brand-word + .brand-word {
-        margin-top: 2px;
       }
 
       .brand-rule {
-        margin-top: 10px;
-        height: 5px;
-        background: #ffffff;
+        margin-top: 14px;
+        height: 3px;
+        width: 100%;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
-        margin-top: 9px;
-        font-size: 15px;
-        letter-spacing: 0.24em;
-        font-weight: 400;
+        margin-top: 10px;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.19em;
         text-transform: uppercase;
+        color: rgba(241, 249, 255, 0.95);
       }
 
       .invoice-head {
         text-align: right;
+        padding-top: 4px;
       }
 
       .invoice-label {
         margin: 0;
-        font-size: 42px;
+        font-size: 38px;
+        font-weight: 900;
         line-height: 1;
         letter-spacing: 0.03em;
-        font-weight: 800;
         text-transform: uppercase;
       }
 
       .invoice-meta {
-        margin-top: 11px;
-        font-size: 14px;
+        margin-top: 12px;
+        font-size: 13px;
         font-weight: 600;
         color: rgba(236, 245, 255, 0.98);
         display: grid;
-        gap: 5px;
+        gap: 4px;
       }
 
       .invoice-meta p {
@@ -471,105 +479,108 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .invoice-body {
-        position: relative;
-        z-index: 1;
-        padding: 22px 42px 30px;
+        padding: 26px 46px 30px;
       }
 
       .info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        gap: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
       }
 
-      .info-card {
-        border: 1px solid var(--line-strong);
-        border-radius: 14px;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-        padding: 13px 14px 14px;
+      .info-block {
+        position: relative;
+        padding-left: 14px;
       }
 
-      .card-title {
+      .info-block::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 3px;
+        bottom: 3px;
+        width: 3px;
+        background: linear-gradient(180deg, var(--brand) 0%, rgba(48, 75, 136, 0.22) 100%);
+      }
+
+      .block-title {
         margin: 0;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
-        letter-spacing: 0.13em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
-      .card-line {
-        margin: 6px 0 0;
-        color: var(--muted);
+      .block-line {
+        margin: 5px 0 0;
         font-size: 12px;
-        line-height: 1.32;
+        line-height: 1.34;
+        color: var(--ink-soft);
         word-break: break-word;
       }
 
-      .card-line-strong {
-        color: var(--ink);
-        font-size: 17px;
+      .block-line-strong {
+        margin-top: 8px;
+        font-size: 19px;
+        font-weight: 800;
         line-height: 1.2;
-        margin-top: 9px;
-        font-weight: 700;
+        color: var(--text);
       }
 
-      .surface {
-        margin-top: 14px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        overflow: hidden;
-        background: #ffffff;
+      .table-zone {
+        margin-top: 18px;
+        border-top: 2px solid var(--brand);
       }
 
       .items {
         width: 100%;
         border-collapse: collapse;
-        margin: 0;
         font-size: 12px;
       }
 
       .items thead tr {
-        background: linear-gradient(180deg, var(--light) 0%, #f7faff 100%);
+        background: linear-gradient(180deg, var(--light) 0%, #f8fbff 100%);
       }
 
       .items th {
+        padding: 10px 8px;
         border-bottom: 1px solid var(--line-strong);
-        color: var(--brand);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
         font-size: 11px;
         font-weight: 800;
-        padding: 10px 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--brand);
+        text-align: left;
       }
 
       .items td {
-        border-bottom: 1px solid #e7eef7;
-        padding: 10px 10px;
+        padding: 11px 8px;
+        border-bottom: 1px solid #e5edf8;
         font-size: 12px;
-        color: var(--ink);
-      }
-
-      .items tbody tr:nth-child(even) td {
-        background: #fbfdff;
+        color: var(--ink-soft);
       }
 
       .col-index {
-        width: 42px;
+        width: 36px;
         text-align: center;
+        color: var(--muted);
       }
 
       .col-description {
-        width: auto;
+        font-weight: 600;
+        color: var(--text);
       }
 
       .col-qty {
-        width: 68px;
+        width: 62px;
         text-align: center;
       }
 
       .col-money {
-        width: 120px;
+        width: 112px;
         text-align: right;
         white-space: nowrap;
       }
@@ -581,29 +592,41 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .empty-row {
         text-align: center;
         padding: 14px 12px;
-        color: #6f8299;
+        color: var(--muted);
       }
 
-      .finance-grid {
-        margin-top: 14px;
-        display: flex;
-        justify-content: flex-end;
+      .summary-grid {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 248px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .summary-note {
+        margin: 0;
+        padding-top: 4px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+      }
+
+      .summary-note strong {
+        color: var(--text);
       }
 
       .totals {
-        border: 1px solid var(--line-strong);
-        border-radius: 14px;
-        background: #fbfdff;
-        padding: 12px 14px;
+        padding-left: 16px;
+        border-left: 2px solid var(--line);
       }
 
       .totals-title {
-        margin: 0 0 10px;
+        margin: 0 0 9px;
         font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.12em;
-        color: var(--muted);
         text-transform: uppercase;
+        color: var(--muted);
       }
 
       .totals-row {
@@ -611,86 +634,81 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         justify-content: space-between;
         align-items: baseline;
         margin: 0;
-        color: var(--muted);
         font-size: 13px;
+        color: var(--muted);
       }
 
       .totals-row + .totals-row {
-        margin-top: 7px;
+        margin-top: 8px;
       }
 
       .totals-row strong {
-        color: var(--ink);
+        color: var(--text);
         font-weight: 700;
-      }
-
-      .totals-row-total strong {
-        color: var(--brand);
-        font-size: 28px;
-        letter-spacing: 0.01em;
-        font-weight: 800;
       }
 
       .totals-row-total span {
-        color: var(--brand);
         font-size: 22px;
         font-weight: 800;
+        color: var(--brand);
       }
 
-      .detail-grid {
-        margin-top: 14px;
+      .totals-row-total strong {
+        font-size: 30px;
+        font-weight: 900;
+        color: var(--brand);
+      }
+
+      .service-grid {
+        margin-top: 18px;
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        padding: 14px 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
       }
 
-      .detail-card {
-        border: 1px solid var(--line-strong);
-        border-radius: 14px;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-        padding: 12px 14px;
-      }
-
-      .detail-title {
+      .service-title {
         margin: 0;
-        font-size: 12px;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.12em;
         text-transform: uppercase;
+        letter-spacing: 0.13em;
         color: var(--muted);
       }
 
-      .detail-main {
+      .service-main {
         margin: 7px 0 0;
         font-size: 12px;
-        color: var(--ink);
-        line-height: 1.35;
+        line-height: 1.45;
+        color: var(--text);
+        word-break: break-word;
       }
 
-      .detail-sub {
-        margin: 5px 0 0;
+      .service-sub {
+        margin: 6px 0 0;
         font-size: 11px;
-        color: #61768d;
         line-height: 1.35;
+        color: var(--muted);
+        word-break: break-word;
       }
 
       .footer {
-        margin-top: 16px;
-        border-top: 1px solid var(--line);
-        padding-top: 11px;
+        margin-top: 14px;
       }
 
       .footer-title {
         margin: 0;
         font-size: 11px;
         font-weight: 800;
-        letter-spacing: 0.12em;
         text-transform: uppercase;
+        letter-spacing: 0.12em;
         color: var(--muted);
       }
 
       .footer-list {
-        margin: 7px 0 0;
+        margin: 8px 0 0;
         padding-left: 18px;
       }
 
@@ -702,15 +720,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .signature-row {
-        margin-top: 16px;
+        margin-top: 18px;
         display: grid;
         grid-template-columns: 1fr auto;
-        gap: 12px;
+        gap: 14px;
         align-items: end;
       }
 
       .signature-line {
-        border-top: 1px solid #9fb0c6;
+        border-top: 1px solid #a7b8ce;
         padding-top: 4px;
         font-size: 10px;
         color: #5f738a;
@@ -724,7 +742,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         margin: 0;
         font-size: 12px;
         font-weight: 700;
-        color: var(--ink);
+        color: var(--text);
       }
 
       .signature-role {
@@ -755,10 +773,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       <header class="header">
         <div class="header-grid">
           <div class="brand-lockup">
-            <p class="brand-word">Acosta&#39;s</p>
-            <p class="brand-word">Pool</p>
+            <p class="brand-title">${escapeHtml(companyDisplay)}</p>
             <div class="brand-rule"></div>
-            <p class="brand-subtitle">Repair And Maintenance</p>
+            <p class="brand-subtitle">${escapeHtml(template.headerSubtitle)}</p>
           </div>
           <div class="invoice-head">
             <p class="invoice-label">${escapeHtml(resolvedTheme.label)}</p>
@@ -772,29 +789,29 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       <section class="invoice-body">
         <div class="info-grid">
-          <section class="info-card">
-            <p class="card-title">${escapeHtml(template.billToLabel)}</p>
+          <section class="info-block">
+            <p class="block-title">${escapeHtml(template.billToLabel)}</p>
             ${customerLines
               .map((line, index) =>
                 index === 0
-                  ? `<p class="card-line card-line-strong">${escapeHtml(line)}</p>`
-                  : `<p class="card-line">${escapeHtml(line)}</p>`
+                  ? `<p class="block-line block-line-strong">${escapeHtml(line)}</p>`
+                  : `<p class="block-line">${escapeHtml(line)}</p>`
               )
               .join("")}
           </section>
-          <section class="info-card">
-            <p class="card-title">Issued By</p>
+          <section class="info-block">
+            <p class="block-title">Issued By</p>
             ${issuedByLines
               .map((line, index) =>
                 index === 0
-                  ? `<p class="card-line card-line-strong">${escapeHtml(line)}</p>`
-                  : `<p class="card-line">${escapeHtml(line)}</p>`
+                  ? `<p class="block-line block-line-strong">${escapeHtml(line)}</p>`
+                  : `<p class="block-line">${escapeHtml(line)}</p>`
               )
               .join("")}
           </section>
         </div>
 
-        <div class="surface">
+        <div class="table-zone">
           <table class="items">
             <thead>
               <tr>
@@ -811,7 +828,11 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           </table>
         </div>
 
-        <div class="finance-grid">
+        <div class="summary-grid">
+          <p class="summary-note">
+            <strong>Service notes:</strong> ${escapeHtml(notesContent)}<br />
+            ${escapeHtml(paymentTerms)}
+          </p>
           <aside class="totals">
             <p class="totals-title">Invoice Summary</p>
             <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
@@ -826,15 +847,23 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           </aside>
         </div>
 
-        <div class="detail-grid">
-          <section class="detail-card">
-            <p class="detail-title">Payment Method</p>
-            <p class="detail-main">Credit | Debit | ACH | Check</p>
-            <p class="detail-sub">We accept: Visa, MasterCard, Zelle and Cash</p>
+        <div class="service-grid">
+          <section>
+            <p class="service-title">Payment Methods</p>
+            <p class="service-main">Credit | Debit | ACH | Check | Zelle | Cash</p>
+            <p class="service-sub">Use invoice number as payment reference.</p>
           </section>
-          <section class="detail-card">
-            <p class="detail-title">${escapeHtml(template.notesLabel)}</p>
-            <p class="detail-main">${escapeHtml(notesContent)}</p>
+          <section>
+            <p class="service-title">${escapeHtml(template.notesLabel)}</p>
+            <p class="service-main">${escapeHtml(notesContent)}</p>
+            <p class="service-sub">${escapeHtml(template.footerNote)}</p>
+          </section>
+          <section>
+            <p class="service-title">Billing Support</p>
+            <p class="service-main">${supportLines.map(escapeHtml).join("<br />") || "Contact our billing team for assistance."}</p>
+            <p class="service-sub">${escapeHtml(
+              companyTaxId || "Business tax information available upon request."
+            )}</p>
           </section>
         </div>
 
@@ -845,7 +874,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           <div class="signature-row">
             <div class="signature-line">Authorized signature</div>
             <div class="signature-issuer">
-              <p class="signature-name">${escapeHtml(template.companyName)}</p>
+              <p class="signature-name">${escapeHtml(companyDisplay)}</p>
               <p class="signature-role">Billing Team</p>
             </div>
           </div>
