@@ -108,7 +108,7 @@ export default function LegalPageChrome({
             </span>
           </Link>
 
-          <nav className="lp-nav" aria-label="Primary">
+          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
             <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
               <span className="lp-nav-logo-dot" aria-hidden="true" />
               <span className="lp-nav-logo-text">
@@ -136,14 +136,14 @@ export default function LegalPageChrome({
           </nav>
 
           <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label="Language">
+            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
               <button
                 type="button"
                 className="lp-lang-btn"
                 data-active={language === "en"}
                 onClick={() => onLanguageChange("en")}
-                aria-label="English"
-                title="English"
+                aria-label={language === "es" ? "Ingles" : "English"}
+                title={language === "es" ? "Ingles" : "English"}
               >
                 EN
               </button>
@@ -152,21 +152,21 @@ export default function LegalPageChrome({
                 className="lp-lang-btn"
                 data-active={language === "es"}
                 onClick={() => onLanguageChange("es")}
-                aria-label="Espanol"
-                title="Espanol"
+                aria-label={language === "es" ? "Espanol" : "Spanish"}
+                title={language === "es" ? "Espanol" : "Spanish"}
               >
                 ES
               </button>
             </div>
 
-            <div className="lp-theme-switch" role="group" aria-label="Theme">
+            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
               <button
                 type="button"
                 className="lp-theme-btn"
                 data-active={theme === "ocean"}
                 onClick={() => onThemeChange("ocean")}
-                aria-label="Light theme"
-                title="Light theme"
+                aria-label={language === "es" ? "Tema claro" : "Light theme"}
+                title={language === "es" ? "Tema claro" : "Light theme"}
               >
                 <SunIcon />
               </button>
@@ -175,8 +175,8 @@ export default function LegalPageChrome({
                 className="lp-theme-btn"
                 data-active={theme === "night"}
                 onClick={() => onThemeChange("night")}
-                aria-label="Dark theme"
-                title="Dark theme"
+                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
+                title={language === "es" ? "Tema oscuro" : "Dark theme"}
               >
                 <MoonIcon />
               </button>

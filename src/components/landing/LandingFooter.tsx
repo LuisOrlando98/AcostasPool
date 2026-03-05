@@ -330,8 +330,8 @@ export default function LandingFooter({
                 className="lp-lang-btn"
                 data-active={language === "en"}
                 onClick={() => onLanguageChange?.("en")}
-                aria-label="English"
-                title="English"
+                aria-label={language === "es" ? "Ingles" : "English"}
+                title={language === "es" ? "Ingles" : "English"}
               >
                 EN
               </button>
@@ -340,8 +340,8 @@ export default function LandingFooter({
                 className="lp-lang-btn"
                 data-active={language === "es"}
                 onClick={() => onLanguageChange?.("es")}
-                aria-label="Espanol"
-                title="Espanol"
+                aria-label={language === "es" ? "Espanol" : "Spanish"}
+                title={language === "es" ? "Espanol" : "Spanish"}
               >
                 ES
               </button>

@@ -59,9 +59,9 @@ function formatBytes(size: number | null) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function getNodeLabel(path: string) {
+function getNodeLabel(path: string, rootLabel: string) {
   if (!path) {
-    return "Repository";
+    return rootLabel;
   }
   const parts = path.split("/");
   return parts[parts.length - 1] || path;
@@ -204,6 +204,8 @@ export default function CustomerRepositoryExplorer({
   customerId,
 }: CustomerRepositoryExplorerProps) {
   const { t, locale } = useI18n();
+  const rootLabel = t("admin.customers.repository.root");
+  const loadingErrorLabel = t("admin.customers.repository.errors.load");
   const [currentPath, setCurrentPath] = useState("");
   const [entries, setEntries] = useState<RepositoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -248,17 +250,17 @@ export default function CustomerRepositoryExplorer({
 
   const breadcrumbs = useMemo(() => {
     if (!currentPath) {
-      return [{ label: "Repository", path: "" }];
+      return [{ label: rootLabel, path: "" }];
     }
     const segments = currentPath.split("/");
     return [
-      { label: "Repository", path: "" },
+      { label: rootLabel, path: "" },
       ...segments.map((segment, index) => ({
         label: segment,
         path: segments.slice(0, index + 1).join("/"),
       })),
     ];
-  }, [currentPath]);
+  }, [currentPath, rootLabel]);
 
   const refresh = () => setReloadTick((value) => value + 1);
 
@@ -280,13 +282,13 @@ export default function CustomerRepositoryExplorer({
       if (!response.ok || !data || !("entries" in data)) {
         const messageText =
           (data as { error?: string } | null)?.error ??
-          "Unable to load repository.";
+          loadingErrorLabel;
         throw new Error(messageText);
       }
 
       return data;
     },
-    [customerId]
+    [customerId, loadingErrorLabel]
   );
 
   const hydrateTreeNode = useCallback(
@@ -365,7 +367,7 @@ export default function CustomerRepositoryExplorer({
         }
         setEntries([]);
         setError(
-          loadError instanceof Error ? loadError.message : "Unable to load repository."
+          loadError instanceof Error ? loadError.message : loadingErrorLabel
         );
       } finally {
         if (!cancelled) {
@@ -379,7 +381,7 @@ export default function CustomerRepositoryExplorer({
     return () => {
       cancelled = true;
     };
-  }, [currentPath, fetchRepository, hydrateTreeNode, reloadTick]);
+  }, [currentPath, fetchRepository, hydrateTreeNode, loadingErrorLabel, reloadTick]);
 
   useEffect(() => {
     if (!selectedPath) {
@@ -410,7 +412,7 @@ export default function CustomerRepositoryExplorer({
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     setSubmitting(false);
     if (!response.ok) {
-      setError(data?.error ?? "Action failed.");
+      setError(data?.error ?? t("admin.customers.repository.errors.action"));
       return false;
     }
     refresh();
@@ -418,7 +420,7 @@ export default function CustomerRepositoryExplorer({
   };
 
   const handleCreateFolder = async () => {
-    const name = window.prompt("Folder name");
+    const name = window.prompt(t("admin.customers.repository.prompts.folderName"));
     if (!name) {
       return;
     }
@@ -428,12 +430,12 @@ export default function CustomerRepositoryExplorer({
       name,
     });
     if (ok) {
-      setMessage("Folder created.");
+      setMessage(t("admin.customers.repository.feedback.folderCreated"));
     }
   };
 
   const handleRename = async (entry: RepositoryEntry) => {
-    const newName = window.prompt("New name", entry.name);
+    const newName = window.prompt(t("admin.customers.repository.prompts.rename"), entry.name);
     if (!newName || newName.trim() === entry.name) {
       return;
     }
@@ -444,13 +446,19 @@ export default function CustomerRepositoryExplorer({
       newName,
     });
     if (ok) {
-      setMessage("Renamed successfully.");
+      setMessage(t("admin.customers.repository.feedback.renamed"));
     }
   };
 
   const handleDelete = async (entry: RepositoryEntry) => {
     const confirmed = window.confirm(
-      `Delete ${entry.type === "folder" ? "folder" : "file"} "${entry.name}"?`
+      t("admin.customers.repository.prompts.deleteConfirm", {
+        kind:
+          entry.type === "folder"
+            ? t("admin.customers.repository.table.folder")
+            : t("admin.customers.repository.table.file"),
+        name: entry.name,
+      })
     );
     if (!confirmed) {
       return;
@@ -462,7 +470,7 @@ export default function CustomerRepositoryExplorer({
       invoiceId: entry.invoiceId,
     });
     if (ok) {
-      setMessage("Deleted successfully.");
+      setMessage(t("admin.customers.repository.feedback.deleted"));
       if (selectedPath === entry.path) {
         setSelectedPath(null);
       }
@@ -486,13 +494,13 @@ export default function CustomerRepositoryExplorer({
     const data = (await response.json().catch(() => null)) as { error?: string } | null;
     setSubmitting(false);
     if (!response.ok) {
-      setError(data?.error ?? "Upload failed.");
+      setError(data?.error ?? t("admin.customers.repository.errors.upload"));
       return;
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    setMessage("Files uploaded.");
+    setMessage(t("admin.customers.repository.feedback.uploaded"));
     refresh();
   };
 
@@ -552,7 +560,7 @@ export default function CustomerRepositoryExplorer({
             type="button"
             onClick={() => void toggleTreeNode(path)}
             className="inline-flex h-4 w-4 items-center justify-center rounded text-slate-500 hover:bg-slate-200"
-            aria-label="Toggle folder"
+            aria-label={t("admin.customers.repository.actions.toggleFolder")}
           >
             <svg
               viewBox="0 0 20 20"
@@ -568,10 +576,10 @@ export default function CustomerRepositoryExplorer({
             type="button"
             onClick={() => navigateToPath(path)}
             className="flex min-w-0 flex-1 items-center gap-1.5 truncate text-left"
-            title={getNodeLabel(path)}
+            title={getNodeLabel(path, rootLabel)}
           >
             <FolderGlyph open={isExpanded} />
-            {getNodeLabel(path)}
+            {getNodeLabel(path, rootLabel)}
           </button>
         </div>
         {isExpanded ? (
@@ -581,7 +589,7 @@ export default function CustomerRepositoryExplorer({
                 className="px-2 py-1 text-[11px] text-slate-400"
                 style={{ paddingLeft: `${depth * 14 + 30}px` }}
               >
-                Loading...
+                {t("admin.customers.repository.loadingNode")}
               </p>
             ) : null}
             {!isLoadingNode
@@ -597,9 +605,9 @@ export default function CustomerRepositoryExplorer({
     <div className="customers-panel ui-panel h-full min-w-0 overflow-hidden p-4 sm:p-6 lg:min-h-[440px]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Repositorio del cliente</h2>
+          <h2 className="text-lg font-semibold text-slate-900">{t("admin.customers.repository.title")}</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Explorador de carpetas y archivos del cliente (estilo desktop).
+            {t("admin.customers.repository.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -609,7 +617,7 @@ export default function CustomerRepositoryExplorer({
             disabled={submitting}
             className="ui-button-ghost px-3 py-2 text-xs font-semibold"
           >
-            Refresh
+            {t("admin.customers.repository.actions.refresh")}
           </button>
           {canManageCurrentPath ? (
             <>
@@ -619,7 +627,7 @@ export default function CustomerRepositoryExplorer({
                 disabled={submitting}
                 className="app-button-secondary px-3 py-2 text-xs font-semibold"
               >
-                Subir archivo
+                {t("admin.customers.repository.actions.upload")}
               </button>
               <button
                 type="button"
@@ -627,7 +635,7 @@ export default function CustomerRepositoryExplorer({
                 disabled={submitting}
                 className="app-button-primary px-3 py-2 text-xs font-semibold"
               >
-                Nueva carpeta
+                {t("admin.customers.repository.actions.newFolder")}
               </button>
             </>
           ) : null}
@@ -685,7 +693,7 @@ export default function CustomerRepositoryExplorer({
         <div className="grid min-h-[420px] grid-cols-1 xl:h-[500px] xl:grid-cols-[minmax(220px,28%)_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 xl:border-b-0 xl:border-r">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Folder Tree
+              {t("admin.customers.repository.tree")}
             </p>
             <div className="max-h-[240px] overflow-auto pr-1 xl:h-full xl:max-h-none">
               {renderTreeNode("")}
@@ -697,10 +705,10 @@ export default function CustomerRepositoryExplorer({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
                   <p className="max-w-[300px] truncate text-xs text-slate-600 sm:max-w-[420px]">
-                    {currentPath ? currentPath : "Repository"}
+                    {currentPath ? currentPath : rootLabel}
                   </p>
                   <span className="hidden rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 sm:inline-flex">
-                    Details
+                    {t("admin.customers.repository.details")}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -722,7 +730,7 @@ export default function CustomerRepositoryExplorer({
                       type="text"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search"
+                      placeholder={t("admin.customers.repository.searchPlaceholder")}
                       className="w-28 bg-transparent text-[11px] text-slate-700 outline-none placeholder:text-slate-400 sm:w-36"
                     />
                   </label>
@@ -733,7 +741,9 @@ export default function CustomerRepositoryExplorer({
                         onClick={() => void handleOpenEntry(selectedEntry)}
                         className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
                       >
-                        {selectedEntry.type === "file" ? "Download" : "Open"}
+                        {selectedEntry.type === "file"
+                          ? t("admin.customers.repository.actions.download")
+                          : t("admin.customers.repository.actions.open")}
                       </button>
                       {canRenameSelected || canDeleteSelected ? (
                         <>
@@ -744,7 +754,7 @@ export default function CustomerRepositoryExplorer({
                               disabled={submitting}
                               className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
                             >
-                              Rename
+                              {t("admin.customers.repository.actions.rename")}
                             </button>
                           ) : null}
                           {canDeleteSelected ? (
@@ -769,16 +779,16 @@ export default function CustomerRepositoryExplorer({
               <table className="customers-table w-full min-w-[420px] text-left text-xs text-slate-600 sm:min-w-[560px]">
                 <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.14em] text-slate-100/85">
                   <tr>
-                    <th className="px-3 py-2.5 font-semibold">Name</th>
-                    <th className="px-3 py-2.5 font-semibold">Type</th>
+                    <th className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.name")}</th>
+                    <th className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.type")}</th>
                     <th className="hidden px-3 py-2 font-semibold sm:table-cell">
-                      Extension
+                      {t("admin.customers.repository.table.extension")}
                     </th>
                     <th className="hidden px-3 py-2 font-semibold md:table-cell">
-                      Size
+                      {t("admin.customers.repository.table.size")}
                     </th>
                     <th className="hidden px-3 py-2 font-semibold lg:table-cell">
-                      Modified
+                      {t("admin.customers.repository.table.modified")}
                     </th>
                   </tr>
                 </thead>
@@ -786,15 +796,15 @@ export default function CustomerRepositoryExplorer({
                   {loading ? (
                     <tr>
                       <td colSpan={5} className="px-3 py-8 text-center text-sm text-slate-500">
-                        Cargando repositorio...
+                        {t("admin.customers.repository.loading")}
                       </td>
                     </tr>
                   ) : visibleEntries.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-3 py-8 text-center text-sm text-slate-500">
                         {searchTerm
-                          ? "No hay resultados con ese criterio."
-                          : "Esta carpeta no tiene elementos."}
+                          ? t("admin.customers.repository.emptySearch")
+                          : t("admin.customers.repository.emptyFolder")}
                       </td>
                     </tr>
                   ) : (
@@ -823,8 +833,10 @@ export default function CustomerRepositoryExplorer({
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
-                            {entry.type}
-                            {entry.readOnly ? " | lock" : ""}
+                            {entry.type === "folder"
+                              ? t("admin.customers.repository.table.folder")
+                              : t("admin.customers.repository.table.file")}
+                            {entry.readOnly ? ` | ${t("admin.customers.repository.table.locked")}` : ""}
                           </td>
                           <td className="hidden px-3 py-2.5 sm:table-cell">{extension}</td>
                           <td className="hidden px-3 py-2.5 md:table-cell">
@@ -846,14 +858,21 @@ export default function CustomerRepositoryExplorer({
             <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-600">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p>
-                  {visibleEntries.length} item
-                  {visibleEntries.length === 1 ? "" : "s"}
-                  {searchTerm ? ` (filtered from ${entries.length})` : ""}
+                  {t("admin.customers.repository.summary.items", {
+                    count: visibleEntries.length,
+                  })}
+                  {searchTerm
+                    ? ` ${t("admin.customers.repository.summary.filtered", {
+                        count: entries.length,
+                      })}`
+                    : ""}
                 </p>
                 <p className="truncate">
                   {selectedEntry
-                    ? `Selected: ${selectedEntry.name}`
-                    : "Select an item to see actions"}
+                    ? t("admin.customers.repository.summary.selected", {
+                        name: selectedEntry.name,
+                      })
+                    : t("admin.customers.repository.summary.selectHint")}
                 </p>
               </div>
             </div>

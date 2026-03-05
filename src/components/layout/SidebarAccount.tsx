@@ -127,7 +127,7 @@ export default function SidebarAccount() {
                 />
               </svg>
             </span>
-            <span className="sidebar-account-label">Developer Console</span>
+            <span className="sidebar-account-label">{t("userMenu.developer")}</span>
           </a>
         ) : null}
         <button

@@ -187,6 +187,7 @@
     "role": "Role",
     "account": "My account",
     "updates": "Version log",
+    "developer": "Developer console",
     "installApp": "Install app",
     "installingApp": "Preparing...",
     "iosInstallHint": "On iPhone: open Share and tap Add to Home Screen.",
@@ -935,7 +936,8 @@
             "evidence": "Evidence",
             "action": "Action",
             "viewJob": "View job",
-            "empty": "No jobs to show."
+            "empty": "No jobs to show.",
+            "propertyFallback": "Property"
           }
         }
       }
@@ -1054,7 +1056,9 @@
         },
         "sections": {
           "profileTitle": "Customer information",
+          "profileLabel": "Profile",
           "profileSubtitle": "Primary details and address.",
+          "addressLabel": "Address",
           "propertiesTitle": "Properties",
           "propertiesSubtitle": "Full pool details for each site.",
           "plansTitle": "Recurring plans",
@@ -1066,7 +1070,10 @@
           "portalNotInvited": "Portal: not invited",
           "portalInvitePending": "Portal: invite pending",
           "portalActive": "Portal: active",
-          "portalLinked": "Portal: linked"
+          "portalLinked": "Portal: linked",
+          "altPhone": "Alt",
+          "noAddress": "No address on file.",
+          "noWeekends": "No weekend booking"
         },
         "properties": {
           "empty": "No properties registered.",
@@ -1139,6 +1146,81 @@
           "modalKicker": "New job",
           "modalTitle": "Schedule job",
           "modalSubtitle": "Set date, technician, and checklist."
+        }
+      },
+      "repository": {
+        "title": "Customer repository",
+        "subtitle": "Desktop-style explorer for customer folders and files.",
+        "root": "Repository",
+        "tree": "Folder tree",
+        "details": "Details",
+        "loading": "Loading repository...",
+        "loadingNode": "Loading...",
+        "searchPlaceholder": "Search",
+        "emptySearch": "No results for that criteria.",
+        "emptyFolder": "This folder has no items.",
+        "actions": {
+          "refresh": "Refresh",
+          "upload": "Upload file",
+          "newFolder": "New folder",
+          "download": "Download",
+          "open": "Open",
+          "rename": "Rename",
+          "toggleFolder": "Toggle folder"
+        },
+        "table": {
+          "name": "Name",
+          "type": "Type",
+          "extension": "Extension",
+          "size": "Size",
+          "modified": "Modified",
+          "folder": "Folder",
+          "file": "File",
+          "locked": "lock"
+        },
+        "errors": {
+          "load": "Unable to load repository.",
+          "action": "Action failed.",
+          "upload": "Upload failed."
+        },
+        "prompts": {
+          "folderName": "Folder name",
+          "rename": "New name",
+          "deleteConfirm": "Delete {{kind}} \"{{name}}\"?"
+        },
+        "feedback": {
+          "folderCreated": "Folder created.",
+          "renamed": "Renamed successfully.",
+          "deleted": "Deleted successfully.",
+          "uploaded": "Files uploaded."
+        },
+        "summary": {
+          "items": "{{count}} items",
+          "filtered": "(filtered from {{count}})",
+          "selected": "Selected: {{name}}",
+          "selectHint": "Select an item to see actions"
+        },
+        "uploader": {
+          "title": "Upload documents",
+          "subtitle": "Files are stored inside this customer repository.",
+          "buttonLabel": "Upload files",
+          "category": "Category",
+          "description": "Description (optional)",
+          "descriptionPlaceholder": "Internal note for this upload",
+          "files": "Files",
+          "uploading": "Uploading...",
+          "categories": {
+            "general": "General",
+            "contract": "Contract",
+            "report": "Report",
+            "invoiceAttachment": "Invoice attachment",
+            "photo": "Photo"
+          },
+          "messages": {
+            "selectOne": "Select at least one document.",
+            "uploadFailed": "Unable to upload documents.",
+            "uploaded": "Documents uploaded successfully."
+          }
         }
       },
       "jobs": {
@@ -1249,7 +1331,15 @@
         "viewPdf": "View PDF",
         "page": "Page {{page}} of {{total}}",
         "prev": "Previous",
-        "next": "Next"
+        "next": "Next",
+        "locked": "Locked",
+        "table": {
+          "invoice": "Invoice",
+          "status": "Status",
+          "date": "Date",
+          "total": "Total",
+          "actions": "Actions"
+        }
       },
       "actions": {
         "new": "New invoice"
@@ -1310,6 +1400,35 @@
         "loading": "Sending...",
         "success": "Sent.",
         "error": "Unable to send."
+      },
+      "editor": {
+        "title": "Invoice {{number}}",
+        "kicker": "Complete invoice editor",
+        "notFoundTitle": "Invoice editor",
+        "notFoundSubtitle": "Invoice not found",
+        "back": "Back to invoices",
+        "defaults": {
+          "service": "Service"
+        },
+        "locked": {
+          "title": "Invoice locked",
+          "description": "This invoice has already been sent to the customer and can no longer be edited.",
+          "sentOn": "Sent on"
+        },
+        "modes": {
+          "editor": "Editor",
+          "preview": "Preview",
+          "split": "Split"
+        },
+        "preview": {
+          "title": "Web preview",
+          "subtitle": "Template preview for current type: {{theme}}"
+        },
+        "actions": {
+          "saveRegenerate": "Save changes and regenerate PDF",
+          "saving": "Saving...",
+          "updated": "Updated"
+        }
       }
     },
     "reports": {
@@ -1422,6 +1541,148 @@
     "settings": {
       "title": "Settings",
       "subtitle": "General system configuration.",
+      "tabs": {
+        "social": {
+          "label": "Social links",
+          "hint": "Public channels"
+        },
+        "landing": {
+          "label": "Landing page config",
+          "hint": "Text and video"
+        },
+        "email-templates": {
+          "label": "Templates",
+          "hint": "Emails and invoices"
+        },
+        "compliance": {
+          "label": "Compliance",
+          "hint": "Legal and policy"
+        },
+        "tiers": {
+          "label": "Service tiers",
+          "hint": "Active packages"
+        },
+        "notifications": {
+          "label": "Notifications",
+          "hint": "Rules and status"
+        }
+      },
+      "landing": {
+        "title": "Landing page configuration",
+        "subtitle": "Edit promotion copy and set the full YouTube URL shown in the video section.",
+        "video": {
+          "label": "Landing video URL (full YouTube link)",
+          "placeholder": "https://www.youtube.com/watch?v=...",
+          "hint": "Paste the full URL. We automatically extract the video ID for the embedded player."
+        },
+        "locale": {
+          "en": "English promo copy",
+          "es": "Spanish promo copy"
+        },
+        "fields": {
+          "badge": "Badge",
+          "title": "Title",
+          "detail": "Detail",
+          "note": "Note",
+          "action": "Action label",
+          "cta": "CTA button"
+        },
+        "actions": {
+          "save": "Save landing configuration"
+        }
+      },
+      "templates": {
+        "family": "Template family",
+        "view": "Workspace view",
+        "noCode": "No coding needed: edit text/fields and the system generates the final design.",
+        "previewTheme": "Preview theme",
+        "emailList": "Email templates",
+        "emailEditor": "Email template editor: {{label}}",
+        "subject": "Subject",
+        "textBody": "Email message (text)",
+        "htmlAuto": "The HTML design is generated automatically with premium styling.",
+        "actions": {
+          "saveEmail": "Save email template"
+        },
+        "email": {
+          "title": "Email templates",
+          "hint": "Automated communication"
+        },
+        "invoice": {
+          "title": "Invoice template",
+          "hint": "PDF design and branding"
+        },
+        "modes": {
+          "editor": "Editor",
+          "preview": "Final view",
+          "split": "Both"
+        },
+        "emailPreview": {
+          "title": "Final email preview",
+          "subtitle": "This is exactly how it will appear in inbox and message body.",
+          "inbox": "Inbox preview",
+          "from": "From: AcostasPool <no-reply@acostaspool.com>"
+        }
+      },
+      "invoiceEditor": {
+        "title": "Invoice template (admin-friendly)",
+        "subtitle": "Configure company data, footer, and watermark without editing code.",
+        "sections": {
+          "company": "Company",
+          "companyHint": "Data shown in the invoice header.",
+          "footer": "Footer and clauses",
+          "watermark": "Watermark"
+        },
+        "fields": {
+          "companyName": "Company name",
+          "headerSubtitle": "Header subtitle",
+          "phone": "Phone",
+          "email": "Email",
+          "website": "Website",
+          "taxId": "Tax ID",
+          "addressLine1": "Address line 1",
+          "addressLine2": "Address line 2",
+          "footerNote": "Footer note",
+          "clausesTitle": "Clauses title",
+          "legalClauses": "Legal clauses (one per line, small footer text)"
+        },
+        "watermarkHint": "Control whether the ESTIMATE watermark is shown.",
+        "showWatermark": "Show estimate watermark",
+        "lineItemsHint": "Line items stay in the invoice editor and are not modified here.",
+        "actions": {
+          "save": "Save invoice template"
+        },
+        "preview": {
+          "title": "Final invoice view",
+          "subtitle": "Real preview for page/PDF including small clauses.",
+          "modalTitle": "Invoice preview - {{theme}}",
+          "previewLabel": "Full page",
+          "previewHint": "The full sheet is shown as a thumbnail. Tap to open fullscreen.",
+          "open": "Open"
+        }
+      },
+      "compliance": {
+        "listTitle": "Compliance documents",
+        "editorTitle": "Compliance editor: {{label}}",
+        "editorSubtitle": "Edit public legal pages shown in landing footer and under /legal.",
+        "language": {
+          "en": "English",
+          "es": "Spanish"
+        },
+        "fields": {
+          "title": "Title",
+          "summary": "Summary",
+          "effectiveDate": "Effective date",
+          "body": "Body"
+        },
+        "placeholders": {
+          "date": "YYYY-MM-DD"
+        },
+        "publicPages": "Public pages",
+        "actions": {
+          "save": "Save compliance document"
+        }
+      },
       "business": {
         "title": "Business information",
         "placeholders": {
@@ -1511,9 +1772,79 @@
       "notifications": {
         "title": "Notifications",
         "subtitle": "Configure events that trigger automatic emails.",
+        "noCode": "No code",
         "completedJob": "Job completed",
         "invoiceSent": "Invoice sent",
         "newCustomer": "New customer registered"
+      }
+    },
+    "developer": {
+      "title": "Developer Console",
+      "subtitle": "Restricted access to diagnostics, audits, and internal tools.",
+      "cards": {
+        "auditLogs": {
+          "title": "Audit logs",
+          "latest": "Latest: {{action}} ({{date}})",
+          "empty": "No recorded activity."
+        },
+        "failedNotifications": {
+          "title": "Failed notifications",
+          "subtitle": "Alerts with FAILED status."
+        },
+        "activeJobs": {
+          "title": "Active jobs",
+          "subtitle": "PENDING / ON_THE_WAY / IN_PROGRESS."
+        },
+        "developerUser": {
+          "title": "Developer user",
+          "subtitle": "Restricted access."
+        }
+      },
+      "links": {
+        "tests": {
+          "kicker": "Testing",
+          "title": "Diagnostics suite",
+          "subtitle": "Operational checks to review health and consistency."
+        },
+        "audit": {
+          "kicker": "Security",
+          "title": "Audit log",
+          "subtitle": "Full traceability of critical actions."
+        },
+        "infrastructure": {
+          "kicker": "Infrastructure",
+          "title": "DB health endpoint",
+          "subtitle": "Developer-only database connectivity status."
+        }
+      },
+      "audit": {
+        "title": "Audit log",
+        "subtitle": "Critical event records with actor, entity, and metadata.",
+        "total": "Last {{count}} events",
+        "empty": "No audit events recorded.",
+        "table": {
+          "date": "Date",
+          "user": "User",
+          "action": "Action",
+          "entity": "Entity",
+          "metadata": "Metadata"
+        },
+        "entityId": "ID: {{id}}",
+        "viewMetadata": "View metadata",
+        "notAvailable": "N/A"
+      },
+      "tests": {
+        "title": "Developer Tests",
+        "subtitle": "Quick checks to validate operational status.",
+        "platform": "Platform diagnostics",
+        "metrics": {
+          "db": "DB",
+          "dbReachable": "Reachable",
+          "dbUnreachable": "Unreachable",
+          "jobsWithoutTech": "Jobs without technician",
+          "overdueInvoices": "Overdue invoices",
+          "unreadAdmin": "Admin unread"
+        }
       }
     },
     "notifications": {
@@ -1578,6 +1909,12 @@
       "kicker": "Under construction",
       "body": "This module is being crafted with a premium operational focus. Full workflows will appear here soon."
     }
+  },
+  "offline": {
+    "kicker": "Offline",
+    "title": "No internet connection",
+    "subtitle": "When the connection is back, reload to keep using the app.",
+    "backToLogin": "Go to login"
   },
   "client": {
     "home": {

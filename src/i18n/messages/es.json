@@ -187,6 +187,7 @@
     "role": "Rol",
     "account": "Mi cuenta",
     "updates": "Log de versiones",
+    "developer": "Consola de developer",
     "installApp": "Instalar app",
     "installingApp": "Preparando...",
     "iosInstallHint": "En iPhone: abre Compartir y toca Agregar a pantalla de inicio.",
@@ -935,7 +936,8 @@
             "evidence": "Evidencia",
             "action": "Accion",
             "viewJob": "Ver trabajo",
-            "empty": "No hay trabajos para mostrar."
+            "empty": "No hay trabajos para mostrar.",
+            "propertyFallback": "Propiedad"
           }
         }
       }
@@ -1054,7 +1056,9 @@
         },
         "sections": {
           "profileTitle": "Informacion del cliente",
+          "profileLabel": "Perfil",
           "profileSubtitle": "Datos principales y direccion.",
+          "addressLabel": "Direccion",
           "propertiesTitle": "Propiedades",
           "propertiesSubtitle": "Datos completos de cada piscina.",
           "plansTitle": "Planes recurrentes",
@@ -1066,7 +1070,10 @@
           "portalNotInvited": "Portal: sin invitacion",
           "portalInvitePending": "Portal: invitacion pendiente",
           "portalActive": "Portal: activo",
-          "portalLinked": "Portal: vinculado"
+          "portalLinked": "Portal: vinculado",
+          "altPhone": "Alt",
+          "noAddress": "Sin direccion registrada.",
+          "noWeekends": "Sin fines de semana"
         },
         "properties": {
           "empty": "No hay propiedades registradas.",
@@ -1139,6 +1146,81 @@
           "modalKicker": "Nuevo trabajo",
           "modalTitle": "Programar trabajo",
           "modalSubtitle": "Configura fecha, tecnico y checklist."
+        }
+      },
+      "repository": {
+        "title": "Repositorio del cliente",
+        "subtitle": "Explorador de carpetas y archivos del cliente (estilo desktop).",
+        "root": "Repositorio",
+        "tree": "Arbol de carpetas",
+        "details": "Detalles",
+        "loading": "Cargando repositorio...",
+        "loadingNode": "Cargando...",
+        "searchPlaceholder": "Buscar",
+        "emptySearch": "No hay resultados con ese criterio.",
+        "emptyFolder": "Esta carpeta no tiene elementos.",
+        "actions": {
+          "refresh": "Refrescar",
+          "upload": "Subir archivo",
+          "newFolder": "Nueva carpeta",
+          "download": "Descargar",
+          "open": "Abrir",
+          "rename": "Renombrar",
+          "toggleFolder": "Alternar carpeta"
+        },
+        "table": {
+          "name": "Nombre",
+          "type": "Tipo",
+          "extension": "Extension",
+          "size": "Tamano",
+          "modified": "Modificado",
+          "folder": "Carpeta",
+          "file": "Archivo",
+          "locked": "bloqueado"
+        },
+        "errors": {
+          "load": "No se pudo cargar el repositorio.",
+          "action": "La accion fallo.",
+          "upload": "La carga fallo."
+        },
+        "prompts": {
+          "folderName": "Nombre de la carpeta",
+          "rename": "Nuevo nombre",
+          "deleteConfirm": "Eliminar {{kind}} \"{{name}}\"?"
+        },
+        "feedback": {
+          "folderCreated": "Carpeta creada.",
+          "renamed": "Renombrado correctamente.",
+          "deleted": "Eliminado correctamente.",
+          "uploaded": "Archivos subidos."
+        },
+        "summary": {
+          "items": "{{count}} elementos",
+          "filtered": "(filtrado de {{count}})",
+          "selected": "Seleccionado: {{name}}",
+          "selectHint": "Selecciona un elemento para ver acciones"
+        },
+        "uploader": {
+          "title": "Subir documentos",
+          "subtitle": "Los archivos se guardan dentro del repositorio de este cliente.",
+          "buttonLabel": "Subir archivos",
+          "category": "Categoria",
+          "description": "Descripcion (opcional)",
+          "descriptionPlaceholder": "Nota interna para esta carga",
+          "files": "Archivos",
+          "uploading": "Subiendo...",
+          "categories": {
+            "general": "General",
+            "contract": "Contrato",
+            "report": "Reporte",
+            "invoiceAttachment": "Adjunto de factura",
+            "photo": "Foto"
+          },
+          "messages": {
+            "selectOne": "Selecciona al menos un documento.",
+            "uploadFailed": "No se pudieron subir los documentos.",
+            "uploaded": "Documentos subidos correctamente."
+          }
         }
       },
       "jobs": {
@@ -1249,7 +1331,15 @@
         "viewPdf": "Ver PDF",
         "page": "Pagina {{page}} de {{total}}",
         "prev": "Anterior",
-        "next": "Siguiente"
+        "next": "Siguiente",
+        "locked": "Bloqueada",
+        "table": {
+          "invoice": "Factura",
+          "status": "Estado",
+          "date": "Fecha",
+          "total": "Total",
+          "actions": "Acciones"
+        }
       },
       "actions": {
         "new": "Nueva factura"
@@ -1310,6 +1400,35 @@
         "loading": "Enviando...",
         "success": "Enviada.",
         "error": "No se pudo enviar."
+      },
+      "editor": {
+        "title": "Factura {{number}}",
+        "kicker": "Editor completo de factura",
+        "notFoundTitle": "Editor de factura",
+        "notFoundSubtitle": "Factura no encontrada",
+        "back": "Volver a facturas",
+        "defaults": {
+          "service": "Servicio"
+        },
+        "locked": {
+          "title": "Factura bloqueada",
+          "description": "Esta factura ya fue enviada al cliente y no se puede editar.",
+          "sentOn": "Enviada el"
+        },
+        "modes": {
+          "editor": "Editor",
+          "preview": "Vista",
+          "split": "Ambos"
+        },
+        "preview": {
+          "title": "Vista web",
+          "subtitle": "Preview del template para el tipo actual: {{theme}}"
+        },
+        "actions": {
+          "saveRegenerate": "Guardar cambios y regenerar PDF",
+          "saving": "Guardando...",
+          "updated": "Actualizado"
+        }
       }
     },
     "reports": {
@@ -1422,6 +1541,148 @@
     "settings": {
       "title": "Ajustes",
       "subtitle": "Configuracion general del sistema.",
+      "tabs": {
+        "social": {
+          "label": "Redes sociales",
+          "hint": "Canales publicos"
+        },
+        "landing": {
+          "label": "Config landing",
+          "hint": "Texto y video"
+        },
+        "email-templates": {
+          "label": "Templates",
+          "hint": "Emails y facturas"
+        },
+        "compliance": {
+          "label": "Compliance",
+          "hint": "Legal y politicas"
+        },
+        "tiers": {
+          "label": "Paquetes",
+          "hint": "Servicios activos"
+        },
+        "notifications": {
+          "label": "Notificaciones",
+          "hint": "Reglas y estado"
+        }
+      },
+      "landing": {
+        "title": "Configuracion del landing",
+        "subtitle": "Edita el texto promocional y define la URL completa de YouTube del video.",
+        "video": {
+          "label": "URL del video del landing (link completo de YouTube)",
+          "placeholder": "https://www.youtube.com/watch?v=...",
+          "hint": "Pega la URL completa. Extraemos automaticamente el ID para el reproductor embebido."
+        },
+        "locale": {
+          "en": "Copia promocional en ingles",
+          "es": "Copia promocional en espanol"
+        },
+        "fields": {
+          "badge": "Badge",
+          "title": "Titulo",
+          "detail": "Detalle",
+          "note": "Nota",
+          "action": "Etiqueta de accion",
+          "cta": "Boton CTA"
+        },
+        "actions": {
+          "save": "Guardar configuracion del landing"
+        }
+      },
+      "templates": {
+        "family": "Familia de templates",
+        "view": "Vista de trabajo",
+        "noCode": "No necesitas programar: edita texto/campos y el sistema genera el diseno final.",
+        "previewTheme": "Tema de preview",
+        "emailList": "Templates de email",
+        "emailEditor": "Editor de template de email: {{label}}",
+        "subject": "Asunto",
+        "textBody": "Mensaje del email (texto)",
+        "htmlAuto": "El diseno HTML se genera automaticamente con estilo premium.",
+        "actions": {
+          "saveEmail": "Guardar template de email"
+        },
+        "email": {
+          "title": "Templates de email",
+          "hint": "Comunicacion automatizada"
+        },
+        "invoice": {
+          "title": "Template de factura",
+          "hint": "Diseno PDF y marca"
+        },
+        "modes": {
+          "editor": "Editor",
+          "preview": "Vista final",
+          "split": "Ambas"
+        },
+        "emailPreview": {
+          "title": "Vista final del email",
+          "subtitle": "Asi se vera exactamente en la bandeja y el contenido del correo.",
+          "inbox": "Preview de inbox",
+          "from": "From: AcostasPool <no-reply@acostaspool.com>"
+        }
+      },
+      "invoiceEditor": {
+        "title": "Template de factura (facil para admin)",
+        "subtitle": "Configura datos de empresa, footer y marca de agua sin editar codigo.",
+        "sections": {
+          "company": "Empresa",
+          "companyHint": "Datos que se muestran en el encabezado de la factura.",
+          "footer": "Footer y clausulas",
+          "watermark": "Marca de agua"
+        },
+        "fields": {
+          "companyName": "Nombre de empresa",
+          "headerSubtitle": "Subtitulo del header",
+          "phone": "Telefono",
+          "email": "Email",
+          "website": "Website",
+          "taxId": "Tax ID",
+          "addressLine1": "Direccion linea 1",
+          "addressLine2": "Direccion linea 2",
+          "footerNote": "Nota de footer",
+          "clausesTitle": "Titulo de clausulas",
+          "legalClauses": "Clausulas legales (una por linea, texto pequeno en footer)"
+        },
+        "watermarkHint": "Controla si la marca de agua de ESTIMATE se muestra o no.",
+        "showWatermark": "Mostrar marca de agua de estimate",
+        "lineItemsHint": "Los line items se mantienen en el editor de facturas y no se modifican aqui.",
+        "actions": {
+          "save": "Guardar template de factura"
+        },
+        "preview": {
+          "title": "Vista final de la factura",
+          "subtitle": "Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.",
+          "modalTitle": "Preview de factura - {{theme}}",
+          "previewLabel": "Pagina completa",
+          "previewHint": "Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa.",
+          "open": "Abrir"
+        }
+      },
+      "compliance": {
+        "listTitle": "Documentos de compliance",
+        "editorTitle": "Editor de compliance: {{label}}",
+        "editorSubtitle": "Edita paginas legales publicas mostradas en el footer del landing y en /legal.",
+        "language": {
+          "en": "Ingles",
+          "es": "Espanol"
+        },
+        "fields": {
+          "title": "Titulo",
+          "summary": "Resumen",
+          "effectiveDate": "Fecha efectiva",
+          "body": "Contenido"
+        },
+        "placeholders": {
+          "date": "YYYY-MM-DD"
+        },
+        "publicPages": "Paginas publicas",
+        "actions": {
+          "save": "Guardar documento de compliance"
+        }
+      },
       "business": {
         "title": "Informacion del negocio",
         "placeholders": {
@@ -1511,9 +1772,79 @@
       "notifications": {
         "title": "Notificaciones",
         "subtitle": "Configura eventos que disparan correos automaticos.",
+        "noCode": "Sin codigo",
         "completedJob": "Trabajo completado",
         "invoiceSent": "Factura enviada",
         "newCustomer": "Nuevo cliente registrado"
+      }
+    },
+    "developer": {
+      "title": "Developer Console",
+      "subtitle": "Acceso exclusivo a diagnosticos, auditoria y herramientas internas.",
+      "cards": {
+        "auditLogs": {
+          "title": "Registros de auditoria",
+          "latest": "Ultimo: {{action}} ({{date}})",
+          "empty": "Sin actividad registrada."
+        },
+        "failedNotifications": {
+          "title": "Notificaciones fallidas",
+          "subtitle": "Alertas con estado FAILED."
+        },
+        "activeJobs": {
+          "title": "Trabajos activos",
+          "subtitle": "PENDING / ON_THE_WAY / IN_PROGRESS."
+        },
+        "developerUser": {
+          "title": "Usuario developer",
+          "subtitle": "Acceso restringido."
+        }
+      },
+      "links": {
+        "tests": {
+          "kicker": "Pruebas",
+          "title": "Suite de diagnosticos",
+          "subtitle": "Validaciones operativas para revisar salud y consistencia."
+        },
+        "audit": {
+          "kicker": "Seguridad",
+          "title": "Audit log",
+          "subtitle": "Trazabilidad completa de acciones criticas."
+        },
+        "infrastructure": {
+          "kicker": "Infraestructura",
+          "title": "DB health endpoint",
+          "subtitle": "Solo developer: estado de conectividad de base de datos."
+        }
+      },
+      "audit": {
+        "title": "Audit log",
+        "subtitle": "Registro de eventos criticos con actor, entidad y metadata.",
+        "total": "Ultimos {{count}} eventos",
+        "empty": "No hay eventos de auditoria registrados.",
+        "table": {
+          "date": "Fecha",
+          "user": "Usuario",
+          "action": "Accion",
+          "entity": "Entidad",
+          "metadata": "Metadata"
+        },
+        "entityId": "ID: {{id}}",
+        "viewMetadata": "Ver metadata",
+        "notAvailable": "N/A"
+      },
+      "tests": {
+        "title": "Pruebas developer",
+        "subtitle": "Validaciones rapidas para confirmar estado operativo.",
+        "platform": "Diagnostico de plataforma",
+        "metrics": {
+          "db": "DB",
+          "dbReachable": "Conectada",
+          "dbUnreachable": "Sin conexion",
+          "jobsWithoutTech": "Trabajos sin tecnico",
+          "overdueInvoices": "Facturas vencidas",
+          "unreadAdmin": "Admin no leidas"
+        }
       }
     },
     "notifications": {
@@ -1578,6 +1909,12 @@
       "kicker": "En construccion",
       "body": "Este modulo se esta disenando con enfoque premium para la operacion del negocio. Proximamente tendras aqui los flujos completos."
     }
+  },
+  "offline": {
+    "kicker": "Sin conexion",
+    "title": "No hay conexion a internet",
+    "subtitle": "Cuando vuelva la conexion, recarga para seguir usando la app.",
+    "backToLogin": "Ir a login"
   },
   "client": {
     "home": {

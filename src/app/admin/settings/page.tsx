@@ -51,17 +51,13 @@ type SettingsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const SETTINGS_TABS: Array<{
-  id: SettingsTabId;
-  label: string;
-  hint: string;
-}> = [
-  { id: "social", label: "Social links", hint: "Canales publicos" },
-  { id: "landing", label: "Landing page config", hint: "Texto y video" },
-  { id: "email-templates", label: "Templates", hint: "Emails y factura" },
-  { id: "compliance", label: "Compliance", hint: "Legal y politicas" },
-  { id: "tiers", label: "Service tiers", hint: "Paquetes activos" },
-  { id: "notifications", label: "Notifications", hint: "Reglas y estado" },
+const SETTINGS_TAB_IDS: SettingsTabId[] = [
+  "social",
+  "landing",
+  "email-templates",
+  "compliance",
+  "tiers",
+  "notifications",
 ];
 
 function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
@@ -384,6 +380,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     : COMPLIANCE_DOC_IDS[0];
   const selectedComplianceMeta = COMPLIANCE_DOC_DEFINITIONS[selectedComplianceDocId];
   const selectedCompliance = complianceContent[selectedComplianceDocId];
+  const settingsTabs = SETTINGS_TAB_IDS.map((id) => ({
+    id,
+    label: t(`admin.settings.tabs.${id}.label`),
+    hint: t(`admin.settings.tabs.${id}.hint`),
+  }));
 
   const socialFields = [
     {
@@ -443,8 +444,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   ] as const;
 
   const localeSections: Array<{ key: "en" | "es"; label: string }> = [
-    { key: "en", label: "English promo copy" },
-    { key: "es", label: "Spanish promo copy" },
+    { key: "en", label: t("admin.settings.landing.locale.en") },
+    { key: "es", label: t("admin.settings.landing.locale.es") },
   ];
   const buildTemplateHref = (overrides?: {
     template?: string;
@@ -477,7 +478,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       <section className="space-y-4 sm:space-y-6">
         <div className="settings-top-nav app-card p-3 shadow-contrast sm:p-4">
           <div className="settings-top-nav-grid">
-            {SETTINGS_TABS.map((tab) => {
+            {settingsTabs.map((tab) => {
               const params = new URLSearchParams({ tab: tab.id });
               if (tab.id === "email-templates") {
                 params.set("template", selectedTemplateId);
@@ -555,23 +556,23 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
         {currentTab === "landing" ? (
           <div className="app-card p-4 shadow-contrast sm:p-6">
-            <h2 className="text-lg font-semibold">Landing page configuration</h2>
+            <h2 className="text-lg font-semibold">{t("admin.settings.landing.title")}</h2>
             <p className="mt-2 text-sm text-slate-600">
-              Edit the promotion text and set the full YouTube URL shown in the video section.
+              {t("admin.settings.landing.subtitle")}
             </p>
             <form action={saveLandingConfiguration} className="mt-5 space-y-5">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Landing video URL (full YouTube link)
+                  {t("admin.settings.landing.video.label")}
                 </label>
                 <input
                   name="landingYoutubeUrl"
                   defaultValue={landingConfig.youtubeUrl ?? ""}
                   className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  placeholder="https://www.youtube.com/watch?v=..."
+                  placeholder={t("admin.settings.landing.video.placeholder")}
                 />
                 <p className="mt-2 text-[11px] text-slate-500">
-                  Paste the full URL. We automatically extract the video id for the embedded player.
+                  {t("admin.settings.landing.video.hint")}
                 </p>
               </div>
 
@@ -589,7 +590,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       <div className="mt-4 space-y-3">
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Badge
+                            {t("admin.settings.landing.fields.badge")}
                           </span>
                           <input
                             name={`promoBadge${suffix}`}
@@ -599,7 +600,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Title
+                            {t("admin.settings.landing.fields.title")}
                           </span>
                           <input
                             name={`promoTitle${suffix}`}
@@ -609,7 +610,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Detail
+                            {t("admin.settings.landing.fields.detail")}
                           </span>
                           <textarea
                             name={`promoDetail${suffix}`}
@@ -620,7 +621,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Note
+                            {t("admin.settings.landing.fields.note")}
                           </span>
                           <textarea
                             name={`promoNote${suffix}`}
@@ -631,7 +632,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Action label
+                            {t("admin.settings.landing.fields.action")}
                           </span>
                           <input
                             name={`promoAction${suffix}`}
@@ -641,7 +642,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            CTA button
+                            {t("admin.settings.landing.fields.cta")}
                           </span>
                           <input
                             name={`promoCta${suffix}`}
@@ -657,7 +658,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
               <div className="flex justify-stretch sm:justify-end">
                 <FormSubmitButton
-                  idleLabel="Save landing configuration"
+                  idleLabel={t("admin.settings.landing.actions.save")}
                   pendingLabel={t("common.feedback.saving")}
                   successLabel={t("common.feedback.saved")}
                   className="w-full px-5 py-2.5 sm:w-auto"
@@ -673,7 +674,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div className="settings-template-toolbar">
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Template family
+                    {t("admin.settings.templates.family")}
                   </p>
                   <div className="settings-template-grid settings-template-grid-2 sm:grid-cols-2">
                     <Link
@@ -687,8 +688,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </svg>
                       </span>
                       <span className="settings-template-option-copy">
-                        <span className="settings-template-option-title">Email templates</span>
-                        <span className="settings-template-option-hint">Comunicacion automatizada</span>
+                        <span className="settings-template-option-title">{t("admin.settings.templates.email.title")}</span>
+                        <span className="settings-template-option-hint">{t("admin.settings.templates.email.hint")}</span>
                       </span>
                     </Link>
                     <Link
@@ -702,8 +703,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </svg>
                       </span>
                       <span className="settings-template-option-copy">
-                        <span className="settings-template-option-title">Invoice template</span>
-                        <span className="settings-template-option-hint">Diseno PDF y marca</span>
+                        <span className="settings-template-option-title">{t("admin.settings.templates.invoice.title")}</span>
+                        <span className="settings-template-option-hint">{t("admin.settings.templates.invoice.hint")}</span>
                       </span>
                     </Link>
                   </div>
@@ -711,39 +712,39 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                 <div className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Workspace view
+                    {t("admin.settings.templates.view")}
                   </p>
                   <div className="settings-template-grid settings-template-grid-3">
                     <Link
                       href={buildTemplateHref({ mode: "code" })}
                       className={`settings-template-option ${templateMode === "code" ? "is-active" : ""}`}
                     >
-                      <span className="settings-template-option-title">Editor</span>
+                      <span className="settings-template-option-title">{t("admin.settings.templates.modes.editor")}</span>
                     </Link>
                     <Link
                       href={buildTemplateHref({ mode: "web" })}
                       className={`settings-template-option ${templateMode === "web" ? "is-active" : ""}`}
                     >
-                      <span className="settings-template-option-title">Vista final</span>
+                      <span className="settings-template-option-title">{t("admin.settings.templates.modes.preview")}</span>
                     </Link>
                     <Link
                       href={buildTemplateHref({ mode: "split" })}
                       className={`settings-template-option ${templateMode === "split" ? "is-active" : ""}`}
                     >
-                      <span className="settings-template-option-title">Ambas</span>
+                      <span className="settings-template-option-title">{t("admin.settings.templates.modes.split")}</span>
                     </Link>
                   </div>
                 </div>
               </div>
 
               <p className="mt-3 text-xs text-slate-500">
-                No necesitas programar: edita texto/campos y el sistema genera el diseno final.
+                {t("admin.settings.templates.noCode")}
               </p>
 
               {templateKind === "invoice" ? (
                 <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Preview theme
+                    {t("admin.settings.templates.previewTheme")}
                   </p>
                   <div className="mt-2 grid gap-2 sm:grid-cols-3">
                     <Link
@@ -752,7 +753,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         invoiceThemePreview === "STANDARD" ? "is-active" : ""
                       }`}
                     >
-                      Standard
+                      {t("admin.invoices.theme.standard")}
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "SPECIAL" })}
@@ -760,7 +761,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         invoiceThemePreview === "SPECIAL" ? "is-active" : ""
                       }`}
                     >
-                      Special
+                      {t("admin.invoices.theme.special")}
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "ESTIMATE" })}
@@ -768,7 +769,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         invoiceThemePreview === "ESTIMATE" ? "is-active" : ""
                       }`}
                     >
-                      Estimate
+                      {t("admin.invoices.theme.estimate")}
                     </Link>
                   </div>
                 </div>
@@ -779,7 +780,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
                 <div className="app-card p-4 shadow-contrast">
                   <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Email templates
+                    {t("admin.settings.templates.emailList")}
                   </h2>
                   <div className="mt-3 space-y-2">
                     {EMAIL_TEMPLATE_IDS.map((templateId) => {
@@ -811,7 +812,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   {templateMode !== "web" ? (
                     <div className="app-card p-4 shadow-contrast sm:p-6">
                       <h2 className="text-lg font-semibold">
-                        Email template editor: {selectedTemplateMeta.label}
+                        {t("admin.settings.templates.emailEditor", {
+                          label: selectedTemplateMeta.label,
+                        })}
                       </h2>
                       <p className="mt-2 text-sm text-slate-600">
                         {selectedTemplateMeta.description}
@@ -832,7 +835,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         <input type="hidden" name="templateId" value={selectedTemplateId} />
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Subject
+                            {t("admin.settings.templates.subject")}
                           </span>
                           <input
                             name="subject"
@@ -843,7 +846,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Mensaje del email (texto)
+                            {t("admin.settings.templates.textBody")}
                           </span>
                           <textarea
                             name="text"
@@ -853,12 +856,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           />
                         </label>
                         <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                          El diseno HTML se genera automaticamente con estilo premium.
+                          {t("admin.settings.templates.htmlAuto")}
                         </p>
 
                         <div className="flex justify-stretch sm:justify-end">
                           <FormSubmitButton
-                            idleLabel="Save email template"
+                            idleLabel={t("admin.settings.templates.actions.saveEmail")}
                             pendingLabel={t("common.feedback.saving")}
                             successLabel={t("common.feedback.saved")}
                             className="w-full px-5 py-2.5 sm:w-auto"
@@ -870,17 +873,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                   {templateMode !== "code" ? (
                     <div className="app-card p-4 shadow-contrast sm:p-6">
-                      <h3 className="text-base font-semibold">Vista final del email</h3>
+                      <h3 className="text-base font-semibold">{t("admin.settings.templates.emailPreview.title")}</h3>
                       <p className="mt-2 text-sm text-slate-600">
-                        Asi se vera exactamente en la bandeja y el contenido del correo.
+                        {t("admin.settings.templates.emailPreview.subtitle")}
                       </p>
                       <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                          Inbox preview
+                          {t("admin.settings.templates.emailPreview.inbox")}
                         </p>
                         <div className="mt-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700">
-                          <p className="font-semibold">From: AcostasPool &lt;no-reply@acostaspool.com&gt;</p>
-                          <p className="mt-1">Subject: {selectedTemplatePreview.subject}</p>
+                          <p className="font-semibold">
+                            {t("admin.settings.templates.emailPreview.from")}
+                          </p>
+                          <p className="mt-1">{t("admin.settings.templates.subject")}: {selectedTemplatePreview.subject}</p>
                         </div>
                       </div>
                       <iframe
@@ -897,22 +902,22 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div className={invoiceLayoutClass}>
                 {showInvoiceEditor ? (
                   <div className="app-card p-4 shadow-contrast sm:p-6">
-                    <h2 className="text-lg font-semibold">Invoice template (admin-friendly)</h2>
+                    <h2 className="text-lg font-semibold">{t("admin.settings.invoiceEditor.title")}</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                      Configura datos de empresa, footer y marca de agua sin editar codigo.
+                      {t("admin.settings.invoiceEditor.subtitle")}
                     </p>
                     <form action={saveInvoiceTemplate} className="mt-5 space-y-5">
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900">Empresa</h3>
+                          <h3 className="text-sm font-semibold text-slate-900">{t("admin.settings.invoiceEditor.sections.company")}</h3>
                           <p className="text-[11px] text-slate-500">
-                            Datos que se muestran en el encabezado del invoice.
+                            {t("admin.settings.invoiceEditor.sections.companyHint")}
                           </p>
                         </div>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Company name
+                            {t("admin.settings.invoiceEditor.fields.companyName")}
                           </span>
                           <input
                             name="companyName"
@@ -922,7 +927,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Header subtitle
+                            {t("admin.settings.invoiceEditor.fields.headerSubtitle")}
                           </span>
                           <input
                             name="headerSubtitle"
@@ -932,7 +937,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Phone
+                            {t("admin.settings.invoiceEditor.fields.phone")}
                           </span>
                           <input
                             name="companyPhone"
@@ -942,7 +947,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Email
+                            {t("admin.settings.invoiceEditor.fields.email")}
                           </span>
                           <input
                             name="companyEmail"
@@ -952,7 +957,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Website
+                            {t("admin.settings.invoiceEditor.fields.website")}
                           </span>
                           <input
                             name="companyWebsite"
@@ -962,7 +967,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Tax ID
+                            {t("admin.settings.invoiceEditor.fields.taxId")}
                           </span>
                           <input
                             name="companyTaxId"
@@ -972,7 +977,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block sm:col-span-2">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Address line 1
+                            {t("admin.settings.invoiceEditor.fields.addressLine1")}
                           </span>
                           <input
                             name="companyAddressLine1"
@@ -982,7 +987,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block sm:col-span-2">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Address line 2
+                            {t("admin.settings.invoiceEditor.fields.addressLine2")}
                           </span>
                           <input
                             name="companyAddressLine2"
@@ -994,11 +999,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       </div>
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Footer y clausulas</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{t("admin.settings.invoiceEditor.sections.footer")}</h3>
                         <div className="mt-3 space-y-3">
                           <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              Footer note
+                              {t("admin.settings.invoiceEditor.fields.footerNote")}
                             </span>
                             <input
                               name="footerNote"
@@ -1008,7 +1013,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           </label>
                           <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              Clauses title
+                              {t("admin.settings.invoiceEditor.fields.clausesTitle")}
                             </span>
                             <input
                               name="clausesTitle"
@@ -1018,7 +1023,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           </label>
                           <label className="block">
                             <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                              Legal clauses (one per line, small footer text)
+                              {t("admin.settings.invoiceEditor.fields.legalClauses")}
                             </span>
                             <textarea
                               name="legalClauses"
@@ -1032,9 +1037,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900">Marca de agua</h3>
+                          <h3 className="text-sm font-semibold text-slate-900">{t("admin.settings.invoiceEditor.sections.watermark")}</h3>
                           <p className="text-[11px] text-slate-500">
-                            Controla si la marca de agua de ESTIMATE se muestra o no.
+                            {t("admin.settings.invoiceEditor.watermarkHint")}
                           </p>
                         </div>
                         <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
@@ -1044,16 +1049,16 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                             defaultChecked={invoiceTemplate.showEstimateWatermark}
                             className="h-4 w-4 rounded border-slate-300"
                           />
-                          Show estimate watermark
+                          {t("admin.settings.invoiceEditor.showWatermark")}
                         </label>
                       </div>
 
                       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                         <p className="text-xs text-slate-500">
-                          Los line items se mantienen en el editor de invoices y no se modifican aqui.
+                          {t("admin.settings.invoiceEditor.lineItemsHint")}
                         </p>
                         <FormSubmitButton
-                          idleLabel="Guardar template de invoice"
+                          idleLabel={t("admin.settings.invoiceEditor.actions.save")}
                           pendingLabel={t("common.feedback.saving")}
                           successLabel={t("common.feedback.saved")}
                           className="w-full px-5 py-2.5 sm:w-auto"
@@ -1065,16 +1070,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                 {showInvoicePreview ? (
                   <div className="app-card p-4 shadow-contrast sm:p-6 xl:sticky xl:top-24 xl:h-fit">
-                    <h3 className="text-base font-semibold">Vista final del invoice</h3>
+                    <h3 className="text-base font-semibold">{t("admin.settings.invoiceEditor.preview.title")}</h3>
                     <p className="mt-2 text-sm text-slate-600">
-                      Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.
+                      {t("admin.settings.invoiceEditor.preview.subtitle")}
                     </p>
                     <DocumentPreviewModal
-                      title={`Invoice preview - ${invoiceThemePreview}`}
+                      title={t("admin.settings.invoiceEditor.preview.modalTitle", {
+                        theme: invoiceThemePreview,
+                      })}
                       srcDoc={invoiceTemplatePreview}
-                      previewLabel="Pagina completa"
-                      previewHint="Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa."
-                      openLabel="Abrir"
+                      previewLabel={t("admin.settings.invoiceEditor.preview.previewLabel")}
+                      previewHint={t("admin.settings.invoiceEditor.preview.previewHint")}
+                      openLabel={t("admin.settings.invoiceEditor.preview.open")}
                     />
                   </div>
                 ) : null}
@@ -1087,7 +1094,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           <div className="grid gap-6 xl:grid-cols-[18rem_minmax(0,1fr)]">
             <div className="app-card p-4 shadow-contrast">
               <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-                Compliance documents
+                {t("admin.settings.compliance.listTitle")}
               </h2>
               <div className="mt-3 space-y-2">
                 {COMPLIANCE_DOC_IDS.map((docId) => {
@@ -1118,10 +1125,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             <div className="space-y-6">
               <div className="app-card p-4 shadow-contrast sm:p-6">
                 <h2 className="text-lg font-semibold">
-                  Compliance editor: {selectedComplianceMeta.label}
+                  {t("admin.settings.compliance.editorTitle", {
+                    label: selectedComplianceMeta.label,
+                  })}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Edit public legal pages shown in landing footer and under /legal.
+                  {t("admin.settings.compliance.editorSubtitle")}
                 </p>
 
                 <form action={saveComplianceDoc} className="mt-5 space-y-6">
@@ -1129,11 +1138,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                   <div className="grid gap-5 xl:grid-cols-2">
                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <h3 className="text-sm font-semibold text-slate-900">English</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("admin.settings.compliance.language.en")}</h3>
                       <div className="mt-3 space-y-3">
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Title
+                            {t("admin.settings.compliance.fields.title")}
                           </span>
                           <input
                             name="titleEn"
@@ -1143,7 +1152,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Summary
+                            {t("admin.settings.compliance.fields.summary")}
                           </span>
                           <textarea
                             name="summaryEn"
@@ -1154,18 +1163,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Effective date
+                            {t("admin.settings.compliance.fields.effectiveDate")}
                           </span>
                           <input
                             name="effectiveDateEn"
                             defaultValue={selectedCompliance.en.effectiveDate}
                             className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder="YYYY-MM-DD"
+                            placeholder={t("admin.settings.compliance.placeholders.date")}
                           />
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Body
+                            {t("admin.settings.compliance.fields.body")}
                           </span>
                           <textarea
                             name="bodyEn"
@@ -1178,11 +1187,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </section>
 
                     <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <h3 className="text-sm font-semibold text-slate-900">Spanish</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">{t("admin.settings.compliance.language.es")}</h3>
                       <div className="mt-3 space-y-3">
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Title
+                            {t("admin.settings.compliance.fields.title")}
                           </span>
                           <input
                             name="titleEs"
@@ -1192,7 +1201,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Summary
+                            {t("admin.settings.compliance.fields.summary")}
                           </span>
                           <textarea
                             name="summaryEs"
@@ -1203,18 +1212,18 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Effective date
+                            {t("admin.settings.compliance.fields.effectiveDate")}
                           </span>
                           <input
                             name="effectiveDateEs"
                             defaultValue={selectedCompliance.es.effectiveDate}
                             className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder="YYYY-MM-DD"
+                            placeholder={t("admin.settings.compliance.placeholders.date")}
                           />
                         </label>
                         <label className="block">
                           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Body
+                            {t("admin.settings.compliance.fields.body")}
                           </span>
                           <textarea
                             name="bodyEs"
@@ -1229,7 +1238,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <div className="text-xs text-slate-500 break-words">
-                      Public pages:
+                      {t("admin.settings.compliance.publicPages")}:
                       <a
                         href="/legal"
                         target="_blank"
@@ -1249,7 +1258,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       </a>
                     </div>
                     <FormSubmitButton
-                      idleLabel="Save compliance document"
+                      idleLabel={t("admin.settings.compliance.actions.save")}
                       pendingLabel={t("common.feedback.saving")}
                       successLabel={t("common.feedback.saved")}
                       className="w-full px-5 py-2.5 sm:w-auto"
@@ -1276,7 +1285,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-semibold">{t("admin.settings.notifications.title")}</h2>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                Sin codigo
+                {t("admin.settings.notifications.noCode")}
               </span>
             </div>
             <p className="mt-3 text-sm text-slate-600">

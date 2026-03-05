@@ -1,8 +1,10 @@
 import AppShell from "@/components/layout/AppShell";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
+import { getTranslations } from "next-intl/server";
 
 export default async function DeveloperTestsPage() {
+  const t = await getTranslations();
   await requireDeveloper();
 
   let dbReachable = false;
@@ -30,26 +32,28 @@ export default async function DeveloperTestsPage() {
   return (
     <AppShell
       role="ADMIN"
-      title="Developer Tests"
-      subtitle="Checks rapidos para validar estado operativo."
+      title={t("admin.developer.tests.title")}
+      subtitle={t("admin.developer.tests.subtitle")}
     >
       <section className="space-y-4">
         <article className="app-card p-6 shadow-contrast">
           <h2 className="text-lg font-semibold text-slate-900">
-            Diagnostico de plataforma
+            {t("admin.developer.tests.platform")}
           </h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm">
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                DB
+                {t("admin.developer.tests.metrics.db")}
               </p>
               <p className="mt-2 font-semibold text-slate-900">
-                {dbReachable ? "Reachable" : "Unreachable"}
+                {dbReachable
+                  ? t("admin.developer.tests.metrics.dbReachable")
+                  : t("admin.developer.tests.metrics.dbUnreachable")}
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Jobs sin tecnico
+                {t("admin.developer.tests.metrics.jobsWithoutTech")}
               </p>
               <p className="mt-2 font-semibold text-slate-900">
                 {jobsWithoutTech}
@@ -57,7 +61,7 @@ export default async function DeveloperTestsPage() {
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Facturas vencidas
+                {t("admin.developer.tests.metrics.overdueInvoices")}
               </p>
               <p className="mt-2 font-semibold text-slate-900">
                 {overdueInvoices}
@@ -65,7 +69,7 @@ export default async function DeveloperTestsPage() {
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Admin unread
+                {t("admin.developer.tests.metrics.unreadAdmin")}
               </p>
               <p className="mt-2 font-semibold text-slate-900">
                 {unreadAdminNotifications}

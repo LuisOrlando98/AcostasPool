@@ -227,7 +227,7 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
             </span>
           </Link>
 
-          <nav className="lp-nav" aria-label="Primary">
+          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
             <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
               <span className="lp-nav-logo-dot" aria-hidden="true" />
               <span className="lp-nav-logo-text">
@@ -261,14 +261,14 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
           </nav>
 
           <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label="Language">
+            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
               <button
                 type="button"
                 className="lp-lang-btn"
                 data-active={language === "en"}
                 onClick={() => setLanguage("en")}
-                aria-label="English"
-                title="English"
+                aria-label={language === "es" ? "Ingles" : "English"}
+                title={language === "es" ? "Ingles" : "English"}
               >
                 EN
               </button>
@@ -277,21 +277,21 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                 className="lp-lang-btn"
                 data-active={language === "es"}
                 onClick={() => setLanguage("es")}
-                aria-label="Espanol"
-                title="Espanol"
+                aria-label={language === "es" ? "Espanol" : "Spanish"}
+                title={language === "es" ? "Espanol" : "Spanish"}
               >
                 ES
               </button>
             </div>
 
-            <div className="lp-theme-switch" role="group" aria-label="Theme">
+            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
               <button
                 type="button"
                 className="lp-theme-btn"
                 data-active={theme === "ocean"}
                 onClick={() => setTheme("ocean")}
-                aria-label="Light theme"
-                title="Light theme"
+                aria-label={language === "es" ? "Tema claro" : "Light theme"}
+                title={language === "es" ? "Tema claro" : "Light theme"}
               >
                 <SunIcon />
               </button>
@@ -300,8 +300,8 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                 className="lp-theme-btn"
                 data-active={theme === "night"}
                 onClick={() => setTheme("night")}
-                aria-label="Dark theme"
-                title="Dark theme"
+                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
+                title={language === "es" ? "Tema oscuro" : "Dark theme"}
               >
                 <MoonIcon />
               </button>
@@ -326,7 +326,11 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
             <article className="lp-contact-hero lp-surface">
               <img
                 src="/landing/media/curated/images/pool-service-weekly-technician.jpg"
-                alt="Pool service technician cleaning a residential swimming pool"
+                alt={
+                  language === "es"
+                    ? "Tecnico de piscina limpiando una piscina residencial"
+                    : "Pool service technician cleaning a residential swimming pool"
+                }
               />
               <div className="lp-contact-hero-overlay">
                 <h1>{copy.hero.title}</h1>

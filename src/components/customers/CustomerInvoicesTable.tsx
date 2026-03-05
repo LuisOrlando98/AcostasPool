@@ -51,13 +51,13 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
           <table className="customers-table customer-invoices-table min-w-[980px] w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="w-[20%] px-3 py-3">Invoice</th>
-                <th className="w-[12%] px-3 py-3">Status</th>
+                <th className="w-[20%] px-3 py-3">{t("admin.invoices.list.table.invoice")}</th>
+                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.table.status")}</th>
                 <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.theme")}</th>
                 <th className="w-[24%] px-3 py-3">{t("admin.invoices.list.job")}</th>
-                <th className="w-[12%] px-3 py-3">Date</th>
-                <th className="w-[10%] px-3 py-3 text-right">Total</th>
-                <th className="w-[18%] px-3 py-3 text-right">Actions</th>
+                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.table.date")}</th>
+                <th className="w-[10%] px-3 py-3 text-right">{t("admin.invoices.list.table.total")}</th>
+                <th className="w-[18%] px-3 py-3 text-right">{t("admin.invoices.list.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -124,7 +124,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                             </a>
                           ) : (
                             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
-                              Locked
+                              {t("admin.invoices.list.locked")}
                             </span>
                           )}
                         </div>
@@ -153,7 +153,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
               disabled={currentPage <= 1}
               className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
             >
-              Prev
+              {t("admin.invoices.list.prev")}
             </button>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
               {currentPage} / {totalPages}
@@ -164,7 +164,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
               disabled={currentPage >= totalPages}
               className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
             >
-              Next
+              {t("admin.invoices.list.next")}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/i18n/client";
 
 type CustomerDocumentUploaderProps = {
   customerId: string;
@@ -11,33 +12,40 @@ type CustomerDocumentUploaderProps = {
   onUploaded?: () => void;
 };
 
-const CATEGORY_OPTIONS = [
-  { value: "GENERAL", label: "General" },
-  { value: "CONTRACT", label: "Contract" },
-  { value: "REPORT", label: "Report" },
-  { value: "INVOICE_ATTACHMENT", label: "Invoice attachment" },
-  { value: "PHOTO", label: "Photo" },
-];
-
 export default function CustomerDocumentUploader({
   customerId,
-  title = "Upload documents",
-  subtitle = "Files are stored inside this customer repository.",
-  buttonLabel = "Upload files",
+  title,
+  subtitle,
+  buttonLabel,
   compact = false,
   onUploaded,
 }: CustomerDocumentUploaderProps) {
+  const { t } = useI18n();
   const [files, setFiles] = useState<File[]>([]);
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("GENERAL");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const resolvedTitle = title ?? t("admin.customers.repository.uploader.title");
+  const resolvedSubtitle = subtitle ?? t("admin.customers.repository.uploader.subtitle");
+  const resolvedButtonLabel = buttonLabel ?? t("admin.customers.repository.uploader.buttonLabel");
+
+  const categoryOptions = [
+    { value: "GENERAL", label: t("admin.customers.repository.uploader.categories.general") },
+    { value: "CONTRACT", label: t("admin.customers.repository.uploader.categories.contract") },
+    { value: "REPORT", label: t("admin.customers.repository.uploader.categories.report") },
+    {
+      value: "INVOICE_ATTACHMENT",
+      label: t("admin.customers.repository.uploader.categories.invoiceAttachment"),
+    },
+    { value: "PHOTO", label: t("admin.customers.repository.uploader.categories.photo") },
+  ];
 
   const handleSubmit = async () => {
     if (files.length === 0) {
       setIsError(true);
-      setMessage("Select at least one document.");
+      setMessage(t("admin.customers.repository.uploader.messages.selectOne"));
       return;
     }
 
@@ -61,12 +69,12 @@ export default function CustomerDocumentUploader({
 
     if (!response.ok) {
       setIsError(true);
-      setMessage(data.error ?? "Unable to upload documents.");
+      setMessage(data.error ?? t("admin.customers.repository.uploader.messages.uploadFailed"));
       setLoading(false);
       return;
     }
 
-    setMessage("Documents uploaded successfully.");
+    setMessage(t("admin.customers.repository.uploader.messages.uploaded"));
     setFiles([]);
     setDescription("");
     setLoading(false);
@@ -85,21 +93,21 @@ export default function CustomerDocumentUploader({
         compact ? "p-4" : "p-5"
       }`}
     >
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+      <h3 className="text-sm font-semibold text-slate-900">{resolvedTitle}</h3>
+      <p className="mt-1 text-xs text-slate-500">{resolvedSubtitle}</p>
 
       <div className="mt-4 grid gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Category
+              {t("admin.customers.repository.uploader.category")}
             </span>
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
               className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
             >
-              {CATEGORY_OPTIONS.map((option) => (
+              {categoryOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -108,20 +116,20 @@ export default function CustomerDocumentUploader({
           </label>
           <label className="block">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-              Description (optional)
+              {t("admin.customers.repository.uploader.description")}
             </span>
             <input
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               className="app-input mt-2 w-full px-4 py-3 text-sm"
-              placeholder="Internal note for this upload"
+              placeholder={t("admin.customers.repository.uploader.descriptionPlaceholder")}
             />
           </label>
         </div>
 
         <label className="block">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Files
+            {t("admin.customers.repository.uploader.files")}
           </span>
           <input
             type="file"
@@ -157,7 +165,7 @@ export default function CustomerDocumentUploader({
           disabled={loading}
           className="app-button-primary w-full px-4 py-3 text-sm font-semibold disabled:opacity-70"
         >
-          {loading ? "Uploading..." : buttonLabel}
+          {loading ? t("admin.customers.repository.uploader.uploading") : resolvedButtonLabel}
         </button>
       </div>
     </div>

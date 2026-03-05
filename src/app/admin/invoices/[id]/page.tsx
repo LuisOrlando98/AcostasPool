@@ -164,9 +164,13 @@ export default async function InvoiceEditorPage({
 
   if (!invoiceId) {
     return (
-      <AppShell title="Invoice editor" subtitle="Invoice not found" role="ADMIN">
+      <AppShell
+        title={t("admin.invoices.editor.notFoundTitle")}
+        subtitle={t("admin.invoices.editor.notFoundSubtitle")}
+        role="ADMIN"
+      >
         <Link href="/admin/invoices" className="text-sm text-slate-600 underline">
-          Back to invoices
+          {t("admin.invoices.editor.back")}
         </Link>
       </AppShell>
     );
@@ -188,9 +192,13 @@ export default async function InvoiceEditorPage({
 
   if (!invoice) {
     return (
-      <AppShell title="Invoice editor" subtitle="Invoice not found" role="ADMIN">
+      <AppShell
+        title={t("admin.invoices.editor.notFoundTitle")}
+        subtitle={t("admin.invoices.editor.notFoundSubtitle")}
+        role="ADMIN"
+      >
         <Link href="/admin/invoices" className="text-sm text-slate-600 underline">
-          Back to invoices
+          {t("admin.invoices.editor.back")}
         </Link>
       </AppShell>
     );
@@ -215,26 +223,27 @@ export default async function InvoiceEditorPage({
   const lineItemsSeed =
     normalizedLineItems.length > 0
       ? normalizedLineItems
-      : [{ label: "Service", quantity: 1, unitPrice: Number(invoice.subtotal), amount: Number(invoice.subtotal) }];
+      : [{
+          label: t("admin.invoices.editor.defaults.service"),
+          quantity: 1,
+          unitPrice: Number(invoice.subtotal),
+          amount: Number(invoice.subtotal),
+        }];
 
   const modeHref = (nextMode: "editor" | "web" | "split") =>
     `/admin/invoices/${invoice.id}?mode=${nextMode}`;
   const isLocked = Boolean(invoice.sentAt);
-  const lockedTitle = locale === "es" ? "Factura bloqueada" : "Invoice locked";
-  const lockedDescription =
-    locale === "es"
-      ? "Esta factura ya fue enviada al cliente y no se puede editar."
-      : "This invoice has already been sent to the customer and can no longer be edited.";
-  const lockedSentAtLabel =
-    locale === "es" ? "Enviada el" : "Sent on";
+  const lockedTitle = t("admin.invoices.editor.locked.title");
+  const lockedDescription = t("admin.invoices.editor.locked.description");
+  const lockedSentAtLabel = t("admin.invoices.editor.locked.sentOn");
 
-  const editorLabel = locale === "es" ? "Editor" : "Editor";
-  const previewLabel = locale === "es" ? "Vista" : "Preview";
-  const splitLabel = locale === "es" ? "Ambos" : "Split";
+  const editorLabel = t("admin.invoices.editor.modes.editor");
+  const previewLabel = t("admin.invoices.editor.modes.preview");
+  const splitLabel = t("admin.invoices.editor.modes.split");
 
   return (
     <AppShell
-      title={`Invoice ${invoice.number}`}
+      title={t("admin.invoices.editor.title", { number: invoice.number })}
       subtitle={t("admin.invoices.subtitle")}
       role="ADMIN"
     >
@@ -243,7 +252,7 @@ export default async function InvoiceEditorPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                Complete invoice editor
+                {t("admin.invoices.editor.kicker")}
               </p>
               <h2 className="text-lg font-semibold text-slate-900">{invoice.number}</h2>
               <p className="text-xs text-slate-500">
@@ -299,7 +308,9 @@ export default async function InvoiceEditorPage({
                 jobs={jobs.map((job) => ({
                   id: job.id,
                   scheduledDate: job.scheduledDate.toISOString(),
-                  technicianName: job.technician?.user.fullName ?? "No technician",
+                  technicianName:
+                    job.technician?.user.fullName ??
+                    t("admin.invoices.list.noTech"),
                 }))}
                 initialLineItems={lineItemsSeed}
                 locked={isLocked}
@@ -310,9 +321,18 @@ export default async function InvoiceEditorPage({
 
           {mode !== "editor" ? (
             <div className="app-card p-6 shadow-contrast">
-              <h3 className="text-base font-semibold text-slate-900">Web preview</h3>
+              <h3 className="text-base font-semibold text-slate-900">
+                {t("admin.invoices.editor.preview.title")}
+              </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Preview de template para el tipo actual: {invoice.theme}
+                {t("admin.invoices.editor.preview.subtitle", {
+                  theme:
+                    invoice.theme === "SPECIAL"
+                      ? t("admin.invoices.theme.special")
+                      : invoice.theme === "ESTIMATE"
+                        ? t("admin.invoices.theme.estimate")
+                        : t("admin.invoices.theme.standard"),
+                })}
               </p>
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <div className="mx-auto w-full max-w-[860px]">

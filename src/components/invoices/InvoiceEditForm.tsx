@@ -132,7 +132,7 @@ export default function InvoiceEditForm({
       <div className="grid gap-3 sm:grid-cols-3">
         <label>
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Number
+            {t("admin.invoices.list.table.invoice")}
           </span>
           <input
             name="number"
@@ -144,7 +144,7 @@ export default function InvoiceEditForm({
         </label>
         <label>
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Status
+            {t("admin.invoices.list.table.status")}
           </span>
           <select
             name="status"
@@ -152,15 +152,15 @@ export default function InvoiceEditForm({
             className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
             disabled={locked}
           >
-            <option value="DRAFT">DRAFT</option>
-            <option value="SENT">SENT</option>
-            <option value="PAID">PAID</option>
-            <option value="OVERDUE">OVERDUE</option>
+            <option value="DRAFT">{t("admin.invoices.status.draft")}</option>
+            <option value="SENT">{t("admin.invoices.status.sent")}</option>
+            <option value="PAID">{t("admin.invoices.status.paid")}</option>
+            <option value="OVERDUE">{t("admin.invoices.status.overdue")}</option>
           </select>
         </label>
         <label>
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Type
+            {t("admin.invoices.list.type")}
           </span>
           <select
             name="type"
@@ -178,7 +178,7 @@ export default function InvoiceEditForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label>
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Linked job
+            {t("admin.invoices.new.fields.job")}
           </span>
           <select
             name="jobId"
@@ -186,11 +186,11 @@ export default function InvoiceEditForm({
             className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
             disabled={locked}
           >
-            <option value="">No job linked</option>
+            <option value="">{t("admin.invoices.list.noJob")}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
                 {new Date(job.scheduledDate).toLocaleDateString(locale)} -{" "}
-                {job.technicianName ?? "No technician"}
+                {job.technicianName ?? t("admin.invoices.list.noTech")}
               </option>
             ))}
           </select>
@@ -356,9 +356,9 @@ export default function InvoiceEditForm({
 
       {!locked ? (
         <FormSubmitButton
-          idleLabel="Guardar cambios y regenerar PDF"
-          pendingLabel="Guardando..."
-          successLabel="Actualizado"
+          idleLabel={t("admin.invoices.editor.actions.saveRegenerate")}
+          pendingLabel={t("admin.invoices.editor.actions.saving")}
+          successLabel={t("admin.invoices.editor.actions.updated")}
           className="w-full px-4 py-3"
         />
       ) : null}

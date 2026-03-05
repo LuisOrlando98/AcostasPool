@@ -885,9 +885,9 @@ const CompletedTableSection = ({
                         </p>
                         <p
                           className="max-w-[13rem] truncate text-[11px] text-slate-400"
-                          title={row.propertyName || "Propiedad"}
+                          title={row.propertyName || t("admin.technicians.detail.jobs.table.propertyFallback")}
                         >
-                          {row.propertyName || "Propiedad"}
+                          {row.propertyName || t("admin.technicians.detail.jobs.table.propertyFallback")}
                         </p>
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">

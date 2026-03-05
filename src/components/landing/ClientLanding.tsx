@@ -627,7 +627,7 @@ export default function ClientLanding({
             </span>
           </Link>
 
-          <nav className="lp-nav" aria-label="Primary">
+          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
             <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
               <span className="lp-nav-logo-dot" aria-hidden="true" />
               <span className="lp-nav-logo-text">
@@ -663,14 +663,14 @@ export default function ClientLanding({
           </nav>
 
           <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label="Language">
+            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
               <button
                 type="button"
                 className="lp-lang-btn"
                 data-active={language === "en"}
                 onClick={() => setLanguage("en")}
-                aria-label="English"
-                title="English"
+                aria-label={language === "es" ? "Ingles" : "English"}
+                title={language === "es" ? "Ingles" : "English"}
               >
                 EN
               </button>
@@ -679,21 +679,21 @@ export default function ClientLanding({
                 className="lp-lang-btn"
                 data-active={language === "es"}
                 onClick={() => setLanguage("es")}
-                aria-label="Espanol"
-                title="Espanol"
+                aria-label={language === "es" ? "Espanol" : "Spanish"}
+                title={language === "es" ? "Espanol" : "Spanish"}
               >
                 ES
               </button>
             </div>
 
-            <div className="lp-theme-switch" role="group" aria-label="Theme">
+            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
               <button
                 type="button"
                 className="lp-theme-btn"
                 data-active={theme === "ocean"}
                 onClick={() => setTheme("ocean")}
-                aria-label="Light theme"
-                title="Light theme"
+                aria-label={language === "es" ? "Tema claro" : "Light theme"}
+                title={language === "es" ? "Tema claro" : "Light theme"}
               >
                 <SunIcon />
               </button>
@@ -702,8 +702,8 @@ export default function ClientLanding({
                 className="lp-theme-btn"
                 data-active={theme === "night"}
                 onClick={() => setTheme("night")}
-                aria-label="Dark theme"
-                title="Dark theme"
+                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
+                title={language === "es" ? "Tema oscuro" : "Dark theme"}
               >
                 <MoonIcon />
               </button>
@@ -763,7 +763,14 @@ export default function ClientLanding({
             </article>
 
             <div className="lp-hero-media lp-surface" data-lp-reveal>
-              <img src={HERO_IMAGE} alt="Luxury residential pool in South Florida" />
+              <img
+                src={HERO_IMAGE}
+                alt={
+                  language === "es"
+                    ? "Piscina residencial de lujo en el sur de Florida"
+                    : "Luxury residential pool in South Florida"
+                }
+              />
               <div className="lp-hero-media-overlay">
                 <p>{copy.hero.mediaNote}</p>
               </div>
@@ -781,7 +788,11 @@ export default function ClientLanding({
             >
               <img
                 src={SERVICES_BACKGROUND_IMAGE}
-                alt="Premium pool deck with palm trees and modern architecture"
+                alt={
+                  language === "es"
+                    ? "Area premium de piscina con palmeras y arquitectura moderna"
+                    : "Premium pool deck with palm trees and modern architecture"
+                }
                 className="lp-services-intro-bg"
               />
               {servicesVideoAllowed && servicesVideoVisible ? (
@@ -862,7 +873,14 @@ export default function ClientLanding({
               {SERVICE_PILLARS.map((pillar) => (
                 <article key={pillar.title} className="lp-service-plan-card">
                   <div className="lp-service-plan-media">
-                    <img src={pillar.image} alt={`${pillar.title} service preview`} />
+                    <img
+                      src={pillar.image}
+                      alt={
+                        language === "es"
+                          ? `Vista previa del servicio ${pillar.title}`
+                          : `${pillar.title} service preview`
+                      }
+                    />
                   </div>
                   <div className="lp-service-plan-head">
                     <span className="lp-service-icon" aria-hidden="true">
@@ -914,7 +932,7 @@ export default function ClientLanding({
                     (prev) => (prev - 1 + GALLERY_SLIDES.length) % GALLERY_SLIDES.length
                   )
                 }
-                aria-label="Previous image"
+                aria-label={language === "es" ? "Imagen anterior" : "Previous image"}
               >
                 <span>{"<"}</span>
               </button>
@@ -924,7 +942,7 @@ export default function ClientLanding({
                 className="lp-slide-nav"
                 data-dir="next"
                 onClick={() => setActiveSlide((prev) => (prev + 1) % GALLERY_SLIDES.length)}
-                aria-label="Next image"
+                aria-label={language === "es" ? "Siguiente imagen" : "Next image"}
               >
                 <span>{">"}</span>
               </button>
@@ -938,7 +956,11 @@ export default function ClientLanding({
                   className="lp-dot"
                   data-active={activeSlide === index}
                   onClick={() => setActiveSlide(index)}
-                  aria-label={`Show image ${index + 1}`}
+                  aria-label={
+                    language === "es"
+                      ? `Mostrar imagen ${index + 1}`
+                      : `Show image ${index + 1}`
+                  }
                 />
               ))}
             </div>
@@ -956,7 +978,7 @@ export default function ClientLanding({
               <div className="lp-video-card lp-surface">
                 <iframe
                   src={youtubeSrc}
-                  title="AcostasPool service video"
+                  title={language === "es" ? "Video de servicio AcostasPool" : "AcostasPool service video"}
                   loading="lazy"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -1021,7 +1043,14 @@ export default function ClientLanding({
                       </div>
                     </header>
 
-                    <div className="lp-review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                    <div
+                      className="lp-review-stars"
+                      aria-label={
+                        language === "es"
+                          ? `${review.rating} de 5 estrellas`
+                          : `${review.rating} out of 5 stars`
+                      }
+                    >
                       {Array.from({ length: 5 }).map((_, index) => (
                         <StarIcon key={`${review.author}-${index}`} filled={index < review.rating} />
                       ))}
@@ -1043,7 +1072,7 @@ export default function ClientLanding({
         className="lp-back-to-top"
         data-visible={showBackToTop}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        aria-label="Back to top"
+        aria-label={language === "es" ? "Volver arriba" : "Back to top"}
       >
         <span>{"^"}</span>
       </button>

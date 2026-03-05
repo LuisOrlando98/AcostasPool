@@ -355,7 +355,7 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
             </span>
           </Link>
 
-          <nav className="lp-nav" aria-label="Primary">
+          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
             <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
               <span className="lp-nav-logo-dot" aria-hidden="true" />
               <span className="lp-nav-logo-text">
@@ -389,14 +389,14 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
           </nav>
 
           <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label="Language">
+            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
               <button
                 type="button"
                 className="lp-lang-btn"
                 data-active={language === "en"}
                 onClick={() => setLanguage("en")}
-                aria-label="English"
-                title="English"
+                aria-label={language === "es" ? "Ingles" : "English"}
+                title={language === "es" ? "Ingles" : "English"}
               >
                 EN
               </button>
@@ -405,21 +405,21 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
                 className="lp-lang-btn"
                 data-active={language === "es"}
                 onClick={() => setLanguage("es")}
-                aria-label="Espanol"
-                title="Espanol"
+                aria-label={language === "es" ? "Espanol" : "Spanish"}
+                title={language === "es" ? "Espanol" : "Spanish"}
               >
                 ES
               </button>
             </div>
 
-            <div className="lp-theme-switch" role="group" aria-label="Theme">
+            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
               <button
                 type="button"
                 className="lp-theme-btn"
                 data-active={theme === "ocean"}
                 onClick={() => setTheme("ocean")}
-                aria-label="Light theme"
-                title="Light theme"
+                aria-label={language === "es" ? "Tema claro" : "Light theme"}
+                title={language === "es" ? "Tema claro" : "Light theme"}
               >
                 <SunIcon />
               </button>
@@ -428,8 +428,8 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
                 className="lp-theme-btn"
                 data-active={theme === "night"}
                 onClick={() => setTheme("night")}
-                aria-label="Dark theme"
-                title="Dark theme"
+                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
+                title={language === "es" ? "Tema oscuro" : "Dark theme"}
               >
                 <MoonIcon />
               </button>
@@ -454,7 +454,11 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
             <article className="lp-about-hero lp-surface">
               <img
                 src="/landing/media/curated/images/pool-home-services-hero-technician.jpg"
-                alt="Pool technician performing service at a residential property"
+                alt={
+                  language === "es"
+                    ? "Tecnico de piscina realizando servicio en una propiedad residencial"
+                    : "Pool technician performing service at a residential property"
+                }
               />
               <div className="lp-about-hero-overlay">
                 <h1>{copy.hero.title}</h1>
@@ -487,7 +491,11 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
             <div className="lp-about-story-media lp-surface">
               <img
                 src="/landing/media/curated/images/pool-premium-residential-deck.jpg"
-                alt="Residential swimming pool prepared for premium maintenance service"
+                alt={
+                  language === "es"
+                    ? "Piscina residencial preparada para servicio premium de mantenimiento"
+                    : "Residential swimming pool prepared for premium maintenance service"
+                }
               />
             </div>
           </div>

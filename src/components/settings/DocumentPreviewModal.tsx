@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { useI18n } from "@/i18n/client";
 
 type DocumentPreviewModalProps = {
   srcDoc: string;
@@ -17,8 +18,10 @@ export default function DocumentPreviewModal({
   previewHint,
   openLabel,
 }: DocumentPreviewModalProps) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const frameId = useId();
+  const closeLabel = t("common.actions.close");
 
   useEffect(() => {
     if (!open) {
@@ -76,7 +79,7 @@ export default function DocumentPreviewModal({
             type="button"
             onClick={() => setOpen(false)}
             className="absolute inset-0"
-            aria-label="Cerrar preview"
+            aria-label={closeLabel}
           />
           <div className="relative z-10 w-[min(96vw,78rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl sm:p-3">
             <div className="mb-2 flex items-center justify-between px-1 sm:px-2">
@@ -85,8 +88,8 @@ export default function DocumentPreviewModal({
                 type="button"
                 onClick={() => setOpen(false)}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-300 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-                aria-label="Cerrar"
-                title="Cerrar"
+                aria-label={closeLabel}
+                title={closeLabel}
               >
                 <svg
                   viewBox="0 0 24 24"

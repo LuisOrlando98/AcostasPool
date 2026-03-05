@@ -899,7 +899,7 @@ export default async function CustomerDetailPage({
                 <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Perfil
+                      {t("admin.customers.detail.sections.profileLabel")}
                     </p>
                     <label
                       htmlFor="edit-customer"
@@ -915,7 +915,8 @@ export default async function CustomerDetailPage({
                   </p>
                   {customer.telefonoSecundario ? (
                     <p className="text-xs text-slate-500">
-                      Alt: {formatUsPhone(customer.telefonoSecundario)}
+                      {t("admin.customers.detail.labels.altPhone")}:{" "}
+                      {formatUsPhone(customer.telefonoSecundario)}
                     </p>
                   ) : null}
                   <p className="mt-2 text-xs text-slate-500">
@@ -932,7 +933,7 @@ export default async function CustomerDetailPage({
                 <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Direccion
+                      {t("admin.customers.detail.sections.addressLabel")}
                     </p>
                     <label
                       htmlFor="edit-customer"
@@ -956,12 +957,12 @@ export default async function CustomerDetailPage({
                       </p>
                     </>
                   ) : (
-                    <p className="mt-3 text-sm text-slate-500">Sin direccion registrada.</p>
+                    <p className="mt-3 text-sm text-slate-500">{t("admin.customers.detail.labels.noAddress")}</p>
                   )}
                   <p className="mt-2 text-xs text-slate-500">
                     {customer.allowWeekendBooking
                       ? t("admin.customers.new.fields.allowWeekendBooking")
-                      : "Sin fines de semana"}
+                      : t("admin.customers.detail.labels.noWeekends")}
                   </p>
                 </article>
               </div>

@@ -1,9 +1,12 @@
 import AppShell from "@/components/layout/AppShell";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
+import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 export default async function DeveloperPage() {
   await requireDeveloper();
+  const t = await getTranslations();
+  const locale = await getRequestLocale();
 
   const [auditTotal, latestAudit, failedNotifications, pendingJobs] =
     await Promise.all([
@@ -23,53 +26,56 @@ export default async function DeveloperPage() {
   return (
     <AppShell
       role="ADMIN"
-      title="Developer Console"
-      subtitle="Acceso exclusivo a pruebas, auditoria y diagnosticos."
+      title={t("admin.developer.title")}
+      subtitle={t("admin.developer.subtitle")}
     >
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article className="app-card p-5 shadow-contrast">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Audit logs
+            {t("admin.developer.cards.auditLogs.title")}
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {auditTotal}
           </p>
           <p className="mt-1 text-xs text-slate-500">
             {latestAudit
-              ? `Ultimo: ${latestAudit.action} (${latestAudit.createdAt.toLocaleString()})`
-              : "Sin actividad registrada."}
+              ? t("admin.developer.cards.auditLogs.latest", {
+                  action: latestAudit.action,
+                  date: latestAudit.createdAt.toLocaleString(locale),
+                })
+              : t("admin.developer.cards.auditLogs.empty")}
           </p>
         </article>
         <article className="app-card p-5 shadow-contrast">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Notificaciones fallidas
+            {t("admin.developer.cards.failedNotifications.title")}
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {failedNotifications}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            Alertas con estado FAILED.
+            {t("admin.developer.cards.failedNotifications.subtitle")}
           </p>
         </article>
         <article className="app-card p-5 shadow-contrast">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Jobs activos
+            {t("admin.developer.cards.activeJobs.title")}
           </p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">
             {pendingJobs}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            PENDING / ON_THE_WAY / IN_PROGRESS.
+            {t("admin.developer.cards.activeJobs.subtitle")}
           </p>
         </article>
         <article className="app-card p-5 shadow-contrast">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Usuario developer
+            {t("admin.developer.cards.developerUser.title")}
           </p>
           <p className="mt-2 break-all text-sm font-semibold text-slate-900">
             luiso.rodriguezcabrera@gmail.com
           </p>
-          <p className="mt-1 text-xs text-slate-500">Acceso restringido.</p>
+          <p className="mt-1 text-xs text-slate-500">{t("admin.developer.cards.developerUser.subtitle")}</p>
         </article>
       </section>
 
@@ -79,13 +85,13 @@ export default async function DeveloperPage() {
           className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
         >
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Pruebas
+            {t("admin.developer.links.tests.kicker")}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            Suite de diagnosticos
+            {t("admin.developer.links.tests.title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Validaciones operativas para revisar salud y consistencia.
+            {t("admin.developer.links.tests.subtitle")}
           </p>
         </a>
         <a
@@ -93,13 +99,13 @@ export default async function DeveloperPage() {
           className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
         >
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Seguridad
+            {t("admin.developer.links.audit.kicker")}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            Audit log
+            {t("admin.developer.links.audit.title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Trazabilidad completa de acciones criticas.
+            {t("admin.developer.links.audit.subtitle")}
           </p>
         </a>
         <a
@@ -109,13 +115,13 @@ export default async function DeveloperPage() {
           className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
         >
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            Infraestructura
+            {t("admin.developer.links.infrastructure.kicker")}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            DB health endpoint
+            {t("admin.developer.links.infrastructure.title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Solo developer: estado de conectividad de base de datos.
+            {t("admin.developer.links.infrastructure.subtitle")}
           </p>
         </a>
       </section>

@@ -433,7 +433,7 @@ export default function UserMenu() {
                 href="/admin/developer"
                 className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
               >
-                Developer Console
+                {t("userMenu.developer")}
               </a>
             ) : null}
             <button
