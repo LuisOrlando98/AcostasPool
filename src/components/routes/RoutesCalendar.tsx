@@ -1574,7 +1574,7 @@ export default function RoutesCalendar({
           </div>
         ) : null}
 
-        <div className="mt-6 xl:hidden">
+        <div className="mt-6 lg:hidden">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
             <p className="text-[11px] text-slate-500">
               {t("admin.routes.calendarMobile.helper")}
@@ -1666,7 +1666,7 @@ export default function RoutesCalendar({
           </div>
         </div>
 
-        <div className="mt-6 hidden overflow-x-auto pb-2 xl:block xl:overflow-visible">
+        <div className="mt-6 hidden overflow-x-auto pb-2 lg:block lg:overflow-visible">
           <div className="grid min-w-[980px] grid-cols-7 gap-2 2xl:min-w-0">
           {(() => {
             return calendarDays.map((day) => {
@@ -2060,9 +2060,20 @@ export default function RoutesCalendar({
             <button
               type="button"
               onClick={openFiltersModal}
-              className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
+              className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+              aria-label={t("admin.routes.filters.open")}
+              title={t("admin.routes.filters.open")}
             >
-              {t("admin.routes.filters.open")}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+              </svg>
+              <span className="sr-only">{t("admin.routes.filters.open")}</span>
             </button>
           </div>
         </div>
@@ -2074,7 +2085,7 @@ export default function RoutesCalendar({
             </div>
           ) : (
             <>
-              <div className="space-y-3 p-3 xl:hidden">
+              <div className="space-y-3 p-3 lg:hidden">
                 {sortedRangeJobs.map((job) => {
                   const serviceOption = serviceTypeOptions.find(
                     (option) => option.value === job.serviceType
@@ -2250,9 +2261,10 @@ export default function RoutesCalendar({
                 })}
               </div>
 
-              <div className="hidden max-h-[520px] overflow-auto xl:block">
+              <div className="ui-table-shell hidden max-h-[520px] overflow-hidden lg:block">
+              <div className="customers-table-scroll h-full overflow-auto">
               <table
-                className={`min-w-[980px] w-full text-left ${tableTextSize}`}
+                className={`customers-table min-w-[1120px] w-full text-left ${tableTextSize}`}
               >
                 <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 backdrop-blur">
                   <tr>
@@ -2362,7 +2374,10 @@ export default function RoutesCalendar({
                                 className="h-2 w-2 rounded-full"
                                 style={techDotStyle}
                               />
-                              <span className="font-semibold text-slate-900">
+                              <span
+                                className="max-w-[180px] truncate font-semibold text-slate-900"
+                                title={job.customer.name}
+                              >
                                 {job.customer.name}
                               </span>
                             </div>
@@ -2382,7 +2397,10 @@ export default function RoutesCalendar({
                         </td>
                         <td className={`${cellPadding} align-top`}>
                           <div className="space-y-1">
-                            <div className="font-semibold text-slate-900">
+                            <div
+                              className="max-w-[220px] truncate font-semibold text-slate-900"
+                              title={propertyName}
+                            >
                               {propertyName}
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-slate-500">
@@ -2460,7 +2478,10 @@ export default function RoutesCalendar({
                               className="h-2 w-2 rounded-full"
                               style={techDotStyle}
                             />
-                            <span className="truncate font-semibold">
+                            <span
+                              className="max-w-[140px] truncate font-semibold"
+                              title={techInfo?.name ?? job.technician?.name ?? t("jobs.detail.noTech")}
+                            >
                               {techInfo?.name ??
                                 job.technician?.name ??
                                 t("jobs.detail.noTech")}
@@ -2484,6 +2505,7 @@ export default function RoutesCalendar({
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
             </>
           )}

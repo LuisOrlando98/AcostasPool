@@ -48,16 +48,16 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
       <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
         <div className="customers-table-scroll h-full overflow-auto">
-          <table className="customers-table customer-invoices-table min-w-[920px] w-full text-left text-xs text-slate-600">
+          <table className="customers-table customer-invoices-table min-w-[980px] w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="px-3 py-3">Invoice</th>
-                <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3">{t("admin.invoices.list.theme")}</th>
-                <th className="px-3 py-3">{t("admin.invoices.list.job")}</th>
-                <th className="px-3 py-3">Date</th>
-                <th className="px-3 py-3 text-right">Total</th>
-                <th className="px-3 py-3 text-right">Actions</th>
+                <th className="w-[20%] px-3 py-3">Invoice</th>
+                <th className="w-[12%] px-3 py-3">Status</th>
+                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.theme")}</th>
+                <th className="w-[24%] px-3 py-3">{t("admin.invoices.list.job")}</th>
+                <th className="w-[12%] px-3 py-3">Date</th>
+                <th className="w-[10%] px-3 py-3 text-right">Total</th>
+                <th className="w-[18%] px-3 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -82,11 +82,20 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
                   return (
                     <tr key={invoice.id} className="bg-white transition hover:bg-sky-50/40">
-                      <td className="px-3 py-3 font-semibold text-slate-900">{invoice.number}</td>
+                      <td className="px-3 py-3 font-semibold text-slate-900">
+                        <p className="max-w-[10rem] truncate" title={invoice.number}>
+                          {invoice.number}
+                        </p>
+                      </td>
                       <td className="px-3 py-3">{statusLabel}</td>
                       <td className="px-3 py-3">{themeLabel}</td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
-                        {invoice.jobLabel ?? t("admin.invoices.list.noJob")}
+                        <p
+                          className="max-w-[16rem] truncate"
+                          title={invoice.jobLabel ?? t("admin.invoices.list.noJob")}
+                        >
+                          {invoice.jobLabel ?? t("admin.invoices.list.noJob")}
+                        </p>
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
                         {new Date(invoice.createdAt).toLocaleDateString(locale)}

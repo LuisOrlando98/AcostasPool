@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
@@ -718,6 +718,7 @@ async function generateInvoicePdfWithPdfLib(
       y: (pageHeight - size) / 2,
       size,
       font: boldFont,
+      rotate: degrees(-28),
       color: rgb(brandR * 0.8 + 0.2, brandG * 0.8 + 0.2, brandB * 0.8 + 0.2),
       opacity: 0.12,
     });

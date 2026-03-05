@@ -398,9 +398,20 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
               ) : null}
               <label
                 htmlFor="invoice-filters"
-                className="app-button-ghost cursor-pointer px-3 py-2 text-xs font-semibold"
+                className="app-button-ghost inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full p-0"
+                aria-label={t("admin.invoices.filters.open")}
+                title={t("admin.invoices.filters.open")}
               >
-                {t("admin.invoices.filters.open")}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+                <span className="sr-only">{t("admin.invoices.filters.open")}</span>
               </label>
               {hasActiveFilters ? (
                 <a

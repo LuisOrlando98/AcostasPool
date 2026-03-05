@@ -419,9 +419,20 @@ export default function AdminNotificationsCenter({
             <button
               type="button"
               onClick={openFilters}
-              className="app-button-ghost px-3 py-2 text-xs font-semibold"
+              className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+              aria-label={t("admin.notifications.filters.open")}
+              title={t("admin.notifications.filters.open")}
             >
-              {t("admin.notifications.filters.open")}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+              </svg>
+              <span className="sr-only">{t("admin.notifications.filters.open")}</span>
             </button>
             {activeFiltersCount > 0 ? (
               <button

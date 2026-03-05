@@ -457,8 +457,8 @@ export default function RouteAssistant({
                             </span>
                           </div>
                         </div>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-xs">
+                        <div className="customers-table-scroll overflow-x-auto">
+                          <table className="customers-table min-w-[860px] w-full text-xs text-slate-600">
                             <thead>
                               <tr className="border-b border-slate-200 bg-white text-slate-500">
                                 <th className="px-3 py-2 text-left">#</th>

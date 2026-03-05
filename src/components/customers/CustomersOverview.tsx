@@ -248,16 +248,16 @@ export default function CustomersOverview({
             <>
               <div className="customers-table-shell ui-table-shell overflow-hidden">
                 <div className="customers-table-scroll overflow-x-auto">
-                  <table className="customers-table customers-overview-table w-full min-w-[980px] text-left text-xs text-slate-600">
+                  <table className="customers-table customers-overview-table w-full min-w-[1080px] text-left text-xs text-slate-600">
                     <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
                       <tr>
-                        <th className="sticky left-0 z-20 bg-slate-900 px-4 py-3">{t("admin.customers.overview.table.customer")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.phone")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.address")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.properties")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.jobs")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.invoices")}</th>
-                        <th className="px-4 py-3">{t("admin.customers.overview.table.status")}</th>
+                        <th className="sticky left-0 z-20 w-[24%] whitespace-nowrap bg-slate-900 px-4 py-3">{t("admin.customers.overview.table.customer")}</th>
+                        <th className="w-[14%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.phone")}</th>
+                        <th className="w-[20%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.address")}</th>
+                        <th className="w-[22%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.properties")}</th>
+                        <th className="w-[7%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.jobs")}</th>
+                        <th className="w-[7%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.invoices")}</th>
+                        <th className="w-[10%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.status")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -277,18 +277,27 @@ export default function CustomersOverview({
                               }
                             }}
                           >
-                            <td className="sticky left-0 z-10 bg-white px-4 py-3.5 group-hover:bg-sky-50/45">
-                              <p className="font-semibold text-slate-900">
+                            <td className="sticky left-0 z-10 min-w-[16rem] bg-white px-4 py-3.5 group-hover:bg-sky-50/45">
+                              <p className="max-w-[15rem] truncate font-semibold text-slate-900" title={customer.name}>
                                 {customer.name}
                               </p>
-                              <p className="text-[11px] text-slate-400">
+                              <p className="max-w-[15rem] truncate text-[11px] text-slate-400" title={customer.email}>
                                 {customer.email}
                               </p>
                             </td>
                             <td className="px-4 py-3.5 text-[11px] text-slate-600">
-                              {formatUsPhone(customer.phone) ??
-                                customer.phone ??
-                                t("common.labels.notAvailable")}
+                              <p
+                                className="max-w-[10rem] truncate"
+                                title={
+                                  formatUsPhone(customer.phone) ??
+                                  customer.phone ??
+                                  t("common.labels.notAvailable")
+                                }
+                              >
+                                {formatUsPhone(customer.phone) ??
+                                  customer.phone ??
+                                  t("common.labels.notAvailable")}
+                              </p>
                             </td>
                             <td className="px-4 py-3.5">
                               <p
@@ -309,13 +318,13 @@ export default function CustomersOverview({
                                 {propertiesPreview || t("admin.routes.labels.noProperties")}
                               </p>
                             </td>
-                            <td className="px-4 py-3.5 text-center text-[11px] text-slate-500">
+                            <td className="px-4 py-3.5 text-center text-[11px] font-semibold text-slate-600">
                               {customer.jobs}
                             </td>
-                            <td className="px-4 py-3.5 text-center text-[11px] text-slate-500">
+                            <td className="px-4 py-3.5 text-center text-[11px] font-semibold text-slate-600">
                               {customer.invoices}
                             </td>
-                            <td className="px-4 py-3.5">
+                            <td className="px-4 py-3.5 text-center">
                               <span
                                 className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
                                   customer.status === "ACTIVE"

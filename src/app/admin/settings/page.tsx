@@ -266,13 +266,11 @@ async function saveInvoiceTemplate(formData: FormData) {
 
   const read = (key: string) => String(formData.get(key) ?? "").trim();
   const readBool = (key: string) => String(formData.get(key) ?? "") === "on";
-  const readTheme = (theme: "STANDARD" | "SPECIAL" | "ESTIMATE") => ({
-    label: read(`${theme}_label`),
-    brandHex: read(`${theme}_brandHex`),
-    accentHex: read(`${theme}_accentHex`),
-    lightHex: read(`${theme}_lightHex`),
-    watermarkText: read(`${theme}_watermarkText`),
-  });
+  const current = await getInvoiceTemplateConfig();
+  const pick = (key: string, currentValue: string) => {
+    const value = read(key);
+    return value || currentValue;
+  };
 
   const legalClauses = read("legalClauses")
     .split("\n")
@@ -280,32 +278,28 @@ async function saveInvoiceTemplate(formData: FormData) {
     .filter(Boolean);
 
   const normalized = normalizeInvoiceTemplateConfig({
-    companyName: read("companyName"),
-    companyPhone: read("companyPhone"),
-    companyEmail: read("companyEmail"),
-    companyWebsite: read("companyWebsite"),
-    companyAddressLine1: read("companyAddressLine1"),
-    companyAddressLine2: read("companyAddressLine2"),
-    companyTaxId: read("companyTaxId"),
-    headerSubtitle: read("headerSubtitle"),
-    footerNote: read("footerNote"),
-    invoiceNumberLabel: read("invoiceNumberLabel"),
-    issueDateLabel: read("issueDateLabel"),
-    billToLabel: read("billToLabel"),
-    notesLabel: read("notesLabel"),
-    tableDescriptionLabel: read("tableDescriptionLabel"),
-    tableAmountLabel: read("tableAmountLabel"),
-    subtotalLabel: read("subtotalLabel"),
-    taxLabel: read("taxLabel"),
-    totalLabel: read("totalLabel"),
-    clausesTitle: read("clausesTitle"),
-    legalClauses,
+    companyName: pick("companyName", current.companyName),
+    companyPhone: pick("companyPhone", current.companyPhone),
+    companyEmail: pick("companyEmail", current.companyEmail),
+    companyWebsite: pick("companyWebsite", current.companyWebsite),
+    companyAddressLine1: pick("companyAddressLine1", current.companyAddressLine1),
+    companyAddressLine2: pick("companyAddressLine2", current.companyAddressLine2),
+    companyTaxId: pick("companyTaxId", current.companyTaxId),
+    headerSubtitle: pick("headerSubtitle", current.headerSubtitle),
+    footerNote: pick("footerNote", current.footerNote),
+    invoiceNumberLabel: current.invoiceNumberLabel,
+    issueDateLabel: current.issueDateLabel,
+    billToLabel: current.billToLabel,
+    notesLabel: current.notesLabel,
+    tableDescriptionLabel: current.tableDescriptionLabel,
+    tableAmountLabel: current.tableAmountLabel,
+    subtotalLabel: current.subtotalLabel,
+    taxLabel: current.taxLabel,
+    totalLabel: current.totalLabel,
+    clausesTitle: pick("clausesTitle", current.clausesTitle),
+    legalClauses: legalClauses.length > 0 ? legalClauses : current.legalClauses,
     showEstimateWatermark: readBool("showEstimateWatermark"),
-    themes: {
-      STANDARD: readTheme("STANDARD"),
-      SPECIAL: readTheme("SPECIAL"),
-      ESTIMATE: readTheme("ESTIMATE"),
-    },
+    themes: current.themes,
   });
 
   await saveInvoiceTemplateConfig(normalized);
@@ -902,7 +896,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   <div className="app-card p-4 shadow-contrast sm:p-6">
                     <h2 className="text-lg font-semibold">Invoice template (admin-friendly)</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                      Configura datos de empresa, etiquetas y clausulas sin editar codigo.
+                      Configura datos de empresa, footer y marca de agua sin editar codigo.
                     </p>
                     <form action={saveInvoiceTemplate} className="mt-5 space-y-5">
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -997,107 +991,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       </div>
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900">Etiquetas del documento</h3>
-                          <p className="text-[11px] text-slate-500">
-                            Nombres visibles dentro de la factura.
-                          </p>
-                        </div>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Bill to label
-                          </span>
-                          <input
-                            name="billToLabel"
-                            defaultValue={invoiceTemplate.billToLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Description column label
-                          </span>
-                          <input
-                            name="tableDescriptionLabel"
-                            defaultValue={invoiceTemplate.tableDescriptionLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Amount column label
-                          </span>
-                          <input
-                            name="tableAmountLabel"
-                            defaultValue={invoiceTemplate.tableAmountLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Invoice number label
-                          </span>
-                          <input
-                            name="invoiceNumberLabel"
-                            defaultValue={invoiceTemplate.invoiceNumberLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Issue date label
-                          </span>
-                          <input
-                            name="issueDateLabel"
-                            defaultValue={invoiceTemplate.issueDateLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Subtotal label
-                          </span>
-                          <input
-                            name="subtotalLabel"
-                            defaultValue={invoiceTemplate.subtotalLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Tax label
-                          </span>
-                          <input
-                            name="taxLabel"
-                            defaultValue={invoiceTemplate.taxLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Total label
-                          </span>
-                          <input
-                            name="totalLabel"
-                            defaultValue={invoiceTemplate.totalLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                            Notes label
-                          </span>
-                          <input
-                            name="notesLabel"
-                            defaultValue={invoiceTemplate.notesLabel}
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                          />
-                        </label>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <h3 className="text-sm font-semibold text-slate-900">Footer y clausulas</h3>
                         <div className="mt-3 space-y-3">
                           <label className="block">
@@ -1136,72 +1029,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
                       <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-slate-900">Tema visual</h3>
+                          <h3 className="text-sm font-semibold text-slate-900">Marca de agua</h3>
                           <p className="text-[11px] text-slate-500">
-                            Colores y labels por tipo de invoice.
+                            Controla si la marca de agua de ESTIMATE se muestra o no.
                           </p>
                         </div>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {(["STANDARD", "SPECIAL", "ESTIMATE"] as const).map((theme) => (
-                            <div
-                              key={theme}
-                              className="rounded-xl border border-slate-200 bg-white p-3"
-                            >
-                              <p className="text-xs font-semibold text-slate-700">{theme}</p>
-                              <label className="mt-2 block">
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                  Label
-                                </span>
-                                <input
-                                  name={`${theme}_label`}
-                                  defaultValue={invoiceTemplate.themes[theme].label}
-                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
-                                />
-                              </label>
-                              <label className="mt-2 block">
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                  Brand color
-                                </span>
-                                <input
-                                  name={`${theme}_brandHex`}
-                                  defaultValue={invoiceTemplate.themes[theme].brandHex}
-                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
-                                />
-                              </label>
-                              <label className="mt-2 block">
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                  Accent color
-                                </span>
-                                <input
-                                  name={`${theme}_accentHex`}
-                                  defaultValue={invoiceTemplate.themes[theme].accentHex}
-                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
-                                />
-                              </label>
-                              <label className="mt-2 block">
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                  Light background
-                                </span>
-                                <input
-                                  name={`${theme}_lightHex`}
-                                  defaultValue={invoiceTemplate.themes[theme].lightHex}
-                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
-                                />
-                              </label>
-                              <label className="mt-2 block">
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                  Watermark text
-                                </span>
-                                <input
-                                  name={`${theme}_watermarkText`}
-                                  defaultValue={invoiceTemplate.themes[theme].watermarkText ?? ""}
-                                  className="app-input mt-1 w-full px-3 py-2 text-xs"
-                                />
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                        <label className="mt-3 inline-flex items-center gap-2 text-xs text-slate-600">
+                        <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
                           <input
                             type="checkbox"
                             name="showEstimateWatermark"

@@ -192,17 +192,17 @@ export default function CustomerPlansTable({
 
       <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
         <div className="customers-table-scroll h-full overflow-auto">
-          <table className="customers-table customer-plans-table min-w-[980px] w-full text-left text-xs text-slate-600">
+          <table className="customers-table customer-plans-table min-w-[1120px] w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.plan")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.property")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.frequency")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.next")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.technician")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.priority")}</th>
-                <th className="px-3 py-3">{t("admin.customers.plans.table.status")}</th>
-                <th className="px-3 py-3 text-right">{t("admin.customers.plans.table.actions")}</th>
+                <th className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.plan")}</th>
+                <th className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.property")}</th>
+                <th className="w-[10%] px-3 py-3">{t("admin.customers.plans.table.frequency")}</th>
+                <th className="w-[16%] px-3 py-3">{t("admin.customers.plans.table.next")}</th>
+                <th className="w-[14%] px-3 py-3">{t("admin.customers.plans.table.technician")}</th>
+                <th className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.priority")}</th>
+                <th className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.status")}</th>
+                <th className="w-[24%] px-3 py-3 text-right">{t("admin.customers.plans.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -220,18 +220,27 @@ export default function CustomerPlansTable({
                   return (
                     <tr key={plan.id} className="bg-white transition hover:bg-sky-50/40">
                       <td className="px-3 py-3">
-                        <p className="font-semibold text-slate-900">{plan.name}</p>
+                        <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={plan.name}>
+                          {plan.name}
+                        </p>
                         {plan.serviceTierName ? (
-                          <p className="text-[11px] text-slate-500">
+                          <p
+                            className="max-w-[12rem] truncate text-[11px] text-slate-500"
+                            title={plan.serviceTierName}
+                          >
                             {plan.serviceTierName}
                           </p>
                         ) : null}
                         {plan.notes ? (
-                          <p className="text-[11px] text-slate-400">{plan.notes}</p>
+                          <p className="max-w-[14rem] truncate text-[11px] text-slate-400" title={plan.notes}>
+                            {plan.notes}
+                          </p>
                         ) : null}
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
-                        {plan.propertyAddress}
+                        <p className="max-w-[14rem] truncate" title={plan.propertyAddress}>
+                          {plan.propertyAddress}
+                        </p>
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
                         {frequencyLabel(plan.frequency)}
@@ -240,7 +249,12 @@ export default function CustomerPlansTable({
                         {formatDate(plan.nextRunAt, locale)} | {nextTime}
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
-                        {plan.technicianName || t("admin.customers.plans.noTech")}
+                        <p
+                          className="max-w-[10rem] truncate"
+                          title={plan.technicianName || t("admin.customers.plans.noTech")}
+                        >
+                          {plan.technicianName || t("admin.customers.plans.noTech")}
+                        </p>
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
                         {plan.priority === "URGENT"

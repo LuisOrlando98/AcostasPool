@@ -42,6 +42,44 @@ function DeleteTechnicianButton({
   );
 }
 
+function DeleteTechnicianIconButton({
+  idleLabel,
+  pendingLabel,
+}: {
+  idleLabel: string;
+  pendingLabel: string;
+}) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
+      aria-label={pending ? pendingLabel : idleLabel}
+      title={pending ? pendingLabel : idleLabel}
+    >
+      {pending ? (
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-rose-400 border-t-transparent" />
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="h-4 w-4"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 3h6m-5 4v11m4-11v11M5 7h14m-1 0-.8 12.1a2 2 0 01-2 1.9H8.8a2 2 0 01-2-1.9L6 7"
+          />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 function getInitials(name: string) {
   const initials = name
     .split(" ")
@@ -377,24 +415,24 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
               </div>
 
               <div className="ui-table-shell hidden overflow-hidden md:block">
-                <div className="overflow-x-auto xl:overflow-visible">
-                  <table className="w-full min-w-[960px] text-left text-xs xl:min-w-0">
-                    <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                <div className="customers-table-scroll overflow-x-auto">
+                  <table className="customers-table w-full min-w-[980px] text-left text-xs text-slate-600">
+                    <thead className="border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
                       <tr>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.technician")}</th>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.status")}</th>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.todayRoute")}</th>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.pending")}</th>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.completed")}</th>
-                        <th className="px-4 py-3">{t("admin.technicians.overview.table.lastActivity")}</th>
-                        <th className="px-4 py-3 text-right">{t("admin.technicians.overview.table.actions")}</th>
+                        <th className="w-[30%] px-4 py-3">{t("admin.technicians.overview.table.technician")}</th>
+                        <th className="w-[11%] px-4 py-3">{t("admin.technicians.overview.table.status")}</th>
+                        <th className="w-[13%] px-4 py-3">{t("admin.technicians.overview.table.todayRoute")}</th>
+                        <th className="w-[8%] px-4 py-3">{t("admin.technicians.overview.table.pending")}</th>
+                        <th className="w-[9%] px-4 py-3">{t("admin.technicians.overview.table.completed")}</th>
+                        <th className="w-[17%] px-4 py-3">{t("admin.technicians.overview.table.lastActivity")}</th>
+                        <th className="w-[12%] px-4 py-3 text-right">{t("admin.technicians.overview.table.actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {sortedRows.map((row) => (
                         <tr key={row.id} className="group bg-white hover:bg-slate-50">
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
+                            <div className="flex min-w-[15rem] items-center gap-3">
                               <span
                                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white shadow-sm"
                                 style={{
@@ -404,11 +442,18 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                               >
                                 <span className="text-xs font-semibold">{getInitials(row.name)}</span>
                               </span>
-                              <div>
-                                <p className="font-semibold text-slate-900">{row.name}</p>
-                                <p className="text-[11px] text-slate-500">{row.email}</p>
+                              <div className="min-w-0">
+                                <p className="max-w-[15rem] truncate font-semibold text-slate-900" title={row.name}>
+                                  {row.name}
+                                </p>
+                                <p className="max-w-[15rem] truncate text-[11px] text-slate-500" title={row.email}>
+                                  {row.email}
+                                </p>
                                 {row.phone ? (
-                                  <p className="text-[10px] text-slate-400">
+                                  <p
+                                    className="max-w-[15rem] truncate text-[10px] text-slate-400"
+                                    title={formatUsPhone(row.phone) ?? row.phone}
+                                  >
                                     {formatUsPhone(row.phone) ?? row.phone}
                                   </p>
                                 ) : null}
@@ -441,32 +486,73 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-center">
                             <span className="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-semibold text-indigo-700">
                               {row.pending}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 text-center">
                             <span className="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700">
                               {row.completed}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-[11px] text-slate-500">
-                            {formatLastActivity(row.lastActivity)}
+                            <p
+                              className="max-w-[14rem] truncate"
+                              title={formatLastActivity(row.lastActivity)}
+                            >
+                              {formatLastActivity(row.lastActivity)}
+                            </p>
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex flex-wrap items-center justify-end gap-2 xl:flex-nowrap">
+                            <div className="flex items-center justify-end gap-1">
                               <Link
                                 href={`/admin/routes?tech=${row.id}`}
-                                className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                                aria-label={t("admin.technicians.overview.actions.viewRoute")}
+                                title={t("admin.technicians.overview.actions.viewRoute")}
                               >
-                                {t("admin.technicians.overview.actions.viewRoute")}
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"
+                                  />
+                                  <circle cx="12" cy="10" r="2.5" />
+                                </svg>
+                                <span className="sr-only">
+                                  {t("admin.technicians.overview.actions.viewRoute")}
+                                </span>
                               </Link>
                               <Link
                                 href={`/admin/technicians/${row.id}`}
-                                className="inline-flex items-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                                aria-label={t("admin.technicians.overview.actions.viewProfile")}
+                                title={t("admin.technicians.overview.actions.viewProfile")}
                               >
-                                {t("admin.technicians.overview.actions.viewProfile")}
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  className="h-4 w-4"
+                                >
+                                  <circle cx="12" cy="8" r="3.5" />
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 20a7 7 0 0114 0"
+                                  />
+                                </svg>
+                                <span className="sr-only">
+                                  {t("admin.technicians.overview.actions.viewProfile")}
+                                </span>
                               </Link>
                               <form
                                 action={deleteTechnicianAction}
@@ -477,10 +563,9 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                                 }}
                               >
                                 <input type="hidden" name="technicianId" value={row.id} />
-                                <DeleteTechnicianButton
+                                <DeleteTechnicianIconButton
                                   idleLabel={t("common.actions.delete")}
                                   pendingLabel={deletingLabel}
-                                  className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
                                 />
                               </form>
                             </div>

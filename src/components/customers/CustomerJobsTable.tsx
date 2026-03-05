@@ -284,18 +284,18 @@ export default function CustomerJobsTable({
 
       <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
         <div className="customers-table-scroll h-full overflow-auto">
-          <table className="customers-table customer-jobs-table min-w-[940px] w-full text-left text-xs text-slate-600">
+          <table className="customers-table customer-jobs-table min-w-[1040px] w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.date")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.property")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.address")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.service")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.technician")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.status")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.priority")}</th>
-                <th className="px-3 py-3">{t("admin.customers.jobs.table.evidence")}</th>
-                <th className="px-3 py-3 text-right">{t("admin.customers.jobs.table.action")}</th>
+                <th className="w-[16%] px-3 py-3">{t("admin.customers.jobs.table.date")}</th>
+                <th className="w-[16%] px-3 py-3">{t("admin.customers.jobs.table.property")}</th>
+                <th className="w-[22%] px-3 py-3">{t("admin.customers.jobs.table.address")}</th>
+                <th className="w-[18%] px-3 py-3">{t("admin.customers.jobs.table.service")}</th>
+                <th className="w-[14%] px-3 py-3">{t("admin.customers.jobs.table.technician")}</th>
+                <th className="w-[10%] px-3 py-3">{t("admin.customers.jobs.table.status")}</th>
+                <th className="w-[10%] px-3 py-3">{t("admin.customers.jobs.table.priority")}</th>
+                <th className="w-[10%] px-3 py-3">{t("admin.customers.jobs.table.evidence")}</th>
+                <th className="w-[10%] px-3 py-3 text-right">{t("admin.customers.jobs.table.action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -306,92 +306,104 @@ export default function CustomerJobsTable({
                   </td>
                 </tr>
               ) : (
-                pagedRows.map((row) => (
-                  <tr key={row.id} className="bg-white transition hover:bg-sky-50/40">
-                    <td className="px-3 py-3 font-medium text-slate-800">
-                      {formatDateTime(row.scheduledDate, locale)}
-                    </td>
-                    <td className="px-3 py-3">
-                      <p className="font-semibold text-slate-900">
-                        {row.propertyName || t("admin.customers.jobs.propertyFallback")}
-                      </p>
-                    </td>
-                    <td className="px-3 py-3 text-[11px] text-slate-500">
-                      {row.address}
-                    </td>
-                    <td className="px-3 py-3 text-[11px] text-slate-500">
-                      {
-                        serviceTypeOptions.find(
-                          (option) => option.value === row.serviceType
-                        )?.labelKey
-                          ? t(
-                              serviceTypeOptions.find(
-                                (option) => option.value === row.serviceType
-                              )?.labelKey ?? row.serviceType
-                            )
-                          : serviceTypeOptions.find(
-                              (option) => option.value === row.serviceType
-                            )?.label ?? row.serviceType
-                      }
-                      {row.serviceTierName ? (
-                        <span className="mt-1 block text-[10px] text-slate-400">
-                          {row.serviceTierName}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-3 text-[11px] text-slate-500">
-                      {row.technicianName || t("admin.customers.jobs.noTech")}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className="app-chip px-3 py-1 text-[11px] font-semibold"
-                        data-tone={statusTone[row.status] ?? "info"}
-                      >
-                        {getJobStatusLabel(row.status, t)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span
-                        className="app-chip px-3 py-1 text-[11px] font-semibold"
-                        data-tone={priorityTone[row.priority] ?? "info"}
-                      >
-                        {row.priority === "URGENT"
-                          ? t("jobs.priority.urgent")
-                          : t("jobs.priority.normal")}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-[11px] text-slate-500">
-                      {row.photosCount > 0
-                        ? t("admin.customers.jobs.evidenceCount", {
-                            count: row.photosCount,
-                          })
-                        : t("admin.customers.jobs.noEvidence")}
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/routes/${row.id}`}
-                          className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                pagedRows.map((row) => {
+                  const serviceOption = serviceTypeOptions.find(
+                    (option) => option.value === row.serviceType
+                  );
+                  const serviceLabel = serviceOption?.labelKey
+                    ? t(serviceOption.labelKey)
+                    : serviceOption?.label ?? row.serviceType;
+
+                  return (
+                    <tr key={row.id} className="bg-white transition hover:bg-sky-50/40">
+                      <td className="px-3 py-3 font-medium text-slate-800">
+                        {formatDateTime(row.scheduledDate, locale)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <p
+                          className="max-w-[12rem] truncate font-semibold text-slate-900"
+                          title={row.propertyName || t("admin.customers.jobs.propertyFallback")}
                         >
-                          {t("admin.customers.jobs.actions.view")}
-                        </Link>
-                        {onDeleteJob && customerId ? (
-                          <form action={onDeleteJob}>
-                            <input type="hidden" name="jobId" value={row.id} />
-                            <input
-                              type="hidden"
-                              name="customerId"
-                              value={customerId}
-                            />
-                            <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
-                              {t("common.actions.delete")}
-                            </button>
-                          </form>
+                          {row.propertyName || t("admin.customers.jobs.propertyFallback")}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        <p className="max-w-[15rem] truncate" title={row.address}>
+                          {row.address}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        <p className="max-w-[12rem] truncate" title={serviceLabel}>
+                          {serviceLabel}
+                        </p>
+                        {row.serviceTierName ? (
+                          <span
+                            className="mt-1 block max-w-[12rem] truncate text-[10px] text-slate-400"
+                            title={row.serviceTierName}
+                          >
+                            {row.serviceTierName}
+                          </span>
                         ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        <p
+                          className="max-w-[10rem] truncate"
+                          title={row.technicianName || t("admin.customers.jobs.noTech")}
+                        >
+                          {row.technicianName || t("admin.customers.jobs.noTech")}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="app-chip px-3 py-1 text-[11px] font-semibold"
+                          data-tone={statusTone[row.status] ?? "info"}
+                        >
+                          {getJobStatusLabel(row.status, t)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="app-chip px-3 py-1 text-[11px] font-semibold"
+                          data-tone={priorityTone[row.priority] ?? "info"}
+                        >
+                          {row.priority === "URGENT"
+                            ? t("jobs.priority.urgent")
+                            : t("jobs.priority.normal")}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {row.photosCount > 0
+                          ? t("admin.customers.jobs.evidenceCount", {
+                              count: row.photosCount,
+                            })
+                          : t("admin.customers.jobs.noEvidence")}
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <Link
+                            href={`/admin/routes/${row.id}`}
+                            className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                          >
+                            {t("admin.customers.jobs.actions.view")}
+                          </Link>
+                          {onDeleteJob && customerId ? (
+                            <form action={onDeleteJob}>
+                              <input type="hidden" name="jobId" value={row.id} />
+                              <input
+                                type="hidden"
+                                name="customerId"
+                                value={customerId}
+                              />
+                              <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
+                                {t("common.actions.delete")}
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

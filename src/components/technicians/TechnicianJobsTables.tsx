@@ -831,108 +831,125 @@ const CompletedTableSection = ({
         )}
       </div>
 
-      <div className="mt-4 hidden overflow-x-auto md:block">
-        <table className="min-w-[760px] w-full text-left text-[12px] text-slate-600">
-          <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            <tr className="border-b border-slate-100">
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.date")}</th>
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.customer")}</th>
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.address")}</th>
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.service")}</th>
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.priority")}</th>
-              <th className="pb-3">{t("admin.technicians.detail.jobs.table.status")}</th>
-              {showEvidenceFilter ? (
-                <th className="pb-3">{t("admin.technicians.detail.jobs.table.evidence")}</th>
-              ) : null}
-              <th className="pb-3 text-right">
-                {t("admin.technicians.detail.jobs.table.action")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRows.length === 0 ? (
+      <div className="ui-table-shell mt-4 hidden overflow-hidden md:block">
+        <div className="customers-table-scroll overflow-x-auto">
+          <table className="customers-table min-w-[980px] w-full text-left text-[12px] text-slate-600">
+            <thead className="border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <td
-                  colSpan={showEvidenceFilter ? 8 : 7}
-                  className="py-6 text-center text-sm text-slate-500"
-                >
-                  {t("admin.technicians.detail.jobs.table.empty")}
-                </td>
+                <th className="w-[16%] px-3 py-3">{t("admin.technicians.detail.jobs.table.date")}</th>
+                <th className="w-[20%] px-3 py-3">{t("admin.technicians.detail.jobs.table.customer")}</th>
+                <th className="w-[22%] px-3 py-3">{t("admin.technicians.detail.jobs.table.address")}</th>
+                <th className="w-[18%] px-3 py-3">{t("admin.technicians.detail.jobs.table.service")}</th>
+                <th className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.priority")}</th>
+                <th className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.status")}</th>
+                {showEvidenceFilter ? (
+                  <th className="w-[10%] px-3 py-3">{t("admin.technicians.detail.jobs.table.evidence")}</th>
+                ) : null}
+                <th className="w-[10%] px-3 py-3 text-right">
+                  {t("admin.technicians.detail.jobs.table.action")}
+                </th>
               </tr>
-            ) : (
-              filteredRows.map((row, index) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-slate-100 ${
-                    index % 2 === 0 ? "bg-white" : "bg-slate-50/40"
-                  } hover:bg-slate-50/80`}
-                >
-                  <td className="py-3 font-medium text-slate-800">
-                    {formatDateTime(row.scheduledDate, locale)}
-                  </td>
-                  <td className="py-3">
-                    <p className="font-semibold text-slate-900">
-                      {row.customerName}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      {row.propertyName || "Propiedad"}
-                    </p>
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    <p className="max-w-[220px] truncate">{row.address}</p>
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    {
-                      serviceTypeOptions.find(
-                        (option) => option.value === row.serviceType
-                      )?.label ?? row.serviceType
-                    }
-                    {row.serviceTierName ? (
-                      <span className="mt-1 block text-[10px] text-slate-400">
-                        {row.serviceTierName}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className="app-chip px-3 py-1 text-[11px] font-semibold"
-                      data-tone={priorityTone[row.priority] ?? "info"}
-                    >
-                      {row.priority === "URGENT"
-                        ? t("jobs.priority.urgent")
-                        : t("jobs.priority.normal")}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className="app-chip px-3 py-1 text-[11px] font-semibold"
-                      data-tone={statusTone[row.status] ?? "info"}
-                    >
-                      {getJobStatusLabel(row.status, t)}
-                    </span>
-                  </td>
-                  {showEvidenceFilter ? (
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {row.photosCount > 0
-                        ? t("admin.technicians.detail.jobs.evidenceCount", {
-                            count: row.photosCount,
-                          })
-                        : t("admin.technicians.detail.jobs.noEvidence")}
-                    </td>
-                  ) : null}
-                  <td className="py-3 text-right">
-                    <Link
-                      href={`/admin/routes/${row.id}`}
-                      className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                    >
-                      {t("admin.technicians.detail.jobs.table.viewJob")}
-                    </Link>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={showEvidenceFilter ? 8 : 7}
+                    className="px-3 py-6 text-center text-sm text-slate-500"
+                  >
+                    {t("admin.technicians.detail.jobs.table.empty")}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredRows.map((row, index) => {
+                  const serviceLabel =
+                    serviceTypeOptions.find((option) => option.value === row.serviceType)?.label ??
+                    row.serviceType;
+
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`border-b border-slate-100 ${
+                        index % 2 === 0 ? "bg-white" : "bg-slate-50/40"
+                      } hover:bg-slate-50/80`}
+                    >
+                      <td className="px-3 py-3 font-medium text-slate-800">
+                        {formatDateTime(row.scheduledDate, locale)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <p
+                          className="max-w-[13rem] truncate font-semibold text-slate-900"
+                          title={row.customerName}
+                        >
+                          {row.customerName}
+                        </p>
+                        <p
+                          className="max-w-[13rem] truncate text-[11px] text-slate-400"
+                          title={row.propertyName || "Propiedad"}
+                        >
+                          {row.propertyName || "Propiedad"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        <p className="max-w-[240px] truncate" title={row.address}>
+                          {row.address}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        <p className="max-w-[13rem] truncate" title={serviceLabel}>
+                          {serviceLabel}
+                        </p>
+                        {row.serviceTierName ? (
+                          <span
+                            className="mt-1 block max-w-[13rem] truncate text-[10px] text-slate-400"
+                            title={row.serviceTierName}
+                          >
+                            {row.serviceTierName}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="app-chip px-3 py-1 text-[11px] font-semibold"
+                          data-tone={priorityTone[row.priority] ?? "info"}
+                        >
+                          {row.priority === "URGENT"
+                            ? t("jobs.priority.urgent")
+                            : t("jobs.priority.normal")}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="app-chip px-3 py-1 text-[11px] font-semibold"
+                          data-tone={statusTone[row.status] ?? "info"}
+                        >
+                          {getJobStatusLabel(row.status, t)}
+                        </span>
+                      </td>
+                      {showEvidenceFilter ? (
+                        <td className="px-3 py-3 text-[11px] text-slate-500">
+                          {row.photosCount > 0
+                            ? t("admin.technicians.detail.jobs.evidenceCount", {
+                                count: row.photosCount,
+                              })
+                            : t("admin.technicians.detail.jobs.noEvidence")}
+                        </td>
+                      ) : null}
+                      <td className="px-3 py-3 text-right">
+                        <Link
+                          href={`/admin/routes/${row.id}`}
+                          className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                        >
+                          {t("admin.technicians.detail.jobs.table.viewJob")}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

@@ -40,13 +40,7 @@ type AdminDashboardClientProps = {
 };
 
 type RouteFilter = "ALL" | "PENDING" | "IN_PROGRESS" | "COMPLETED" | "ON_DEMAND";
-type RouteSort = "TIME" | "CUSTOMER";
 type InvoiceFilter = "ALL" | "OPEN" | "PAID";
-type RouteFiltersDraft = {
-  routeFilter: RouteFilter;
-  routeSort: RouteSort;
-  search: string;
-};
 
 const routeStatusTone: Record<
   DashboardJob["status"],
@@ -91,14 +85,8 @@ export default function AdminDashboardClient({
 }: AdminDashboardClientProps) {
   const { t } = useI18n();
   const [routeFilter, setRouteFilter] = useState<RouteFilter>("ALL");
-  const [routeSort, setRouteSort] = useState<RouteSort>("TIME");
   const [search, setSearch] = useState("");
   const [routeFiltersOpen, setRouteFiltersOpen] = useState(false);
-  const [routeFiltersDraft, setRouteFiltersDraft] = useState<RouteFiltersDraft>({
-    routeFilter: "ALL",
-    routeSort: "TIME",
-    search: "",
-  });
   const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilter>("ALL");
   const routeFilterOptions = [
     { key: "ALL" as const, label: t("admin.dashboard.interactive.filters.all") },
@@ -128,7 +116,13 @@ export default function AdminDashboardClient({
     const query = search.trim().toLowerCase();
     const filtered = jobs.filter((job) => {
       if (routeFilter === "ON_DEMAND" && job.type !== "ON_DEMAND") return false;
-      if (routeFilter === "PENDING" && job.status !== "PENDING") return false;
+      if (
+        routeFilter === "PENDING" &&
+        job.status !== "PENDING" &&
+        job.status !== "SCHEDULED"
+      ) {
+        return false;
+      }
       if (
         routeFilter === "IN_PROGRESS" &&
         job.status !== "IN_PROGRESS" &&
@@ -146,18 +140,13 @@ export default function AdminDashboardClient({
     });
 
     filtered.sort((a, b) => {
-      if (routeSort === "CUSTOMER") {
-        return a.customerName.localeCompare(b.customerName, undefined, {
-          sensitivity: "base",
-        });
-      }
       return (
         new Date(a.scheduledDateIso).getTime() - new Date(b.scheduledDateIso).getTime()
       );
     });
 
     return filtered;
-  }, [jobs, routeFilter, routeSort, search]);
+  }, [jobs, routeFilter, search]);
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
@@ -168,36 +157,16 @@ export default function AdminDashboardClient({
   }, [invoiceFilter, invoices]);
   const activeRouteFiltersCount = [
     routeFilter !== "ALL",
-    routeSort !== "TIME",
     search.trim().length > 0,
   ].filter(Boolean).length;
 
   const openRouteFilters = () => {
-    setRouteFiltersDraft({
-      routeFilter,
-      routeSort,
-      search,
-    });
     setRouteFiltersOpen(true);
-  };
-
-  const applyRouteFilters = () => {
-    setRouteFilter(routeFiltersDraft.routeFilter);
-    setRouteSort(routeFiltersDraft.routeSort);
-    setSearch(routeFiltersDraft.search);
-    setRouteFiltersOpen(false);
   };
 
   const resetRouteFilters = () => {
     setRouteFilter("ALL");
-    setRouteSort("TIME");
     setSearch("");
-    setRouteFiltersDraft({
-      routeFilter: "ALL",
-      routeSort: "TIME",
-      search: "",
-    });
-    setRouteFiltersOpen(false);
   };
 
   return (
@@ -251,9 +220,20 @@ export default function AdminDashboardClient({
               <button
                 type="button"
                 onClick={openRouteFilters}
-                className="app-button-ghost px-3 py-1.5 text-xs font-semibold"
+                className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+                aria-label={t("admin.dashboard.interactive.openFilters")}
+                title={t("admin.dashboard.interactive.openFilters")}
               >
-                {t("admin.dashboard.interactive.openFilters")}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+                <span className="sr-only">{t("admin.dashboard.interactive.openFilters")}</span>
               </button>
               <Link
                 href="/admin/routes"
@@ -264,60 +244,64 @@ export default function AdminDashboardClient({
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {t("admin.dashboard.interactive.sortLabel")}
-              </span>
-              <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-                {routeSort === "TIME"
-                  ? t("admin.dashboard.interactive.sortTime")
-                  : t("admin.dashboard.interactive.sortCustomer")}
-              </span>
-              <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-                {routeFilterOptions.find((item) => item.key === routeFilter)?.label ??
-                  t("admin.dashboard.interactive.filters.all")}
-              </span>
+              <p className="text-xs text-slate-600">
+                {t("admin.dashboard.todayRoute.count", {
+                  count: filteredJobs.length,
+                })}
+              </p>
+              {routeFilter !== "ALL" ? (
+                <span className="app-chip px-2.5 py-1 text-[11px]" data-tone="info">
+                  {routeFilterOptions.find((item) => item.key === routeFilter)?.label ??
+                    t("admin.dashboard.interactive.filters.all")}
+                </span>
+              ) : null}
               {search.trim() ? (
-                <span className="app-chip max-w-[260px] truncate px-3 py-1 text-xs" data-tone="warning">
+                <span className="app-chip max-w-[220px] truncate px-2.5 py-1 text-[11px]" data-tone="warning">
                   {search}
                 </span>
               ) : null}
             </div>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
             {filteredJobs.length === 0 ? (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+              <p className="m-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                 {t("admin.dashboard.interactive.emptyFiltered")}
               </p>
             ) : (
-              filteredJobs.map((job) => (
-                <div
+              filteredJobs.map((job, index) => (
+                <article
                   key={job.id}
-                  className="app-callout rounded-2xl px-4 py-3 sm:px-5"
-                  data-tone={routeStatusTone[job.status]}
+                  className={`px-4 py-3 transition hover:bg-slate-50 sm:px-5 ${
+                    index === 0 ? "" : "border-t border-slate-100"
+                  }`}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <p className="truncate font-semibold text-slate-900">
-                        {job.customerName}
-                      </p>
+                  <div className="flex flex-wrap items-start justify-between gap-2.5 sm:gap-3">
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="app-chip px-2.5 py-1 text-[11px]" data-tone="info">
+                          {formatLocalTime(job.scheduledDateIso)}
+                        </span>
+                        <span className="font-semibold text-slate-900">{job.customerName}</span>
+                      </div>
                       <p className="break-words text-sm text-slate-600">{job.address}</p>
-                      <p className="text-xs text-slate-500">
-                        {formatLocalTime(job.scheduledDateIso)} -{" "}
-                        {getJobStatusLabel(job.status, t)}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="app-chip px-2.5 py-1 text-[11px]" data-tone={routeStatusTone[job.status]}>
+                          {getJobStatusLabel(job.status, t)}
+                        </span>
+                        <span
+                          className="app-chip px-2.5 py-1 text-[11px]"
+                          data-tone={job.type === "ON_DEMAND" ? "warning" : "info"}
+                        >
+                          {job.type === "ON_DEMAND"
+                            ? t("jobs.type.onDemand")
+                            : t("jobs.type.routine")}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      <span
-                        className="app-chip px-3 py-1 text-[11px]"
-                        data-tone={job.type === "ON_DEMAND" ? "warning" : "info"}
-                      >
-                        {job.type === "ON_DEMAND"
-                          ? t("jobs.type.onDemand")
-                          : t("jobs.type.routine")}
-                      </span>
                       <Link
                         href={`/admin/routes/${job.id}`}
                         className="app-button-ghost px-3 py-1.5 text-xs font-semibold"
@@ -326,7 +310,7 @@ export default function AdminDashboardClient({
                       </Link>
                     </div>
                   </div>
-                </div>
+                </article>
               ))
             )}
           </div>
@@ -509,13 +493,8 @@ export default function AdminDashboardClient({
                     {t("common.actions.search")}
                   </label>
                   <input
-                    value={routeFiltersDraft.search}
-                    onChange={(event) =>
-                      setRouteFiltersDraft((current) => ({
-                        ...current,
-                        search: event.target.value,
-                      }))
-                    }
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
                     className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("admin.dashboard.interactive.searchPlaceholder")}
                   />
@@ -530,14 +509,9 @@ export default function AdminDashboardClient({
                       <button
                         key={item.key}
                         type="button"
-                        onClick={() =>
-                          setRouteFiltersDraft((current) => ({
-                            ...current,
-                            routeFilter: item.key,
-                          }))
-                        }
+                        onClick={() => setRouteFilter(item.key)}
                         className={`app-chip px-3 py-1.5 text-xs transition ${
-                          routeFiltersDraft.routeFilter === item.key
+                          routeFilter === item.key
                             ? "bg-slate-900 text-white"
                             : ""
                         }`}
@@ -548,45 +522,6 @@ export default function AdminDashboardClient({
                   </div>
                 </section>
 
-                <section>
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.dashboard.interactive.sortLabel")}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRouteFiltersDraft((current) => ({
-                          ...current,
-                          routeSort: "TIME",
-                        }))
-                      }
-                      className={`app-button-ghost px-3 py-2 text-xs font-semibold ${
-                        routeFiltersDraft.routeSort === "TIME"
-                          ? "bg-slate-900 text-white hover:text-white"
-                          : ""
-                      }`}
-                    >
-                      {t("admin.dashboard.interactive.sortTime")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRouteFiltersDraft((current) => ({
-                          ...current,
-                          routeSort: "CUSTOMER",
-                        }))
-                      }
-                      className={`app-button-ghost px-3 py-2 text-xs font-semibold ${
-                        routeFiltersDraft.routeSort === "CUSTOMER"
-                          ? "bg-slate-900 text-white hover:text-white"
-                          : ""
-                      }`}
-                    >
-                      {t("admin.dashboard.interactive.sortCustomer")}
-                    </button>
-                  </div>
-                </section>
               </div>
             </div>
 
@@ -600,10 +535,10 @@ export default function AdminDashboardClient({
               </button>
               <button
                 type="button"
-                onClick={applyRouteFilters}
+                onClick={() => setRouteFiltersOpen(false)}
                 className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
               >
-                {t("admin.dashboard.interactive.apply")}
+                {t("common.actions.close")}
               </button>
             </div>
           </div>

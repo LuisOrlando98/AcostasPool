@@ -973,7 +973,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         text-transform: uppercase;
         color: rgba(48, 75, 136, 0.13);
         text-shadow: 0 0 1px rgba(70, 83, 98, 0.05);
-        transform: rotate(-14deg);
+        transform: rotate(-28deg);
       }
     </style>
   </head>
