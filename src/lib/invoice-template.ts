@@ -421,35 +421,44 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-lockup {
-        width: 420px;
+        width: 372px;
         text-align: center;
+      }
+
+      .brand-mark {
+        height: 84px;
+        min-height: 84px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
       }
 
       .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 58px;
-        line-height: 0.92;
-        letter-spacing: 0.018em;
+        font-size: 46px;
+        line-height: 0.94;
+        letter-spacing: 0.016em;
         text-transform: uppercase;
       }
 
       .brand-word + .brand-word {
-        margin-top: 2px;
+        margin-top: 0;
       }
 
       .brand-rule {
-        margin-top: 10px;
-        height: 5px;
+        margin-top: 8px;
+        height: 4px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
         margin-top: 9px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 500;
-        letter-spacing: 0.22em;
+        letter-spacing: 0.2em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
@@ -781,8 +790,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       <header class="header">
         <div class="header-grid">
           <div class="brand-lockup">
-            <p class="brand-word">${escapeHtml(logoLineOne)}</p>
-            <p class="brand-word">${escapeHtml(logoLineTwo)}</p>
+            <div class="brand-mark">
+              <p class="brand-word">${escapeHtml(logoLineOne)}</p>
+              <p class="brand-word">${escapeHtml(logoLineTwo)}</p>
+            </div>
             <div class="brand-rule"></div>
             <p class="brand-subtitle">${escapeHtml(template.headerSubtitle)}</p>
           </div>
