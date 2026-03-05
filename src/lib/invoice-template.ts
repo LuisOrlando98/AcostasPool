@@ -391,43 +391,46 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         height: 11in;
         margin: 0 auto;
         overflow: hidden;
+        border: 2px solid rgba(48, 75, 136, 0.85);
         background:
-          radial-gradient(circle at 87% -8%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 36%),
-          linear-gradient(180deg, rgba(240, 246, 255, 0.72) 0%, rgba(255, 255, 255, 0.96) 22%, #ffffff 100%);
+          radial-gradient(circle at 84% -14%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 32%),
+          linear-gradient(180deg, rgba(239, 245, 253, 0.62) 0%, rgba(255, 255, 255, 0.94) 20%, #ffffff 100%);
       }
 
       .header {
         background: linear-gradient(135deg, var(--brand) 0%, #223a69 100%);
         color: #ffffff;
-        padding: 32px 46px 30px;
+        padding: 20px 28px 18px;
         position: relative;
       }
 
       .header::after {
         content: "";
         position: absolute;
-        left: 46px;
-        right: 46px;
+        left: 28px;
+        right: 28px;
         bottom: 0;
-        height: 2px;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.42) 60%, rgba(255, 255, 255, 0.06) 100%);
+        height: 1px;
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.52) 66%, rgba(255, 255, 255, 0.12) 100%);
       }
 
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 24px;
+        gap: 14px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 372px;
+        width: 178px;
+        background: rgba(24, 45, 88, 0.35);
+        padding: 7px 10px 6px;
         text-align: center;
       }
 
       .brand-mark {
-        height: 74px;
-        min-height: 74px;
+        height: 48px;
+        min-height: 48px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -437,9 +440,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 34px;
+        font-size: 18px;
         line-height: 0.95;
-        letter-spacing: 0.016em;
+        letter-spacing: 0.01em;
         text-transform: uppercase;
       }
 
@@ -448,29 +451,29 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-rule {
-        margin-top: 8px;
-        height: 3px;
+        margin-top: 4px;
+        height: 1.5px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
-        margin-top: 9px;
-        font-size: 11px;
+        margin-top: 5px;
+        font-size: 8px;
         font-weight: 500;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
 
       .invoice-head {
         text-align: right;
-        padding-top: 4px;
+        padding-top: 2px;
       }
 
       .invoice-label {
         margin: 0;
-        font-size: 32px;
+        font-size: 25px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: 0.03em;
@@ -478,12 +481,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .invoice-meta {
-        margin-top: 12px;
-        font-size: 13px;
+        margin-top: 8px;
+        font-size: 10px;
         font-weight: 600;
         color: rgba(236, 245, 255, 0.98);
         display: grid;
-        gap: 4px;
+        gap: 3px;
       }
 
       .invoice-meta p {
@@ -491,67 +494,67 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .invoice-body {
-        padding: 26px 46px 30px;
-        padding-bottom: 300px;
+        padding: 16px 28px 20px;
+        padding-bottom: 252px;
       }
 
       .info-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        padding-bottom: 16px;
+        gap: 18px;
+        padding-bottom: 11px;
         border-bottom: 1px solid var(--line);
       }
 
       .info-block {
         position: relative;
-        padding-left: 14px;
+        padding-left: 12px;
       }
 
       .info-block::before {
         content: "";
         position: absolute;
         left: 0;
-        top: 3px;
-        bottom: 3px;
-        width: 3px;
+        top: 2px;
+        bottom: 2px;
+        width: 2px;
         background: linear-gradient(180deg, var(--brand) 0%, rgba(48, 75, 136, 0.22) 100%);
       }
 
       .block-title {
         margin: 0;
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 800;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--muted);
       }
 
       .block-line {
-        margin: 5px 0 0;
-        font-size: 12px;
-        line-height: 1.34;
+        margin: 3px 0 0;
+        font-size: 10px;
+        line-height: 1.22;
         color: var(--ink-soft);
         word-break: break-word;
       }
 
       .block-line-strong {
-        margin-top: 8px;
-        font-size: 19px;
+        margin-top: 5px;
+        font-size: 13px;
         font-weight: 800;
         line-height: 1.2;
         color: var(--text);
       }
 
       .table-zone {
-        margin-top: 18px;
+        margin-top: 12px;
         border-top: 2px solid var(--brand);
       }
 
       .items {
         width: 100%;
         border-collapse: collapse;
-        font-size: 12px;
+        font-size: 10px;
       }
 
       .items thead tr {
@@ -559,25 +562,25 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .items th {
-        padding: 10px 8px;
+        padding: 7px 7px;
         border-bottom: 1px solid var(--line-strong);
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         color: var(--brand);
         text-align: left;
       }
 
       .items td {
-        padding: 9px 8px 12px;
+        padding: 7px;
         border-bottom: 1px solid #e5edf8;
-        font-size: 12px;
+        font-size: 10px;
         color: var(--ink-soft);
       }
 
       .col-index {
-        width: 36px;
+        width: 30px;
         text-align: center;
         color: var(--muted);
       }
@@ -588,12 +591,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .col-qty {
-        width: 62px;
+        width: 52px;
         text-align: center;
       }
 
       .col-money {
-        width: 112px;
+        width: 92px;
         text-align: right;
         white-space: nowrap;
       }
@@ -604,26 +607,26 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .empty-row {
         text-align: center;
-        padding: 14px 12px;
+        padding: 10px 10px;
         color: var(--muted);
       }
 
       .summary-grid {
-        margin-top: 16px;
+        margin-top: 12px;
         display: flex;
         justify-content: flex-end;
       }
 
       .totals {
-        padding-left: 16px;
+        padding-left: 12px;
         border-left: 2px solid var(--line);
       }
 
       .totals-title {
-        margin: 0 0 9px;
-        font-size: 11px;
+        margin: 0 0 7px;
+        font-size: 9px;
         font-weight: 800;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--muted);
       }
@@ -633,12 +636,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         justify-content: space-between;
         align-items: baseline;
         margin: 0;
-        font-size: 13px;
+        font-size: 10px;
         color: var(--muted);
       }
 
       .totals-row + .totals-row {
-        margin-top: 8px;
+        margin-top: 5px;
       }
 
       .totals-row strong {
@@ -647,85 +650,85 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .totals-row-total span {
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 800;
         color: var(--brand);
       }
 
       .totals-row-total strong {
-        font-size: 30px;
+        font-size: 42px;
         font-weight: 900;
         color: var(--brand);
       }
 
       .service-grid {
-        margin-top: 16px;
+        margin-top: 10px;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 18px;
-        padding: 14px 0;
+        gap: 12px;
+        padding: 10px 8px;
         border-top: 1px solid var(--line);
         border-bottom: 1px solid var(--line);
       }
 
       .service-title {
         margin: 0;
-        font-size: 10px;
+        font-size: 8px;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.13em;
+        letter-spacing: 0.08em;
         color: var(--muted);
       }
 
       .service-main {
-        margin: 7px 0 0;
-        font-size: 12px;
-        line-height: 1.45;
+        margin: 4px 0 0;
+        font-size: 9px;
+        line-height: 1.32;
         color: var(--text);
         word-break: break-word;
       }
 
       .service-sub {
-        margin: 6px 0 0;
-        font-size: 11px;
-        line-height: 1.35;
+        margin: 4px 0 0;
+        font-size: 8px;
+        line-height: 1.28;
         color: var(--muted);
         word-break: break-word;
       }
 
       .footer {
-        margin-top: 10px;
+        margin-top: 6px;
         border-top: 1px solid var(--line);
-        padding-top: 12px;
+        padding-top: 8px;
       }
 
       .footer-head {
-        margin-top: 2px;
+        margin-top: 0;
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 18px;
+        gap: 12px;
         align-items: start;
       }
 
       .bottom-stack {
         position: absolute;
-        left: 46px;
-        right: 46px;
-        bottom: 30px;
+        left: 28px;
+        right: 28px;
+        bottom: 22px;
       }
 
       .payment-title {
         margin: 0;
-        font-size: 13px;
+        font-size: 10px;
         font-weight: 800;
         color: var(--text);
       }
 
       .payment-line {
         margin: 2px 0 0;
-        font-size: 12px;
+        font-size: 8px;
         color: var(--ink-soft);
-        line-height: 1.4;
+        line-height: 1.3;
       }
 
       .owner-box {
@@ -734,20 +737,20 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .owner-name {
         margin: 0;
-        font-size: 17px;
+        font-size: 12px;
         font-weight: 800;
         color: var(--text);
       }
 
       .owner-role {
         margin: 2px 0 0;
-        font-size: 12px;
+        font-size: 9px;
         color: var(--ink-soft);
       }
 
       .legal-label {
-        margin: 12px 0 0;
-        font-size: 10px;
+        margin: 9px 0 0;
+        font-size: 8px;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -755,16 +758,16 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .legal-title {
-        margin: 6px 0 0;
-        font-size: 11px;
+        margin: 4px 0 0;
+        font-size: 8.5px;
         font-weight: 700;
         color: var(--text);
       }
 
       .legal-copy {
-        margin: 5px 0 0;
-        font-size: 10px;
-        line-height: 1.42;
+        margin: 3px 0 0;
+        font-size: 8px;
+        line-height: 1.3;
         color: #60748a;
       }
 
