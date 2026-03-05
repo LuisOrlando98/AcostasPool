@@ -426,8 +426,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-mark {
-        height: 84px;
-        min-height: 84px;
+        height: 74px;
+        min-height: 74px;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -437,8 +437,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 46px;
-        line-height: 0.94;
+        font-size: 34px;
+        line-height: 0.95;
         letter-spacing: 0.016em;
         text-transform: uppercase;
       }
@@ -449,16 +449,16 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .brand-rule {
         margin-top: 8px;
-        height: 4px;
+        height: 3px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
         margin-top: 9px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 500;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
@@ -885,7 +885,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
                 <p class="payment-line">We accept: Visa, MasterCard, Zelle, Cash</p>
               </div>
               <div class="owner-box">
-                <p class="owner-name">Luis Acostas</p>
+                <p class="owner-name">Luis Acosta</p>
                 <p class="owner-role">President / Owner</p>
               </div>
             </div>

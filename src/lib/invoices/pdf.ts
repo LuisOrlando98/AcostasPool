@@ -216,7 +216,7 @@ async function generateInvoicePdfWithPdfLib(
     const headerBottom = pageHeight - headerHeight;
     const logoAreaX = marginX;
     const logoAreaW = 372;
-    const logoSize = 44;
+    const logoSize = 30;
 
     page.drawRectangle({
       x: 0,
@@ -232,14 +232,14 @@ async function generateInvoicePdfWithPdfLib(
       logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineTwo, logoSize)) / 2;
     page.drawText(logoLineOne, {
       x: logoLineOneX,
-      y: pageHeight - 66,
+      y: pageHeight - 58,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
     });
     page.drawText(logoLineTwo, {
       x: logoLineTwoX,
-      y: pageHeight - 109,
+      y: pageHeight - 88,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
@@ -247,8 +247,8 @@ async function generateInvoicePdfWithPdfLib(
 
     const subtitle = template.headerSubtitle.trim() || "REPAIR AND MAINTENANCE";
     page.drawLine({
-      start: { x: logoAreaX + 4, y: pageHeight - 140 },
-      end: { x: logoAreaX + logoAreaW - 4, y: pageHeight - 140 },
+      start: { x: logoAreaX + 4, y: pageHeight - 118 },
+      end: { x: logoAreaX + logoAreaW - 4, y: pageHeight - 118 },
       thickness: 2,
       color: whiteColor,
     });
@@ -258,7 +258,7 @@ async function generateInvoicePdfWithPdfLib(
       logoAreaX + (logoAreaW - regularFont.widthOfTextAtSize(subtitleText, subtitleSize)) / 2;
     page.drawText(subtitleText, {
       x: subtitleX,
-      y: pageHeight - 155,
+      y: pageHeight - 133,
       size: subtitleSize,
       font: regularFont,
       color: whiteColor,
@@ -535,11 +535,14 @@ async function generateInvoicePdfWithPdfLib(
   drawRightText(`$${input.total.toFixed(2)}`, marginX + contentWidth, summaryTop - 56, 24, boldFont, brandColor);
   cursorY = summaryTop - 88;
   const bottomAnchorY = 238;
-  if (cursorY > bottomAnchorY) {
+  if (cursorY < 196) {
+    startNewPage();
+    cursorY = bottomAnchorY;
+  } else if (cursorY > bottomAnchorY) {
     cursorY = bottomAnchorY;
   }
 
-  ensureSpace(200);
+  ensureSpace(160);
   const servicesTop = cursorY;
   const servicesHeight = 86;
   const sectionGap = 12;
@@ -635,7 +638,7 @@ async function generateInvoicePdfWithPdfLib(
     color: textSoftColor,
   });
 
-  drawRightText("Luis Acostas", marginX + contentWidth, footerHeadY - 1, 15, boldFont, textColor);
+  drawRightText("Luis Acosta", marginX + contentWidth, footerHeadY - 1, 15, boldFont, textColor);
   drawRightText("President / Owner", marginX + contentWidth, footerHeadY - 17, 11.5, regularFont, textSoftColor);
 
   page.drawText("Regulation Disclaimer:", {
