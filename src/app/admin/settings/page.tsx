@@ -8,6 +8,7 @@ import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
   EMAIL_TEMPLATE_IDS,
+  type EmailTemplateId,
   isEmailTemplateId,
   renderEmailTemplate,
   resolveEmailTemplateLocale,
@@ -365,8 +366,23 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const selectedTemplateId = isEmailTemplateId(templateQuery)
     ? templateQuery
     : EMAIL_TEMPLATE_IDS[0];
+  const emailTemplateMetaById = EMAIL_TEMPLATE_IDS.reduce(
+    (acc, templateId) => {
+      const definition = EMAIL_TEMPLATE_DEFINITIONS[templateId];
+      acc[templateId] = {
+        ...definition,
+        label: t(`admin.settings.templates.catalog.${templateId}.label`),
+        description: t(`admin.settings.templates.catalog.${templateId}.description`),
+      };
+      return acc;
+    },
+    {} as Record<
+      EmailTemplateId,
+      (typeof EMAIL_TEMPLATE_DEFINITIONS)[EmailTemplateId]
+    >
+  );
   const selectedTemplate = emailTemplates[selectedTemplateId];
-  const selectedTemplateMeta = EMAIL_TEMPLATE_DEFINITIONS[selectedTemplateId];
+  const selectedTemplateMeta = emailTemplateMetaById[selectedTemplateId];
   const selectedTemplatePreview = renderEmailTemplate(
     selectedTemplate,
     selectedTemplateMeta.previewValues
@@ -784,7 +800,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </h2>
                   <div className="mt-3 space-y-2">
                     {EMAIL_TEMPLATE_IDS.map((templateId) => {
-                      const definition = EMAIL_TEMPLATE_DEFINITIONS[templateId];
+                      const definition = emailTemplateMetaById[templateId];
                       const isActive = selectedTemplateId === templateId;
                       return (
                         <Link

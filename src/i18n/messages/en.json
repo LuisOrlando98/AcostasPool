@@ -1622,6 +1622,48 @@
           "subtitle": "This is exactly how it will appear in inbox and message body.",
           "inbox": "Inbox preview",
           "from": "From: AcostasPool <no-reply@acostaspool.com>"
+        },
+        "catalog": {
+          "CUSTOMER_INVITE": {
+            "label": "Customer invite",
+            "description": "Invitation email used when creating portal access for a customer."
+          },
+          "TECH_ACCOUNT_INVITE": {
+            "label": "Technician account invite",
+            "description": "Invitation email used when creating portal access for a technician."
+          },
+          "PASSWORD_RESET": {
+            "label": "Password reset",
+            "description": "Email sent when a user requests to reset the account password."
+          },
+          "INVOICE_SENT": {
+            "label": "Invoice sent",
+            "description": "Email sent to customers with the invoice PDF attached."
+          },
+          "QUOTE_REQUEST": {
+            "label": "Landing quote request",
+            "description": "Internal email sent to admin inbox when a lead submits the quote form."
+          },
+          "CUSTOMER_SERVICE_SCHEDULED": {
+            "label": "Customer service scheduled",
+            "description": "Notification email when a service is scheduled for a customer."
+          },
+          "CUSTOMER_SERVICE_RESCHEDULED": {
+            "label": "Customer service rescheduled",
+            "description": "Notification email when a customer service is rescheduled."
+          },
+          "CUSTOMER_JOB_COMPLETED": {
+            "label": "Customer job completed",
+            "description": "Notification email when a technician completes a service with evidence."
+          },
+          "TECH_DAILY_DIGEST": {
+            "label": "Tech daily route digest",
+            "description": "Morning route digest sent to technicians."
+          },
+          "TECH_CHANGE_DIGEST": {
+            "label": "Tech route changes digest",
+            "description": "Midday/evening digest when route changes are detected."
+          }
         }
       },
       "invoiceEditor": {

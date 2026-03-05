@@ -1622,6 +1622,48 @@
           "subtitle": "Asi se vera exactamente en la bandeja y el contenido del correo.",
           "inbox": "Preview de inbox",
           "from": "From: AcostasPool <no-reply@acostaspool.com>"
+        },
+        "catalog": {
+          "CUSTOMER_INVITE": {
+            "label": "Invitacion cliente",
+            "description": "Email de invitacion usado al crear acceso al portal para un cliente."
+          },
+          "TECH_ACCOUNT_INVITE": {
+            "label": "Invitacion cuenta tecnico",
+            "description": "Email de invitacion usado al crear acceso al portal para un tecnico."
+          },
+          "PASSWORD_RESET": {
+            "label": "Restablecer contrasena",
+            "description": "Email enviado cuando un usuario solicita restablecer la contrasena de su cuenta."
+          },
+          "INVOICE_SENT": {
+            "label": "Factura enviada",
+            "description": "Email enviado a clientes con el PDF de la factura adjunto."
+          },
+          "QUOTE_REQUEST": {
+            "label": "Solicitud cotizacion landing",
+            "description": "Email interno enviado al inbox admin cuando un lead envia el formulario de cotizacion."
+          },
+          "CUSTOMER_SERVICE_SCHEDULED": {
+            "label": "Servicio cliente programado",
+            "description": "Email de notificacion cuando se programa un servicio para un cliente."
+          },
+          "CUSTOMER_SERVICE_RESCHEDULED": {
+            "label": "Servicio cliente reprogramado",
+            "description": "Email de notificacion cuando se reprograma un servicio de cliente."
+          },
+          "CUSTOMER_JOB_COMPLETED": {
+            "label": "Trabajo cliente completado",
+            "description": "Email de notificacion cuando un tecnico completa un servicio con evidencia."
+          },
+          "TECH_DAILY_DIGEST": {
+            "label": "Resumen diario ruta tecnico",
+            "description": "Resumen matutino de ruta enviado a tecnicos."
+          },
+          "TECH_CHANGE_DIGEST": {
+            "label": "Resumen cambios ruta tecnico",
+            "description": "Resumen de medio dia/noche cuando se detectan cambios en ruta."
+          }
         }
       },
       "invoiceEditor": {
