@@ -373,6 +373,16 @@ export default function RoutesCalendar({
   }, [mobileDayKey]);
 
   useEffect(() => {
+    if (!selectedDate && !jobModal) {
+      return;
+    }
+    const unlock = lockBodyScroll();
+    return () => {
+      unlock();
+    };
+  }, [selectedDate, jobModal]);
+
+  useEffect(() => {
     if (!editMode) {
       setActiveTechJobId(null);
       setSelectedJobId(null);
@@ -1259,104 +1269,159 @@ export default function RoutesCalendar({
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
       <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-            {t("admin.routes.title")}
-          </p>
-          <RoutesSectionTabs />
-        </div>
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(20rem,34rem)]">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => moveMonth(-1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
-                aria-label={t("client.request.calendar.previousMonth")}
-                title={t("client.request.calendar.previousMonth")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 18l-6-6 6-6"
-                  />
-                </svg>
-              </button>
-              <h2 className="text-[clamp(1.5rem,5.3vw,2.3rem)] font-semibold leading-none text-slate-900">
-                {monthLabel}
-              </h2>
-              <button
-                type="button"
-                onClick={() => moveMonth(1)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
-                aria-label={t("client.request.calendar.nextMonth")}
-                title={t("client.request.calendar.nextMonth")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  className="h-4 w-4"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 6l6 6-6 6"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={goToCurrentMonth}
-                disabled={isCurrentMonthViewed}
-                className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
-              >
-                {locale === "es" ? "Este mes" : "Current month"}
-              </button>
-              </div>
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {nextMonthJobsLabel}
-                </span>
-                <span className="text-sm font-bold text-slate-900">{nextMonthJobsCount}</span>
-              </div>
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              {t("admin.routes.title")}
+            </p>
+            <p className="text-xs text-slate-500">
+              {editMode
+                ? locale === "es"
+                  ? "Modo edicion activo: en movil toca un dia para abrir el modal de asignacion."
+                  : "Edit mode active: on mobile tap a day to open the assignment modal."
+                : locale === "es"
+                  ? "Filtra por urgentes, sin tecnico o por trabajos de hoy."
+                  : "Filter by urgent, unassigned, or jobs for today."}
+            </p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+            <RoutesSectionTabs />
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {nextMonthJobsLabel}
+              </span>
+              <span className="text-base font-bold text-slate-900">{nextMonthJobsCount}</span>
             </div>
           </div>
-          <div className="min-w-0">
-            <div className="grid w-full grid-cols-2 divide-x divide-y divide-slate-200/70 overflow-hidden rounded-xl border border-slate-200 bg-white/95 sm:grid-cols-4 sm:divide-y-0">
+        </div>
+
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => moveMonth(-1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+              aria-label={t("client.request.calendar.previousMonth")}
+              title={t("client.request.calendar.previousMonth")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 18l-6-6 6-6"
+                />
+              </svg>
+            </button>
+            <h2 className="text-[clamp(1.5rem,5.2vw,2.25rem)] font-semibold leading-none text-slate-900">
+              {monthLabel}
+            </h2>
+            <button
+              type="button"
+              onClick={() => moveMonth(1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
+              aria-label={t("client.request.calendar.nextMonth")}
+              title={t("client.request.calendar.nextMonth")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 6l6 6-6 6"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={goToCurrentMonth}
+              disabled={isCurrentMonthViewed}
+              className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+            >
+              {locale === "es" ? "Este mes" : "Current month"}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleEditMode}
+              disabled={saving}
+              className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition ${
+                editMode
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+              } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
+            >
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-md border ${
+                  editMode
+                    ? "border-white/30 bg-white text-slate-900"
+                    : "border-slate-200 bg-slate-100 text-slate-600"
+                }`}
+              >
+                {saveSuccess ? (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
+                    />
+                  </svg>
+                )}
+              </span>
+              <span>
+                {editMode
+                  ? t("common.actions.save")
+                  : locale === "es"
+                    ? "Editar calendario"
+                    : "Edit calendar"}
+              </span>
+            </button>
+
+            {editMode ? (
               <button
                 type="button"
                 onClick={() => {
-                  if (todayActive) {
-                    setRangeFilter("WEEK");
+                  if (!selectedJobId || saving) {
                     return;
                   }
-                  setRangeFilter("CUSTOM");
-                  setCustomStart(todayKey);
-                  setCustomEnd(todayKey);
+                  void deleteJobById(selectedJobId);
                 }}
-                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                  todayActive
-                    ? "bg-sky-50 text-sky-700"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
+                disabled={!selectedJobId || saving}
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 text-xs font-semibold uppercase tracking-[0.12em] text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
               >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                    todayActive
-                      ? "border-sky-200 bg-sky-500 text-white"
-                      : "border-sky-100 bg-sky-100 text-sky-600"
-                  }`}
-                >
+                <span className="flex h-6 w-6 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -1364,208 +1429,147 @@ export default function RoutesCalendar({
                     strokeWidth="1.8"
                     className="h-4 w-4"
                   >
-                    <rect x="4" y="5" width="16" height="14" rx="2" />
-                    <path d="M8 3.5v3M16 3.5v3M4 9h16" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 13h12l1-13"
+                    />
                   </svg>
                 </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                    {locale === "es" ? "Trabajos hoy" : "Jobs today"}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-900">
-                    {summary.todayJobs}
-                  </span>
-                </span>
+                <span>{t("common.actions.delete")}</span>
               </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setPriorityFilter((current) =>
-                    current === "URGENT" ? "ALL" : "URGENT"
-                  )
-                }
-                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                  urgentActive
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                    urgentActive
-                      ? "border-indigo-200 bg-indigo-500 text-white"
-                      : "border-indigo-100 bg-indigo-100 text-indigo-600"
-                  }`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path d="M12 4l8 14H4l8-14z" />
-                    <path d="M12 9v4m0 3h.01" />
-                  </svg>
-                </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                    {t("admin.routes.labels.urgent")}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-900">
-                    {summary.urgent}
-                  </span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setTechFilter((current) =>
-                    current === "UNASSIGNED" ? "ALL" : "UNASSIGNED"
-                  )
-                }
-                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                  unassignedActive
-                    ? "bg-rose-50 text-rose-700"
-                    : "text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                    unassignedActive
-                      ? "border-rose-200 bg-rose-500 text-white"
-                      : "border-rose-100 bg-rose-100 text-rose-600"
-                  }`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path d="M5 19a7 7 0 0114 0" />
-                    <path d="M4 4l16 16" />
-                  </svg>
-                </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                    {t("jobs.detail.noTech")}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-900">
-                    {summary.unassigned}
-                  </span>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleEditMode}
-                disabled={saving}
-                className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                  editMode
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-600 hover:bg-slate-50"
-                } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                    editMode
-                      ? "border-white/30 bg-white text-slate-900"
-                      : "border-slate-200 bg-slate-100 text-slate-600"
-                  }`}
-                >
-                  {saveSuccess ? (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
-                      />
-                    </svg>
-                  )}
-                </span>
-                <span className="flex flex-col leading-tight">
-                  <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                    {editMode
-                      ? t("common.actions.save")
-                      : t("common.actions.edit")}
-                  </span>
-                  <span
-                    className={`text-xs font-semibold ${
-                      editMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    {editMode ? "Cambios" : "Calendario"}
-                  </span>
-                </span>
-              </button>
-              {editMode ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!selectedJobId || saving) {
-                      return;
-                    }
-                    void deleteJobById(selectedJobId);
-                  }}
-                  disabled={!selectedJobId || saving}
-                  className={`group flex items-center gap-2 px-3 py-2 text-left transition ${
-                    selectedJobId && !saving
-                      ? "text-rose-700 hover:bg-rose-50"
-                      : "cursor-not-allowed text-slate-400"
-                  }`}
-                >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-200 bg-rose-50 text-rose-600">
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 13h12l1-13"
-                      />
-                    </svg>
-                  </span>
-                  <span className="flex flex-col leading-tight">
-                    <span className="text-[9px] uppercase tracking-[0.16em] text-slate-400">
-                      {locale === "es" ? "TECLA SUPR" : "DELETE KEY"}
-                    </span>
-                    <span className="text-xs font-semibold">
-                      {t("common.actions.delete")}
-                    </span>
-                  </span>
-                </button>
-              ) : null}
-            </div>
+            ) : null}
           </div>
+        </div>
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (todayActive) {
+                setRangeFilter("WEEK");
+                return;
+              }
+              setRangeFilter("CUSTOM");
+              setCustomStart(todayKey);
+              setCustomEnd(todayKey);
+            }}
+            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+              todayActive
+                ? "border-sky-200 bg-sky-50 text-sky-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                todayActive
+                  ? "border-sky-200 bg-sky-500 text-white"
+                  : "border-sky-100 bg-sky-100 text-sky-600"
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <rect x="4" y="5" width="16" height="14" rx="2" />
+                <path d="M8 3.5v3M16 3.5v3M4 9h16" />
+              </svg>
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                {locale === "es" ? "Trabajos hoy" : "Jobs today"}
+              </span>
+              <span className="text-sm font-semibold text-slate-900">
+                {summary.todayJobs}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setPriorityFilter((current) =>
+                current === "URGENT" ? "ALL" : "URGENT"
+              )
+            }
+            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+              urgentActive
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                urgentActive
+                  ? "border-indigo-200 bg-indigo-500 text-white"
+                  : "border-indigo-100 bg-indigo-100 text-indigo-600"
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M12 4l8 14H4l8-14z" />
+                <path d="M12 9v4m0 3h.01" />
+              </svg>
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                {t("admin.routes.labels.urgent")}
+              </span>
+              <span className="text-sm font-semibold text-slate-900">
+                {summary.urgent}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              setTechFilter((current) =>
+                current === "UNASSIGNED" ? "ALL" : "UNASSIGNED"
+              )
+            }
+            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+              unassignedActive
+                ? "border-rose-200 bg-rose-50 text-rose-700"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                unassignedActive
+                  ? "border-rose-200 bg-rose-500 text-white"
+                  : "border-rose-100 bg-rose-100 text-rose-600"
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path d="M5 19a7 7 0 0114 0" />
+                <path d="M4 4l16 16" />
+              </svg>
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                {t("jobs.detail.noTech")}
+              </span>
+              <span className="text-sm font-semibold text-slate-900">
+                {summary.unassigned}
+              </span>
+            </span>
+          </button>
         </div>
         {errorMessage ? (
           <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
@@ -1576,7 +1580,11 @@ export default function RoutesCalendar({
         <div className="mt-6 lg:hidden">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
             <p className="text-[11px] text-slate-500">
-              {t("admin.routes.calendarMobile.helper")}
+              {editMode
+                ? locale === "es"
+                  ? "Modo edicion: toca un dia para abrir el modal y asignar trabajos."
+                  : "Edit mode: tap a day to open the modal and assign jobs."
+                : t("admin.routes.calendarMobile.helper")}
             </p>
             <div className="mt-3 grid grid-cols-7 gap-1">
               {daysShort.map((label) => (
@@ -1612,6 +1620,10 @@ export default function RoutesCalendar({
                     type="button"
                     disabled={!isCurrentMonth}
                     onClick={() => {
+                      if (editMode) {
+                        openModalForDate(day);
+                        return;
+                      }
                       setMobileDayKey(key);
                     }}
                     className={`relative h-12 overflow-hidden rounded-lg border px-1 py-1 text-center transition sm:h-14 ${
@@ -2919,10 +2931,10 @@ export default function RoutesCalendar({
         : null}
 
       {selectedDate ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="fixed inset-0 z-[1300] flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-6">
           <div className="absolute inset-0 bg-slate-900/60" />
-          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
+            <div className="modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90vh] sm:p-6 sm:pr-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -3193,9 +3205,9 @@ export default function RoutesCalendar({
               className="fixed inset-0 z-[1310] overflow-y-auto bg-slate-900/60"
               onClick={() => setJobModal(null)}
             >
-              <div className="flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-10">
+              <div className="flex min-h-screen items-end justify-center px-0 py-0 sm:items-center sm:px-6 sm:py-10">
                 <div
-                  className="relative h-[92vh] max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white sm:h-[90vh]"
+                  className="relative h-[88dvh] max-h-[88dvh] w-full max-w-4xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white sm:h-[90vh] sm:max-h-[90vh] sm:rounded-3xl"
                   onClick={(event) => event.stopPropagation()}
                 >
                   <div className="flex h-full min-h-0 flex-col">

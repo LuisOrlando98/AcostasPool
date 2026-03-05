@@ -531,7 +531,7 @@ export default function AppShell({
       <div
         className={`relative min-h-screen lg:grid lg:min-h-screen lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
       >
-        <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:flex lg:row-span-2 lg:h-screen lg:sticky lg:top-0 lg:self-start">
+        <aside className="sidebar-shell group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:h-[100dvh] lg:w-[18rem] lg:min-h-0 lg:transition-[width] lg:duration-300 lg:ease-in-out lg:peer-checked:w-20">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -right-28 -top-36 h-80 w-80 rounded-full bg-cyan-300/12 blur-3xl" />
             <div className="absolute left-[-6rem] top-24 h-72 w-72 rounded-full bg-sky-500/12 blur-3xl" />
@@ -574,7 +574,7 @@ export default function AppShell({
             </svg>
             <span className="pointer-events-none absolute inset-0 rounded-full border border-white/10" />
           </label>
-          <nav className="nav-list relative z-10 flex-1 space-y-1 overflow-y-auto px-4 py-5 text-sm">
+          <nav className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-5 text-sm">
             {items.map((item) => {
               const isRoot =
                 item.href === "/admin" ||
@@ -607,7 +607,7 @@ export default function AppShell({
               );
             })}
           </nav>
-          <div className="sidebar-account relative z-10 px-5 pt-4">
+          <div className="sidebar-account relative z-10 px-5 pb-5 pt-4">
             <SidebarAccount />
           </div>
         </aside>
@@ -718,7 +718,7 @@ export default function AppShell({
                 </div>
               </div>
 
-              <nav className="nav-list relative z-10 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm">
+              <nav className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm">
                 {items.map((item) => {
                   const isRoot =
                     item.href === "/admin" ||
