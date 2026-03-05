@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import type { Prisma } from "@prisma/client";
 import {
   buildJobWhere,
   buildQueryParams,
@@ -18,10 +19,15 @@ type ReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+type LogsFilters = {
+  query: string;
+  status: "ALL" | "QUEUED" | "SENT" | "FAILED";
+};
+
 async function getReportSnapshot(filters: ReportFilters) {
   const jobWhere = buildJobWhere(filters);
 
-  const [technicians, jobs, jobsWithEvidence, customerRequests, reschedules] =
+  const [technicians, jobs, customerRequests, reschedules] =
     await Promise.all([
       prisma.technician.findMany({
         include: { user: true },
@@ -37,11 +43,9 @@ async function getReportSnapshot(filters: ReportFilters) {
           customerId: true,
           technicianId: true,
           scheduledDate: true,
+          startedAt: true,
           completedAt: true,
         },
-      }),
-      prisma.job.count({
-        where: { ...jobWhere, status: "COMPLETED", photos: { some: {} } },
       }),
       prisma.notification.count({
         where: {
@@ -67,7 +71,7 @@ async function getReportSnapshot(filters: ReportFilters) {
   const technicianStatMap = new Map<string, Map<string, number>>();
 
   const completedJobs: {
-    scheduledDate: Date;
+    startedAt: Date | null;
     completedAt: Date | null;
   }[] = [];
   for (const job of jobs) {
@@ -85,7 +89,7 @@ async function getReportSnapshot(filters: ReportFilters) {
 
     if (job.status === "COMPLETED") {
       completedJobs.push({
-        scheduledDate: job.scheduledDate,
+        startedAt: job.startedAt,
         completedAt: job.completedAt,
       });
     }
@@ -139,7 +143,6 @@ async function getReportSnapshot(filters: ReportFilters) {
     serviceGroups,
     priorityGroups,
     completedJobs,
-    jobsWithEvidence,
     customerRequests,
     reschedules,
     topCustomers,
@@ -148,18 +151,66 @@ async function getReportSnapshot(filters: ReportFilters) {
   };
 }
 
-async function getLogsTotal(filters: ReportFilters) {
+function buildLogsWhere(filters: ReportFilters, logsFilters: LogsFilters) {
+  const query = logsFilters.query.trim();
+  const where: Prisma.EmailLogWhereInput = {
+    createdAt: { gte: filters.from, lte: filters.to },
+    ...(logsFilters.status !== "ALL" ? { status: logsFilters.status } : {}),
+    ...(query
+      ? {
+          OR: [
+            {
+              recipientName: {
+                contains: query,
+                mode: "insensitive",
+              },
+            },
+            {
+              recipientEmail: {
+                contains: query,
+                mode: "insensitive",
+              },
+            },
+            {
+              customer: {
+                is: {
+                  nombre: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+            {
+              customer: {
+                is: {
+                  apellidos: {
+                    contains: query,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+  return where;
+}
+
+async function getLogsTotal(filters: ReportFilters, logsFilters: LogsFilters) {
   return prisma.emailLog.count({
-    where: {
-      createdAt: { gte: filters.from, lte: filters.to },
-    },
+    where: buildLogsWhere(filters, logsFilters),
   });
 }
 
-async function getLogsPageData(filters: ReportFilters, page: number, pageSize: number) {
-  const where = {
-    createdAt: { gte: filters.from, lte: filters.to },
-  } as const;
+async function getLogsPageData(
+  filters: ReportFilters,
+  logsFilters: LogsFilters,
+  page: number,
+  pageSize: number
+) {
+  const where = buildLogsWhere(filters, logsFilters);
 
   try {
     return await prisma.emailLog.findMany({
@@ -185,7 +236,23 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const t = await getTranslations();
   const locale = await getRequestLocale();
   const resolvedSearchParams = await Promise.resolve(searchParams);
+  const readParam = (key: string) => {
+    const value = resolvedSearchParams?.[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
   const filters = getReportFilters(resolvedSearchParams);
+  const logsQuery = (readParam("logsQ") ?? "").trim();
+  const logsStatusRaw = (readParam("logsStatus") ?? "ALL").toUpperCase();
+  const logsStatus: LogsFilters["status"] =
+    logsStatusRaw === "QUEUED" ||
+    logsStatusRaw === "SENT" ||
+    logsStatusRaw === "FAILED"
+      ? (logsStatusRaw as LogsFilters["status"])
+      : "ALL";
+  const logsFilters: LogsFilters = {
+    query: logsQuery,
+    status: logsStatus,
+  };
   const logsPageRaw = resolvedSearchParams?.logsPage;
   const requestedLogsPage = Array.isArray(logsPageRaw)
     ? Number(logsPageRaw[0])
@@ -197,8 +264,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     jobTypeGroups: [] as Array<{ type: string; _count: { _all: number } }>,
     serviceGroups: [] as Array<{ serviceType: string; _count: { _all: number } }>,
     priorityGroups: [] as Array<{ priority: string; _count: { _all: number } }>,
-    completedJobs: [] as Array<{ scheduledDate: Date; completedAt: Date | null }>,
-    jobsWithEvidence: 0,
+    completedJobs: [] as Array<{ startedAt: Date | null; completedAt: Date | null }>,
     customerRequests: 0,
     reschedules: 0,
     topCustomers: [] as Array<{ customerId: string; _count: { _all: number } }>,
@@ -216,7 +282,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   try {
     [snapshot, logsTotal] = await Promise.all([
       getReportSnapshot(filters),
-      getLogsTotal(filters),
+      getLogsTotal(filters, logsFilters),
     ]);
   } catch (error) {
     console.error("Reports dashboard query failed:", error);
@@ -227,7 +293,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     Number.isFinite(requestedLogsPage) && requestedLogsPage > 0
       ? Math.min(requestedLogsPage, logsTotalPages)
       : 1;
-  const logs = await getLogsPageData(filters, logsPage, logsPageSize);
+  const logs = await getLogsPageData(filters, logsFilters, logsPage, logsPageSize);
 
   const {
     technicians,
@@ -236,7 +302,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     serviceGroups,
     priorityGroups,
     completedJobs,
-    jobsWithEvidence,
     customerRequests,
     reschedules,
     topCustomers,
@@ -257,19 +322,15 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const completionRate = totalJobs
     ? Math.round((completedCount / totalJobs) * 100)
     : 0;
-  const evidenceRate = completedCount
-    ? Math.round((jobsWithEvidence / completedCount) * 100)
-    : 0;
-
-  const avgCompletionDelayMinutes = (() => {
+  const avgCompletionTimeMinutes = (() => {
     if (completedJobs.length === 0) {
       return 0;
     }
     const totalMinutes = completedJobs.reduce((sum, job) => {
-      if (!job.completedAt) {
+      if (!job.startedAt || !job.completedAt) {
         return sum;
       }
-      const diff = job.completedAt.getTime() - job.scheduledDate.getTime();
+      const diff = job.completedAt.getTime() - job.startedAt.getTime();
       return sum + Math.max(diff / 60000, 0);
     }, 0);
     return Math.round(totalMinutes / completedJobs.length);
@@ -304,15 +365,53 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   );
 
   const queryParams = buildQueryParams(filters);
-  const buildLogsHref = (page: number) => {
+  const logsActiveFiltersCount = [
+    logsFilters.query.length > 0,
+    logsFilters.status !== "ALL",
+  ].filter(Boolean).length;
+  const smtpMissingKeys = [
+    ["SMTP_HOST", process.env.SMTP_HOST],
+    ["SMTP_USER", process.env.SMTP_USER],
+    ["SMTP_PASS", process.env.SMTP_PASS],
+  ]
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+  const smtpConfigured = smtpMissingKeys.length === 0;
+
+  const buildReportsHref = (options?: {
+    logsPage?: number;
+    logsQ?: string;
+    logsStatus?: LogsFilters["status"];
+  }) => {
     const params = new URLSearchParams(queryParams);
-    if (page > 1) {
-      params.set("logsPage", String(page));
+    const nextLogsQ = options?.logsQ ?? logsFilters.query;
+    const nextLogsStatus = options?.logsStatus ?? logsFilters.status;
+    const nextLogsPage = options?.logsPage ?? logsPage;
+
+    if (nextLogsQ) {
+      params.set("logsQ", nextLogsQ);
+    } else {
+      params.delete("logsQ");
+    }
+
+    if (nextLogsStatus !== "ALL") {
+      params.set("logsStatus", nextLogsStatus);
+    } else {
+      params.delete("logsStatus");
+    }
+
+    if (nextLogsPage > 1) {
+      params.set("logsPage", String(nextLogsPage));
     } else {
       params.delete("logsPage");
     }
+
     const query = params.toString();
     return query ? `/admin/reports?${query}` : "/admin/reports";
+  };
+
+  const buildLogsHref = (page: number) => {
+    return buildReportsHref({ logsPage: page });
   };
 
   const serviceLabelMap: Record<string, string> = {
@@ -344,7 +443,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         }}
       />
 
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           label={t("admin.reports.cards.totalJobs")}
           value={totalJobs.toString()}
@@ -364,15 +463,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           tone="warning"
         />
         <StatCard
-          label={t("admin.reports.cards.evidenceRate")}
-          value={`${evidenceRate}%`}
-          helper={`${jobsWithEvidence} ${t("admin.reports.cards.withEvidence")}`}
-          tone="info"
-        />
-        <StatCard
-          label={t("admin.reports.cards.avgDelay")}
-          value={`${avgCompletionDelayMinutes}m`}
-          helper={t("admin.reports.cards.avgDelayHelper")}
+          label={t("admin.reports.cards.avgCompletionTime")}
+          value={`${avgCompletionTimeMinutes}m`}
+          helper={t("admin.reports.cards.avgCompletionTimeHelper")}
           tone="warning"
         />
         <StatCard
@@ -383,9 +476,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         />
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+      <section className="grid gap-6 lg:grid-cols-2">
         <div className="app-card p-6 shadow-contrast">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">
               {t("admin.reports.technicians.title")}
             </h2>
@@ -426,69 +519,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="app-card p-6 shadow-contrast">
-            <h2 className="text-lg font-semibold">
-              {t("admin.reports.services.title")}
-            </h2>
-            <div className="mt-4 space-y-2 text-sm">
-              {serviceGroups.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.reports.services.empty")}
-                </p>
-              ) : (
-                serviceGroups.map((item) => (
-                  <div
-                    key={item.serviceType ?? "unknown"}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-                  >
-                    <span>
-                      {item.serviceType
-                        ? serviceLabelMap[item.serviceType] ?? item.serviceType
-                        : notAvailableLabel}
-                    </span>
-                    <Badge
-                      label={item._count._all.toString()}
-                      tone="info"
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="app-card p-6 shadow-contrast">
-            <h2 className="text-lg font-semibold">
-              {t("admin.reports.priorities.title")}
-            </h2>
-            <div className="mt-4 space-y-2 text-sm">
-              {priorityGroups.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("admin.reports.priorities.empty")}
-                </p>
-              ) : (
-                priorityGroups.map((item) => (
-                  <div
-                    key={item.priority ?? "unknown"}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-                  >
-                    <span>
-                      {item.priority === "URGENT"
-                        ? t("jobs.priority.urgent")
-                        : item.priority === "NORMAL"
-                          ? t("jobs.priority.normal")
-                          : notAvailableLabel}
-                    </span>
-                    <Badge label={item._count._all.toString()} tone="warning" />
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-6">
         <div className="app-card p-6 shadow-contrast">
           <h2 className="text-lg font-semibold">
             {t("admin.reports.customers.title")}
@@ -520,6 +550,67 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </div>
       </section>
 
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="app-card p-6 shadow-contrast">
+          <h2 className="text-lg font-semibold">
+            {t("admin.reports.services.title")}
+          </h2>
+          <div className="mt-4 space-y-2 text-sm">
+            {serviceGroups.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                {t("admin.reports.services.empty")}
+              </p>
+            ) : (
+              serviceGroups.map((item) => (
+                <div
+                  key={item.serviceType ?? "unknown"}
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                >
+                  <span>
+                    {item.serviceType
+                      ? serviceLabelMap[item.serviceType] ?? item.serviceType
+                      : notAvailableLabel}
+                  </span>
+                  <Badge
+                    label={item._count._all.toString()}
+                    tone="info"
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="app-card p-6 shadow-contrast">
+          <h2 className="text-lg font-semibold">
+            {t("admin.reports.priorities.title")}
+          </h2>
+          <div className="mt-4 space-y-2 text-sm">
+            {priorityGroups.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                {t("admin.reports.priorities.empty")}
+              </p>
+            ) : (
+              priorityGroups.map((item) => (
+                <div
+                  key={item.priority ?? "unknown"}
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                >
+                  <span>
+                    {item.priority === "URGENT"
+                      ? t("jobs.priority.urgent")
+                      : item.priority === "NORMAL"
+                        ? t("jobs.priority.normal")
+                        : notAvailableLabel}
+                  </span>
+                  <Badge label={item._count._all.toString()} tone="warning" />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
       <section className="app-card p-6 shadow-contrast">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -533,7 +624,117 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               })}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              label={
+                smtpConfigured
+                  ? t("admin.reports.emails.smtp.ok")
+                  : t("admin.reports.emails.smtp.missing")
+              }
+              tone={smtpConfigured ? "success" : "warning"}
+            />
+            {logsActiveFiltersCount > 0 ? (
+              <span className="app-chip px-3 py-1 text-xs" data-tone="warning">
+                {t("admin.reports.emails.filters.activeCount", {
+                  count: logsActiveFiltersCount,
+                })}
+              </span>
+            ) : null}
+            <details className="relative">
+              <summary className="no-marker app-button-ghost inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full p-0">
+                <span className="sr-only">{t("admin.reports.emails.filters.open")}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+                </svg>
+              </summary>
+              <div className="absolute right-0 z-20 mt-2 w-[min(92vw,22rem)] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl sm:p-4">
+                <form method="get" action="/admin/reports" className="space-y-3">
+                  <input type="hidden" name="from" value={formatDateInput(filters.from)} />
+                  <input type="hidden" name="to" value={formatDateInput(filters.to)} />
+                  {filters.range && filters.range !== "custom" ? (
+                    <input type="hidden" name="range" value={filters.range} />
+                  ) : null}
+                  {filters.technicianId ? (
+                    <input
+                      type="hidden"
+                      name="technicianId"
+                      value={filters.technicianId}
+                    />
+                  ) : null}
+                  {filters.serviceType ? (
+                    <input
+                      type="hidden"
+                      name="serviceType"
+                      value={filters.serviceType}
+                    />
+                  ) : null}
+                  {filters.priority ? (
+                    <input type="hidden" name="priority" value={filters.priority} />
+                  ) : null}
+
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {t("common.actions.search")}
+                    </label>
+                    <input
+                      name="logsQ"
+                      defaultValue={logsFilters.query}
+                      className="app-input mt-1.5 w-full px-3 py-2 text-sm"
+                      placeholder={t("admin.reports.emails.filters.placeholder")}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      {t("admin.reports.emails.filters.status")}
+                    </label>
+                    <select
+                      name="logsStatus"
+                      defaultValue={logsFilters.status}
+                      className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="ALL">{t("admin.reports.emails.filters.allStatuses")}</option>
+                      <option value="QUEUED">{t("admin.reports.emails.filters.queued")}</option>
+                      <option value="SENT">{t("admin.reports.emails.filters.sent")}</option>
+                      <option value="FAILED">{t("admin.reports.emails.filters.failed")}</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-between">
+                    <a
+                      href={buildReportsHref({
+                        logsPage: 1,
+                        logsQ: "",
+                        logsStatus: "ALL",
+                      })}
+                      className="app-button-ghost px-3 py-2 text-center text-xs font-semibold"
+                    >
+                      {t("admin.reports.emails.filters.clear")}
+                    </a>
+                    <button
+                      type="submit"
+                      className="app-button-primary px-3 py-2 text-xs font-semibold"
+                    >
+                      {t("admin.reports.emails.filters.apply")}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </details>
+          </div>
         </div>
+
+        {!smtpConfigured ? (
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            {t("admin.reports.emails.smtp.help", {
+              keys: smtpMissingKeys.join(", "),
+            })}
+          </div>
+        ) : null}
 
         <div className="mt-4 space-y-3 text-sm">
           {logs.length === 0 ? (

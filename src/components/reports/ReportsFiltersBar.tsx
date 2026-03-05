@@ -246,19 +246,17 @@ export default function ReportsFiltersBar({
   };
 
   return (
-    <section className="ui-panel p-4 shadow-contrast sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5">
+      <div className="flex w-full flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-            {t("admin.reports.filters.toolbar")}
-          </p>
-          <p className="mt-1 text-sm text-slate-700">
-            <span className="font-semibold">{rangeLabel}</span>
-            <span className="mx-2 text-slate-400">|</span>
+          <p className="text-sm text-slate-700">
+            <span className="font-semibold">{t("admin.reports.filters.showing")}:</span>
+            <span className="ml-2 font-semibold">{rangeLabel}</span>
+            <span className="mx-2 text-slate-400">-</span>
             <span className="text-slate-600">{dateLabel}</span>
           </p>
         </div>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           {activeCount > 0 ? (
             <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
               {t("admin.reports.filters.activeCount", { count: activeCount })}
@@ -270,15 +268,25 @@ export default function ReportsFiltersBar({
               setDraft(state);
               setOpen(true);
             }}
-            className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
+            className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+            aria-label={t("admin.reports.filters.open")}
+            title={t("admin.reports.filters.open")}
           >
-            {t("admin.reports.filters.open")}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
           </button>
         </div>
       </div>
 
       {isPending ? (
-        <p className="mt-2 text-[11px] text-slate-500">{t("common.feedback.updating")}</p>
+        <p className="w-full text-[11px] text-slate-500">{t("common.feedback.updating")}</p>
       ) : null}
 
       {open ? (
@@ -306,9 +314,19 @@ export default function ReportsFiltersBar({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:text-slate-800"
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                  aria-label={t("common.actions.close")}
+                  title={t("common.actions.close")}
                 >
-                  {t("common.actions.close")}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                  </svg>
                 </button>
               </div>
             </div>

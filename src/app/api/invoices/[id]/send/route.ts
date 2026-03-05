@@ -43,6 +43,7 @@ export async function POST(
   if (!invoice.customer?.email) {
     return NextResponse.json({ error: "Customer email missing" }, { status: 400 });
   }
+  const customerName = formatCustomerName(invoice.customer);
 
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");
@@ -51,13 +52,28 @@ export async function POST(
   const from = process.env.SMTP_FROM || user;
 
   if (!host || !user || !pass || !from) {
+    await prisma.emailLog.create({
+      data: {
+        recipientEmail: invoice.customer.email,
+        recipientName: customerName,
+        recipientRole: "CUSTOMER",
+        subject: `Invoice ${invoice.number} (not sent)`,
+        bodyText: "SMTP not configured",
+        status: "FAILED",
+        errorMessage: "SMTP not configured",
+        customerId: invoice.customerId,
+        metadata: {
+          category: "INVOICE_SENT",
+          invoiceId: invoice.id,
+        },
+      },
+    });
     return NextResponse.json(
       { error: "SMTP not configured" },
       { status: 500 }
     );
   }
 
-  const customerName = formatCustomerName(invoice.customer);
   const templates = await getEmailTemplatesConfig();
   const rendered = renderEmailTemplate(templates.INVOICE_SENT, {
     customer_name: customerName,
@@ -73,7 +89,7 @@ export async function POST(
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: false,
+      secure: port === 465,
       auth: { user, pass },
     });
 

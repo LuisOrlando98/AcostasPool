@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import ServiceTiersManager from "@/components/settings/ServiceTiersManager";
+import DocumentPreviewModal from "@/components/settings/DocumentPreviewModal";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
@@ -49,14 +50,113 @@ type SettingsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-const SETTINGS_TABS: Array<{ id: SettingsTabId; label: string }> = [
-  { id: "social", label: "Social links" },
-  { id: "landing", label: "Landing page config" },
-  { id: "email-templates", label: "Templates" },
-  { id: "compliance", label: "Compliance" },
-  { id: "tiers", label: "Service tiers" },
-  { id: "notifications", label: "Notifications" },
+const SETTINGS_TABS: Array<{
+  id: SettingsTabId;
+  label: string;
+  hint: string;
+}> = [
+  { id: "social", label: "Social links", hint: "Canales publicos" },
+  { id: "landing", label: "Landing page config", hint: "Texto y video" },
+  { id: "email-templates", label: "Templates", hint: "Emails y factura" },
+  { id: "compliance", label: "Compliance", hint: "Legal y politicas" },
+  { id: "tiers", label: "Service tiers", hint: "Paquetes activos" },
+  { id: "notifications", label: "Notifications", hint: "Reglas y estado" },
 ];
+
+function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
+  if (tabId === "social") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <circle cx="12" cy="12" r="3.5" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5C6.3 5 9 3.8 12 3.8S17.7 5 20 7.5M4 16.5C6.3 19 9 20.2 12 20.2s5.7-1.2 8-3.7" />
+      </svg>
+    );
+  }
+  if (tabId === "landing") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+        <path strokeLinecap="round" d="M8 9.5h8M8 13h5" />
+      </svg>
+    );
+  }
+  if (tabId === "email-templates") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6.5h16v11H4z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 8l8 6 8-6" />
+      </svg>
+    );
+  }
+  if (tabId === "compliance") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M7 4.5h10l2 2v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2Z" />
+        <path strokeLinecap="round" d="M9 10h6M9 13h6" />
+      </svg>
+    );
+  }
+  if (tabId === "tiers") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <rect x="4" y="5" width="16" height="4" rx="1.5" />
+        <rect x="4" y="10" width="12" height="4" rx="1.5" />
+        <rect x="4" y="15" width="8" height="4" rx="1.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.5v5l3 2" />
+      <circle cx="12" cy="12" r="8.5" />
+    </svg>
+  );
+}
+
+function SocialNetworkIcon({ network }: { network: "instagram" | "facebook" | "whatsapp" | "x" | "youtube" | "tiktok" }) {
+  if (network === "instagram") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <rect x="4" y="4" width="16" height="16" rx="5" />
+        <circle cx="12" cy="12" r="3.3" />
+        <circle cx="16.7" cy="7.3" r="0.9" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (network === "facebook") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M13.6 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.3-1.6 1.6-1.6h1.7V3.5c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.3v2.4H8V13h2.3v8h3.3Z" />
+      </svg>
+    );
+  }
+  if (network === "whatsapp") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M12.1 3.8a8.2 8.2 0 0 0-7 12.4L4 20.2l4.2-1.1a8.2 8.2 0 1 0 3.9-15.3Zm0 14.9c-1.3 0-2.5-.3-3.6-1l-.3-.2-2.5.7.7-2.4-.2-.3a6.8 6.8 0 1 1 5.9 3.2Zm3.7-4.8c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1l-.4.5c-.1.2-.3.2-.5.1-.9-.4-1.7-1.2-2.1-2.1-.1-.2 0-.4.1-.5l.3-.3.1-.2c.1-.1.1-.3 0-.4l-.6-1.4c-.1-.2-.3-.3-.5-.3h-.4c-.1 0-.3.1-.4.2-.5.5-.8 1.1-.8 1.8 0 .2.1.5.2.8.5 1.2 1.4 2.4 2.5 3.2 1.1.8 2.3 1.3 3.5 1.4.4 0 .8-.1 1.2-.3.5-.3.9-.8 1-1.4l.1-.7c0-.2-.1-.3-.3-.4Z" />
+      </svg>
+    );
+  }
+  if (network === "x") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M18.6 4h2.7l-5.9 6.8 6.9 9.2h-5.4l-4.2-5.5-4.8 5.5H5.2l6.3-7.3L4.9 4h5.5l3.8 5 4.4-5Z" />
+      </svg>
+    );
+  }
+  if (network === "youtube") {
+    return (
+      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+        <path d="M21.6 8.2a2.8 2.8 0 0 0-2-2c-1.8-.5-7.6-.5-7.6-.5s-5.8 0-7.6.5a2.8 2.8 0 0 0-2 2C2 10 2 12 2 12s0 2 .4 3.8a2.8 2.8 0 0 0 2 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 0 0 2-2c.4-1.8.4-3.8.4-3.8s0-2-.4-3.8Zm-11.5 6V9.8l4.6 2.2-4.6 2.2Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+      <path d="M17.2 8.1a3.7 3.7 0 0 1-2.3-.8v5.8a4.6 4.6 0 1 1-4.6-4.6h.4V11h-.4a2.1 2.1 0 1 0 2.1 2.1V3.8h2.5c.2 1.4 1.3 2.5 2.7 2.7v1.6Z" />
+    </svg>
+  );
+}
 
 function getFirstSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -295,7 +395,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "https://instagram.com/...",
       hint: t("admin.settings.social.hints.instagram"),
       value: socialLinks.instagramUrl ?? "",
-      icon: "IG",
+      icon: "instagram",
+      iconTone: "from-fuchsia-500 via-pink-500 to-amber-400",
     },
     {
       key: "facebookUrl",
@@ -303,7 +404,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "https://facebook.com/...",
       hint: t("admin.settings.social.hints.facebook"),
       value: socialLinks.facebookUrl ?? "",
-      icon: "FB",
+      icon: "facebook",
+      iconTone: "from-blue-600 to-blue-500",
     },
     {
       key: "whatsappUrl",
@@ -311,7 +413,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "+13055550199 / https://wa.me/13055550199",
       hint: t("admin.settings.social.hints.whatsapp"),
       value: socialLinks.whatsappUrl ?? "",
-      icon: "WA",
+      icon: "whatsapp",
+      iconTone: "from-emerald-500 to-green-500",
     },
     {
       key: "xUrl",
@@ -319,7 +422,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "https://x.com/...",
       hint: t("admin.settings.social.hints.x"),
       value: socialLinks.xUrl ?? "",
-      icon: "X",
+      icon: "x",
+      iconTone: "from-slate-900 to-slate-700",
     },
     {
       key: "youtubeUrl",
@@ -327,7 +431,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "https://youtube.com/@...",
       hint: t("admin.settings.social.hints.youtube"),
       value: socialLinks.youtubeUrl ?? "",
-      icon: "YT",
+      icon: "youtube",
+      iconTone: "from-red-600 to-rose-500",
     },
     {
       key: "tiktokUrl",
@@ -335,7 +440,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       placeholder: "https://tiktok.com/@...",
       hint: t("admin.settings.social.hints.tiktok"),
       value: socialLinks.tiktokUrl ?? "",
-      icon: "TT",
+      icon: "tiktok",
+      iconTone: "from-black to-slate-700",
     },
   ] as const;
 
@@ -372,8 +478,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       role="ADMIN"
     >
       <section className="space-y-4 sm:space-y-6">
-        <div className="app-card p-3 shadow-contrast sm:p-4">
-          <div className="ui-segment flex w-full flex-nowrap gap-1 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+        <div className="settings-top-nav app-card p-3 shadow-contrast sm:p-4">
+          <div className="settings-top-nav-grid">
             {SETTINGS_TABS.map((tab) => {
               const params = new URLSearchParams({ tab: tab.id });
               if (tab.id === "email-templates") {
@@ -391,9 +497,15 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 <Link
                   key={tab.id}
                   href={`/admin/settings?${params.toString()}`}
-                  className={`ui-segment-item shrink-0 text-xs sm:text-sm ${isActive ? "is-active" : ""}`}
+                  className={`settings-top-nav-item ${isActive ? "is-active" : ""}`}
                 >
-                  {tab.label}
+                  <span className="settings-top-nav-icon">
+                    <SettingsTabIcon tabId={tab.id} />
+                  </span>
+                  <span className="settings-top-nav-text">
+                    <span className="settings-top-nav-label">{tab.label}</span>
+                    <span className="settings-top-nav-hint">{tab.hint}</span>
+                  </span>
                 </Link>
               );
             })}
@@ -409,11 +521,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 {socialFields.map((field) => (
                   <label
                     key={field.key}
-                    className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-3 shadow-sm transition hover:border-sky-200"
+                    className="rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 p-3 shadow-sm transition hover:border-sky-200 hover:shadow-md"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold tracking-[0.08em] text-white">
-                        {field.icon}
+                      <span
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${field.iconTone}`}
+                      >
+                        <SocialNetworkIcon network={field.icon} />
                       </span>
                       <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                         {field.label}
@@ -559,44 +673,68 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         {currentTab === "email-templates" ? (
           <div className="space-y-6">
             <div className="app-card p-4 shadow-contrast sm:p-5">
-              <div className="grid gap-3 xl:grid-cols-2 xl:items-center">
-                <div className="overflow-x-auto pb-1">
-                  <div className="ui-segment inline-flex min-w-max">
-                  <Link
-                    href={buildTemplateHref({ kind: "email" })}
-                    className={`ui-segment-item shrink-0 ${templateKind === "email" ? "is-active" : ""}`}
-                  >
-                    Email templates
-                  </Link>
-                  <Link
-                    href={buildTemplateHref({ kind: "invoice" })}
-                    className={`ui-segment-item shrink-0 ${templateKind === "invoice" ? "is-active" : ""}`}
-                  >
-                    Invoice template
-                  </Link>
+              <div className="settings-template-toolbar">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Template family
+                  </p>
+                  <div className="settings-template-grid settings-template-grid-2 sm:grid-cols-2">
+                    <Link
+                      href={buildTemplateHref({ kind: "email" })}
+                      className={`settings-template-option ${templateKind === "email" ? "is-active" : ""}`}
+                    >
+                      <span className="settings-template-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6.5h16v11H4z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8l8 6 8-6" />
+                        </svg>
+                      </span>
+                      <span className="settings-template-option-copy">
+                        <span className="settings-template-option-title">Email templates</span>
+                        <span className="settings-template-option-hint">Comunicacion automatizada</span>
+                      </span>
+                    </Link>
+                    <Link
+                      href={buildTemplateHref({ kind: "invoice" })}
+                      className={`settings-template-option ${templateKind === "invoice" ? "is-active" : ""}`}
+                    >
+                      <span className="settings-template-option-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7 4.5h10l2 2v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2Z" />
+                          <path strokeLinecap="round" d="M9 10h6M9 13h6" />
+                        </svg>
+                      </span>
+                      <span className="settings-template-option-copy">
+                        <span className="settings-template-option-title">Invoice template</span>
+                        <span className="settings-template-option-hint">Diseno PDF y marca</span>
+                      </span>
+                    </Link>
                   </div>
                 </div>
 
-                <div className="overflow-x-auto pb-1 lg:justify-self-end">
-                  <div className="ui-segment inline-flex min-w-max">
-                  <Link
-                    href={buildTemplateHref({ mode: "code" })}
-                    className={`ui-segment-item shrink-0 ${templateMode === "code" ? "is-active" : ""}`}
-                  >
-                    Editor
-                  </Link>
-                  <Link
-                    href={buildTemplateHref({ mode: "web" })}
-                    className={`ui-segment-item shrink-0 ${templateMode === "web" ? "is-active" : ""}`}
-                  >
-                    Vista final
-                  </Link>
-                  <Link
-                    href={buildTemplateHref({ mode: "split" })}
-                    className={`ui-segment-item shrink-0 ${templateMode === "split" ? "is-active" : ""}`}
-                  >
-                    Ambas
-                  </Link>
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Workspace view
+                  </p>
+                  <div className="settings-template-grid settings-template-grid-3">
+                    <Link
+                      href={buildTemplateHref({ mode: "code" })}
+                      className={`settings-template-option ${templateMode === "code" ? "is-active" : ""}`}
+                    >
+                      <span className="settings-template-option-title">Editor</span>
+                    </Link>
+                    <Link
+                      href={buildTemplateHref({ mode: "web" })}
+                      className={`settings-template-option ${templateMode === "web" ? "is-active" : ""}`}
+                    >
+                      <span className="settings-template-option-title">Vista final</span>
+                    </Link>
+                    <Link
+                      href={buildTemplateHref({ mode: "split" })}
+                      className={`settings-template-option ${templateMode === "split" ? "is-active" : ""}`}
+                    >
+                      <span className="settings-template-option-title">Ambas</span>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -606,13 +744,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               </p>
 
               {templateKind === "invoice" ? (
-                <div className="mt-3 flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center">
-                  <span>Preview theme:</span>
-                  <div className="overflow-x-auto pb-1">
-                    <div className="ui-segment inline-flex min-w-max">
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    Preview theme
+                  </p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-3">
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "STANDARD" })}
-                      className={`ui-segment-item shrink-0 ${
+                      className={`settings-template-option ${
                         invoiceThemePreview === "STANDARD" ? "is-active" : ""
                       }`}
                     >
@@ -620,7 +759,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "SPECIAL" })}
-                      className={`ui-segment-item shrink-0 ${
+                      className={`settings-template-option ${
                         invoiceThemePreview === "SPECIAL" ? "is-active" : ""
                       }`}
                     >
@@ -628,13 +767,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     </Link>
                     <Link
                       href={buildTemplateHref({ invoiceTheme: "ESTIMATE" })}
-                      className={`ui-segment-item shrink-0 ${
+                      className={`settings-template-option ${
                         invoiceThemePreview === "ESTIMATE" ? "is-active" : ""
                       }`}
                     >
                       Estimate
                     </Link>
-                    </div>
                   </div>
                 </div>
               ) : null}
@@ -1095,11 +1233,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     <p className="mt-2 text-sm text-slate-600">
                       Preview real de como se ve en pagina/PDF incluyendo clausulas pequenas.
                     </p>
-                    <iframe
-                      title={`invoice-template-preview-${invoiceThemePreview}`}
-                      className="mt-4 h-[520px] w-full rounded-xl border border-slate-200 bg-white sm:h-[680px]"
-                      sandbox=""
+                    <DocumentPreviewModal
+                      title={`Invoice preview - ${invoiceThemePreview}`}
                       srcDoc={invoiceTemplatePreview}
+                      previewLabel="Pagina completa"
+                      previewHint="Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa."
+                      openLabel="Abrir"
                     />
                   </div>
                 ) : null}

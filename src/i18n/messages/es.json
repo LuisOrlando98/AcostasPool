@@ -543,9 +543,16 @@
       },
       "interactive": {
         "searchPlaceholder": "Buscar cliente, email o direccion...",
+        "openFilters": "Filtros",
+        "modalTitle": "Filtros de ruta de hoy",
+        "modalSubtitle": "Refina la lista con busqueda, estado y orden.",
+        "activeCount": "{{count}} activos",
+        "filtersTitle": "Estado",
         "sortLabel": "Ordenar por",
         "sortTime": "Hora",
         "sortCustomer": "Cliente",
+        "apply": "Aplicar",
+        "reset": "Limpiar",
         "emptyFiltered": "No hay trabajos que coincidan con los filtros activos.",
         "filters": {
           "all": "Todos",
@@ -578,6 +585,10 @@
         "empty": "No hay facturas recientes.",
         "viewAll": "Abrir facturas",
         "emptyFiltered": "No hay facturas que coincidan con el filtro seleccionado.",
+        "actions": {
+          "viewSent": "Abrir vista de factura",
+          "editDraft": "Editar borrador"
+        },
         "filters": {
           "all": "Todas",
           "open": "Abiertas",
@@ -681,7 +692,6 @@
         "dateRange": "Fechas personalizadas",
         "from": "Desde",
         "to": "Hasta",
-        "density": "Densidad",
         "statusAll": "Estado: Todos",
         "priorityAll": "Prioridad: Todas",
         "techAll": "Tecnico: Todos",
@@ -752,8 +762,6 @@
         "rangeCount": "{{range}} | {{count}} trabajos",
         "noJobsInRange": "No hay trabajos para el rango seleccionado.",
         "urgent": "Urgentes",
-        "densityNormal": "Normal",
-        "densityCompact": "Compacto",
         "durationMinutes": "Duracion estimada (min)",
         "poolType": "Tipo de piscina",
         "sanitizerSystem": "Sistema",
@@ -956,8 +964,7 @@
         "prev": "Anterior",
         "next": "Siguiente",
         "actions": {
-          "new": "Nuevo cliente",
-          "viewProfile": "Ver perfil"
+          "new": "Nuevo cliente"
         },
         "placeholders": {
           "search": "Nombre o email"
@@ -1227,9 +1234,11 @@
       },
       "list": {
         "title": "Facturas",
+        "recentTitle": "Facturas recientes",
         "count": "{{count}} facturas registradas.",
         "showing": "Mostrando {{count}} de {{total}} facturas.",
         "total": "{{count}} total",
+        "recentCount": "Ultimas {{count}}",
         "empty": "No hay facturas aun.",
         "noTech": "Sin tecnico",
         "theme": "Tema",
@@ -1244,6 +1253,22 @@
       },
       "actions": {
         "new": "Nueva factura"
+      },
+      "filters": {
+        "open": "Abrir filtros",
+        "modalTitle": "Filtros de facturas",
+        "modalSubtitle": "Filtra por numero de factura, cliente, fecha exacta o rango de fechas.",
+        "activeCount": "{{count}} activos",
+        "invoiceNumber": "Numero de factura",
+        "invoiceNumberPlaceholder": "INV-...",
+        "customer": "Cliente",
+        "allCustomers": "Todos los clientes",
+        "date": "Fecha exacta",
+        "from": "Desde",
+        "to": "Hasta",
+        "dateHint": "Si seleccionas fecha exacta, se ignora el rango de fechas.",
+        "apply": "Aplicar",
+        "reset": "Limpiar filtros"
       },
       "new": {
         "kicker": "Nueva factura",
@@ -1293,6 +1318,7 @@
       "filters": {
         "toolbar": "Filtros",
         "open": "Abrir filtros",
+        "showing": "Mostrando",
         "modalTitle": "Filtros de reportes",
         "modalSubtitle": "Usa predeterminados o fechas personalizadas para ajustar el dashboard.",
         "activeCount": "{{count}} activos",
@@ -1326,10 +1352,8 @@
         "pending": "pendientes",
         "onDemand": "Trabajos on-demand",
         "requests": "solicitudes",
-        "evidenceRate": "Cobertura de evidencia",
-        "withEvidence": "con evidencia",
-        "avgDelay": "Retraso promedio",
-        "avgDelayHelper": "Minutos desde agenda hasta completado",
+        "avgCompletionTime": "Tiempo promedio de completado",
+        "avgCompletionTimeHelper": "Minutos desde inicio hasta completado",
         "reschedules": "Reprogramaciones",
         "reschedulesHelper": "Cambios de agenda en el rango"
       },
@@ -1375,7 +1399,24 @@
           "digest": "Digest",
           "content": "Contenido"
         },
-        "noJob": "Sin trabajo asociado"
+        "noJob": "Sin trabajo asociado",
+        "smtp": {
+          "ok": "SMTP listo",
+          "missing": "SMTP faltante",
+          "help": "Faltan estas variables de entorno de correo: {{keys}}. Configuralas en el despliegue y reinicia la app."
+        },
+        "filters": {
+          "open": "Abrir filtros",
+          "activeCount": "{{count}} activos",
+          "placeholder": "Nombre del cliente o email",
+          "status": "Estado",
+          "allStatuses": "Todos los estados",
+          "queued": "En cola",
+          "sent": "Enviado",
+          "failed": "Fallido",
+          "clear": "Limpiar",
+          "apply": "Aplicar"
+        }
       }
     },
     "settings": {
@@ -1477,7 +1518,61 @@
     },
     "notifications": {
       "title": "Notificaciones",
-      "subtitle": "Historial de envios y reglas automaticas."
+      "subtitle": "Historial de envios y reglas automaticas.",
+      "emptyEnabled": "No hay notificaciones activadas para tu cuenta.",
+      "stats": {
+        "total": "Total",
+        "unread": "No leidas",
+        "failed": "Fallidas",
+        "filtered": "Filtradas"
+      },
+      "list": {
+        "title": "Centro de notificaciones",
+        "showing": "Mostrando {{count}} de {{total}} notificaciones.",
+        "empty": "Aun no hay notificaciones.",
+        "emptyFiltered": "No hay notificaciones con los filtros activos.",
+        "actor": "Actor",
+        "prev": "Anterior",
+        "next": "Siguiente"
+      },
+      "actions": {
+        "markRead": "Marcar como leida",
+        "clearAll": "Limpiar todo",
+        "clearConfirm": "Quieres limpiar todas las notificaciones visibles?"
+      },
+      "filters": {
+        "open": "Abrir filtros",
+        "activeCount": "{{count}} activos",
+        "modalTitle": "Filtros de notificaciones",
+        "modalSubtitle": "Filtra por busqueda, tipo de evento, severidad, estado de envio, lectura y rango de fecha.",
+        "searchPlaceholder": "Buscar por cliente, evento, detalle, actor...",
+        "eventType": "Tipo de evento",
+        "allEventTypes": "Todos los eventos",
+        "read": "Estado de lectura",
+        "readAll": "Todos",
+        "readUnread": "No leidas",
+        "readRead": "Leidas",
+        "severity": "Severidad",
+        "severityAll": "Todas las severidades",
+        "severityInfo": "Info",
+        "severityWarning": "Advertencia",
+        "severityCritical": "Critica",
+        "delivery": "Envio",
+        "deliveryAll": "Todos los estados",
+        "deliveryQueued": "En cola",
+        "deliverySent": "Enviado",
+        "deliveryFailed": "Fallido",
+        "range": "Rango de fechas",
+        "rangeAll": "Todo",
+        "rangeToday": "Hoy",
+        "range7": "Ultimos 7 dias",
+        "range30": "Ultimos 30 dias",
+        "rangeCustom": "Personalizado",
+        "from": "Desde",
+        "to": "Hasta",
+        "apply": "Aplicar",
+        "reset": "Limpiar filtros"
+      }
     },
     "placeholder": {
       "kicker": "En construccion",

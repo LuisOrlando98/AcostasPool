@@ -157,7 +157,7 @@ export default function CustomerJobsTable({
   }, [currentPage, filtered]);
 
   return (
-    <div className="ui-panel flex min-w-0 flex-col overflow-hidden p-6 lg:min-h-[460px]">
+    <div className="customers-panel ui-panel flex min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[460px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">
@@ -182,8 +182,8 @@ export default function CustomerJobsTable({
         </div>
       </div>
 
-      <div className="ui-filter-bar mt-4 flex flex-wrap items-center gap-2 px-3 py-3">
-        <label className="ui-search flex flex-1 items-center gap-2 px-3 py-2 text-xs">
+      <div className="ui-filter-bar customers-filter-grid mt-4 grid gap-2 px-3 py-3 sm:grid-cols-2 xl:grid-cols-4">
+        <label className="ui-search flex min-w-0 items-center gap-2 px-3 py-2 text-xs sm:col-span-2 xl:col-span-2">
           <span className="ui-search-icon">{t("common.actions.search")}</span>
           <input
             value={search}
@@ -196,7 +196,7 @@ export default function CustomerJobsTable({
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.jobs.filters.status")}</option>
           <option value="SCHEDULED">{t("jobs.status.scheduled")}</option>
@@ -209,7 +209,7 @@ export default function CustomerJobsTable({
         <select
           value={priorityFilter}
           onChange={(event) => setPriorityFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.jobs.filters.priority")}</option>
           <option value="NORMAL">{t("jobs.priority.normal")}</option>
@@ -219,7 +219,7 @@ export default function CustomerJobsTable({
         <select
           value={serviceFilter}
           onChange={(event) => setServiceFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.jobs.filters.service")}</option>
           {serviceTypeOptions.map((option) => (
@@ -232,7 +232,7 @@ export default function CustomerJobsTable({
         <select
           value={techFilter}
           onChange={(event) => setTechFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.jobs.filters.technician")}</option>
           {technicianOptions.map((name) => (
@@ -245,7 +245,7 @@ export default function CustomerJobsTable({
         <select
           value={evidenceFilter}
           onChange={(event) => setEvidenceFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.jobs.filters.evidence")}</option>
           <option value="WITH">{t("admin.customers.jobs.filters.withEvidence")}</option>
@@ -274,7 +274,7 @@ export default function CustomerJobsTable({
         <button
           type="button"
           onClick={() => setSortDir((current) => (current === "asc" ? "desc" : "asc"))}
-          className="ui-button-ghost px-3 py-2 text-[11px] font-semibold"
+          className="ui-button-ghost w-full px-3 py-2 text-[11px] font-semibold xl:w-auto"
         >
           {sortDir === "asc"
             ? t("admin.customers.jobs.filters.upcoming")
@@ -282,118 +282,120 @@ export default function CustomerJobsTable({
         </button>
       </div>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-auto">
-        <table className="min-w-[840px] w-full text-left text-xs text-slate-600">
-          <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            <tr className="border-b border-slate-100">
-              <th className="pb-3">{t("admin.customers.jobs.table.date")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.property")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.address")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.service")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.technician")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.status")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.priority")}</th>
-              <th className="pb-3">{t("admin.customers.jobs.table.evidence")}</th>
-              <th className="pb-3 text-right">{t("admin.customers.jobs.table.action")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedRows.length === 0 ? (
+      <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
+        <div className="customers-table-scroll h-full overflow-auto">
+          <table className="customers-table customer-jobs-table min-w-[940px] w-full text-left text-xs text-slate-600">
+            <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <td colSpan={9} className="py-6 text-center text-sm text-slate-500">
-                  {t("admin.customers.jobs.empty")}
-                </td>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.date")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.property")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.address")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.service")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.technician")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.status")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.priority")}</th>
+                <th className="px-3 py-3">{t("admin.customers.jobs.table.evidence")}</th>
+                <th className="px-3 py-3 text-right">{t("admin.customers.jobs.table.action")}</th>
               </tr>
-            ) : (
-              pagedRows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100">
-                  <td className="py-3 font-medium text-slate-800">
-                    {formatDateTime(row.scheduledDate, locale)}
-                  </td>
-                  <td className="py-3">
-                    <p className="font-semibold text-slate-900">
-                      {row.propertyName || t("admin.customers.jobs.propertyFallback")}
-                    </p>
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    {row.address}
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    {
-                      serviceTypeOptions.find(
-                        (option) => option.value === row.serviceType
-                      )?.labelKey
-                        ? t(
-                            serviceTypeOptions.find(
-                              (option) => option.value === row.serviceType
-                            )?.labelKey ?? row.serviceType
-                          )
-                        : serviceTypeOptions.find(
-                            (option) => option.value === row.serviceType
-                          )?.label ?? row.serviceType
-                    }
-                    {row.serviceTierName ? (
-                      <span className="mt-1 block text-[10px] text-slate-400">
-                        {row.serviceTierName}
-                      </span>
-                    ) : null}
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    {row.technicianName || t("admin.customers.jobs.noTech")}
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className="app-chip px-3 py-1 text-[11px] font-semibold"
-                      data-tone={statusTone[row.status] ?? "info"}
-                    >
-                      {getJobStatusLabel(row.status, t)}
-                    </span>
-                  </td>
-                  <td className="py-3">
-                    <span
-                      className="app-chip px-3 py-1 text-[11px] font-semibold"
-                      data-tone={priorityTone[row.priority] ?? "info"}
-                    >
-                      {row.priority === "URGENT"
-                        ? t("jobs.priority.urgent")
-                        : t("jobs.priority.normal")}
-                    </span>
-                  </td>
-                  <td className="py-3 text-[11px] text-slate-500">
-                    {row.photosCount > 0
-                      ? t("admin.customers.jobs.evidenceCount", {
-                          count: row.photosCount,
-                        })
-                      : t("admin.customers.jobs.noEvidence")}
-                  </td>
-                  <td className="py-3 text-right">
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/routes/${row.id}`}
-                        className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                      >
-                        {t("admin.customers.jobs.actions.view")}
-                      </Link>
-                      {onDeleteJob && customerId ? (
-                        <form action={onDeleteJob}>
-                          <input type="hidden" name="jobId" value={row.id} />
-                          <input
-                            type="hidden"
-                            name="customerId"
-                            value={customerId}
-                          />
-                          <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
-                            {t("common.actions.delete")}
-                          </button>
-                        </form>
-                      ) : null}
-                    </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {pagedRows.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-6 text-center text-sm text-slate-500">
+                    {t("admin.customers.jobs.empty")}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                pagedRows.map((row) => (
+                  <tr key={row.id} className="bg-white transition hover:bg-sky-50/40">
+                    <td className="px-3 py-3 font-medium text-slate-800">
+                      {formatDateTime(row.scheduledDate, locale)}
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="font-semibold text-slate-900">
+                        {row.propertyName || t("admin.customers.jobs.propertyFallback")}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3 text-[11px] text-slate-500">
+                      {row.address}
+                    </td>
+                    <td className="px-3 py-3 text-[11px] text-slate-500">
+                      {
+                        serviceTypeOptions.find(
+                          (option) => option.value === row.serviceType
+                        )?.labelKey
+                          ? t(
+                              serviceTypeOptions.find(
+                                (option) => option.value === row.serviceType
+                              )?.labelKey ?? row.serviceType
+                            )
+                          : serviceTypeOptions.find(
+                              (option) => option.value === row.serviceType
+                            )?.label ?? row.serviceType
+                      }
+                      {row.serviceTierName ? (
+                        <span className="mt-1 block text-[10px] text-slate-400">
+                          {row.serviceTierName}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-3 text-[11px] text-slate-500">
+                      {row.technicianName || t("admin.customers.jobs.noTech")}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className="app-chip px-3 py-1 text-[11px] font-semibold"
+                        data-tone={statusTone[row.status] ?? "info"}
+                      >
+                        {getJobStatusLabel(row.status, t)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className="app-chip px-3 py-1 text-[11px] font-semibold"
+                        data-tone={priorityTone[row.priority] ?? "info"}
+                      >
+                        {row.priority === "URGENT"
+                          ? t("jobs.priority.urgent")
+                          : t("jobs.priority.normal")}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-[11px] text-slate-500">
+                      {row.photosCount > 0
+                        ? t("admin.customers.jobs.evidenceCount", {
+                            count: row.photosCount,
+                          })
+                        : t("admin.customers.jobs.noEvidence")}
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Link
+                          href={`/admin/routes/${row.id}`}
+                          className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                        >
+                          {t("admin.customers.jobs.actions.view")}
+                        </Link>
+                        {onDeleteJob && customerId ? (
+                          <form action={onDeleteJob}>
+                            <input type="hidden" name="jobId" value={row.id} />
+                            <input
+                              type="hidden"
+                              name="customerId"
+                              value={customerId}
+                            />
+                            <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
+                              {t("common.actions.delete")}
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {filtered.length > 0 ? (

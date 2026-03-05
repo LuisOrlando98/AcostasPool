@@ -108,7 +108,7 @@ export default function CustomerPlansTable({
   }, [currentPage, filtered]);
 
   return (
-    <div className="ui-panel flex min-w-0 flex-col overflow-hidden p-6 lg:min-h-[460px]">
+    <div className="customers-panel ui-panel flex min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[460px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">
@@ -133,8 +133,8 @@ export default function CustomerPlansTable({
         </div>
       </div>
 
-      <div className="ui-filter-bar mt-4 flex flex-wrap items-center gap-2 px-3 py-3">
-        <label className="ui-search flex flex-1 items-center gap-2 px-3 py-2 text-xs">
+      <div className="ui-filter-bar customers-filter-grid mt-4 grid gap-2 px-3 py-3 sm:grid-cols-2 xl:grid-cols-4">
+        <label className="ui-search flex min-w-0 items-center gap-2 px-3 py-2 text-xs sm:col-span-2 xl:col-span-2">
           <span className="ui-search-icon">{t("common.actions.search")}</span>
           <input
             value={search}
@@ -146,7 +146,7 @@ export default function CustomerPlansTable({
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.status")}</option>
           <option value="ACTIVE">{t("common.status.active")}</option>
@@ -155,7 +155,7 @@ export default function CustomerPlansTable({
         <select
           value={frequencyFilter}
           onChange={(event) => setFrequencyFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.frequency")}</option>
           <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
@@ -165,7 +165,7 @@ export default function CustomerPlansTable({
         <select
           value={serviceFilter}
           onChange={(event) => setServiceFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.service")}</option>
           {serviceTypeOptions.map((option) => (
@@ -177,7 +177,7 @@ export default function CustomerPlansTable({
         <select
           value={techFilter}
           onChange={(event) => setTechFilter(event.target.value)}
-          className="ui-select px-3 py-2 text-xs"
+          className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">
             {t("admin.customers.plans.filters.technician")}
@@ -190,121 +190,123 @@ export default function CustomerPlansTable({
         </select>
       </div>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-auto">
-        <table className="min-w-[900px] w-full text-left text-xs text-slate-600">
-          <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            <tr className="border-b border-slate-100">
-              <th className="pb-3">{t("admin.customers.plans.table.plan")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.property")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.frequency")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.next")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.technician")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.priority")}</th>
-              <th className="pb-3">{t("admin.customers.plans.table.status")}</th>
-              <th className="pb-3 text-right">{t("admin.customers.plans.table.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedRows.length === 0 ? (
+      <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
+        <div className="customers-table-scroll h-full overflow-auto">
+          <table className="customers-table customer-plans-table min-w-[980px] w-full text-left text-xs text-slate-600">
+            <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <td colSpan={8} className="py-6 text-center text-sm text-slate-500">
-                  {t("admin.customers.plans.empty")}
-                </td>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.plan")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.property")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.frequency")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.next")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.technician")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.priority")}</th>
+                <th className="px-3 py-3">{t("admin.customers.plans.table.status")}</th>
+                <th className="px-3 py-3 text-right">{t("admin.customers.plans.table.actions")}</th>
               </tr>
-            ) : (
-              pagedRows.map((plan) => {
-                const nextDate = toDateInput(plan.nextRunAt);
-                const nextTime =
-                  plan.preferredTime || formatTime(plan.nextRunAt, locale);
-                return (
-                  <tr key={plan.id} className="border-b border-slate-100">
-                    <td className="py-3">
-                      <p className="font-semibold text-slate-900">{plan.name}</p>
-                      {plan.serviceTierName ? (
-                        <p className="text-[11px] text-slate-500">
-                          {plan.serviceTierName}
-                        </p>
-                      ) : null}
-                      {plan.notes ? (
-                        <p className="text-[11px] text-slate-400">{plan.notes}</p>
-                      ) : null}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {plan.propertyAddress}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {frequencyLabel(plan.frequency)}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {formatDate(plan.nextRunAt, locale)} · {nextTime}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {plan.technicianName || t("admin.customers.plans.noTech")}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {plan.priority === "URGENT"
-                        ? t("jobs.priority.urgent")
-                        : t("jobs.priority.normal")}
-                    </td>
-                    <td className="py-3">
-                      <span
-                        className="app-chip px-3 py-1 text-[11px] font-semibold"
-                        data-tone={plan.isActive ? "success" : "warning"}
-                      >
-                        {plan.isActive
-                          ? t("common.status.active")
-                          : t("admin.customers.plans.status.paused")}
-                      </span>
-                    </td>
-                    <td className="py-3 text-right">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        <form
-                          action={onCreateJob}
-                          className="flex flex-wrap items-center gap-2"
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {pagedRows.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-6 text-center text-sm text-slate-500">
+                    {t("admin.customers.plans.empty")}
+                  </td>
+                </tr>
+              ) : (
+                pagedRows.map((plan) => {
+                  const nextDate = toDateInput(plan.nextRunAt);
+                  const nextTime =
+                    plan.preferredTime || formatTime(plan.nextRunAt, locale);
+                  return (
+                    <tr key={plan.id} className="bg-white transition hover:bg-sky-50/40">
+                      <td className="px-3 py-3">
+                        <p className="font-semibold text-slate-900">{plan.name}</p>
+                        {plan.serviceTierName ? (
+                          <p className="text-[11px] text-slate-500">
+                            {plan.serviceTierName}
+                          </p>
+                        ) : null}
+                        {plan.notes ? (
+                          <p className="text-[11px] text-slate-400">{plan.notes}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {plan.propertyAddress}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {frequencyLabel(plan.frequency)}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {formatDate(plan.nextRunAt, locale)} | {nextTime}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {plan.technicianName || t("admin.customers.plans.noTech")}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {plan.priority === "URGENT"
+                          ? t("jobs.priority.urgent")
+                          : t("jobs.priority.normal")}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="app-chip px-3 py-1 text-[11px] font-semibold"
+                          data-tone={plan.isActive ? "success" : "warning"}
                         >
-                          <input type="hidden" name="planId" value={plan.id} />
-                          <input
-                            name="scheduledDate"
-                            type="date"
-                            defaultValue={nextDate}
-                            className="ui-mini-input px-2 py-1 text-[11px]"
-                          />
-                          <input
-                            name="scheduledTime"
-                            type="time"
-                            defaultValue={nextTime}
-                            className="ui-mini-input px-2 py-1 text-[11px]"
-                          />
-                          <button className="ui-button px-3 py-1 text-[11px] font-semibold">
-                            {t("admin.customers.plans.actions.createJob")}
-                          </button>
-                        </form>
-                        <form action={onToggle}>
-                          <input type="hidden" name="planId" value={plan.id} />
-                          <input
-                            type="hidden"
-                            name="customerId"
-                            value={plan.customerId}
-                          />
-                          <input
-                            type="hidden"
-                            name="isActive"
-                            value={plan.isActive ? "false" : "true"}
-                          />
-                          <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
-                            {plan.isActive
-                              ? t("admin.customers.plans.actions.pause")
-                              : t("admin.customers.plans.actions.activate")}
-                          </button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                          {plan.isActive
+                            ? t("common.status.active")
+                            : t("admin.customers.plans.status.paused")}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <form
+                            action={onCreateJob}
+                            className="flex flex-wrap items-center gap-2"
+                          >
+                            <input type="hidden" name="planId" value={plan.id} />
+                            <input
+                              name="scheduledDate"
+                              type="date"
+                              defaultValue={nextDate}
+                              className="ui-mini-input px-2 py-1 text-[11px]"
+                            />
+                            <input
+                              name="scheduledTime"
+                              type="time"
+                              defaultValue={nextTime}
+                              className="ui-mini-input px-2 py-1 text-[11px]"
+                            />
+                            <button className="ui-button px-3 py-1 text-[11px] font-semibold">
+                              {t("admin.customers.plans.actions.createJob")}
+                            </button>
+                          </form>
+                          <form action={onToggle}>
+                            <input type="hidden" name="planId" value={plan.id} />
+                            <input
+                              type="hidden"
+                              name="customerId"
+                              value={plan.customerId}
+                            />
+                            <input
+                              type="hidden"
+                              name="isActive"
+                              value={plan.isActive ? "false" : "true"}
+                            />
+                            <button className="ui-button-ghost px-3 py-1 text-[11px] font-semibold">
+                              {plan.isActive
+                                ? t("admin.customers.plans.actions.pause")
+                                : t("admin.customers.plans.actions.activate")}
+                            </button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {filtered.length > 0 ? (

@@ -577,7 +577,7 @@ export default function AppShell({
           </div>
         </aside>
 
-        <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-white/80 backdrop-blur-xl lg:col-start-2 lg:row-start-1">
+        <header className="app-shell-header border-b border-[var(--border)] bg-white/95 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 lg:col-start-2 lg:row-start-1">
           <div
             className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6`}
           >

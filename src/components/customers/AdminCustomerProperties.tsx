@@ -74,7 +74,7 @@ export default function AdminCustomerProperties({
 
   return (
     <>
-      <section className="flex h-full min-w-0 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
+      <section className="customers-panel ui-panel flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[360px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold">
@@ -86,59 +86,61 @@ export default function AdminCustomerProperties({
           </div>
           <label
             htmlFor={addPropertyTargetId}
-            className="cursor-pointer rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white"
+            className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
           >
             {t("admin.customers.detail.actions.addProperty")}
           </label>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+        <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
           {pagedRows.length === 0 ? (
             <p className="text-sm text-slate-500">
               {t("admin.customers.detail.properties.empty")}
             </p>
           ) : (
-            pagedRows.map((property) => (
-              <article
-                key={property.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-base font-semibold text-slate-900">
-                      {property.name || t("admin.customers.detail.properties.nameFallback")}
-                    </p>
-                    <p
-                      className="mt-1 max-w-[34rem] overflow-hidden text-sm text-slate-600"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                      title={property.address}
+            <div className="grid gap-3 xl:grid-cols-2">
+              {pagedRows.map((property) => (
+                <article
+                  key={property.id}
+                  className="customers-property-card rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition hover:border-sky-200 hover:bg-sky-50/35"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold text-slate-900">
+                        {property.name || t("admin.customers.detail.properties.nameFallback")}
+                      </p>
+                      <p
+                        className="mt-1 max-w-[34rem] overflow-hidden text-sm text-slate-600"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                        title={property.address}
+                      >
+                        {property.address}
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        {property.poolType || t("admin.customers.detail.properties.poolFallback")}
+                        {" | "}
+                        {property.sanitizerType || t("admin.customers.detail.properties.systemFallback")}
+                        {" | "}
+                        {property.poolVolumeGallons
+                          ? `${property.poolVolumeGallons} gal`
+                          : t("admin.customers.detail.properties.volumeFallback")}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActivePropertyId(property.id)}
+                      className="ui-button-ghost px-3 py-1.5 text-xs font-semibold"
                     >
-                      {property.address}
-                    </p>
-                    <p className="mt-2 text-xs text-slate-500">
-                      {property.poolType || t("admin.customers.detail.properties.poolFallback")}
-                      {" | "}
-                      {property.sanitizerType || t("admin.customers.detail.properties.systemFallback")}
-                      {" | "}
-                      {property.poolVolumeGallons
-                        ? `${property.poolVolumeGallons} gal`
-                        : t("admin.customers.detail.properties.volumeFallback")}
-                    </p>
+                      {t("common.actions.edit")}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActivePropertyId(property.id)}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                  >
-                    {t("common.actions.edit")}
-                  </button>
-                </div>
-              </article>
-            ))
+                </article>
+              ))}
+            </div>
           )}
         </div>
 
@@ -176,7 +178,7 @@ export default function AdminCustomerProperties({
       </section>
 
       {activeProperty ? (
-        <div className="fixed inset-0 z-[2300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="fixed inset-0 z-[2300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
             aria-label={t("common.actions.close")}

@@ -543,9 +543,16 @@
       },
       "interactive": {
         "searchPlaceholder": "Search customer, email, or address...",
+        "openFilters": "Filters",
+        "modalTitle": "Today's route filters",
+        "modalSubtitle": "Refine the list by search, status, and sorting.",
+        "activeCount": "{{count}} active",
+        "filtersTitle": "Status",
         "sortLabel": "Sort by",
         "sortTime": "Time",
         "sortCustomer": "Customer",
+        "apply": "Apply",
+        "reset": "Reset",
         "emptyFiltered": "No jobs match the active filters.",
         "filters": {
           "all": "All",
@@ -578,6 +585,10 @@
         "empty": "No recent invoices.",
         "viewAll": "Open invoices",
         "emptyFiltered": "No invoices match the selected filter.",
+        "actions": {
+          "viewSent": "Open invoice view",
+          "editDraft": "Edit draft"
+        },
         "filters": {
           "all": "All",
           "open": "Open",
@@ -681,7 +692,6 @@
         "dateRange": "Custom dates",
         "from": "From",
         "to": "To",
-        "density": "Density",
         "statusAll": "Status: All",
         "priorityAll": "Priority: All",
         "techAll": "Technician: All",
@@ -752,8 +762,6 @@
         "rangeCount": "{{range}} | {{count}} jobs",
         "noJobsInRange": "No jobs for the selected range.",
         "urgent": "Urgent",
-        "densityNormal": "Normal",
-        "densityCompact": "Compact",
         "durationMinutes": "Estimated duration (min)",
         "poolType": "Pool type",
         "sanitizerSystem": "System",
@@ -956,8 +964,7 @@
         "prev": "Previous",
         "next": "Next",
         "actions": {
-          "new": "New customer",
-          "viewProfile": "View profile"
+          "new": "New customer"
         },
         "placeholders": {
           "search": "Name or email"
@@ -1227,9 +1234,11 @@
       },
       "list": {
         "title": "Invoices",
+        "recentTitle": "Recent invoices",
         "count": "{{count}} invoices registered.",
         "showing": "Showing {{count}} of {{total}} invoices.",
         "total": "{{count}} total",
+        "recentCount": "Latest {{count}}",
         "empty": "No invoices yet.",
         "noTech": "No technician",
         "theme": "Theme",
@@ -1244,6 +1253,22 @@
       },
       "actions": {
         "new": "New invoice"
+      },
+      "filters": {
+        "open": "Open filters",
+        "modalTitle": "Invoice filters",
+        "modalSubtitle": "Filter by invoice number, customer, exact date, or date range.",
+        "activeCount": "{{count}} active",
+        "invoiceNumber": "Invoice number",
+        "invoiceNumberPlaceholder": "INV-...",
+        "customer": "Customer",
+        "allCustomers": "All customers",
+        "date": "Exact date",
+        "from": "From",
+        "to": "To",
+        "dateHint": "If exact date is selected, range dates are ignored.",
+        "apply": "Apply",
+        "reset": "Reset filters"
       },
       "new": {
         "kicker": "New invoice",
@@ -1293,6 +1318,7 @@
       "filters": {
         "toolbar": "Filters",
         "open": "Open filters",
+        "showing": "Showing",
         "modalTitle": "Reports filters",
         "modalSubtitle": "Use presets or custom dates to refine the dashboard.",
         "activeCount": "{{count}} active",
@@ -1326,10 +1352,8 @@
         "pending": "pending",
         "onDemand": "On-demand jobs",
         "requests": "requests",
-        "evidenceRate": "Evidence coverage",
-        "withEvidence": "with evidence",
-        "avgDelay": "Avg. completion delay",
-        "avgDelayHelper": "Minutes from schedule to completion",
+        "avgCompletionTime": "Avg. service completion time",
+        "avgCompletionTimeHelper": "Minutes from started to completed",
         "reschedules": "Reschedules",
         "reschedulesHelper": "Schedule changes in range"
       },
@@ -1375,7 +1399,24 @@
           "digest": "Digest",
           "content": "Content"
         },
-        "noJob": "No job linked"
+        "noJob": "No job linked",
+        "smtp": {
+          "ok": "SMTP ready",
+          "missing": "SMTP missing",
+          "help": "Missing email environment keys: {{keys}}. Configure them in deployment and restart the app."
+        },
+        "filters": {
+          "open": "Open filters",
+          "activeCount": "{{count}} active",
+          "placeholder": "Customer name or email",
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "queued": "Queued",
+          "sent": "Sent",
+          "failed": "Failed",
+          "clear": "Clear",
+          "apply": "Apply"
+        }
       }
     },
     "settings": {
@@ -1477,7 +1518,61 @@
     },
     "notifications": {
       "title": "Notifications",
-      "subtitle": "History of sends and automation rules."
+      "subtitle": "History of sends and automation rules.",
+      "emptyEnabled": "No notifications are enabled for your account.",
+      "stats": {
+        "total": "Total",
+        "unread": "Unread",
+        "failed": "Failed",
+        "filtered": "Filtered"
+      },
+      "list": {
+        "title": "Notification center",
+        "showing": "Showing {{count}} of {{total}} notifications.",
+        "empty": "No notifications yet.",
+        "emptyFiltered": "No notifications match the active filters.",
+        "actor": "Actor",
+        "prev": "Previous",
+        "next": "Next"
+      },
+      "actions": {
+        "markRead": "Mark as read",
+        "clearAll": "Clear all",
+        "clearConfirm": "Do you want to clear all visible notifications?"
+      },
+      "filters": {
+        "open": "Open filters",
+        "activeCount": "{{count}} active",
+        "modalTitle": "Notification filters",
+        "modalSubtitle": "Filter by search, event type, severity, delivery state, read state, and date range.",
+        "searchPlaceholder": "Search by customer, event, detail, actor...",
+        "eventType": "Event type",
+        "allEventTypes": "All event types",
+        "read": "Read status",
+        "readAll": "All",
+        "readUnread": "Unread",
+        "readRead": "Read",
+        "severity": "Severity",
+        "severityAll": "All severities",
+        "severityInfo": "Info",
+        "severityWarning": "Warning",
+        "severityCritical": "Critical",
+        "delivery": "Delivery",
+        "deliveryAll": "All delivery states",
+        "deliveryQueued": "Queued",
+        "deliverySent": "Sent",
+        "deliveryFailed": "Failed",
+        "range": "Date range",
+        "rangeAll": "All time",
+        "rangeToday": "Today",
+        "range7": "Last 7 days",
+        "range30": "Last 30 days",
+        "rangeCustom": "Custom",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "reset": "Reset filters"
+      }
     },
     "placeholder": {
       "kicker": "Under construction",

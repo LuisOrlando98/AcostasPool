@@ -400,15 +400,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header {
         background: linear-gradient(135deg, var(--brand) 0%, #223a69 100%);
         color: #ffffff;
-        padding: 20px 28px 18px;
+        padding: 18px 24px 16px;
         position: relative;
       }
 
       .header::after {
         content: "";
         position: absolute;
-        left: 28px;
-        right: 28px;
+        left: 24px;
+        right: 24px;
         bottom: 0;
         height: 1px;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.52) 66%, rgba(255, 255, 255, 0.12) 100%);
@@ -417,51 +417,51 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 14px;
+        gap: 12px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 178px;
+        width: 196px;
         background: rgba(24, 45, 88, 0.35);
-        padding: 7px 10px 6px;
-        text-align: center;
+        padding: 8px 10px 6px 8px;
+        text-align: left;
+        justify-self: start;
       }
 
       .brand-mark {
-        height: 48px;
-        min-height: 48px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
+        justify-content: flex-start;
+        align-items: flex-start;
+        min-height: 0;
       }
 
       .brand-word {
         margin: 0;
         font-weight: 900;
         font-size: 18px;
-        line-height: 0.95;
-        letter-spacing: 0.01em;
+        line-height: 0.9;
+        letter-spacing: 0.015em;
         text-transform: uppercase;
       }
 
       .brand-word + .brand-word {
-        margin-top: 0;
+        margin-top: -1px;
       }
 
       .brand-rule {
-        margin-top: 4px;
-        height: 1.5px;
-        width: 100%;
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
+        margin-top: 2px;
+        height: 2px;
+        width: 148px;
+        background: rgba(255, 255, 255, 0.95);
       }
 
       .brand-subtitle {
-        margin-top: 5px;
+        margin-top: 3px;
         font-size: 8px;
         font-weight: 500;
-        letter-spacing: 0.14em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }

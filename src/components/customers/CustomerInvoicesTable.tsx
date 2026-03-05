@@ -33,7 +33,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
   }, [currentPage, rows]);
 
   return (
-    <section className="ui-panel flex h-full min-w-0 flex-col overflow-hidden p-6 lg:min-h-[440px]">
+    <section className="customers-panel ui-panel flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[440px]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{t("admin.invoices.title")}</h2>
@@ -46,85 +46,87 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
         </span>
       </div>
 
-      <div className="mt-4 min-h-0 flex-1 overflow-auto">
-        <table className="min-w-[860px] w-full text-left text-xs text-slate-600">
-          <thead className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            <tr className="border-b border-slate-100">
-              <th className="pb-3">Invoice</th>
-              <th className="pb-3">Status</th>
-              <th className="pb-3">{t("admin.invoices.list.theme")}</th>
-              <th className="pb-3">{t("admin.invoices.list.job")}</th>
-              <th className="pb-3">Date</th>
-              <th className="pb-3 text-right">Total</th>
-              <th className="pb-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedRows.length === 0 ? (
+      <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
+        <div className="customers-table-scroll h-full overflow-auto">
+          <table className="customers-table customer-invoices-table min-w-[920px] w-full text-left text-xs text-slate-600">
+            <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <td colSpan={7} className="py-6 text-center text-sm text-slate-500">
-                  {t("admin.invoices.list.empty")}
-                </td>
+                <th className="px-3 py-3">Invoice</th>
+                <th className="px-3 py-3">Status</th>
+                <th className="px-3 py-3">{t("admin.invoices.list.theme")}</th>
+                <th className="px-3 py-3">{t("admin.invoices.list.job")}</th>
+                <th className="px-3 py-3">Date</th>
+                <th className="px-3 py-3 text-right">Total</th>
+                <th className="px-3 py-3 text-right">Actions</th>
               </tr>
-            ) : (
-              pagedRows.map((invoice) => {
-                const statusLabel = t(
-                  `admin.invoices.status.${invoice.status.toLowerCase()}`
-                );
-                const canEdit = invoice.status === "DRAFT";
-                const themeLabel =
-                  invoice.theme === "SPECIAL"
-                    ? t("admin.invoices.theme.special")
-                    : invoice.theme === "ESTIMATE"
-                      ? t("admin.invoices.theme.estimate")
-                      : t("admin.invoices.theme.standard");
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {pagedRows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-sm text-slate-500">
+                    {t("admin.invoices.list.empty")}
+                  </td>
+                </tr>
+              ) : (
+                pagedRows.map((invoice) => {
+                  const statusLabel = t(
+                    `admin.invoices.status.${invoice.status.toLowerCase()}`
+                  );
+                  const canEdit = invoice.status === "DRAFT";
+                  const themeLabel =
+                    invoice.theme === "SPECIAL"
+                      ? t("admin.invoices.theme.special")
+                      : invoice.theme === "ESTIMATE"
+                        ? t("admin.invoices.theme.estimate")
+                        : t("admin.invoices.theme.standard");
 
-                return (
-                  <tr key={invoice.id} className="border-b border-slate-100">
-                    <td className="py-3 font-semibold text-slate-900">{invoice.number}</td>
-                    <td className="py-3">{statusLabel}</td>
-                    <td className="py-3">{themeLabel}</td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {invoice.jobLabel ?? t("admin.invoices.list.noJob")}
-                    </td>
-                    <td className="py-3 text-[11px] text-slate-500">
-                      {new Date(invoice.createdAt).toLocaleDateString(locale)}
-                    </td>
-                    <td className="py-3 text-right font-semibold text-slate-900">
-                      ${invoice.total.toFixed(2)}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex flex-wrap items-center justify-end gap-2">
-                        {invoice.pdfUrl ? (
-                          <a
-                            href={getAssetUrl(invoice.pdfUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                          >
-                            {t("admin.invoices.list.viewPdf")}
-                          </a>
-                        ) : null}
-                        {canEdit ? (
-                          <a
-                            href={`/admin/invoices/${invoice.id}`}
-                            className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
-                          >
-                            {t("common.actions.edit")}
-                          </a>
-                        ) : (
-                          <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
-                            Locked
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                  return (
+                    <tr key={invoice.id} className="bg-white transition hover:bg-sky-50/40">
+                      <td className="px-3 py-3 font-semibold text-slate-900">{invoice.number}</td>
+                      <td className="px-3 py-3">{statusLabel}</td>
+                      <td className="px-3 py-3">{themeLabel}</td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {invoice.jobLabel ?? t("admin.invoices.list.noJob")}
+                      </td>
+                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                        {new Date(invoice.createdAt).toLocaleDateString(locale)}
+                      </td>
+                      <td className="px-3 py-3 text-right font-semibold text-slate-900">
+                        ${invoice.total.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {invoice.pdfUrl ? (
+                            <a
+                              href={getAssetUrl(invoice.pdfUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                            >
+                              {t("admin.invoices.list.viewPdf")}
+                            </a>
+                          ) : null}
+                          {canEdit ? (
+                            <a
+                              href={`/admin/invoices/${invoice.id}`}
+                              className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                            >
+                              {t("common.actions.edit")}
+                            </a>
+                          ) : (
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
+                              Locked
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {rows.length > 0 ? (

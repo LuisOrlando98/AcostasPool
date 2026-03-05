@@ -67,7 +67,6 @@ async function createProperty(formData: FormData) {
 
   revalidatePath(`/admin/customers/${customerId}`);
 }
-
 async function updateCustomer(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
@@ -771,8 +770,8 @@ export default async function CustomerDetailPage({
       <input id="new-plan" type="checkbox" className="peer/plan hidden" />
       <input id="new-property" type="checkbox" className="peer/property hidden" />
       <input id="new-job" type="checkbox" className="peer/job hidden" />
-      <section className="space-y-6">
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <section className="customers-scope customers-detail space-y-5 sm:space-y-6">
+        <div className="customers-detail-hero overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.25),_transparent_45%)]" />
             <div className="relative flex flex-wrap items-start justify-between gap-4">
@@ -871,9 +870,9 @@ export default async function CustomerDetailPage({
           </div>
         </div>
 
-        <div className="grid gap-6 2xl:grid-cols-2">
+        <div className="customers-detail-grid grid gap-5 sm:gap-6 2xl:grid-cols-2">
           <div className="min-w-0">
-            <div className="h-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:min-h-[360px]">
+            <div className="customers-panel ui-panel h-full p-4 sm:p-6 lg:min-h-[360px]">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold">
@@ -1006,7 +1005,7 @@ export default async function CustomerDetailPage({
       </section>
 
       <input id="edit-customer" type="checkbox" className="peer/profile hidden" />
-      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/profile:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/profile:flex">
         <label
           htmlFor="edit-customer"
           className="absolute inset-0 bg-slate-900/60"
@@ -1200,7 +1199,7 @@ export default async function CustomerDetailPage({
           </div>
         </div>
       </div>
-      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
         <label
           htmlFor="new-property"
           className="absolute inset-0 bg-slate-900/60"
@@ -1389,7 +1388,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
         <label
           htmlFor="new-job"
           className="absolute inset-0 bg-slate-900/60"
@@ -1577,7 +1576,7 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[2200] hidden items-start justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
+      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
         <label
           htmlFor="new-plan"
           className="absolute inset-0 bg-slate-900/60"
@@ -1781,4 +1780,5 @@ export default async function CustomerDetailPage({
     </AppShell>
   );
 }
+
 

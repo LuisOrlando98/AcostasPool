@@ -88,7 +88,7 @@ export default function CustomersClient({
     }
 
     return createPortal(
-      <div className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
+      <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
         <button
           type="button"
           className="absolute inset-0 bg-slate-900/60"

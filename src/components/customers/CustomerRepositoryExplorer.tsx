@@ -594,7 +594,7 @@ export default function CustomerRepositoryExplorer({
   };
 
   return (
-    <div className="h-full min-w-0 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm lg:min-h-[440px] sm:p-6">
+    <div className="customers-panel ui-panel h-full min-w-0 overflow-hidden p-4 sm:p-6 lg:min-h-[440px]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Repositorio del cliente</h2>
@@ -681,7 +681,7 @@ export default function CustomerRepositoryExplorer({
         </div>
       ) : null}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="customers-table-shell ui-table-shell mt-4 overflow-hidden">
         <div className="grid min-h-[420px] grid-cols-1 xl:h-[500px] xl:grid-cols-[minmax(220px,28%)_minmax(0,1fr)] 2xl:grid-cols-[280px_minmax(0,1fr)]">
           <aside className="min-w-0 border-b border-slate-200 bg-slate-50/80 p-3 xl:border-b-0 xl:border-r">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -766,11 +766,11 @@ export default function CustomerRepositoryExplorer({
             </div>
 
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="w-full min-w-[420px] text-left text-xs text-slate-600 sm:min-w-[560px]">
-                <thead className="bg-white text-[11px] uppercase tracking-[0.14em] text-slate-500">
+              <table className="customers-table w-full min-w-[420px] text-left text-xs text-slate-600 sm:min-w-[560px]">
+                <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.14em] text-slate-100/85">
                   <tr>
-                    <th className="px-3 py-2 font-semibold">Name</th>
-                    <th className="px-3 py-2 font-semibold">Type</th>
+                    <th className="px-3 py-2.5 font-semibold">Name</th>
+                    <th className="px-3 py-2.5 font-semibold">Type</th>
                     <th className="hidden px-3 py-2 font-semibold sm:table-cell">
                       Extension
                     </th>
@@ -804,8 +804,8 @@ export default function CustomerRepositoryExplorer({
                       return (
                         <tr
                           key={entry.path}
-                          className={`cursor-pointer border-t border-slate-100 ${
-                            isSelected ? "bg-sky-50/80" : "hover:bg-slate-50/80"
+                          className={`cursor-pointer border-t border-slate-100 transition ${
+                            isSelected ? "bg-sky-50/80" : "hover:bg-sky-50/35"
                           }`}
                           onClick={() => setSelectedPath(entry.path)}
                           onDoubleClick={() => handleOpenEntry(entry)}

@@ -17,6 +17,7 @@ import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import type { Prisma } from "@prisma/client";
 
 async function createInvoice(formData: FormData) {
   "use server";
@@ -208,17 +209,76 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     return Array.isArray(value) ? value[0] : value;
   };
   const pageParam = parseParam("page");
+  const query = (parseParam("q") ?? "").trim();
+  const customerFilter = (parseParam("customerId") ?? "").trim();
+  const exactDateParam = (parseParam("date") ?? "").trim();
+  const fromDateParam = (parseParam("from") ?? "").trim();
+  const toDateParam = (parseParam("to") ?? "").trim();
   const requestedPage = Number(pageParam);
-  const pageSize = 20;
+  const pageSize = 10;
 
-  const totalInvoices = await prisma.invoice.count();
+  const customers = await prisma.customer.findMany({
+    orderBy: { nombre: "asc" },
+    select: { id: true, nombre: true, apellidos: true, email: true },
+  });
+  const customerIds = new Set(customers.map((customer) => customer.id));
+
+  const isValidDateInput = (value: string) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+
+  const toDayStart = (value: string) => new Date(`${value}T00:00:00`);
+  const toDayEnd = (value: string) => new Date(`${value}T23:59:59.999`);
+
+  const normalizedExactDate = isValidDateInput(exactDateParam)
+    ? exactDateParam
+    : "";
+  const normalizedFromDate = isValidDateInput(fromDateParam) ? fromDateParam : "";
+  const normalizedToDate = isValidDateInput(toDateParam) ? toDateParam : "";
+
+  let createdAtFilter: Prisma.DateTimeFilter | undefined;
+  if (normalizedExactDate) {
+    createdAtFilter = {
+      gte: toDayStart(normalizedExactDate),
+      lte: toDayEnd(normalizedExactDate),
+    };
+  } else if (normalizedFromDate || normalizedToDate) {
+    const rangeStart = normalizedFromDate ? toDayStart(normalizedFromDate) : null;
+    const rangeEnd = normalizedToDate ? toDayEnd(normalizedToDate) : null;
+    if (rangeStart && rangeEnd && rangeStart > rangeEnd) {
+      createdAtFilter = { gte: rangeEnd, lte: rangeStart };
+    } else {
+      createdAtFilter = {
+        ...(rangeStart ? { gte: rangeStart } : {}),
+        ...(rangeEnd ? { lte: rangeEnd } : {}),
+      };
+    }
+  }
+
+  const where: Prisma.InvoiceWhereInput = {
+    ...(query
+      ? {
+          number: {
+            contains: query,
+            mode: "insensitive",
+          },
+        }
+      : {}),
+    ...(customerFilter && customerIds.has(customerFilter)
+      ? { customerId: customerFilter }
+      : {}),
+    ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
+  };
+
+  const totalInvoices = await prisma.invoice.count({ where });
   const totalPages = Math.max(1, Math.ceil(totalInvoices / pageSize));
   const currentPage = Number.isFinite(requestedPage) && requestedPage > 0
     ? Math.min(requestedPage, totalPages)
     : 1;
   const skip = (currentPage - 1) * pageSize;
 
-  const invoices = await prisma.invoice.findMany({
+  const pagedInvoices = await prisma.invoice.findMany({
+    where,
     orderBy: { createdAt: "desc" },
     skip,
     take: pageSize,
@@ -241,11 +301,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     },
   });
 
-  const customers = await prisma.customer.findMany({
-    orderBy: { nombre: "asc" },
-    select: { id: true, nombre: true, apellidos: true, email: true },
-  });
-
   const jobs = await prisma.job.findMany({
     orderBy: { scheduledDate: "desc" },
     select: {
@@ -262,6 +317,23 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     SPECIAL: t("admin.invoices.theme.special"),
     ESTIMATE: t("admin.invoices.theme.estimate"),
   };
+  const activeFiltersCount = [
+    query.length > 0,
+    customerFilter.length > 0,
+    normalizedExactDate.length > 0,
+    normalizedFromDate.length > 0,
+    normalizedToDate.length > 0,
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFiltersCount > 0;
+  const selectedCustomerLabel =
+    customerFilter && customerIds.has(customerFilter)
+      ? formatCustomerName(
+          customers.find((customer) => customer.id === customerFilter) ?? {
+            nombre: "",
+            apellidos: "",
+          }
+        )
+      : null;
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();
@@ -289,27 +361,49 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       subtitle={t("admin.invoices.subtitle")}
       role="ADMIN"
     >
+      <input id="invoice-filters" type="checkbox" className="peer/invoice-filters hidden" />
       <section className="space-y-6">
         <div className="app-card p-6 shadow-contrast">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">
-                {t("admin.invoices.list.title")}
+                {t("admin.invoices.list.recentTitle")}
               </h2>
               <p className="text-sm text-slate-500">
                 {t("admin.invoices.list.count", { count: totalInvoices })}
               </p>
               <p className="text-xs text-slate-400">
                 {t("admin.invoices.list.showing", {
-                  count: invoices.length,
+                  count: pagedInvoices.length,
                   total: totalInvoices,
                 })}
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
-                {t("admin.invoices.list.total", { count: totalInvoices })}
+                {t("admin.invoices.list.recentCount", { count: pageSize })}
               </span>
+              {hasActiveFilters ? (
+                <span className="app-chip px-3 py-1 text-xs" data-tone="warning">
+                  {t("admin.invoices.filters.activeCount", {
+                    count: activeFiltersCount,
+                  })}
+                </span>
+              ) : null}
+              <label
+                htmlFor="invoice-filters"
+                className="app-button-ghost cursor-pointer px-3 py-2 text-xs font-semibold"
+              >
+                {t("admin.invoices.filters.open")}
+              </label>
+              {hasActiveFilters ? (
+                <a
+                  href="/admin/invoices"
+                  className="app-button-ghost px-3 py-2 text-xs font-semibold"
+                >
+                  {t("admin.invoices.filters.reset")}
+                </a>
+              ) : null}
               <NewInvoiceModal
                 customers={customers.map((customer) => ({
                   id: customer.id,
@@ -331,13 +425,40 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
             </div>
           </div>
 
+          {hasActiveFilters ? (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {query ? (
+                  <span className="app-chip max-w-[260px] truncate px-3 py-1 text-xs" data-tone="info">
+                    {`${t("admin.invoices.filters.invoiceNumber")}: ${query}`}
+                  </span>
+                ) : null}
+                {selectedCustomerLabel ? (
+                  <span className="app-chip max-w-[260px] truncate px-3 py-1 text-xs" data-tone="info">
+                    {`${t("admin.invoices.filters.customer")}: ${selectedCustomerLabel}`}
+                  </span>
+                ) : null}
+                {normalizedExactDate ? (
+                  <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+                    {`${t("admin.invoices.filters.date")}: ${normalizedExactDate}`}
+                  </span>
+                ) : null}
+                {!normalizedExactDate && (normalizedFromDate || normalizedToDate) ? (
+                  <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+                    {`${t("admin.invoices.filters.from")}: ${normalizedFromDate || "--"} | ${t("admin.invoices.filters.to")}: ${normalizedToDate || "--"}`}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <div className="mt-6 space-y-3 text-sm">
-            {invoices.length === 0 ? (
+            {pagedInvoices.length === 0 ? (
               <p className="text-sm text-slate-500">
                 {t("admin.invoices.list.empty")}
               </p>
             ) : (
-              invoices.map((invoice) => {
+              pagedInvoices.map((invoice) => {
                 const job = invoice.job;
                 const techName =
                   job?.technician?.user.fullName ?? t("admin.invoices.list.noTech");
@@ -470,6 +591,134 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           ) : null}
         </div>
       </section>
+
+      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/invoice-filters:flex">
+        <label
+          htmlFor="invoice-filters"
+          className="absolute inset-0 bg-slate-900/60"
+        />
+        <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  {t("admin.invoices.filters.open")}
+                </p>
+                <h2 className="text-lg font-semibold">
+                  {t("admin.invoices.filters.modalTitle")}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {t("admin.invoices.filters.modalSubtitle")}
+                </p>
+              </div>
+              <label
+                htmlFor="invoice-filters"
+                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                aria-label={t("common.actions.close")}
+                title={t("common.actions.close")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                </svg>
+              </label>
+            </div>
+
+            <form action="/admin/invoices" method="get" className="mt-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("admin.invoices.filters.invoiceNumber")}
+                </label>
+                <input
+                  type="text"
+                  name="q"
+                  defaultValue={query}
+                  className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  placeholder={t("admin.invoices.filters.invoiceNumberPlaceholder")}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("admin.invoices.filters.customer")}
+                </label>
+                <select
+                  name="customerId"
+                  defaultValue={customerFilter}
+                  className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">{t("admin.invoices.filters.allCustomers")}</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {formatCustomerName(customer)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.filters.date")}
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    defaultValue={normalizedExactDate}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.filters.from")}
+                  </label>
+                  <input
+                    type="date"
+                    name="from"
+                    defaultValue={normalizedFromDate}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.filters.to")}
+                  </label>
+                  <input
+                    type="date"
+                    name="to"
+                    defaultValue={normalizedToDate}
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-500">
+                {t("admin.invoices.filters.dateHint")}
+              </p>
+
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <a
+                  href="/admin/invoices"
+                  className="app-button-ghost w-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                >
+                  {t("admin.invoices.filters.reset")}
+                </a>
+                <button
+                  type="submit"
+                  className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+                >
+                  {t("admin.invoices.filters.apply")}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
     </AppShell>
   );
 }
