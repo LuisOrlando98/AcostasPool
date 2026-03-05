@@ -54,7 +54,7 @@ export default function DocumentPreviewModal({
         <p className="mt-1 text-xs text-slate-500">{previewHint}</p>
 
         <div className="mt-3 flex justify-center">
-          <div className="relative aspect-[8.5/11] w-full max-w-[20rem] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg">
+          <div className="relative aspect-[210/297] w-full max-w-[20rem] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-lg">
             <div
               className="pointer-events-none absolute inset-0 origin-top-left scale-[0.5]"
               style={{ width: "200%", height: "200%" }}

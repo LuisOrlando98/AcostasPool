@@ -532,7 +532,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       @page {
-        size: Letter;
+        size: A4;
         margin: 0;
       }
 
@@ -568,8 +568,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .sheet {
         position: relative;
-        width: 8.5in;
-        height: 11in;
+        width: 210mm;
+        height: 297mm;
         margin: 0 auto;
         overflow: hidden;
         border: 2px solid rgba(48, 75, 136, 0.85);

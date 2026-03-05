@@ -30,7 +30,7 @@ type ChromiumLauncher = {
       ) => Promise<void>;
       emulateMedia: (options: { media: "screen" | "print" | null }) => Promise<void>;
       pdf: (options: {
-        format: "Letter";
+        format: "A4" | "Letter";
         printBackground: boolean;
         preferCSSPageSize: boolean;
         margin: { top: string; right: string; bottom: string; left: string };
@@ -141,8 +141,8 @@ async function generateInvoicePdfWithPdfLib(
   const mutedColor = rgb(0.37, 0.45, 0.56);
   const backgroundColor = rgb(0.95, 0.97, 1);
   const whiteColor = rgb(1, 1, 1);
-  const pageWidth = 612;
-  const pageHeight = 792;
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
   const marginX = 46;
   const contentWidth = pageWidth - marginX * 2;
   const tableColumns = {
@@ -762,14 +762,14 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
     });
     try {
       const page = await browser.newPage({
-        viewport: { width: 816, height: 1056 },
+        viewport: { width: 794, height: 1123 },
       });
 
       await page.setContent(html, { waitUntil: "networkidle" });
       await page.emulateMedia({ media: "screen" });
 
       const pdfBytes = await page.pdf({
-        format: "Letter",
+        format: "A4",
         printBackground: true,
         preferCSSPageSize: true,
         margin: {

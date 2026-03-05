@@ -314,12 +314,18 @@ export default async function InvoiceEditorPage({
               <p className="mt-1 text-sm text-slate-600">
                 Preview de template para el tipo actual: {invoice.theme}
               </p>
-              <iframe
-                title={`invoice-preview-${invoice.id}`}
-                sandbox=""
-                className="mt-4 h-[640px] w-full rounded-2xl border border-slate-200 bg-white"
-                srcDoc={previewHtml}
-              />
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div className="mx-auto w-full max-w-[860px]">
+                  <div className="relative aspect-[210/297] w-full overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
+                    <iframe
+                      title={`invoice-preview-${invoice.id}`}
+                      sandbox=""
+                      className="absolute inset-0 h-full w-full border-0 bg-white"
+                      srcDoc={previewHtml}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
