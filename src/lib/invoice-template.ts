@@ -388,7 +388,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .sheet {
         position: relative;
         width: 8.5in;
-        min-height: 11in;
+        height: 11in;
         margin: 0 auto;
         overflow: hidden;
         background:
@@ -416,21 +416,21 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 20px;
+        gap: 24px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 324px;
-        text-align: left;
+        width: 420px;
+        text-align: center;
       }
 
       .brand-word {
         margin: 0;
         font-weight: 900;
-        font-size: 38px;
-        line-height: 0.95;
-        letter-spacing: 0.014em;
+        font-size: 58px;
+        line-height: 0.92;
+        letter-spacing: 0.018em;
         text-transform: uppercase;
       }
 
@@ -439,17 +439,17 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .brand-rule {
-        margin-top: 8px;
-        height: 3px;
+        margin-top: 10px;
+        height: 5px;
         width: 100%;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.58) 78%, rgba(255, 255, 255, 0.05) 100%);
       }
 
       .brand-subtitle {
-        margin-top: 8px;
-        font-size: 10px;
+        margin-top: 9px;
+        font-size: 13px;
         font-weight: 500;
-        letter-spacing: 0.18em;
+        letter-spacing: 0.22em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
@@ -483,9 +483,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-body {
         padding: 26px 46px 30px;
-        min-height: calc(11in - 210px);
-        display: flex;
-        flex-direction: column;
+        padding-bottom: 300px;
       }
 
       .info-grid {
@@ -701,7 +699,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .bottom-stack {
-        margin-top: auto;
+        position: absolute;
+        left: 46px;
+        right: 46px;
+        bottom: 30px;
       }
 
       .payment-title {
