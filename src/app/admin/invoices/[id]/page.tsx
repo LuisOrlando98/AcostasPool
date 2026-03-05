@@ -9,10 +9,16 @@ import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/forma
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems, roundCurrency } from "@/lib/invoices/line-items";
 import {
+  getInvoiceTemplateLocaleCopy,
+  localizeInvoiceTemplate,
+  normalizeInvoiceTemplateConfig,
+  renderInvoiceTemplateHtml,
+  resolveInvoiceTemplateLocale,
+} from "@/lib/invoice-template";
+import {
   getInvoiceTemplateConfig,
   type SiteInvoiceTemplateConfig,
 } from "@/lib/site-settings";
-import { renderInvoiceTemplatePreview } from "@/lib/invoice-template";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE";
@@ -214,12 +220,30 @@ export default async function InvoiceEditorPage({
     },
   });
 
-  const template = await getInvoiceTemplateConfig();
-  const previewHtml = renderInvoiceTemplatePreview(
-    template as SiteInvoiceTemplateConfig,
-    invoice.theme
-  );
   const normalizedLineItems = normalizeInvoiceLineItems(invoice.lineItems);
+  const template = await getInvoiceTemplateConfig();
+  const invoiceLocale = resolveInvoiceTemplateLocale(invoice.customer.idiomaPreferencia);
+  const localeCopy = getInvoiceTemplateLocaleCopy(invoiceLocale);
+  const localizedTemplate = localizeInvoiceTemplate(
+    normalizeInvoiceTemplateConfig(template as SiteInvoiceTemplateConfig),
+    invoiceLocale
+  );
+  const previewHtml = renderInvoiceTemplateHtml({
+    template: localizedTemplate,
+    theme: invoice.theme,
+    locale: invoiceLocale,
+    invoiceNumber: invoice.number,
+    issueDateLabel: invoice.createdAt.toLocaleDateString(localeCopy.intlLocale),
+    customerName: formatCustomerName(invoice.customer),
+    customerAddress: formatCustomerAddress(invoice.customer),
+    customerEmail: invoice.customer.email,
+    customerPhone: invoice.customer.telefono,
+    items: normalizedLineItems,
+    subtotal: Number(invoice.subtotal),
+    tax: Number(invoice.tax),
+    total: Number(invoice.total),
+    notes: invoice.notes,
+  });
   const lineItemsSeed =
     normalizedLineItems.length > 0
       ? normalizedLineItems
@@ -236,6 +260,7 @@ export default async function InvoiceEditorPage({
   const lockedTitle = t("admin.invoices.editor.locked.title");
   const lockedDescription = t("admin.invoices.editor.locked.description");
   const lockedSentAtLabel = t("admin.invoices.editor.locked.sentOn");
+  const previewPdfUrl = invoice.pdfUrl?.trim() ? invoice.pdfUrl : null;
 
   const editorLabel = t("admin.invoices.editor.modes.editor");
   const previewLabel = t("admin.invoices.editor.modes.preview");
@@ -339,9 +364,10 @@ export default async function InvoiceEditorPage({
                   <div className="relative aspect-[210/297] w-full overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
                     <iframe
                       title={`invoice-preview-${invoice.id}`}
-                      sandbox=""
+                      sandbox={previewPdfUrl ? undefined : ""}
                       className="absolute inset-0 h-full w-full border-0 bg-white"
-                      srcDoc={previewHtml}
+                      src={previewPdfUrl ?? undefined}
+                      srcDoc={previewPdfUrl ? undefined : previewHtml}
                     />
                   </div>
                 </div>

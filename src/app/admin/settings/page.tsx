@@ -15,9 +15,9 @@ import {
 } from "@/lib/email-templates";
 import {
   normalizeInvoiceTemplateConfig,
-  renderInvoiceTemplatePreview,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
+import { generateInvoicePdfBytes } from "@/lib/invoices/pdf";
 import {
   COMPLIANCE_DOC_DEFINITIONS,
   COMPLIANCE_DOC_IDS,
@@ -387,10 +387,32 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     selectedTemplate,
     selectedTemplateMeta.previewValues
   );
-  const invoiceTemplatePreview = renderInvoiceTemplatePreview(
-    invoiceTemplate,
-    invoiceThemePreview
-  );
+  const previewItems = [
+    { label: "Weekly cleaning", quantity: 1, unitPrice: 125, amount: 125 },
+    { label: "Chemicals and supplies", quantity: 2, unitPrice: 24.25, amount: 48.5 },
+  ];
+  const previewSubtotal = previewItems.reduce((sum, item) => sum + item.amount, 0);
+  const previewTax = previewSubtotal * 0.07;
+  const previewTotal = previewSubtotal + previewTax;
+  const invoiceTemplatePreviewBytes = await generateInvoicePdfBytes({
+    invoiceNumber: "INV-2026-1042",
+    issueDate: new Date("2026-03-03T00:00:00.000Z"),
+    customerName: "Sample Customer",
+    customerAddress: "123 Palm Ave, Miami, FL 33101",
+    customerEmail: "customer@example.com",
+    customerPhone: "+1 (786) 555-0199",
+    items: previewItems,
+    subtotal: previewSubtotal,
+    tax: previewTax,
+    total: previewTotal,
+    notes: "Service completed and balanced. Thank you for trusting us.",
+    locale: adminLocale,
+    theme: invoiceThemePreview,
+    template: invoiceTemplate,
+  });
+  const invoiceTemplatePreviewPdfSrc = `data:application/pdf;base64,${Buffer.from(
+    invoiceTemplatePreviewBytes
+  ).toString("base64")}`;
   const selectedComplianceDocId = isComplianceDocId(complianceDocQuery)
     ? complianceDocQuery
     : COMPLIANCE_DOC_IDS[0];
@@ -1094,7 +1116,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                       title={t("admin.settings.invoiceEditor.preview.modalTitle", {
                         theme: invoiceThemePreview,
                       })}
-                      srcDoc={invoiceTemplatePreview}
+                      src={invoiceTemplatePreviewPdfSrc}
                       previewLabel={t("admin.settings.invoiceEditor.preview.previewLabel")}
                       previewHint={t("admin.settings.invoiceEditor.preview.previewHint")}
                       openLabel={t("admin.settings.invoiceEditor.preview.open")}

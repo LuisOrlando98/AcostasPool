@@ -77,8 +77,7 @@ export type InvoiceLineItem = {
   amount: number;
 };
 
-type InvoicePdfInput = {
-  customerId: string;
+export type InvoicePdfRenderInput = {
   invoiceNumber: string;
   issueDate: Date;
   customerName: string;
@@ -93,6 +92,10 @@ type InvoicePdfInput = {
   locale?: InvoiceTemplateLocale | null;
   theme?: InvoiceTemplateTheme;
   template?: InvoiceTemplateConfig;
+};
+
+type InvoicePdfInput = InvoicePdfRenderInput & {
+  customerId: string;
 };
 
 function normalizeItems(items: InvoiceLineItem[], serviceFallbackLabel: string) {
@@ -118,8 +121,8 @@ function normalizeItems(items: InvoiceLineItem[], serviceFallbackLabel: string) 
     .filter((item) => item.label.length > 0);
 }
 
-async function generateInvoicePdfWithPdfLib(
-  input: InvoicePdfInput,
+async function generateInvoicePdfWithPdfLibBytes(
+  input: InvoicePdfRenderInput,
   items: ReturnType<typeof normalizeItems>,
   template: InvoiceTemplateConfig,
   theme: InvoiceTemplateTheme,
@@ -724,11 +727,10 @@ async function generateInvoicePdfWithPdfLib(
     });
   }
 
-  const bytes = await pdfDoc.save();
-  return storeInvoicePdfBuffer(input, bytes);
+  return pdfDoc.save();
 }
 
-export async function generateInvoicePdf(input: InvoicePdfInput) {
+export async function generateInvoicePdfBytes(input: InvoicePdfRenderInput) {
   const locale = resolveInvoiceTemplateLocale(input.locale);
   const localeCopy = getInvoiceTemplateLocaleCopy(locale);
   const template = localizeInvoiceTemplate(
@@ -781,7 +783,7 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
         },
       });
 
-      return storeInvoicePdfBuffer(input, pdfBytes);
+      return pdfBytes;
     } finally {
       await browser.close();
     }
@@ -790,6 +792,11 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       `[invoices] Playwright PDF generation failed, using pdf-lib fallback for ${input.invoiceNumber}.`,
       error
     );
-    return generateInvoicePdfWithPdfLib(input, items, template, theme, locale);
+    return generateInvoicePdfWithPdfLibBytes(input, items, template, theme, locale);
   }
+}
+
+export async function generateInvoicePdf(input: InvoicePdfInput) {
+  const pdfBytes = await generateInvoicePdfBytes(input);
+  return storeInvoicePdfBuffer(input, pdfBytes);
 }

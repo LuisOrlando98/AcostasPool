@@ -4,7 +4,8 @@ import { useEffect, useId, useState } from "react";
 import { useI18n } from "@/i18n/client";
 
 type DocumentPreviewModalProps = {
-  srcDoc: string;
+  srcDoc?: string;
+  src?: string;
   title: string;
   previewLabel: string;
   previewHint: string;
@@ -13,6 +14,7 @@ type DocumentPreviewModalProps = {
 
 export default function DocumentPreviewModal({
   srcDoc,
+  src,
   title,
   previewLabel,
   previewHint,
@@ -22,6 +24,9 @@ export default function DocumentPreviewModal({
   const [open, setOpen] = useState(false);
   const frameId = useId();
   const closeLabel = t("common.actions.close");
+  const frameSrc = srcDoc ? undefined : src;
+  const frameSrcDoc = srcDoc ?? undefined;
+  const frameSandbox = srcDoc ? "" : undefined;
 
   useEffect(() => {
     if (!open) {
@@ -65,8 +70,9 @@ export default function DocumentPreviewModal({
               <iframe
                 title={`${title}-${frameId}-thumbnail`}
                 className="h-full w-full border-0 bg-white"
-                sandbox=""
-                srcDoc={srcDoc}
+                sandbox={frameSandbox}
+                src={frameSrc}
+                srcDoc={frameSrcDoc}
               />
             </div>
           </div>
@@ -109,8 +115,9 @@ export default function DocumentPreviewModal({
             <iframe
               title={`${title}-${frameId}-modal`}
               className="h-[86vh] w-full rounded-xl border border-slate-200 bg-white"
-              sandbox=""
-              srcDoc={srcDoc}
+              sandbox={frameSandbox}
+              src={frameSrc}
+              srcDoc={frameSrcDoc}
             />
           </div>
         </div>
