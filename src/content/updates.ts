@@ -7,6 +7,20 @@ export type UpdateEntry = {
 
 export const updates: UpdateEntry[] = [
   {
+    date: "2026-03-05",
+    title: "Security hardening, notifications reliability, and responsive stability",
+    tag: "Major",
+    items: [
+      "Hardened authentication/security with stricter JWT validation, hashed reset/invite tokens, and no-store headers on sensitive auth/session endpoints.",
+      "Added security response headers globally (nosniff, frame deny, referrer policy, permissions policy, and production HSTS).",
+      "Reworked multi-user notification targeting to avoid cross-user leaks and missing technician events using DB-level recipient filters plus stricter customer stream checks.",
+      "Improved notifications UX reliability with centered filter modal behavior, proper overlay stacking, and robust body scroll locking to prevent stuck scroll states.",
+      "Stabilized admin reports mobile/medium layouts, including single-line 'Showing' filter summary behavior and metric card text handling in constrained widths.",
+      "Added lightweight local session cache for faster perceived UI response in account shell and notification feed refresh cycles.",
+      "Normalized locale cookie handling across login/reset/complete-profile/account flows for safer, consistent language persistence.",
+    ],
+  },
+  {
     date: "2026-03-03",
     title: "Landing mobile video reliability and footer alignment",
     tag: "UX",
