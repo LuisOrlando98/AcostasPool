@@ -424,8 +424,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .brand-lockup {
         width: 150px;
         background: rgba(24, 45, 88, 0.35);
-        padding: 6px 8px 5px 6px;
-        text-align: left;
+        padding: 2px 8px 5px 6px;
+        text-align: center;
         justify-self: start;
       }
 
@@ -433,7 +433,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        align-items: flex-start;
+        align-items: center;
         min-height: 0;
       }
 
@@ -468,7 +468,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
       .invoice-head {
         text-align: right;
-        padding-top: 2px;
+        padding-top: 0;
       }
 
       .invoice-label {

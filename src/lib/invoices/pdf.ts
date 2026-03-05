@@ -228,10 +228,11 @@ async function generateInvoicePdfWithPdfLib(
 
     const logoLineOneWidth = boldFont.widthOfTextAtSize(logoLineOne, logoSize);
     const logoLineTwoWidth = boldFont.widthOfTextAtSize(logoLineTwo, logoSize);
-    const logoLockupWidth = Math.max(logoLineOneWidth, logoLineTwoWidth);
-    const logoLineY = pageHeight - 56;
-    const logoLineTwoY = pageHeight - 84;
-    const ruleY = pageHeight - 93;
+    const logoLockupWidth = logoLineOneWidth;
+    const logoLineY = pageHeight - 70;
+    const logoLineTwoY = pageHeight - 98;
+    const logoLineTwoX = logoAreaX + (logoLineOneWidth - logoLineTwoWidth) / 2;
+    const ruleY = pageHeight - 107;
 
     page.drawText(logoLineOne, {
       x: logoAreaX,
@@ -241,7 +242,7 @@ async function generateInvoicePdfWithPdfLib(
       color: whiteColor,
     });
     page.drawText(logoLineTwo, {
-      x: logoAreaX,
+      x: logoLineTwoX,
       y: logoLineTwoY,
       size: logoSize,
       font: boldFont,
@@ -263,7 +264,7 @@ async function generateInvoicePdfWithPdfLib(
     );
     page.drawText(subtitleText, {
       x: subtitleX,
-      y: ruleY - 14,
+      y: ruleY - 12,
       size: subtitleSize,
       font: regularFont,
       color: whiteColor,
