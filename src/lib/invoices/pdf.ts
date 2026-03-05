@@ -214,9 +214,9 @@ async function generateInvoicePdfWithPdfLib(
   const drawHeader = () => {
     const headerHeight = 158;
     const headerBottom = pageHeight - headerHeight;
-    const logoAreaX = marginX;
-    const logoAreaW = 372;
+    const logoAreaX = marginX + 8;
     const logoSize = 30;
+    const subtitleSize = 9.2;
 
     page.drawRectangle({
       x: 0,
@@ -226,20 +226,23 @@ async function generateInvoicePdfWithPdfLib(
       color: brandColor,
     });
 
-    const logoLineOneX =
-      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineOne, logoSize)) / 2;
-    const logoLineTwoX =
-      logoAreaX + (logoAreaW - boldFont.widthOfTextAtSize(logoLineTwo, logoSize)) / 2;
+    const logoLineOneWidth = boldFont.widthOfTextAtSize(logoLineOne, logoSize);
+    const logoLineTwoWidth = boldFont.widthOfTextAtSize(logoLineTwo, logoSize);
+    const logoLockupWidth = Math.max(logoLineOneWidth, logoLineTwoWidth);
+    const logoLineY = pageHeight - 56;
+    const logoLineTwoY = pageHeight - 84;
+    const ruleY = pageHeight - 93;
+
     page.drawText(logoLineOne, {
-      x: logoLineOneX,
-      y: pageHeight - 58,
+      x: logoAreaX,
+      y: logoLineY,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
     });
     page.drawText(logoLineTwo, {
-      x: logoLineTwoX,
-      y: pageHeight - 88,
+      x: logoAreaX,
+      y: logoLineTwoY,
       size: logoSize,
       font: boldFont,
       color: whiteColor,
@@ -247,18 +250,20 @@ async function generateInvoicePdfWithPdfLib(
 
     const subtitle = template.headerSubtitle.trim() || "REPAIR AND MAINTENANCE";
     page.drawLine({
-      start: { x: logoAreaX + 4, y: pageHeight - 118 },
-      end: { x: logoAreaX + logoAreaW - 4, y: pageHeight - 118 },
+      start: { x: logoAreaX, y: ruleY },
+      end: { x: logoAreaX + logoLockupWidth, y: ruleY },
       thickness: 2,
       color: whiteColor,
     });
     const subtitleText = subtitle.toUpperCase();
-    const subtitleSize = 10.5;
-    const subtitleX =
-      logoAreaX + (logoAreaW - regularFont.widthOfTextAtSize(subtitleText, subtitleSize)) / 2;
+    const subtitleWidth = regularFont.widthOfTextAtSize(subtitleText, subtitleSize);
+    const subtitleX = Math.max(
+      logoAreaX,
+      logoAreaX + (logoLockupWidth - subtitleWidth) / 2
+    );
     page.drawText(subtitleText, {
       x: subtitleX,
-      y: pageHeight - 133,
+      y: ruleY - 14,
       size: subtitleSize,
       font: regularFont,
       color: whiteColor,

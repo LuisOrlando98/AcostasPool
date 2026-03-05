@@ -400,15 +400,15 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header {
         background: linear-gradient(135deg, var(--brand) 0%, #223a69 100%);
         color: #ffffff;
-        padding: 18px 24px 16px;
+        padding: 18px 20px 16px;
         position: relative;
       }
 
       .header::after {
         content: "";
         position: absolute;
-        left: 24px;
-        right: 24px;
+        left: 20px;
+        right: 20px;
         bottom: 0;
         height: 1px;
         background: linear-gradient(90deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 255, 255, 0.52) 66%, rgba(255, 255, 255, 0.12) 100%);
@@ -417,14 +417,14 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       .header-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
-        gap: 12px;
+        gap: 10px;
         align-items: start;
       }
 
       .brand-lockup {
-        width: 196px;
+        width: 150px;
         background: rgba(24, 45, 88, 0.35);
-        padding: 8px 10px 6px 8px;
+        padding: 6px 8px 5px 6px;
         text-align: left;
         justify-self: start;
       }
@@ -441,27 +441,27 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         margin: 0;
         font-weight: 900;
         font-size: 18px;
-        line-height: 0.9;
+        line-height: 0.86;
         letter-spacing: 0.015em;
         text-transform: uppercase;
       }
 
       .brand-word + .brand-word {
-        margin-top: -1px;
+        margin-top: -2px;
       }
 
       .brand-rule {
-        margin-top: 2px;
+        margin-top: 0;
         height: 2px;
-        width: 148px;
+        width: 100%;
         background: rgba(255, 255, 255, 0.95);
       }
 
       .brand-subtitle {
-        margin-top: 3px;
-        font-size: 8px;
+        margin-top: 2px;
+        font-size: 7.4px;
         font-weight: 500;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
         color: rgba(241, 249, 255, 0.95);
       }
