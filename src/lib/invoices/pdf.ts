@@ -3,10 +3,14 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
+  getInvoiceTemplateLocaleCopy,
+  localizeInvoiceTemplate,
   normalizeInvoiceTemplateConfig,
   renderInvoiceTemplateHtml,
+  resolveInvoiceTemplateLocale,
   toPdfRgbTuple,
   type InvoiceTemplateConfig,
+  type InvoiceTemplateLocale,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
 
@@ -86,14 +90,15 @@ type InvoicePdfInput = {
   tax: number;
   total: number;
   notes?: string | null;
+  locale?: InvoiceTemplateLocale | null;
   theme?: InvoiceTemplateTheme;
   template?: InvoiceTemplateConfig;
 };
 
-function normalizeItems(items: InvoiceLineItem[]) {
+function normalizeItems(items: InvoiceLineItem[], serviceFallbackLabel: string) {
   return items
     .map((item) => {
-      const label = item.label?.trim() || "Service";
+      const label = item.label?.trim() || serviceFallbackLabel;
       const quantity =
         typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 0
           ? item.quantity
@@ -117,8 +122,10 @@ async function generateInvoicePdfWithPdfLib(
   input: InvoicePdfInput,
   items: ReturnType<typeof normalizeItems>,
   template: InvoiceTemplateConfig,
-  theme: InvoiceTemplateTheme
+  theme: InvoiceTemplateTheme,
+  locale: InvoiceTemplateLocale
 ) {
+  const localeCopy = getInvoiceTemplateLocaleCopy(locale);
   const pdfDoc = await PDFDocument.create();
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -147,11 +154,11 @@ async function generateInvoicePdfWithPdfLib(
     right: marginX + contentWidth,
   };
   const notesBody = (input.notes ?? "").trim();
-  const thankYouNote = template.footerNote.trim() || "Thank you for trusting AcostasPool.";
-  const notesDisplay = notesBody || "No additional notes.";
+  const thankYouNote = template.footerNote.trim() || localeCopy.thankYouFallback;
+  const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
   const paymentTerms = template.legalClauses[0]
-    ? `Payment terms: ${template.legalClauses[0]}`
-    : "Payment terms: Due upon receipt.";
+    ? `${localeCopy.paymentTermsPrefix}: ${template.legalClauses[0]}`
+    : `${localeCopy.paymentTermsPrefix}: ${localeCopy.paymentTermsFallback}`;
   const logoLineOne = "ACOSTA'S";
   const logoLineTwo = "POOL";
 
@@ -288,7 +295,7 @@ async function generateInvoicePdfWithPdfLib(
       whiteColor
     );
     drawRightText(
-      `${template.issueDateLabel}: ${input.issueDate.toLocaleDateString("en-US")}`,
+      `${template.issueDateLabel}: ${input.issueDate.toLocaleDateString(localeCopy.intlLocale)}`,
       marginX + contentWidth,
       pageHeight - 114,
       11,
@@ -346,14 +353,14 @@ async function generateInvoicePdfWithPdfLib(
       font: boldFont,
       color: brandColor,
     });
-    page.drawText("Qty", {
+    page.drawText(localeCopy.qtyLabel, {
       x: tableColumns.qty,
       y: cursorY - 11,
       size: 10,
       font: boldFont,
       color: brandColor,
     });
-    page.drawText("Unit Price", {
+    page.drawText(localeCopy.unitPriceLabel, {
       x: tableColumns.unitPrice,
       y: cursorY - 11,
       size: 10,
@@ -431,7 +438,7 @@ async function generateInvoicePdfWithPdfLib(
   };
 
   drawInfoBlock(marginX, template.billToLabel, billPrimary, billSecondary);
-  drawInfoBlock(marginX + 272, "Issued By", issuerPrimary, issuerSecondary);
+  drawInfoBlock(marginX + 272, localeCopy.issuedByLabel, issuerPrimary, issuerSecondary);
   cursorY -= 78;
   drawDivider(cursorY, 1, lineColor);
   cursorY -= 14;
@@ -439,7 +446,7 @@ async function generateInvoicePdfWithPdfLib(
   drawTableHeader();
 
   if (items.length === 0) {
-    page.drawText("No line items", {
+    page.drawText(localeCopy.noLineItemsLabel, {
       x: tableColumns.description,
       y: cursorY - 10,
       size: 10,
@@ -498,48 +505,62 @@ async function generateInvoicePdfWithPdfLib(
     }
   }
 
-  cursorY -= 12;
-  ensureSpace(100);
+  cursorY -= 10;
+  ensureSpace(118);
   const summaryTop = cursorY;
-  const totalsX = marginX + 340;
-  page.drawLine({
-    start: { x: totalsX - 16, y: summaryTop + 4 },
-    end: { x: totalsX - 16, y: summaryTop - 74 },
-    thickness: 2,
-    color: lineStrongColor,
+  const summaryWidth = 222;
+  const summaryHeight = 94;
+  const summaryX = marginX + contentWidth - summaryWidth;
+  const summaryRight = summaryX + summaryWidth - 12;
+
+  page.drawRectangle({
+    x: summaryX,
+    y: summaryTop - summaryHeight,
+    width: summaryWidth,
+    height: summaryHeight,
+    color: backgroundColor,
+    borderColor: lineStrongColor,
+    borderWidth: 1,
   });
-  page.drawText("INVOICE SUMMARY", {
-    x: totalsX,
-    y: summaryTop,
+
+  page.drawText(localeCopy.invoiceSummaryLabel.toUpperCase(), {
+    x: summaryX + 12,
+    y: summaryTop - 13,
     size: 9,
     font: boldFont,
     color: mutedColor,
   });
   page.drawText(template.subtotalLabel, {
-    x: totalsX,
-    y: summaryTop - 17,
+    x: summaryX + 12,
+    y: summaryTop - 30,
     size: 11,
     font: regularFont,
     color: mutedColor,
   });
-  drawRightText(`$${input.subtotal.toFixed(2)}`, marginX + contentWidth, summaryTop - 17, 11, boldFont, textColor);
+  drawRightText(`$${input.subtotal.toFixed(2)}`, summaryRight, summaryTop - 30, 11, boldFont, textColor);
   page.drawText(`${template.taxLabel} (7%)`, {
-    x: totalsX,
-    y: summaryTop - 33,
+    x: summaryX + 12,
+    y: summaryTop - 46,
     size: 11,
     font: regularFont,
     color: mutedColor,
   });
-  drawRightText(`$${input.tax.toFixed(2)}`, marginX + contentWidth, summaryTop - 33, 11, boldFont, textColor);
+  drawRightText(`$${input.tax.toFixed(2)}`, summaryRight, summaryTop - 46, 11, boldFont, textColor);
+  page.drawLine({
+    start: { x: summaryX + 12, y: summaryTop - 56 },
+    end: { x: summaryX + summaryWidth - 12, y: summaryTop - 56 },
+    thickness: 1,
+    color: lineStrongColor,
+  });
   page.drawText(template.totalLabel, {
-    x: totalsX,
-    y: summaryTop - 56,
-    size: 20,
+    x: summaryX + 12,
+    y: summaryTop - 79,
+    size: 19,
     font: boldFont,
     color: brandColor,
   });
-  drawRightText(`$${input.total.toFixed(2)}`, marginX + contentWidth, summaryTop - 56, 24, boldFont, brandColor);
-  cursorY = summaryTop - 88;
+  drawRightText(`$${input.total.toFixed(2)}`, summaryRight, summaryTop - 79, 23, boldFont, brandColor);
+  cursorY = summaryTop - summaryHeight - 10;
   const bottomAnchorY = 238;
   if (cursorY < 196) {
     startNewPage();
@@ -609,34 +630,34 @@ async function generateInvoicePdfWithPdfLib(
 
   drawServiceSection(
     marginX + 4,
-    "PAYMENT METHODS",
-    "Credit | Debit | ACH | Check | Zelle | Cash",
+    localeCopy.paymentMethodsLabel.toUpperCase(),
+    localeCopy.paymentMethodsInline,
     paymentTerms
   );
   drawServiceSection(
     marginX + sectionWidth + sectionGap + 4,
-    "NOTES",
+    template.notesLabel.toUpperCase(),
     notesDisplay,
     thankYouNote
   );
   cursorY = servicesTop - servicesHeight - 14;
 
   const footerHeadY = cursorY - 12;
-  page.drawText("Payment Method:", {
+  page.drawText(localeCopy.paymentMethodLabel, {
     x: marginX,
     y: footerHeadY,
     size: 12.5,
     font: boldFont,
     color: textColor,
   });
-  page.drawText("Credit / Debit / ACH / Check", {
+  page.drawText(localeCopy.paymentMethodLine, {
     x: marginX,
     y: footerHeadY - 15,
     size: 11,
     font: regularFont,
     color: textSoftColor,
   });
-  page.drawText("We accept: Visa, MasterCard, Zelle, Cash", {
+  page.drawText(localeCopy.paymentAcceptLine, {
     x: marginX,
     y: footerHeadY - 29,
     size: 11,
@@ -645,16 +666,23 @@ async function generateInvoicePdfWithPdfLib(
   });
 
   drawRightText("Luis Acosta", marginX + contentWidth, footerHeadY - 1, 15, boldFont, textColor);
-  drawRightText("President / Owner", marginX + contentWidth, footerHeadY - 17, 11.5, regularFont, textSoftColor);
+  drawRightText(
+    localeCopy.ownerRoleLabel,
+    marginX + contentWidth,
+    footerHeadY - 17,
+    11.5,
+    regularFont,
+    textSoftColor
+  );
 
-  page.drawText("Regulation Disclaimer:", {
+  page.drawText(localeCopy.regulationDisclaimerLabel, {
     x: marginX,
     y: footerHeadY - 50,
     size: 9,
     font: boldFont,
     color: mutedColor,
   });
-  page.drawText("Authorization & Payment Terms:", {
+  page.drawText(localeCopy.authorizationPaymentTermsLabel, {
     x: marginX,
     y: footerHeadY - 63,
     size: 9.5,
@@ -700,15 +728,21 @@ async function generateInvoicePdfWithPdfLib(
 }
 
 export async function generateInvoicePdf(input: InvoicePdfInput) {
-  const template = normalizeInvoiceTemplateConfig(input.template);
+  const locale = resolveInvoiceTemplateLocale(input.locale);
+  const localeCopy = getInvoiceTemplateLocaleCopy(locale);
+  const template = localizeInvoiceTemplate(
+    normalizeInvoiceTemplateConfig(input.template),
+    locale
+  );
   const theme = input.theme ?? "STANDARD";
-  const items = normalizeItems(input.items);
+  const items = normalizeItems(input.items, localeCopy.serviceFallbackLabel);
 
   const html = renderInvoiceTemplateHtml({
     template,
     theme,
+    locale,
     invoiceNumber: input.invoiceNumber,
-    issueDateLabel: input.issueDate.toLocaleDateString("en-US"),
+    issueDateLabel: input.issueDate.toLocaleDateString(localeCopy.intlLocale),
     customerName: input.customerName,
     customerAddress: input.customerAddress,
     customerEmail: input.customerEmail,
@@ -755,6 +789,6 @@ export async function generateInvoicePdf(input: InvoicePdfInput) {
       `[invoices] Playwright PDF generation failed, using pdf-lib fallback for ${input.invoiceNumber}.`,
       error
     );
-    return generateInvoicePdfWithPdfLib(input, items, template, theme);
+    return generateInvoicePdfWithPdfLib(input, items, template, theme, locale);
   }
 }

@@ -118,6 +118,7 @@ async function updateInvoice(formData: FormData) {
     tax,
     total,
     notes: notesRaw || null,
+    locale: currentInvoice.customer.idiomaPreferencia,
     theme,
     template,
   });

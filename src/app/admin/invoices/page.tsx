@@ -103,6 +103,7 @@ async function createInvoice(formData: FormData) {
       tax,
       total,
       notes: notes || null,
+      locale: customer.idiomaPreferencia,
       theme,
       template: invoiceTemplate,
     });
@@ -309,6 +310,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       scheduledDate: true,
       status: true,
       serviceType: true,
+      invoices: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { lineItems: true },
+      },
     },
   });
 
@@ -415,6 +421,9 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   scheduledDate: job.scheduledDate.toISOString(),
                   status: job.status,
                   serviceType: job.serviceType,
+                  suggestedUnitPrice:
+                    normalizeInvoiceLineItems(job.invoices[0]?.lineItems ?? [])[0]?.unitPrice ??
+                    null,
                 }))}
                 createInvoiceAction={createInvoice}
                 triggerLabel={t("admin.invoices.actions.new")}

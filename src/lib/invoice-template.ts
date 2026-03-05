@@ -1,4 +1,5 @@
 export type InvoiceTemplateTheme = "STANDARD" | "SPECIAL" | "ESTIMATE";
+export type InvoiceTemplateLocale = "EN" | "ES";
 
 export type InvoiceTemplateThemeConfig = {
   label: string;
@@ -31,6 +32,135 @@ export type InvoiceTemplateConfig = {
   legalClauses: string[];
   showEstimateWatermark: boolean;
   themes: Record<InvoiceTemplateTheme, InvoiceTemplateThemeConfig>;
+};
+
+type InvoiceTemplateLocaleCopy = {
+  htmlLang: "en" | "es";
+  intlLocale: "en-US" | "es-US";
+  serviceFallbackLabel: string;
+  headerSubtitle: string;
+  footerNote: string;
+  invoiceNumberLabel: string;
+  issueDateLabel: string;
+  billToLabel: string;
+  notesLabel: string;
+  tableDescriptionLabel: string;
+  tableAmountLabel: string;
+  subtotalLabel: string;
+  taxLabel: string;
+  totalLabel: string;
+  clausesTitle: string;
+  legalClauses: string[];
+  standardThemeLabel: string;
+  specialThemeLabel: string;
+  estimateThemeLabel: string;
+  estimateWatermarkText: string;
+  issuedByLabel: string;
+  qtyLabel: string;
+  unitPriceLabel: string;
+  invoiceSummaryLabel: string;
+  paymentMethodsLabel: string;
+  paymentMethodLabel: string;
+  paymentMethodsInline: string;
+  paymentMethodLine: string;
+  paymentAcceptLine: string;
+  ownerRoleLabel: string;
+  regulationDisclaimerLabel: string;
+  authorizationPaymentTermsLabel: string;
+  noLineItemsLabel: string;
+  noAdditionalNotesLabel: string;
+  paymentTermsPrefix: string;
+  paymentTermsFallback: string;
+  thankYouFallback: string;
+};
+
+const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplateLocaleCopy> = {
+  EN: {
+    htmlLang: "en",
+    intlLocale: "en-US",
+    serviceFallbackLabel: "Service",
+    headerSubtitle: "REPAIR AND MAINTENANCE",
+    footerNote: "Thank you for trusting AcostasPool.",
+    invoiceNumberLabel: "Invoice #",
+    issueDateLabel: "Issue date",
+    billToLabel: "Bill To",
+    notesLabel: "Notes",
+    tableDescriptionLabel: "Description",
+    tableAmountLabel: "Amount",
+    subtotalLabel: "Subtotal",
+    taxLabel: "Tax",
+    totalLabel: "Total",
+    clausesTitle: "Terms and clauses",
+    legalClauses: [
+      "Payment is due upon receipt unless otherwise agreed in writing.",
+      "Late balances may incur service hold and applicable fees.",
+      "This document reflects services rendered and approved.",
+    ],
+    standardThemeLabel: "INVOICE",
+    specialThemeLabel: "SPECIAL INVOICE",
+    estimateThemeLabel: "ESTIMATE",
+    estimateWatermarkText: "ESTIMATE",
+    issuedByLabel: "Issued By",
+    qtyLabel: "Qty",
+    unitPriceLabel: "Unit Price",
+    invoiceSummaryLabel: "Invoice Summary",
+    paymentMethodsLabel: "Payment Methods",
+    paymentMethodLabel: "Payment Method:",
+    paymentMethodsInline: "Credit | Debit | ACH | Check | Zelle | Cash",
+    paymentMethodLine: "Credit / Debit / ACH / Check",
+    paymentAcceptLine: "We accept: Visa, MasterCard, Zelle, Cash",
+    ownerRoleLabel: "President / Owner",
+    regulationDisclaimerLabel: "Regulation Disclaimer:",
+    authorizationPaymentTermsLabel: "Authorization & Payment Terms:",
+    noLineItemsLabel: "No line items",
+    noAdditionalNotesLabel: "No additional notes.",
+    paymentTermsPrefix: "Payment terms",
+    paymentTermsFallback: "Due upon receipt.",
+    thankYouFallback: "Thank you for trusting AcostasPool.",
+  },
+  ES: {
+    htmlLang: "es",
+    intlLocale: "es-US",
+    serviceFallbackLabel: "Servicio",
+    headerSubtitle: "REPARACION Y MANTENIMIENTO",
+    footerNote: "Gracias por confiar en AcostasPool.",
+    invoiceNumberLabel: "Factura #",
+    issueDateLabel: "Fecha de emision",
+    billToLabel: "Facturar a",
+    notesLabel: "Notas",
+    tableDescriptionLabel: "Descripcion",
+    tableAmountLabel: "Monto",
+    subtotalLabel: "Subtotal",
+    taxLabel: "Impuesto",
+    totalLabel: "Total",
+    clausesTitle: "Terminos y clausulas",
+    legalClauses: [
+      "El pago vence al recibir esta factura salvo acuerdo por escrito.",
+      "Los saldos vencidos pueden generar suspension del servicio y cargos aplicables.",
+      "Este documento refleja los servicios realizados y aprobados.",
+    ],
+    standardThemeLabel: "FACTURA",
+    specialThemeLabel: "FACTURA ESPECIAL",
+    estimateThemeLabel: "ESTIMADO",
+    estimateWatermarkText: "ESTIMADO",
+    issuedByLabel: "Emitido por",
+    qtyLabel: "Cant.",
+    unitPriceLabel: "Precio Unit.",
+    invoiceSummaryLabel: "Resumen de factura",
+    paymentMethodsLabel: "Metodos de pago",
+    paymentMethodLabel: "Metodo de pago:",
+    paymentMethodsInline: "Credito | Debito | ACH | Cheque | Zelle | Efectivo",
+    paymentMethodLine: "Credito / Debito / ACH / Cheque",
+    paymentAcceptLine: "Aceptamos: Visa, MasterCard, Zelle, Efectivo",
+    ownerRoleLabel: "Presidente / Propietario",
+    regulationDisclaimerLabel: "Aviso regulatorio:",
+    authorizationPaymentTermsLabel: "Autorizacion y terminos de pago:",
+    noLineItemsLabel: "Sin conceptos",
+    noAdditionalNotesLabel: "Sin notas adicionales.",
+    paymentTermsPrefix: "Terminos de pago",
+    paymentTermsFallback: "Pago al recibir.",
+    thankYouFallback: "Gracias por confiar en AcostasPool.",
+  },
 };
 
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
@@ -85,6 +215,54 @@ export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
     },
   },
 };
+
+export function resolveInvoiceTemplateLocale(value: unknown): InvoiceTemplateLocale {
+  return value === "ES" ? "ES" : "EN";
+}
+
+export function getInvoiceTemplateLocaleCopy(
+  locale: InvoiceTemplateLocale
+): InvoiceTemplateLocaleCopy {
+  return INVOICE_TEMPLATE_LOCALE_COPY[locale];
+}
+
+export function localizeInvoiceTemplate(
+  template: InvoiceTemplateConfig,
+  locale: InvoiceTemplateLocale
+): InvoiceTemplateConfig {
+  const copy = getInvoiceTemplateLocaleCopy(locale);
+  return {
+    ...template,
+    headerSubtitle: copy.headerSubtitle,
+    footerNote: copy.footerNote,
+    invoiceNumberLabel: copy.invoiceNumberLabel,
+    issueDateLabel: copy.issueDateLabel,
+    billToLabel: copy.billToLabel,
+    notesLabel: copy.notesLabel,
+    tableDescriptionLabel: copy.tableDescriptionLabel,
+    tableAmountLabel: copy.tableAmountLabel,
+    subtotalLabel: copy.subtotalLabel,
+    taxLabel: copy.taxLabel,
+    totalLabel: copy.totalLabel,
+    clausesTitle: copy.clausesTitle,
+    legalClauses: copy.legalClauses,
+    themes: {
+      STANDARD: {
+        ...template.themes.STANDARD,
+        label: copy.standardThemeLabel,
+      },
+      SPECIAL: {
+        ...template.themes.SPECIAL,
+        label: copy.specialThemeLabel,
+      },
+      ESTIMATE: {
+        ...template.themes.ESTIMATE,
+        label: copy.estimateThemeLabel,
+        watermarkText: copy.estimateWatermarkText,
+      },
+    },
+  };
+}
 
 function normalizeText(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -260,6 +438,7 @@ export type InvoiceTemplateRenderLineItem = {
 export type InvoiceTemplateRenderInput = {
   template: InvoiceTemplateConfig;
   theme: InvoiceTemplateTheme;
+  locale?: InvoiceTemplateLocale;
   invoiceNumber: string;
   issueDateLabel: string;
   customerName: string;
@@ -283,6 +462,8 @@ function money(value: number) {
 
 export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
   const { template, theme } = input;
+  const locale = resolveInvoiceTemplateLocale(input.locale);
+  const localeCopy = getInvoiceTemplateLocaleCopy(locale);
   const resolvedTheme = template.themes[theme];
 
   const customerLines = [
@@ -321,7 +502,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         )
         .join("")
     : `<tr>
-  <td colspan="5" class="empty-row">No line items</td>
+  <td colspan="5" class="empty-row">${escapeHtml(localeCopy.noLineItemsLabel)}</td>
 </tr>`;
 
   const watermark =
@@ -332,11 +513,11 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       : "";
 
   const notesBody = compactLine(input.notes);
-  const thankYouNote = compactLine(template.footerNote) || "Thank you for trusting AcostasPool.";
-  const notesDisplay = notesBody || "No additional notes.";
+  const thankYouNote = compactLine(template.footerNote) || localeCopy.thankYouFallback;
+  const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
   const paymentTerms = template.legalClauses[0]
-    ? `Payment terms: ${template.legalClauses[0]}`
-    : "Payment terms: Due upon receipt.";
+    ? `${localeCopy.paymentTermsPrefix}: ${template.legalClauses[0]}`
+    : `${localeCopy.paymentTermsPrefix}: ${localeCopy.paymentTermsFallback}`;
   const logoLineOne = "ACOSTA'S";
   const logoLineTwo = "POOL";
   const legalParagraphs = template.legalClauses
@@ -345,7 +526,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
     .join("");
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${localeCopy.htmlLang}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -612,18 +793,20 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
       }
 
       .summary-grid {
-        margin-top: 12px;
+        margin-top: 10px;
         display: flex;
         justify-content: flex-end;
       }
 
       .totals {
-        padding-left: 12px;
-        border-left: 2px solid var(--line);
+        min-width: 220px;
+        padding: 10px 12px 11px;
+        border: 1px solid var(--line-strong);
+        background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 100%);
       }
 
       .totals-title {
-        margin: 0 0 7px;
+        margin: 0 0 6px;
         font-size: 9px;
         font-weight: 800;
         letter-spacing: 0.1em;
@@ -636,12 +819,12 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         justify-content: space-between;
         align-items: baseline;
         margin: 0;
-        font-size: 10px;
+        font-size: 10.5px;
         color: var(--muted);
       }
 
       .totals-row + .totals-row {
-        margin-top: 5px;
+        margin-top: 4px;
       }
 
       .totals-row strong {
@@ -649,14 +832,20 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         font-weight: 700;
       }
 
+      .totals-row-total {
+        margin-top: 7px;
+        padding-top: 6px;
+        border-top: 1px solid var(--line-strong);
+      }
+
       .totals-row-total span {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 800;
         color: var(--brand);
       }
 
       .totals-row-total strong {
-        font-size: 42px;
+        font-size: 26px;
         font-weight: 900;
         color: var(--brand);
       }
@@ -823,7 +1012,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
               .join("")}
           </section>
           <section class="info-block">
-            <p class="block-title">Issued By</p>
+            <p class="block-title">${escapeHtml(localeCopy.issuedByLabel)}</p>
             ${issuedByLines
               .map((line, index) =>
                 index === 0
@@ -840,8 +1029,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
               <tr>
                 <th>#</th>
                 <th>${escapeHtml(template.tableDescriptionLabel)}</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
+                <th>${escapeHtml(localeCopy.qtyLabel)}</th>
+                <th>${escapeHtml(localeCopy.unitPriceLabel)}</th>
                 <th>${escapeHtml(template.tableAmountLabel)}</th>
               </tr>
             </thead>
@@ -853,7 +1042,7 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
 
         <div class="summary-grid">
           <aside class="totals">
-            <p class="totals-title">Invoice Summary</p>
+            <p class="totals-title">${escapeHtml(localeCopy.invoiceSummaryLabel)}</p>
             <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
               input.subtotal
             )}</strong></p>
@@ -869,8 +1058,8 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         <div class="bottom-stack">
           <div class="service-grid">
             <section>
-              <p class="service-title">Payment Methods</p>
-              <p class="service-main">Credit | Debit | ACH | Check | Zelle | Cash</p>
+              <p class="service-title">${escapeHtml(localeCopy.paymentMethodsLabel)}</p>
+              <p class="service-main">${escapeHtml(localeCopy.paymentMethodsInline)}</p>
               <p class="service-sub">${escapeHtml(paymentTerms)}</p>
             </section>
             <section>
@@ -883,17 +1072,17 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
           <footer class="footer">
             <div class="footer-head">
               <div>
-                <p class="payment-title">Payment Method:</p>
-                <p class="payment-line">Credit / Debit / ACH / Check</p>
-                <p class="payment-line">We accept: Visa, MasterCard, Zelle, Cash</p>
+                <p class="payment-title">${escapeHtml(localeCopy.paymentMethodLabel)}</p>
+                <p class="payment-line">${escapeHtml(localeCopy.paymentMethodLine)}</p>
+                <p class="payment-line">${escapeHtml(localeCopy.paymentAcceptLine)}</p>
               </div>
               <div class="owner-box">
                 <p class="owner-name">Luis Acosta</p>
-                <p class="owner-role">President / Owner</p>
+                <p class="owner-role">${escapeHtml(localeCopy.ownerRoleLabel)}</p>
               </div>
             </div>
-            <p class="legal-label">Regulation Disclaimer:</p>
-            <p class="legal-title">Authorization & Payment Terms:</p>
+            <p class="legal-label">${escapeHtml(localeCopy.regulationDisclaimerLabel)}</p>
+            <p class="legal-title">${escapeHtml(localeCopy.authorizationPaymentTermsLabel)}</p>
             ${legalParagraphs}
           </footer>
         </div>
@@ -919,6 +1108,7 @@ export function renderInvoiceTemplatePreview(
   return renderInvoiceTemplateHtml({
     template,
     theme,
+    locale: "EN",
     invoiceNumber: "INV-2026-1042",
     issueDateLabel: "03/03/2026",
     customerName: "Sample Customer",
