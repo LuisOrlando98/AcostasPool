@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export default async function OfflinePage() {
   const t = await getTranslations();

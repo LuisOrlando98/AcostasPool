@@ -1,7 +1,7 @@
 import AppShell from "@/components/layout/AppShell";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
-import { getTranslations } from "next-intl/server";
+import { getTranslations } from "@/i18n/server";
 
 export default async function DeveloperTestsPage() {
   const t = await getTranslations();
