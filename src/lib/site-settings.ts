@@ -3,9 +3,12 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import {
   buildPremiumEmailTemplateHtml,
   normalizeEmailTemplateContent,
+  normalizeLocalizedEmailTemplates,
   normalizeEmailTemplates,
+  resolveEmailTemplateLocale,
   type EmailTemplateContent,
   type EmailTemplateId,
+  type EmailTemplateLocale,
   type EmailTemplatesConfig,
 } from "@/lib/email-templates";
 import { prisma } from "@/lib/db";
@@ -189,27 +192,41 @@ export async function saveSiteLandingConfig(input: SiteLandingConfig) {
   return saveSiteSettings(data);
 }
 
-export async function getEmailTemplatesConfig(): Promise<EmailTemplatesConfig> {
+export async function getEmailTemplatesConfig(
+  locale: EmailTemplateLocale | string = "EN"
+): Promise<EmailTemplatesConfig> {
   const settings = await getSiteSettingsCached();
-  return normalizeEmailTemplates(settings?.emailTemplates);
+  return normalizeEmailTemplates(
+    settings?.emailTemplates,
+    resolveEmailTemplateLocale(locale)
+  );
 }
 
 export async function saveEmailTemplateConfig(
   templateId: EmailTemplateId,
-  template: EmailTemplateContent
+  template: EmailTemplateContent,
+  locale: EmailTemplateLocale | string = "EN"
 ) {
-  const current = await getEmailTemplatesConfig();
-  const normalized = normalizeEmailTemplateContent(template, current[templateId]);
+  const resolvedLocale = resolveEmailTemplateLocale(locale);
+  const settings = await getSiteSettingsCached();
+  const current = normalizeLocalizedEmailTemplates(settings?.emailTemplates);
+  const normalized = normalizeEmailTemplateContent(
+    template,
+    current[templateId][resolvedLocale]
+  );
   const next = {
     ...current,
     [templateId]: {
-      subject: normalized.subject,
-      text: normalized.text,
-      html: buildPremiumEmailTemplateHtml(
-        templateId,
-        normalized.subject,
-        normalized.text
-      ),
+      ...current[templateId],
+      [resolvedLocale]: {
+        subject: normalized.subject,
+        text: normalized.text,
+        html: buildPremiumEmailTemplateHtml(
+          templateId,
+          normalized.subject,
+          normalized.text
+        ),
+      },
     },
   };
 

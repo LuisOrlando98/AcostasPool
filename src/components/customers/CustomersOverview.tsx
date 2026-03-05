@@ -301,7 +301,7 @@ export default function CustomersOverview({
                             </td>
                             <td className="px-4 py-3.5">
                               <p
-                                className="max-w-[18rem] truncate text-[11px] text-slate-600"
+                                className="customers-overview-address text-[11px] text-slate-600"
                                 title={customer.address || ""}
                               >
                                 {customer.address || t("common.labels.notAvailable")}

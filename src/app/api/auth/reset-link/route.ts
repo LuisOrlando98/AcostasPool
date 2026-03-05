@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    select: { id: true, email: true, fullName: true, isActive: true },
+    select: { id: true, email: true, fullName: true, isActive: true, locale: true },
   });
   if (!user || !user.isActive) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
     recipientEmail: user.email,
     recipientName: user.fullName,
     baseUrl: process.env.APP_URL ?? new URL(request.url).origin,
+    locale: user.locale,
   });
 
   if (!sent.ok) {

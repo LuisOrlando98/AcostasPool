@@ -805,8 +805,8 @@ export default function RoutesCalendar({
     ? new Date(`${mobileDayKey}T00:00:00`)
     : null;
 
-  const cellPadding = "px-4 py-3";
-  const tableTextSize = "text-xs";
+  const cellPadding = "px-3 py-2.5 xl:px-4 xl:py-3";
+  const tableTextSize = "text-[11px] xl:text-xs";
   const modalStatus = jobModal
     ? statusMeta[jobModal.status] ?? {
         label: jobModal.status,
@@ -1666,8 +1666,8 @@ export default function RoutesCalendar({
           </div>
         </div>
 
-        <div className="mt-6 hidden overflow-x-auto pb-2 lg:block lg:overflow-visible">
-          <div className="grid min-w-[980px] grid-cols-7 gap-2 2xl:min-w-0">
+        <div className="mt-6 hidden overflow-x-auto pb-2 lg:block xl:overflow-visible">
+          <div className="grid min-w-[980px] grid-cols-7 gap-1.5 xl:gap-2 2xl:min-w-0">
           {(() => {
             return calendarDays.map((day) => {
               const key = toDateKey(day);
@@ -1718,7 +1718,7 @@ export default function RoutesCalendar({
                   setDraggingJobId(null);
                   setDragOverTarget(null);
                 }}
-                className={`group relative flex min-h-[210px] flex-col gap-2.5 rounded-[22px] border px-3 py-3 text-xs transition sm:min-h-[240px] 2xl:min-h-[260px] ${dayTone} ${dayHover} ${
+                className={`group relative flex min-h-[180px] flex-col gap-2 rounded-2xl border px-2.5 py-2.5 text-[11px] transition xl:min-h-[220px] xl:gap-2.5 xl:rounded-[22px] xl:px-3 xl:py-3 xl:text-xs 2xl:min-h-[260px] ${dayTone} ${dayHover} ${
                   isToday ? "ring-1 ring-sky-400" : ""
                 } ${editMode ? "cursor-pointer" : "cursor-default"}`}
               >
@@ -1731,7 +1731,7 @@ export default function RoutesCalendar({
                       >
                         {day.getDate()}
                       </span>
-                      <span className="text-[8px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                      <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:tracking-[0.28em]">
                         {dayLabel}
                       </span>
                     </div>
@@ -1878,7 +1878,7 @@ export default function RoutesCalendar({
                           }
                           openJobModal(job);
                         }}
-                        className={`relative block rounded-2xl border px-3 py-3 text-[10px] transition ${
+                        className={`relative block rounded-2xl border px-2.5 py-2.5 text-[9px] transition xl:px-3 xl:py-3 xl:text-[10px] ${
                           editMode ? "cursor-move" : "cursor-pointer"
                         } ${isSelected ? "ring-2 ring-rose-400" : isHighlighted ? "ring-2 ring-sky-400" : ""} ${
                           isDropTarget
@@ -1903,7 +1903,7 @@ export default function RoutesCalendar({
                         />
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate text-[12px] font-semibold text-slate-800">
+                            <div className="truncate text-[11px] font-semibold text-slate-800 xl:text-[12px]">
                               {job.customer.name}
                             </div>
                             <div className="text-[10px] text-slate-500">

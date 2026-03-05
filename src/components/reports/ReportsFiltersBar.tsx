@@ -290,14 +290,14 @@ export default function ReportsFiltersBar({
       ) : null}
 
       {open ? (
-        <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
           <button
             type="button"
             className="absolute inset-0"
             aria-label={t("common.actions.close")}
             onClick={() => setOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
+          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
               <div className="flex items-start justify-between gap-3">
                 <div>

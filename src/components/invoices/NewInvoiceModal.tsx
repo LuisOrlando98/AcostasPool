@@ -78,7 +78,7 @@ export default function NewInvoiceModal({
       {isOpen && portalReady
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1600] flex items-start justify-center overflow-y-auto p-3 sm:p-6"
+              className="fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto p-3 sm:p-6"
               role="dialog"
               aria-modal="true"
               aria-label={title}
@@ -89,7 +89,7 @@ export default function NewInvoiceModal({
                 className="absolute inset-0 bg-slate-900/60"
                 onClick={() => setIsOpen(false)}
               />
-              <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <div className="relative z-10 my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl xl:max-w-5xl">
                 <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>

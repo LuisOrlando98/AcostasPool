@@ -1474,6 +1474,32 @@ h3 {
   text-align: center;
 }
 
+.customers-overview-address {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1279px) {
+  .customers-overview-table th,
+  .customers-overview-table td {
+    padding-left: 0.58rem;
+    padding-right: 0.58rem;
+  }
+
+  .customers-overview-address {
+    max-width: 14rem;
+    white-space: normal;
+    text-overflow: clip;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.2rem;
+    max-height: 2.4rem;
+  }
+}
+
 @media (min-width: 1280px) {
   .customers-table th,
   .customers-table td {
@@ -1541,6 +1567,18 @@ h3 {
 
   .customers-overview-table .sticky {
     position: static;
+  }
+
+  .customers-overview-table th,
+  .customers-overview-table td {
+    padding-left: 0.52rem;
+    padding-right: 0.52rem;
+  }
+
+  .customers-overview-address {
+    max-width: 12.5rem;
+    line-height: 1.1rem;
+    max-height: 2.2rem;
   }
 }
 

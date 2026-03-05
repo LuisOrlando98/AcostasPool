@@ -260,9 +260,9 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
       : "text-slate-500";
 
   return (
-    <div className="grid gap-4 sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-stretch">
-      <div className="flex justify-center sm:justify-start">
-        <div className="h-32 w-32 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm sm:h-full sm:min-h-[10.75rem] sm:w-full">
+    <div className="grid gap-4 lg:grid-cols-[9rem_minmax(0,1fr)] lg:items-stretch">
+      <div className="flex justify-center lg:justify-start">
+        <div className="h-32 w-32 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm lg:h-full lg:min-h-[10.75rem] lg:w-full">
           {preview ? (
             <img
               src={preview}

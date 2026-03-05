@@ -5,7 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
 import { createNotification } from "@/lib/notifications/create";
-import { getInvoiceTemplateConfig } from "@/lib/site-settings";
+import { getEmailTemplatesConfig, getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { readStoredAsset } from "@/lib/storage/object-store";
 import { logAuditEvent } from "@/lib/audit/log";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
@@ -17,48 +17,6 @@ export const runtime = "nodejs";
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
-
-function getInvoiceEmailTemplateByLocale(locale: "EN" | "ES") {
-  if (locale === "ES") {
-    return {
-      subject: "Tu factura de AcostasPool {{invoice_number}}",
-      text: [
-        "Hola {{customer_name}},",
-        "",
-        "Adjuntamos tu factura {{invoice_number}} en PDF.",
-        "Por favor revisa los detalles y guarda este correo para tus registros.",
-        "",
-        "Gracias por elegir AcostasPool.",
-      ].join("\n"),
-      html: [
-        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
-        '<h2 style="margin:0 0 10px;color:#0b1f35;">Factura {{invoice_number}}</h2>',
-        '<p style="margin:0 0 12px;color:#334155;">Hola {{customer_name_html}}, tu factura esta adjunta a este correo.</p>',
-        '<p style="margin:0;color:#64748b;font-size:13px;">Gracias por elegir AcostasPool.</p>',
-        "</div>",
-      ].join(""),
-    };
-  }
-
-  return {
-    subject: "Your AcostasPool invoice {{invoice_number}}",
-    text: [
-      "Hi {{customer_name}},",
-      "",
-      "Your invoice {{invoice_number}} is attached to this email as PDF.",
-      "Please review the details and keep this message for your records.",
-      "",
-      "Thank you for choosing AcostasPool.",
-    ].join("\n"),
-    html: [
-      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
-      '<h2 style="margin:0 0 10px;color:#0b1f35;">Invoice {{invoice_number}}</h2>',
-      '<p style="margin:0 0 12px;color:#334155;">Hi {{customer_name_html}}, your invoice is attached to this email.</p>',
-      '<p style="margin:0;color:#64748b;font-size:13px;">Thank you for choosing AcostasPool.</p>',
-      "</div>",
-    ].join(""),
-  };
-}
 
 export async function POST(
   _request: Request,
@@ -121,7 +79,8 @@ export async function POST(
     );
   }
 
-  const rendered = renderEmailTemplate(getInvoiceEmailTemplateByLocale(invoiceLocale), {
+  const templates = await getEmailTemplatesConfig(invoiceLocale);
+  const rendered = renderEmailTemplate(templates.INVOICE_SENT, {
     customer_name: customerName,
     customer_name_html: escapeHtml(customerName),
     invoice_number: invoice.number,

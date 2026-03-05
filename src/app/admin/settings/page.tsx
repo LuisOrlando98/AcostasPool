@@ -10,6 +10,7 @@ import {
   EMAIL_TEMPLATE_IDS,
   isEmailTemplateId,
   renderEmailTemplate,
+  resolveEmailTemplateLocale,
 } from "@/lib/email-templates";
 import {
   normalizeInvoiceTemplateConfig,
@@ -34,7 +35,7 @@ import {
   saveSiteLandingConfig,
   saveSiteSocialLinks,
 } from "@/lib/site-settings";
-import { getTranslations } from "@/i18n/server";
+import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 type SettingsTabId =
   | "social"
@@ -250,12 +251,13 @@ async function saveEmailTemplate(formData: FormData) {
   if (!isEmailTemplateId(templateId)) {
     return;
   }
+  const adminLocale = resolveEmailTemplateLocale(await getRequestLocale());
 
   await saveEmailTemplateConfig(templateId, {
     subject: String(formData.get("subject") ?? ""),
     text: String(formData.get("text") ?? ""),
     html: "",
-  });
+  }, adminLocale);
 
   revalidatePath("/admin/settings");
 }
@@ -339,6 +341,7 @@ async function saveComplianceDoc(formData: FormData) {
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   await requireRole("ADMIN");
+  const adminLocale = resolveEmailTemplateLocale(await getRequestLocale());
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const currentTab = resolveTab(getFirstSearchValue(resolvedSearchParams?.tab));
   const templateQuery = getFirstSearchValue(resolvedSearchParams?.template);
@@ -358,7 +361,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     getTranslations(),
     getSiteSocialLinks(),
     getSiteLandingConfig(),
-    getEmailTemplatesConfig(),
+    getEmailTemplatesConfig(adminLocale),
     getInvoiceTemplateConfig(),
     getComplianceContentConfig(),
     ]);

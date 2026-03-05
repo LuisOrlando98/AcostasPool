@@ -3,7 +3,11 @@ import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { formatCustomerName } from "@/lib/customers/format";
-import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  renderEmailTemplate,
+  resolveEmailTemplateLocale,
+} from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
 
@@ -133,7 +137,9 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
 
   const customerName = formatCustomerName(customer);
-  const templates = await getEmailTemplatesConfig();
+  const templates = await getEmailTemplatesConfig(
+    resolveEmailTemplateLocale(customer.idiomaPreferencia)
+  );
   const rendered = renderEmailTemplate(templates.CUSTOMER_INVITE, {
     customer_name: customerName,
     customer_name_html: escapeHtml(customerName),

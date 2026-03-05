@@ -204,7 +204,7 @@ export default function InvoiceCreateForm({
       }}
       className="mt-5"
     >
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem] xl:gap-5">
         <div className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -429,7 +429,7 @@ export default function InvoiceCreateForm({
           </section>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-3 self-start xl:sticky xl:top-0">
           <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700">
             <input
               type="checkbox"
@@ -470,7 +470,7 @@ export default function InvoiceCreateForm({
             </label>
             <textarea
               name="notes"
-              className="app-input mt-2 min-h-[100px] w-full px-4 py-3 text-sm"
+              className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
             />
           </div>
 

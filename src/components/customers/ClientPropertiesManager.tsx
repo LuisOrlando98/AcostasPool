@@ -424,7 +424,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       </section>
 
       {editorOpen ? (
-        <div className="fixed inset-0 z-[1300] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
@@ -529,7 +529,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       ) : null}
 
       {confirmOpen ? (
-        <div className="fixed inset-0 z-[1310] flex items-start justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/65 backdrop-blur-[2px]"

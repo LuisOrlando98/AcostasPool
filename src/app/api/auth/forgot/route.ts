@@ -56,6 +56,7 @@ export async function POST(request: Request) {
       id: true,
       email: true,
       fullName: true,
+      locale: true,
     },
   });
 
@@ -65,6 +66,7 @@ export async function POST(request: Request) {
       recipientEmail: user.email,
       recipientName: user.fullName,
       baseUrl: process.env.APP_URL ?? new URL(request.url).origin,
+      locale: user.locale,
     });
   }
 

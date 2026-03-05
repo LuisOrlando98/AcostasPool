@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
-import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  renderEmailTemplate,
+  resolveEmailTemplateLocale,
+} from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 
 const PASSWORD_RESET_HOURS = 2;
@@ -11,6 +15,7 @@ type SendPasswordResetEmailInput = {
   recipientEmail: string;
   recipientName: string;
   baseUrl: string;
+  locale?: string | null;
 };
 
 type SendPasswordResetEmailResult = { ok: true } | { ok: false; error: string };
@@ -36,6 +41,7 @@ export async function sendPasswordResetEmail({
   recipientEmail,
   recipientName,
   baseUrl,
+  locale,
 }: SendPasswordResetEmailInput): Promise<SendPasswordResetEmailResult> {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");
@@ -67,7 +73,9 @@ export async function sendPasswordResetEmail({
   const { token } = await issuePasswordResetToken(userId);
   const resetLink = `${baseUrl.replace(/\/+$/, "")}/reset?token=${token}`;
 
-  const templates = await getEmailTemplatesConfig();
+  const templates = await getEmailTemplatesConfig(
+    resolveEmailTemplateLocale(locale)
+  );
   const rendered = renderEmailTemplate(templates.PASSWORD_RESET, {
     recipient_name: recipientName,
     recipient_name_html: escapeHtml(recipientName),

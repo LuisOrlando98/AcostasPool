@@ -20,6 +20,11 @@ export type EmailTemplateContent = {
 };
 
 export type EmailTemplatesConfig = Record<EmailTemplateId, EmailTemplateContent>;
+export type EmailTemplateLocale = "EN" | "ES";
+export type LocalizedEmailTemplatesConfig = Record<
+  EmailTemplateId,
+  Record<EmailTemplateLocale, EmailTemplateContent>
+>;
 
 type EmailTemplateDefinition = {
   label: string;
@@ -430,6 +435,174 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
   },
 };
 
+const EMAIL_TEMPLATE_LOCALES: readonly EmailTemplateLocale[] = ["EN", "ES"];
+
+type LocalizedEmailTemplateDefaultsInput = Partial<
+  Record<EmailTemplateId, Record<EmailTemplateLocale, { subject: string; text: string }>>
+>;
+
+const LOCALIZED_EMAIL_TEMPLATE_DEFAULTS: LocalizedEmailTemplateDefaultsInput = {
+  CUSTOMER_INVITE: {
+    EN: {
+      subject: "Welcome to AcostasPool - Complete your profile",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your client portal is ready. Complete your profile and create your password.",
+        "Use this secure access link:",
+        "{{invite_link}}",
+        "",
+        "This invitation expires in {{invite_hours}} hours.",
+        "If you need help, reply to this message and our team will assist you.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Bienvenido a AcostasPool - Completa tu perfil",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Tu portal de cliente ya esta listo. Completa tu perfil y crea tu contrasena.",
+        "Usa este enlace de acceso seguro:",
+        "{{invite_link}}",
+        "",
+        "Esta invitacion vence en {{invite_hours}} horas.",
+        "Si necesitas ayuda, responde este mensaje y nuestro equipo te apoyara.",
+      ].join("\n"),
+    },
+  },
+  PASSWORD_RESET: {
+    EN: {
+      subject: "Reset your AcostasPool password",
+      text: [
+        "Hi {{recipient_name}},",
+        "",
+        "We received a request to reset your password.",
+        "Use this secure link: {{reset_link}}",
+        "",
+        "This link expires in {{reset_hours}} hours.",
+        "If you didn't request this, you can ignore this message.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Restablece tu contrasena de AcostasPool",
+      text: [
+        "Hola {{recipient_name}},",
+        "",
+        "Recibimos una solicitud para restablecer tu contrasena.",
+        "Usa este enlace seguro: {{reset_link}}",
+        "",
+        "Este enlace vence en {{reset_hours}} horas.",
+        "Si no hiciste esta solicitud, puedes ignorar este mensaje.",
+      ].join("\n"),
+    },
+  },
+  INVOICE_SENT: {
+    EN: {
+      subject: "Your AcostasPool invoice {{invoice_number}}",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your invoice {{invoice_number}} is attached to this email as PDF.",
+        "Please review the details and keep this message for your records.",
+        "",
+        "Thank you for choosing AcostasPool.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Tu factura de AcostasPool {{invoice_number}}",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Adjuntamos tu factura {{invoice_number}} en PDF.",
+        "Por favor revisa los detalles y guarda este correo para tus registros.",
+        "",
+        "Gracias por elegir AcostasPool.",
+      ].join("\n"),
+    },
+  },
+  CUSTOMER_SERVICE_SCHEDULED: {
+    EN: {
+      subject: "Service confirmed - {{scheduled_label}}",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your service has been confirmed for {{scheduled_label}}.",
+        "Our team will arrive within the planned window.",
+        "If you need to reschedule, please contact us.",
+        "",
+        "Address: {{job_address}}",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Servicio confirmado - {{scheduled_label}}",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Tu servicio ha sido confirmado para {{scheduled_label}}.",
+        "Nuestro equipo llegara dentro del rango planificado.",
+        "Si necesitas cambiar la fecha, por favor contactanos.",
+        "",
+        "Direccion: {{job_address}}",
+      ].join("\n"),
+    },
+  },
+  CUSTOMER_SERVICE_RESCHEDULED: {
+    EN: {
+      subject: "Service rescheduled - {{scheduled_label}}",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your service has been rescheduled for {{scheduled_label}}.",
+        "We apologize for the change and appreciate your understanding.",
+        "If you have any questions, please reply to this email.",
+        "",
+        "Address: {{job_address}}",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Servicio reprogramado - {{scheduled_label}}",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Tu servicio ha sido reprogramado para {{scheduled_label}}.",
+        "Lamentamos el cambio y agradecemos tu comprension.",
+        "Si tienes dudas, por favor responde a este correo.",
+        "",
+        "Direccion: {{job_address}}",
+      ].join("\n"),
+    },
+  },
+  CUSTOMER_JOB_COMPLETED: {
+    EN: {
+      subject: "Service completed - {{completed_label}}",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your service was completed by {{technician_name}}.",
+        "Completion time: {{completed_label}}.",
+        "",
+        "Address: {{job_address}}",
+        "You can review job evidence in your client portal.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Servicio completado - {{completed_label}}",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Tu servicio fue completado por {{technician_name}}.",
+        "Hora de finalizacion: {{completed_label}}.",
+        "",
+        "Direccion: {{job_address}}",
+        "Puedes revisar las evidencias en tu portal de cliente.",
+      ].join("\n"),
+    },
+  },
+};
+
+const SPANISH_HINT_PATTERN =
+  /\b(hola|servicio|factura|correo|gracias|direccion|reprogramado|completado|contrasena|solicitud)\b/i;
+
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 
 function interpolateTemplate(content: string, variables: Record<string, string>) {
@@ -562,23 +735,102 @@ export function buildPremiumEmailTemplateHtml(
     "</div>",
   ].join("");
 }
-export function getDefaultEmailTemplatesConfig(): EmailTemplatesConfig {
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function getDefaultTemplateCopyByLocale(
+  templateId: EmailTemplateId,
+  locale: EmailTemplateLocale
+) {
+  const localized = LOCALIZED_EMAIL_TEMPLATE_DEFAULTS[templateId]?.[locale];
+  if (localized) {
+    return localized;
+  }
+  const defaults = EMAIL_TEMPLATE_DEFINITIONS[templateId].defaults;
+  return {
+    subject: defaults.subject,
+    text: defaults.text,
+  };
+}
+
+function buildTemplateContent(
+  templateId: EmailTemplateId,
+  subject: string,
+  text: string
+): EmailTemplateContent {
+  return {
+    subject,
+    text,
+    html: buildPremiumEmailTemplateHtml(templateId, subject, text),
+  };
+}
+
+function guessTemplateLocale(content: EmailTemplateContent): EmailTemplateLocale {
+  const haystack = `${content.subject}\n${content.text}\n${content.html}`;
+  return SPANISH_HINT_PATTERN.test(haystack) ? "ES" : "EN";
+}
+
+function normalizeTemplateForLocale(
+  templateId: EmailTemplateId,
+  value: unknown,
+  fallback: EmailTemplateContent
+) {
+  const normalized = normalizeEmailTemplateContent(value, fallback);
+  return buildTemplateContent(templateId, normalized.subject, normalized.text);
+}
+
+export function resolveEmailTemplateLocale(
+  locale: string | null | undefined
+): EmailTemplateLocale {
+  const normalized = String(locale ?? "")
+    .trim()
+    .toUpperCase();
+  if (normalized.startsWith("ES")) {
+    return "ES";
+  }
+  return "EN";
+}
+
+export function getDefaultEmailTemplatesConfig(
+  locale: EmailTemplateLocale = "EN"
+): EmailTemplatesConfig {
   return EMAIL_TEMPLATE_IDS.reduce((acc, templateId) => {
-    const defaults = EMAIL_TEMPLATE_DEFINITIONS[templateId].defaults;
-    acc[templateId] = {
-      subject: defaults.subject,
-      text: defaults.text,
-      html: buildPremiumEmailTemplateHtml(templateId, defaults.subject, defaults.text),
-    };
+    const defaults = getDefaultTemplateCopyByLocale(templateId, locale);
+    acc[templateId] = buildTemplateContent(
+      templateId,
+      defaults.subject,
+      defaults.text
+    );
     return acc;
   }, {} as EmailTemplatesConfig);
+}
+
+export function getDefaultLocalizedEmailTemplatesConfig(): LocalizedEmailTemplatesConfig {
+  const defaultsByLocale: Record<EmailTemplateLocale, EmailTemplatesConfig> =
+    EMAIL_TEMPLATE_LOCALES.reduce((acc, locale) => {
+      acc[locale] = getDefaultEmailTemplatesConfig(locale);
+      return acc;
+    }, {} as Record<EmailTemplateLocale, EmailTemplatesConfig>);
+
+  return EMAIL_TEMPLATE_IDS.reduce((acc, templateId) => {
+    acc[templateId] = EMAIL_TEMPLATE_LOCALES.reduce((localized, locale) => {
+      localized[locale] = defaultsByLocale[locale][templateId];
+      return localized;
+    }, {} as Record<EmailTemplateLocale, EmailTemplateContent>);
+    return acc;
+  }, {} as LocalizedEmailTemplatesConfig);
 }
 
 export function normalizeEmailTemplateContent(
   value: unknown,
   fallback: EmailTemplateContent
 ): EmailTemplateContent {
-  const input = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const input = asRecord(value) ?? {};
 
   return {
     subject: String(input.subject ?? fallback.subject),
@@ -587,17 +839,61 @@ export function normalizeEmailTemplateContent(
   };
 }
 
-export function normalizeEmailTemplates(value: unknown): EmailTemplatesConfig {
-  const input = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  const defaults = getDefaultEmailTemplatesConfig();
+export function normalizeLocalizedEmailTemplates(value: unknown): LocalizedEmailTemplatesConfig {
+  const input = asRecord(value) ?? {};
+  const defaults = getDefaultLocalizedEmailTemplatesConfig();
 
   return EMAIL_TEMPLATE_IDS.reduce((acc, templateId) => {
-    const normalized = normalizeEmailTemplateContent(input[templateId], defaults[templateId]);
+    const rawTemplate = asRecord(input[templateId]);
+    if (!rawTemplate) {
+      acc[templateId] = defaults[templateId];
+      return acc;
+    }
+
+    const localizedEN = asRecord(rawTemplate.EN);
+    const localizedES = asRecord(rawTemplate.ES);
+
+    if (localizedEN || localizedES) {
+      acc[templateId] = {
+        EN: normalizeTemplateForLocale(
+          templateId,
+          localizedEN ?? localizedES,
+          defaults[templateId].EN
+        ),
+        ES: normalizeTemplateForLocale(
+          templateId,
+          localizedES ?? localizedEN,
+          defaults[templateId].ES
+        ),
+      };
+      return acc;
+    }
+
+    const legacyContent = normalizeTemplateForLocale(
+      templateId,
+      rawTemplate,
+      defaults[templateId].EN
+    );
+    const guessedLocale = guessTemplateLocale(legacyContent);
+    const otherLocale: EmailTemplateLocale = guessedLocale === "EN" ? "ES" : "EN";
+
     acc[templateId] = {
-      subject: normalized.subject,
-      text: normalized.text,
-      html: buildPremiumEmailTemplateHtml(templateId, normalized.subject, normalized.text),
+      EN: guessedLocale === "EN" ? legacyContent : defaults[templateId].EN,
+      ES: guessedLocale === "ES" ? legacyContent : defaults[templateId].ES,
     };
+    acc[templateId][otherLocale] = defaults[templateId][otherLocale];
+    return acc;
+  }, {} as LocalizedEmailTemplatesConfig);
+}
+
+export function normalizeEmailTemplates(
+  value: unknown,
+  locale: EmailTemplateLocale = "EN"
+): EmailTemplatesConfig {
+  const resolvedLocale = resolveEmailTemplateLocale(locale);
+  const localized = normalizeLocalizedEmailTemplates(value);
+  return EMAIL_TEMPLATE_IDS.reduce((acc, templateId) => {
+    acc[templateId] = localized[templateId][resolvedLocale];
     return acc;
   }, {} as EmailTemplatesConfig);
 }

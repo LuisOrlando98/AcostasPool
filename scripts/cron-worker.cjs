@@ -9,6 +9,8 @@ const TZ = "America/New_York";
 const CUSTOMER_EVENTS = ["SERVICE_SCHEDULED", "SERVICE_RESCHEDULED", "JOB_COMPLETED"];
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 const TEMPLATE_CACHE_MS = 60 * 1000;
+const SPANISH_HINT_PATTERN =
+  /\b(hola|servicio|factura|correo|gracias|direccion|reprogramado|completado|contrasena|solicitud)\b/i;
 
 const EMAIL_TEMPLATE_DEFAULTS = {
   CUSTOMER_SERVICE_SCHEDULED: {
@@ -108,6 +110,80 @@ const EMAIL_TEMPLATE_DEFAULTS = {
   },
 };
 
+const CUSTOMER_TEMPLATE_DEFAULTS_EN = {
+  CUSTOMER_SERVICE_SCHEDULED: {
+    subject: "Service scheduled - {{scheduled_label}}",
+    text: [
+      "Hi {{customer_name}},",
+      "",
+      "Your service is scheduled for {{scheduled_label}}.",
+      "If you need to reschedule, please contact us.",
+      "",
+      "Address: {{job_address}}",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Service scheduled</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hi {{customer_name_html}}, your service is scheduled for <strong>{{scheduled_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Address: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+  CUSTOMER_SERVICE_RESCHEDULED: {
+    subject: "Service rescheduled - {{scheduled_label}}",
+    text: [
+      "Hi {{customer_name}},",
+      "",
+      "Your service has been rescheduled for {{scheduled_label}}.",
+      "We are sorry for the inconvenience and appreciate your understanding.",
+      "If you have any questions, please reply to this email.",
+      "",
+      "Address: {{job_address}}",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Service rescheduled</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hi {{customer_name_html}}, your service has been rescheduled for <strong>{{scheduled_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Address: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+  CUSTOMER_JOB_COMPLETED: {
+    subject: "Service completed - {{completed_label}}",
+    text: [
+      "Hi {{customer_name}},",
+      "",
+      "Your service was completed by {{technician_name}}.",
+      "Completion time: {{completed_label}}.",
+      "",
+      "Address: {{job_address}}",
+      "You can review the evidence in your customer portal.",
+    ].join("\n"),
+    html: [
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+      '<h3 style="margin:0 0 10px;color:#0b1f35;">Service completed</h3>',
+      '<p style="margin:0 0 10px;color:#334155;">Hi {{customer_name_html}}, your service was completed by <strong>{{technician_name_html}}</strong>.</p>',
+      '<p style="margin:0 0 10px;color:#334155;">Completion time: <strong>{{completed_label_html}}</strong>.</p>',
+      '<p style="margin:0;color:#64748b;">Address: {{job_address_html}}</p>',
+      "</div>",
+    ].join(""),
+  },
+};
+
+const EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE = Object.fromEntries(
+  Object.entries(EMAIL_TEMPLATE_DEFAULTS).map(([templateId, template]) => [
+    templateId,
+    { EN: template, ES: template },
+  ])
+);
+
+for (const [templateId, template] of Object.entries(CUSTOMER_TEMPLATE_DEFAULTS_EN)) {
+  if (!EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE[templateId]) {
+    continue;
+  }
+  EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE[templateId].EN = template;
+}
+
 const EMAIL_TEMPLATE_LABELS = {
   CUSTOMER_SERVICE_SCHEDULED: "Service scheduled",
   CUSTOMER_SERVICE_RESCHEDULED: "Service rescheduled",
@@ -116,7 +192,7 @@ const EMAIL_TEMPLATE_LABELS = {
   TECH_CHANGE_DIGEST: "Route changes digest",
 };
 
-let emailTemplateCache = EMAIL_TEMPLATE_DEFAULTS;
+let emailTemplateCache = EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE;
 let emailTemplateCacheAt = 0;
 
 const escapeHtml = (value) =>
@@ -129,6 +205,21 @@ const escapeHtml = (value) =>
 
 const interpolateTemplate = (content, variables) =>
   String(content ?? "").replace(TEMPLATE_TOKEN, (_match, token) => variables[token] ?? "");
+
+const resolveEmailTemplateLocale = (locale) => {
+  const normalized = String(locale ?? "")
+    .trim()
+    .toUpperCase();
+  if (normalized.startsWith("ES")) {
+    return "ES";
+  }
+  return "EN";
+};
+
+const guessTemplateLocale = (template) => {
+  const haystack = `${template?.subject || ""}\n${template?.text || ""}\n${template?.html || ""}`;
+  return SPANISH_HINT_PATTERN.test(haystack) ? "ES" : "EN";
+};
 
 const buildEmailBodyBlocks = (templateId, text) => {
   const rawLines = String(text ?? "").replace(/\r/g, "").split("\n");
@@ -261,8 +352,32 @@ const normalizeTemplateConfig = (value) => {
   const input = value && typeof value === "object" ? value : {};
   const normalized = {};
 
-  for (const [templateId, fallback] of Object.entries(EMAIL_TEMPLATE_DEFAULTS)) {
-    normalized[templateId] = normalizeTemplateContent(templateId, input[templateId], fallback);
+  for (const [templateId, fallbackByLocale] of Object.entries(EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE)) {
+    const rawTemplate =
+      input[templateId] && typeof input[templateId] === "object" ? input[templateId] : null;
+    const rawEN =
+      rawTemplate?.EN && typeof rawTemplate.EN === "object" ? rawTemplate.EN : null;
+    const rawES =
+      rawTemplate?.ES && typeof rawTemplate.ES === "object" ? rawTemplate.ES : null;
+
+    if (rawEN || rawES) {
+      normalized[templateId] = {
+        EN: normalizeTemplateContent(templateId, rawEN || rawES, fallbackByLocale.EN),
+        ES: normalizeTemplateContent(templateId, rawES || rawEN, fallbackByLocale.ES),
+      };
+      continue;
+    }
+
+    const legacyTemplate = normalizeTemplateContent(
+      templateId,
+      rawTemplate || input[templateId],
+      fallbackByLocale.EN
+    );
+    const guessedLocale = guessTemplateLocale(legacyTemplate);
+    normalized[templateId] = {
+      EN: guessedLocale === "EN" ? legacyTemplate : fallbackByLocale.EN,
+      ES: guessedLocale === "ES" ? legacyTemplate : fallbackByLocale.ES,
+    };
   }
 
   return normalized;
@@ -283,9 +398,13 @@ const getEmailTemplates = async () => {
   return emailTemplateCache;
 };
 
-const renderTemplateById = async (templateId, variables) => {
+const renderTemplateById = async (templateId, variables, locale = "EN") => {
+  const resolvedLocale = resolveEmailTemplateLocale(locale);
   const templates = await getEmailTemplates();
-  const template = templates[templateId] ?? EMAIL_TEMPLATE_DEFAULTS[templateId];
+  const templateByLocale =
+    templates[templateId] ?? EMAIL_TEMPLATE_DEFAULTS_BY_LOCALE[templateId];
+  const template =
+    templateByLocale?.[resolvedLocale] || templateByLocale?.EN || templateByLocale?.ES;
 
   return {
     subject: interpolateTemplate(template.subject, variables),
@@ -315,14 +434,15 @@ const getTransporter = () => {
   return { transporter, from };
 };
 
-const formatDateTime = (date) =>
+const formatDateTime = (date, locale = "EN") =>
   DateTime.fromJSDate(date, { zone: "utc" })
     .setZone(TZ)
-    .toFormat("MMM dd, yyyy hh:mm a");
+    .setLocale(locale === "ES" ? "es" : "en")
+    .toFormat(locale === "ES" ? "dd LLL yyyy hh:mm a" : "MMM dd, yyyy hh:mm a");
 
-const getCustomerName = (customer) => {
+const getCustomerName = (customer, locale = "ES") => {
   if (!customer) {
-    return "Cliente";
+    return locale === "EN" ? "Customer" : "Cliente";
   }
 
   const fullName = [customer.nombre, customer.apellidos].filter(Boolean).join(" ").trim();
@@ -330,10 +450,11 @@ const getCustomerName = (customer) => {
     return fullName;
   }
 
-  return customer.name || customer.email || "Cliente";
+  return customer.name || customer.email || (locale === "EN" ? "Customer" : "Cliente");
 };
 
 const buildCustomerEmail = async (notification, job) => {
+  const customerLocale = resolveEmailTemplateLocale(job?.customer?.idiomaPreferencia);
   const payload =
     notification.payload && typeof notification.payload === "object"
       ? notification.payload
@@ -344,9 +465,9 @@ const buildCustomerEmail = async (notification, job) => {
     completedAtFromPayload && !Number.isNaN(completedAtFromPayload.getTime())
       ? completedAtFromPayload
       : job.completedAt || notification.createdAt;
-  const scheduledLabel = formatDateTime(job.scheduledDate);
-  const completedLabel = formatDateTime(completedAt);
-  const customerName = getCustomerName(job.customer);
+  const scheduledLabel = formatDateTime(job.scheduledDate, customerLocale);
+  const completedLabel = formatDateTime(completedAt, customerLocale);
+  const customerName = getCustomerName(job.customer, customerLocale);
   const technicianNameFromPayload =
     typeof payload.technicianName === "string" ? payload.technicianName : null;
   const technicianName =
@@ -371,7 +492,7 @@ const buildCustomerEmail = async (notification, job) => {
     technician_name_html: escapeHtml(technicianName),
     job_address: job.property.address,
     job_address_html: escapeHtml(job.property.address),
-  });
+  }, customerLocale);
 };
 
 const buildRouteLine = (job) => {

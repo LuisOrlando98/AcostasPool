@@ -109,9 +109,9 @@ export default async function AccountPage() {
       subtitle={t("account.subtitle")}
       role={user.role}
     >
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
-        <div className="space-y-6">
-          <div className="app-card p-6 shadow-contrast">
+      <section className="grid gap-5 xl:gap-6 2xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
+        <div className="min-w-0 space-y-5 xl:space-y-6">
+          <div className="app-card p-5 shadow-contrast sm:p-6">
             <h2 className="text-lg font-semibold">{t("account.profile.title")}</h2>
             <form action={updateProfile} className="mt-4 space-y-4">
               <div>
@@ -183,15 +183,15 @@ export default async function AccountPage() {
             </form>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="app-card p-6 shadow-contrast">
+          <div className="grid gap-5 xl:grid-cols-2">
+            <div className="app-card p-5 shadow-contrast sm:p-6">
               <h2 className="text-lg font-semibold">{t("account.photo.title")}</h2>
               <div className="mt-4">
                 <AvatarUpload avatarUrl={user.avatarUrl} />
               </div>
             </div>
 
-            <div className="app-card p-6 shadow-contrast">
+            <div className="app-card p-5 shadow-contrast sm:p-6">
               <AccountSecurityPanel
                 initialEmail2faEnabled={Boolean(
                   user.notificationPreferences?.[0]?.enabled
@@ -201,8 +201,8 @@ export default async function AccountPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="app-card p-6 shadow-contrast">
+        <div className="min-w-0 space-y-5 xl:space-y-6">
+          <div className="app-card p-5 shadow-contrast sm:p-6">
             <h2 className="text-lg font-semibold">
               {t("account.notifications.title")}
             </h2>

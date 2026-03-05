@@ -5,7 +5,11 @@ import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
 import { storePublicAsset } from "@/lib/storage/object-store";
-import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  renderEmailTemplate,
+  resolveEmailTemplateLocale,
+} from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import sharp from "sharp";
 import {
@@ -48,8 +52,8 @@ function resolvePhotoContentType(file: File) {
   return null;
 }
 
-function formatDateTimeLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
+function formatDateTimeLabel(date: Date, locale: "EN" | "ES") {
+  return new Intl.DateTimeFormat(locale === "ES" ? "es-US" : "en-US", {
     month: "short",
     day: "2-digit",
     year: "numeric",
@@ -67,6 +71,7 @@ async function sendCompletedJobEmailNow(input: {
   technicianName: string;
   completedAt: Date;
   propertyAddress: string;
+  customerLocale: "EN" | "ES";
 }) {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");
@@ -78,8 +83,13 @@ async function sendCompletedJobEmailNow(input: {
     return false;
   }
 
-  const templates = await getEmailTemplatesConfig();
-  const completedLabel = formatDateTimeLabel(input.completedAt);
+  const templates = await getEmailTemplatesConfig(
+    resolveEmailTemplateLocale(input.customerLocale)
+  );
+  const completedLabel = formatDateTimeLabel(
+    input.completedAt,
+    resolveEmailTemplateLocale(input.customerLocale)
+  );
   const rendered = renderEmailTemplate(templates.CUSTOMER_JOB_COMPLETED, {
     customer_name: input.customerName,
     customer_name_html: escapeHtml(input.customerName),
@@ -167,7 +177,14 @@ export async function POST(
     where: { id: jobId },
     include: {
       technician: { include: { user: true } },
-      customer: { select: { nombre: true, apellidos: true, email: true } },
+      customer: {
+        select: {
+          nombre: true,
+          apellidos: true,
+          email: true,
+          idiomaPreferencia: true,
+        },
+      },
       property: { select: { address: true } },
       photos: { select: { id: true } },
     },
@@ -364,6 +381,7 @@ export async function POST(
         technicianName,
         completedAt,
         propertyAddress: job.property.address || "Address not available",
+        customerLocale: job.customer.idiomaPreferencia,
       });
 
       if (sentNow) {
