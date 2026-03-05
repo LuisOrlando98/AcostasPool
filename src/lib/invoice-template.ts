@@ -110,7 +110,7 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
     ownerRoleLabel: "President / Owner",
     noLineItemsLabel: "No line items",
     noAdditionalNotesLabel: "No additional notes.",
-    paymentTermsPrefix: "Payment authorization consent",
+    paymentTermsPrefix: "Payment Authorization Consent",
     paymentTermsFallback: "Payment is due upon receipt unless otherwise agreed in writing.",
     thankYouFallback: "Thank you for trusting AcostasPool.",
   },
@@ -151,7 +151,7 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
     ownerRoleLabel: "Presidente / Propietario",
     noLineItemsLabel: "Sin conceptos",
     noAdditionalNotesLabel: "Sin notas adicionales.",
-    paymentTermsPrefix: "Consentimiento de autorizacion de pago",
+    paymentTermsPrefix: "Consentimiento de Autorizacion de Pago",
     paymentTermsFallback: "El pago vence al recibir esta factura salvo acuerdo por escrito.",
     thankYouFallback: "Gracias por confiar en AcostasPool.",
   },
@@ -239,7 +239,7 @@ export function localizeInvoiceTemplate(
     taxLabel: copy.taxLabel,
     totalLabel: copy.totalLabel,
     clausesTitle: copy.clausesTitle,
-    legalClauses: copy.legalClauses,
+    legalClauses: template.legalClauses,
     themes: {
       STANDARD: {
         ...template.themes.STANDARD,
@@ -555,9 +555,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
   const notesBody = localizeInvoiceNotes(input.notes, locale);
   const thankYouNote = compactLine(template.footerNote) || localeCopy.thankYouFallback;
   const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
-  const paymentTerms = template.legalClauses[0]
-    ? `${localeCopy.paymentTermsPrefix}: ${template.legalClauses[0]}`
-    : `${localeCopy.paymentTermsPrefix}: ${localeCopy.paymentTermsFallback}`;
+  const paymentConsentLabel = `${localeCopy.paymentTermsPrefix}:`;
+  const paymentConsentBody =
+    template.legalClauses.map(compactLine).filter(Boolean).join(" ") ||
+    localeCopy.paymentTermsFallback;
   const logoLineOne = "ACOSTA'S";
   const logoLineTwo = "POOL";
 
@@ -921,6 +922,11 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
         word-break: break-word;
       }
 
+      .service-sub-label {
+        font-weight: 800;
+        color: var(--ink-soft);
+      }
+
       .footer {
         margin-top: 6px;
         border-top: 1px solid var(--line);
@@ -1073,7 +1079,9 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
             <section>
               <p class="service-title">${escapeHtml(localeCopy.paymentMethodsLabel)}</p>
               <p class="service-main">${escapeHtml(localeCopy.paymentMethodsInline)}</p>
-              <p class="service-sub">${escapeHtml(paymentTerms)}</p>
+              <p class="service-sub"><span class="service-sub-label">${escapeHtml(
+                paymentConsentLabel
+              )}</span> ${escapeHtml(paymentConsentBody)}</p>
             </section>
             <section>
               <p class="service-title">${escapeHtml(template.notesLabel)}</p>

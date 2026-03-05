@@ -160,9 +160,12 @@ async function generateInvoicePdfWithPdfLibBytes(
   const notesBody = localizeInvoiceNotes(input.notes, locale);
   const thankYouNote = template.footerNote.trim() || localeCopy.thankYouFallback;
   const notesDisplay = notesBody || localeCopy.noAdditionalNotesLabel;
-  const paymentTerms = template.legalClauses[0]
-    ? `${localeCopy.paymentTermsPrefix}: ${template.legalClauses[0]}`
-    : `${localeCopy.paymentTermsPrefix}: ${localeCopy.paymentTermsFallback}`;
+  const paymentConsentLabel = `${localeCopy.paymentTermsPrefix}:`;
+  const paymentConsentBody =
+    template.legalClauses
+      .map((clause) => clause.trim())
+      .filter(Boolean)
+      .join(" ") || localeCopy.paymentTermsFallback;
   const logoLineOne = "ACOSTA'S";
   const logoLineTwo = "POOL";
 
@@ -632,12 +635,83 @@ async function generateInvoicePdfWithPdfLibBytes(
     }
   };
 
-  drawServiceSection(
-    marginX + 4,
-    localeCopy.paymentMethodsLabel.toUpperCase(),
-    localeCopy.paymentMethodsInline,
-    paymentTerms
-  );
+  const leftSectionX = marginX + 4;
+  page.drawText(localeCopy.paymentMethodsLabel.toUpperCase(), {
+    x: leftSectionX,
+    y: servicesTop - 13,
+    size: 8.5,
+    font: boldFont,
+    color: mutedColor,
+  });
+  let paymentMainY = servicesTop - 27;
+  for (const line of wrapText(localeCopy.paymentMethodsInline, sectionWidth - 4, 9.5)) {
+    page.drawText(line, {
+      x: leftSectionX,
+      y: paymentMainY,
+      size: 9.5,
+      font: regularFont,
+      color: textColor,
+    });
+    paymentMainY -= 11;
+    if (paymentMainY < servicesTop - 53) {
+      break;
+    }
+  }
+
+  const paymentSubY = servicesTop - 58;
+  const consentLabelWithSpace = `${paymentConsentLabel} `;
+  const consentLabelWidth = boldFont.widthOfTextAtSize(consentLabelWithSpace, 8.5);
+  const firstLineAvail = Math.max(10, sectionWidth - 4 - consentLabelWidth);
+  const consentWords = paymentConsentBody.trim().split(/\s+/).filter(Boolean);
+  let consentFirstLine = "";
+  let consumed = 0;
+  for (let index = 0; index < consentWords.length; index += 1) {
+    const candidate = consentFirstLine
+      ? `${consentFirstLine} ${consentWords[index]}`
+      : consentWords[index];
+    if (
+      regularFont.widthOfTextAtSize(candidate, 8.5) > firstLineAvail &&
+      consentFirstLine
+    ) {
+      break;
+    }
+    consentFirstLine = candidate;
+    consumed = index + 1;
+  }
+
+  page.drawText(paymentConsentLabel, {
+    x: leftSectionX,
+    y: paymentSubY,
+    size: 8.5,
+    font: boldFont,
+    color: textSoftColor,
+  });
+  if (consentFirstLine) {
+    page.drawText(consentFirstLine, {
+      x: leftSectionX + consentLabelWidth,
+      y: paymentSubY,
+      size: 8.5,
+      font: regularFont,
+      color: mutedColor,
+    });
+  }
+
+  let consentRestY = paymentSubY - 10;
+  const consentRest = consentWords.slice(consumed).join(" ");
+  for (const line of wrapText(consentRest, sectionWidth - 4, 8.5)) {
+    page.drawText(line, {
+      x: leftSectionX,
+      y: consentRestY,
+      size: 8.5,
+      font: regularFont,
+      color: mutedColor,
+    });
+    consentRestY -= 10;
+    if (consentRestY < servicesTop - 78) {
+      break;
+    }
+  }
+
   drawServiceSection(
     marginX + sectionWidth + sectionGap + 4,
     template.notesLabel.toUpperCase(),
