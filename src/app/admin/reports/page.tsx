@@ -505,32 +505,37 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         }}
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <section className="reports-kpi-grid grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5">
         <StatCard
+          className="reports-kpi-card"
           label={t("admin.reports.cards.totalJobs")}
           value={totalJobs.toString()}
           helper={`${completedCount} ${t("admin.reports.cards.completed")}`}
           tone="info"
         />
         <StatCard
+          className="reports-kpi-card"
           label={t("admin.reports.cards.completionRate")}
           value={`${completionRate}%`}
           helper={`${pendingCount} ${t("admin.reports.cards.pending")}`}
           tone="success"
         />
         <StatCard
+          className="reports-kpi-card"
           label={t("admin.reports.cards.onDemand")}
           value={onDemandCount.toString()}
           helper={`${customerRequests} ${t("admin.reports.cards.requests")}`}
           tone="warning"
         />
         <StatCard
+          className="reports-kpi-card"
           label={t("admin.reports.cards.avgCompletionTime")}
           value={`${avgCompletionTimeMinutes}m`}
           helper={t("admin.reports.cards.avgCompletionTimeHelper")}
           tone="warning"
         />
         <StatCard
+          className="reports-kpi-card"
           label={t("admin.reports.cards.reschedules")}
           value={reschedules.toString()}
           helper={t("admin.reports.cards.reschedulesHelper")}

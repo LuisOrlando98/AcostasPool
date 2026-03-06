@@ -1374,32 +1374,34 @@ export default function RoutesCalendar({
 
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-              {t("admin.routes.title")}
-            </p>
-            <p className="text-sm text-slate-500">{helperCopy}</p>
-          </div>
-          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-            <RoutesSectionTabs />
-            <div className="inline-flex h-10 w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {nextMonthJobsLabel}
-              </span>
-              <span className="text-base font-bold text-slate-900">{nextMonthJobsCount}</span>
+      <section className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-5">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:text-[11px] sm:tracking-[0.22em]">
+                {t("admin.routes.title")}
+              </p>
+              <p className="text-xs text-slate-500 sm:text-sm">{helperCopy}</p>
+            </div>
+            <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
+              <RoutesSectionTabs />
+              <div className="inline-flex h-8 w-fit shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 sm:h-10 sm:gap-2 sm:px-3">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px] sm:tracking-[0.14em]">
+                  {nextMonthJobsLabel}
+                </span>
+                <span className="text-sm font-bold text-slate-900 sm:text-base">
+                  {nextMonthJobsCount}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
 
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-1.5">
+          <div className="grid gap-2.5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+            <div className="flex min-w-0 flex-wrap items-center gap-1 rounded-xl border border-slate-200 bg-slate-50/70 p-1 sm:gap-1.5 sm:rounded-2xl sm:p-1.5">
               <button
                 type="button"
                 onClick={() => moveMonth(-1)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800 sm:h-9 sm:w-9"
                 aria-label={t("client.request.calendar.previousMonth")}
                 title={t("client.request.calendar.previousMonth")}
               >
@@ -1417,13 +1419,13 @@ export default function RoutesCalendar({
                   />
                 </svg>
               </button>
-              <h2 className="px-1 text-[clamp(1.5rem,5.2vw,2.1rem)] font-semibold leading-none text-slate-900 sm:px-2">
+              <h2 className="min-w-0 px-1 text-[clamp(1rem,4.3vw,1.45rem)] font-semibold leading-none text-slate-900 sm:px-2 sm:text-[clamp(1.35rem,4.4vw,2.1rem)]">
                 {monthLabel}
               </h2>
               <button
                 type="button"
                 onClick={() => moveMonth(1)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800 sm:h-9 sm:w-9"
                 aria-label={t("client.request.calendar.nextMonth")}
                 title={t("client.request.calendar.nextMonth")}
               >
@@ -1445,7 +1447,7 @@ export default function RoutesCalendar({
                 type="button"
                 onClick={goToCurrentMonth}
                 disabled={isCurrentMonthViewed}
-                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+                className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 sm:h-9 sm:px-3 sm:text-[11px] sm:tracking-[0.14em]"
               >
                 {locale === "es" ? "Este mes" : "Current month"}
               </button>
@@ -1542,30 +1544,32 @@ export default function RoutesCalendar({
           </div>
         </div>
 
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <div className="mt-2.5 grid grid-cols-3 gap-1.5 sm:mt-3 sm:gap-2">
           {summaryCards.map((card) => (
             <button
               key={card.key}
               type="button"
               onClick={card.onClick}
-              className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+              className={`group flex items-center justify-between gap-1 rounded-lg border px-2 py-1.5 text-left transition sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2.5 ${
                 card.active
                   ? card.activeCardClass
                   : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
               <span
-                className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                className={`hidden h-8 w-8 items-center justify-center rounded-xl border text-[11px] sm:flex ${
                   card.active ? card.activeIconClass : card.idleIconClass
                 }`}
               >
                 {card.icon}
               </span>
-              <span className="flex flex-col leading-tight">
-                <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-[9px] uppercase tracking-[0.08em] text-slate-400 sm:text-[10px] sm:tracking-[0.16em]">
                   {card.label}
                 </span>
-                <span className="text-sm font-semibold text-slate-900">{card.value}</span>
+                <span className="text-[13px] font-semibold text-slate-900 sm:text-sm">
+                  {card.value}
+                </span>
               </span>
             </button>
           ))}
