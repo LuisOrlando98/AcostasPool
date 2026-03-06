@@ -6,6 +6,7 @@ import {
   SERVICE_AGREEMENT_INFRASTRUCTURE_PLAN,
   SERVICE_AGREEMENT_INITIAL_GUARANTEE,
   SERVICE_AGREEMENT_INTERNAL_SOURCES,
+  SERVICE_AGREEMENT_LOGOS,
   SERVICE_AGREEMENT_META,
   SERVICE_AGREEMENT_PLAN_PRICING,
   SERVICE_AGREEMENT_PLUS_PLAN,
@@ -14,16 +15,22 @@ import {
 } from "@/lib/service-agreement-content";
 
 type ServiceAgreementPageProps = {
-  canonicalPath: "/dev/agreement-service" | "/service-agreement";
+  canonicalPath: "/admin/agreement-service";
 };
 
 export default function ServiceAgreementPage({
   canonicalPath,
 }: ServiceAgreementPageProps) {
   const generatedAt = new Date().toLocaleDateString("es-US");
+  const categoryLabel: Record<(typeof SERVICE_AGREEMENT_LOGOS)[number]["category"], string> = {
+    brand: "Brand",
+    platform: "Platform",
+    infrastructure: "Infrastructure",
+    operation: "Operation",
+  };
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f3f8ff_0%,#f7fbff_46%,#f8fafc_100%)] px-4 py-8 text-slate-800 sm:px-6 sm:py-10">
+    <section className="bg-[linear-gradient(180deg,#f3f8ff_0%,#f7fbff_46%,#f8fafc_100%)] px-4 py-8 text-slate-800 sm:px-6 sm:py-10">
       <div className="mx-auto w-full max-w-[1200px] space-y-6">
         <section className="overflow-hidden rounded-3xl border border-sky-100 bg-white shadow-[0_24px_80px_rgba(8,35,77,0.08)]">
           <div className="border-b border-sky-100 bg-[linear-gradient(120deg,#061939,#0d2f66_48%,#16528f)] px-6 py-8 text-white sm:px-10">
@@ -86,6 +93,63 @@ export default function ServiceAgreementPage({
                 ))}
               </ul>
             </aside>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Matriz de Logos (23)
+            </h2>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-slate-600">
+              {SERVICE_AGREEMENT_LOGOS.length} logos integrados
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-slate-600">
+            Identidad visual y ecosistema operativo presentado para propuesta
+            comercial. Incluye logos de marca, plataforma, infraestructura y
+            operacion, con enfasis en Wyxloop Dev y el lockup AcostasPool usado
+            en invoice.
+          </p>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {SERVICE_AGREEMENT_LOGOS.map((logo) => (
+              <article
+                key={logo.id}
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-0 h-1"
+                  style={{ backgroundColor: logo.accentHex }}
+                />
+                <div className="flex items-center gap-3">
+                  {logo.imageSrc ? (
+                    <div className="flex h-14 w-24 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-1">
+                      <img
+                        src={logo.imageSrc}
+                        alt={`${logo.name} logo`}
+                        className="h-full w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xs font-bold uppercase text-white"
+                      style={{ backgroundColor: logo.accentHex }}
+                    >
+                      {logo.short}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">
+                      {logo.name}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.12em] text-slate-500">
+                      {categoryLabel[logo.category]}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
@@ -339,6 +403,6 @@ export default function ServiceAgreementPage({
           </p>
         </section>
       </div>
-    </main>
+    </section>
   );
 }

@@ -23,6 +23,15 @@ export type AgreementPlanRow = {
   note?: string;
 };
 
+export type AgreementLogoEntry = {
+  id: string;
+  name: string;
+  short: string;
+  category: "brand" | "platform" | "infrastructure" | "operation";
+  imageSrc?: string;
+  accentHex: string;
+};
+
 export const SERVICE_AGREEMENT_META = {
   title: "AcostasPool - Service Agreement & Functional Overview",
   subtitle:
@@ -43,6 +52,172 @@ export const SERVICE_AGREEMENT_VALUE_PROPS: string[] = [
   "Reduccion de trabajo manual por automatizacion de rutas, notificaciones y reportes.",
   "Trazabilidad auditable por evento, usuario, estado y fecha.",
   "Escalabilidad operacional para equipos administrativos, tecnicos y clientes.",
+];
+
+export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
+  {
+    id: "acostaspool-invoice",
+    name: "AcostasPool Invoice Brand",
+    short: "AP",
+    category: "brand",
+    imageSrc: "/brand/acostaspool-invoice-lockup.svg",
+    accentHex: "#0a2f63",
+  },
+  {
+    id: "wyxloop-dev",
+    name: "Wyxloop Dev",
+    short: "WX",
+    category: "brand",
+    imageSrc: "/brand/wyxloop-dev.svg",
+    accentHex: "#4f46e5",
+  },
+  {
+    id: "nextjs",
+    name: "Next.js",
+    short: "NX",
+    category: "platform",
+    accentHex: "#111827",
+  },
+  {
+    id: "react",
+    name: "React",
+    short: "RE",
+    category: "platform",
+    accentHex: "#0891b2",
+  },
+  {
+    id: "typescript",
+    name: "TypeScript",
+    short: "TS",
+    category: "platform",
+    accentHex: "#2563eb",
+  },
+  {
+    id: "nodejs",
+    name: "Node.js",
+    short: "ND",
+    category: "platform",
+    accentHex: "#15803d",
+  },
+  {
+    id: "prisma",
+    name: "Prisma ORM",
+    short: "PR",
+    category: "platform",
+    accentHex: "#0f172a",
+  },
+  {
+    id: "postgres",
+    name: "PostgreSQL",
+    short: "PG",
+    category: "platform",
+    accentHex: "#334155",
+  },
+  {
+    id: "tailwind",
+    name: "Tailwind CSS",
+    short: "TW",
+    category: "platform",
+    accentHex: "#0284c7",
+  },
+  {
+    id: "pdf-lib",
+    name: "PDF-Lib",
+    short: "PDF",
+    category: "platform",
+    accentHex: "#1d4ed8",
+  },
+  {
+    id: "rest-api",
+    name: "REST API",
+    short: "API",
+    category: "platform",
+    accentHex: "#1f2937",
+  },
+  {
+    id: "pwa",
+    name: "PWA",
+    short: "PWA",
+    category: "platform",
+    accentHex: "#7c3aed",
+  },
+  {
+    id: "service-worker",
+    name: "Service Worker",
+    short: "SW",
+    category: "platform",
+    accentHex: "#0f766e",
+  },
+  {
+    id: "aws-s3",
+    name: "AWS S3",
+    short: "S3",
+    category: "infrastructure",
+    accentHex: "#b45309",
+  },
+  {
+    id: "cloudflare-r2",
+    name: "Cloudflare R2",
+    short: "R2",
+    category: "infrastructure",
+    accentHex: "#ea580c",
+  },
+  {
+    id: "postgres-db",
+    name: "PostgreSQL Server",
+    short: "DB",
+    category: "infrastructure",
+    accentHex: "#1e3a8a",
+  },
+  {
+    id: "web-server",
+    name: "Web Server",
+    short: "WEB",
+    category: "infrastructure",
+    accentHex: "#0f766e",
+  },
+  {
+    id: "cron-service",
+    name: "Cron Service",
+    short: "CRN",
+    category: "infrastructure",
+    accentHex: "#a16207",
+  },
+  {
+    id: "smtp-365",
+    name: "SMTP Microsoft 365",
+    short: "SMTP",
+    category: "infrastructure",
+    accentHex: "#1d4ed8",
+  },
+  {
+    id: "google-maps",
+    name: "Google Maps",
+    short: "MAP",
+    category: "operation",
+    accentHex: "#dc2626",
+  },
+  {
+    id: "route-assistant",
+    name: "Route Assistant",
+    short: "RA",
+    category: "operation",
+    accentHex: "#0f766e",
+  },
+  {
+    id: "notifications-engine",
+    name: "Notifications Engine",
+    short: "NTF",
+    category: "operation",
+    accentHex: "#7c3aed",
+  },
+  {
+    id: "customer-portal",
+    name: "Customer Portal",
+    short: "CP",
+    category: "operation",
+    accentHex: "#0c4a6e",
+  },
 ];
 
 export const SERVICE_AGREEMENT_INITIAL_GUARANTEE = {

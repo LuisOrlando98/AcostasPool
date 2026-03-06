@@ -5,6 +5,7 @@ import {
   SERVICE_AGREEMENT_FEATURES,
   SERVICE_AGREEMENT_INFRASTRUCTURE_PLAN,
   SERVICE_AGREEMENT_INITIAL_GUARANTEE,
+  SERVICE_AGREEMENT_LOGOS,
   SERVICE_AGREEMENT_META,
   SERVICE_AGREEMENT_PLAN_PRICING,
   SERVICE_AGREEMENT_PLUS_PLAN,
@@ -323,6 +324,85 @@ function drawPricingTable(ctx: RenderContext) {
   ctx.y = currentY - 6;
 }
 
+function logoCategoryColor(category: string) {
+  if (category === "brand") {
+    return rgb(0.11, 0.2, 0.47);
+  }
+  if (category === "platform") {
+    return rgb(0.05, 0.37, 0.64);
+  }
+  if (category === "infrastructure") {
+    return rgb(0.58, 0.29, 0.07);
+  }
+  return rgb(0.07, 0.45, 0.36);
+}
+
+function drawLogoMatrix(ctx: RenderContext) {
+  const cols = 3;
+  const gap = 8;
+  const rowHeight = 31;
+  const cardWidth = (PAGE_WIDTH - MARGIN_X * 2 - gap * (cols - 1)) / cols;
+  const rows = Math.ceil(SERVICE_AGREEMENT_LOGOS.length / cols);
+
+  for (let row = 0; row < rows; row += 1) {
+    ensureRoom(ctx, rowHeight + 4);
+    if (!ctx.page) {
+      return;
+    }
+    const baseY = ctx.y;
+
+    for (let col = 0; col < cols; col += 1) {
+      const index = row * cols + col;
+      if (index >= SERVICE_AGREEMENT_LOGOS.length) {
+        continue;
+      }
+      const logo = SERVICE_AGREEMENT_LOGOS[index];
+      const x = MARGIN_X + col * (cardWidth + gap);
+      const y = baseY - rowHeight + 2;
+      const categoryTone = logoCategoryColor(logo.category);
+
+      ctx.page.drawRectangle({
+        x,
+        y,
+        width: cardWidth,
+        height: rowHeight,
+        color: rgb(0.97, 0.98, 1),
+        borderColor: rgb(0.82, 0.87, 0.94),
+        borderWidth: 0.6,
+      });
+      ctx.page.drawRectangle({
+        x,
+        y: y + rowHeight - 3,
+        width: cardWidth,
+        height: 3,
+        color: categoryTone,
+      });
+
+      ctx.page.drawText(logo.short, {
+        x: x + 5,
+        y: y + 16,
+        font: ctx.bold,
+        size: 7.6,
+        color: categoryTone,
+      });
+
+      const lines = wrapText(logo.name, cardWidth - 44, ctx.regular, 7.1).slice(0, 2);
+      for (let i = 0; i < lines.length; i += 1) {
+        ctx.page.drawText(lines[i], {
+          x: x + 28,
+          y: y + 17 - i * 8,
+          font: ctx.regular,
+          size: 7.1,
+          color: rgb(0.14, 0.18, 0.26),
+        });
+      }
+    }
+
+    ctx.y -= rowHeight + 4;
+  }
+  ctx.y -= 2;
+}
+
 export async function buildServiceAgreementPdfBytes() {
   const doc = await PDFDocument.create();
   const regular = await doc.embedFont(StandardFonts.Helvetica);
@@ -354,6 +434,13 @@ export async function buildServiceAgreementPdfBytes() {
   for (const paragraph of SERVICE_AGREEMENT_EXECUTIVE_SUMMARY) {
     drawParagraph(ctx, paragraph);
   }
+
+  drawSectionHeading(ctx, "Matriz visual de 23 logos");
+  drawParagraph(
+    ctx,
+    "El acuerdo integra una matriz de 23 logos para presentacion comercial. Incluye de forma destacada Wyxloop Dev y el lockup AcostasPool utilizado en invoice."
+  );
+  drawLogoMatrix(ctx);
 
   drawSectionHeading(ctx, "Resumen de Funcionalidades de la Plataforma");
   for (const feature of SERVICE_AGREEMENT_FEATURES) {

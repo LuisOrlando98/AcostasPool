@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { buildServiceAgreementPdfBytes } from "@/lib/service-agreement-pdf";
+import { getSession } from "@/lib/auth/session";
 
 export async function GET() {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const pdfBytes = await buildServiceAgreementPdfBytes();
     return new NextResponse(Buffer.from(pdfBytes), {

@@ -1,0 +1,19 @@
+<svg width="560" height="180" viewBox="0 0 560 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="20" y1="20" x2="540" y2="160" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0A2F63"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="line" x1="120" y1="118" x2="440" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7DD3FC"/>
+      <stop offset="1" stop-color="#A5F3FC"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="556" height="176" rx="26" fill="url(#bg)" stroke="#93C5FD" stroke-opacity="0.35" stroke-width="4"/>
+  <g transform="translate(44 24)">
+    <text x="0" y="48" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="2">ACOSTA'S</text>
+    <text x="112" y="102" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="2">POOL</text>
+    <rect x="0" y="114" width="470" height="3.2" fill="url(#line)"/>
+    <text x="100" y="138" fill="#BFDBFE" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="4">PREMIUM POOL OPERATIONS</text>
+  </g>
+</svg>

@@ -157,7 +157,8 @@
       "invoices": "Facturas",
       "reports": "Reportes",
       "settings": "Ajustes",
-      "routes": "Rutas y trabajos"
+      "routes": "Rutas y trabajos",
+      "serviceAgreement": "Acuerdo de servicio"
     },
     "tech": {
       "route": "Mi ruta",
@@ -523,6 +524,10 @@
     }
   },
   "admin": {
+    "agreement": {
+      "title": "Acuerdo de servicio",
+      "subtitle": "Resumen ejecutivo, funcional y contractual para presentacion comercial."
+    },
     "dashboard": {
       "title": "Panel de administracion",
       "subtitle": "Control total de rutas, trabajos y facturas.",

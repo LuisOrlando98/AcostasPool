@@ -203,6 +203,30 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
+    label: t("nav.admin.serviceAgreement"),
+    href: "/admin/agreement-service",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 3.5v4h4M9 12h6M9 16h6"
+        />
+      </svg>
+    ),
+  },
+  {
     label: t("nav.admin.settings"),
     href: "/admin/settings",
     icon: (

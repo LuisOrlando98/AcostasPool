@@ -157,7 +157,8 @@
       "invoices": "Invoices",
       "reports": "Reports",
       "settings": "Settings",
-      "routes": "Routes & Jobs"
+      "routes": "Routes & Jobs",
+      "serviceAgreement": "Service Agreement"
     },
     "tech": {
       "route": "My Route",
@@ -523,6 +524,10 @@
     }
   },
   "admin": {
+    "agreement": {
+      "title": "Service agreement",
+      "subtitle": "Executive, functional, and contractual summary for commercial presentation."
+    },
     "dashboard": {
       "title": "Administration dashboard",
       "subtitle": "Full control of routes, jobs, and invoices.",
