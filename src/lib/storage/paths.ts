@@ -109,7 +109,7 @@ export function buildCustomerJobPhotoAssetPath(
 ) {
   const safeCustomer = sanitizeSegment(customerId, "customer");
   const safeFileName = fileName.replace(SAFE_FILE_BASENAME_PATTERN, "_");
-  return `uploads/customers/${safeCustomer}/jobs/${toYearMonth(now)}/${safeFileName}`;
+  return `uploads/customers/${safeCustomer}/repository/files/jobs/${toYearMonth(now)}/${safeFileName}`;
 }
 
 export function buildCustomerJobPhotoRepositoryPrefix(
@@ -117,7 +117,7 @@ export function buildCustomerJobPhotoRepositoryPrefix(
   now = new Date()
 ) {
   const safeCustomer = sanitizeSegment(customerId, "customer");
-  return `uploads/customers/${safeCustomer}/jobs/${toYearMonth(now)}/`;
+  return `uploads/customers/${safeCustomer}/repository/files/jobs/${toYearMonth(now)}/`;
 }
 
 export function buildInvoicePdfAssetPath(

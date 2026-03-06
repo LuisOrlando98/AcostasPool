@@ -10,10 +10,37 @@
     </linearGradient>
   </defs>
   <rect x="2" y="2" width="556" height="176" rx="26" fill="url(#bg)" stroke="#93C5FD" stroke-opacity="0.35" stroke-width="4"/>
-  <g transform="translate(44 24)">
-    <text x="0" y="48" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="2">ACOSTA'S</text>
-    <text x="112" y="102" fill="#F8FAFC" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="2">POOL</text>
-    <rect x="0" y="114" width="470" height="3.2" fill="url(#line)"/>
-    <text x="100" y="138" fill="#BFDBFE" font-family="Segoe UI, Arial, sans-serif" font-size="20" font-weight="600" letter-spacing="4">PREMIUM POOL OPERATIONS</text>
+  <g>
+    <text
+      x="280"
+      y="72"
+      text-anchor="middle"
+      fill="#F8FAFC"
+      font-family="Segoe UI, Arial, sans-serif"
+      font-size="58"
+      font-weight="800"
+      letter-spacing="2"
+    >ACOSTA'S</text>
+    <text
+      x="280"
+      y="126"
+      text-anchor="middle"
+      fill="#F8FAFC"
+      font-family="Segoe UI, Arial, sans-serif"
+      font-size="58"
+      font-weight="800"
+      letter-spacing="2"
+    >POOL</text>
+    <rect x="120" y="138" width="320" height="3.2" fill="url(#line)"/>
+    <text
+      x="280"
+      y="162"
+      text-anchor="middle"
+      fill="#BFDBFE"
+      font-family="Segoe UI, Arial, sans-serif"
+      font-size="20"
+      font-weight="600"
+      letter-spacing="4"
+    >PREMIUM POOL OPERATIONS</text>
   </g>
 </svg>
