@@ -277,16 +277,16 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
       <div className="customers-table-shell ui-table-shell mt-4 min-h-0 flex-1 overflow-hidden">
         <div className="customers-table-scroll h-full overflow-auto">
-          <table className="customers-table customer-invoices-table min-w-[980px] w-full text-left text-xs text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
+          <table className="customers-table customer-invoices-table w-full text-left text-xs text-slate-600">
+            <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.16em] text-slate-100/85">
               <tr>
-                <th className="w-[20%] px-3 py-3">{t("admin.invoices.list.table.invoice")}</th>
-                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.table.status")}</th>
-                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.theme")}</th>
-                <th className="w-[24%] px-3 py-3">{t("admin.invoices.list.job")}</th>
-                <th className="w-[12%] px-3 py-3">{t("admin.invoices.list.table.date")}</th>
-                <th className="w-[10%] px-3 py-3 text-right">{t("admin.invoices.list.table.total")}</th>
-                <th className="w-[18%] px-3 py-3 text-right">{t("admin.invoices.list.table.actions")}</th>
+                <th className="w-[18%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.invoice")}</th>
+                <th className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.status")}</th>
+                <th className="w-[9%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.theme")}</th>
+                <th className="w-[27%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.job")}</th>
+                <th className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.date")}</th>
+                <th className="w-[10%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.total")}</th>
+                <th className="w-[16%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -311,37 +311,37 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
                   return (
                     <tr key={invoice.id} className="bg-white transition hover:bg-sky-50/40">
-                      <td className="px-3 py-3 font-semibold text-slate-900">
-                        <p className="max-w-[10rem] truncate" title={invoice.number}>
+                      <td className="px-2 py-2 font-semibold text-slate-900 sm:px-2.5 sm:py-2.5">
+                        <p className="max-w-[8.75rem] truncate" title={invoice.number}>
                           {invoice.number}
                         </p>
                       </td>
-                      <td className="px-3 py-3">{statusLabel}</td>
-                      <td className="px-3 py-3">{themeLabel}</td>
-                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                      <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">{statusLabel}</td>
+                      <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">{themeLabel}</td>
+                      <td className="px-2 py-2 text-[11px] text-slate-500 sm:px-2.5 sm:py-2.5">
                         <p
-                          className="max-w-[16rem] truncate"
+                          className="max-w-[12rem] truncate lg:max-w-[14rem]"
                           title={invoice.jobLabel ?? t("admin.invoices.list.noJob")}
                         >
                           {invoice.jobLabel ?? t("admin.invoices.list.noJob")}
                         </p>
                       </td>
-                      <td className="px-3 py-3 text-[11px] text-slate-500">
+                      <td className="px-2 py-2 text-[11px] text-slate-500 sm:px-2.5 sm:py-2.5">
                         {formatInBusinessTimeZone(invoice.createdAt, locale, {
                           dateStyle: "short",
                         })}
                       </td>
-                      <td className="px-3 py-3 text-right font-semibold text-slate-900">
+                      <td className="px-2 py-2 text-right font-semibold text-slate-900 sm:px-2.5 sm:py-2.5">
                         ${invoice.total.toFixed(2)}
                       </td>
-                      <td className="px-3 py-3">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                      <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">
+                        <div className="flex flex-wrap items-center justify-end gap-1">
                           {invoice.pdfUrl ? (
                             <a
                               href={getAssetUrl(invoice.pdfUrl)}
                               target="_blank"
                               rel="noreferrer"
-                              className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                              className="ui-button-ghost px-2 py-1 text-[11px] font-semibold"
                             >
                               {t("admin.invoices.list.viewPdf")}
                             </a>
@@ -349,12 +349,12 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                           {canEdit ? (
                             <a
                               href={`/admin/invoices/${invoice.id}`}
-                              className="ui-button-ghost px-3 py-1 text-[11px] font-semibold"
+                              className="ui-button-ghost px-2 py-1 text-[11px] font-semibold"
                             >
                               {t("common.actions.edit")}
                             </a>
                           ) : (
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500">
                               {t("admin.invoices.list.locked")}
                             </span>
                           )}

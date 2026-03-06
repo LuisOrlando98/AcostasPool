@@ -1499,10 +1499,20 @@ h3 {
   min-width: 50rem;
 }
 
+.customers-table.customer-invoices-table {
+  min-width: 44rem;
+}
+
 .customer-jobs-table th,
 .customer-jobs-table td {
   padding-left: 0.62rem;
   padding-right: 0.62rem;
+}
+
+.customer-invoices-table th,
+.customer-invoices-table td {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 .customers-table th {
@@ -1605,6 +1615,10 @@ h3 {
     min-width: 42rem;
   }
 
+  .customers-table.customer-invoices-table {
+    min-width: 34rem;
+  }
+
   .customers-table th,
   .customers-table td {
     padding: 0.62rem 0.68rem;
@@ -1615,6 +1629,12 @@ h3 {
   .customer-jobs-table td {
     padding-left: 0.52rem;
     padding-right: 0.52rem;
+  }
+
+  .customer-invoices-table th,
+  .customer-invoices-table td {
+    padding-left: 0.42rem;
+    padding-right: 0.42rem;
   }
 
   .customers-overview-table .sticky {
