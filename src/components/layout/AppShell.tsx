@@ -203,30 +203,6 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
-    label: t("nav.admin.serviceAgreement"),
-    href: "/admin/agreement-service",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className={iconClassName}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15 3.5v4h4M9 12h6M9 16h6"
-        />
-      </svg>
-    ),
-  },
-  {
     label: t("nav.admin.settings"),
     href: "/admin/settings",
     icon: (
@@ -634,6 +610,39 @@ export default function AppShell({
           <div className="sidebar-account relative z-10 px-5 pb-5 pt-4">
             <SidebarAccount />
           </div>
+          <div className="sidebar-footer relative z-10 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
+            <div className="sidebar-footer-meta flex items-center justify-between gap-2">
+              <span className="sidebar-footer-version">AcostasPool v1.0</span>
+              {role === "ADMIN" ? (
+                <Link
+                  href="/admin/agreement-service"
+                  className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    className="h-3.5 w-3.5 shrink-0"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 3.5v4h4M9 12h6M9 16h6"
+                    />
+                  </svg>
+                  <span className="sidebar-footer-link-label">
+                    {t("nav.admin.serviceAgreement")}
+                  </span>
+                </Link>
+              ) : null}
+            </div>
+          </div>
         </aside>
 
         <header className="app-shell-header border-b border-[var(--border)] bg-white/95 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 lg:col-start-2 lg:row-start-1">
@@ -860,7 +869,36 @@ export default function AppShell({
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
-                AcostasPool v1.0
+                <div className="flex items-center justify-between gap-2">
+                  <span>AcostasPool v1.0</span>
+                  {role === "ADMIN" ? (
+                    <Link
+                      href="/admin/agreement-service"
+                      onClick={() => setMobileNavOpen(false)}
+                      className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-3.5 w-3.5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 3.5v4h4M9 12h6M9 16h6"
+                        />
+                      </svg>
+                      <span>{t("nav.admin.serviceAgreement")}</span>
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

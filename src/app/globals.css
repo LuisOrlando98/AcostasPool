@@ -413,6 +413,10 @@ h3 {
   border-top: 1px solid var(--sidebar-border);
 }
 
+.sidebar-footer-link {
+  white-space: nowrap;
+}
+
 .sidebar-account-card {
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -600,6 +604,22 @@ h3 {
 }
 
 #sidebar-toggle:checked ~ div .sidebar-account-label {
+  display: none;
+}
+
+#sidebar-toggle:checked ~ div .sidebar-footer-meta {
+  justify-content: center;
+}
+
+#sidebar-toggle:checked ~ div .sidebar-footer-version {
+  display: none;
+}
+
+#sidebar-toggle:checked ~ div .sidebar-footer-link {
+  justify-content: center;
+}
+
+#sidebar-toggle:checked ~ div .sidebar-footer-link-label {
   display: none;
 }
 
