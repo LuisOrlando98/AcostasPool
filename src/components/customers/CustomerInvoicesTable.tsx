@@ -170,6 +170,15 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
       ? "No hay facturas que coincidan con los filtros activos."
       : "No invoices match the active filters."
     : t("admin.invoices.list.empty");
+  const openInvoiceFromRow = (invoice: InvoiceRow, canEdit: boolean) => {
+    if (invoice.pdfUrl) {
+      window.open(getAssetUrl(invoice.pdfUrl), "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (canEdit) {
+      window.location.href = `/admin/invoices/${invoice.id}`;
+    }
+  };
 
   return (
     <section className="customers-panel ui-panel flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[440px]">
@@ -302,6 +311,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                     `admin.invoices.status.${invoice.status.toLowerCase()}`
                   );
                   const canEdit = invoice.status === "DRAFT";
+                  const rowIsInteractive = Boolean(invoice.pdfUrl) || canEdit;
                   const themeLabel =
                     invoice.theme === "SPECIAL"
                       ? t("admin.invoices.theme.special")
@@ -310,7 +320,30 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                         : t("admin.invoices.theme.standard");
 
                   return (
-                    <tr key={invoice.id} className="bg-white transition hover:bg-sky-50/40">
+                    <tr
+                      key={invoice.id}
+                      tabIndex={rowIsInteractive ? 0 : -1}
+                      onClick={
+                        rowIsInteractive
+                          ? () => openInvoiceFromRow(invoice, canEdit)
+                          : undefined
+                      }
+                      onKeyDown={
+                        rowIsInteractive
+                          ? (event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openInvoiceFromRow(invoice, canEdit);
+                              }
+                            }
+                          : undefined
+                      }
+                      className={`bg-white transition ${
+                        rowIsInteractive
+                          ? "cursor-pointer hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                          : "hover:bg-sky-50/40"
+                      }`}
+                    >
                       <td className="px-2 py-2 font-semibold text-slate-900 sm:px-2.5 sm:py-2.5">
                         <p className="max-w-[8.75rem] truncate" title={invoice.number}>
                           {invoice.number}
@@ -334,18 +367,12 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                       <td className="px-2 py-2 text-right font-semibold text-slate-900 sm:px-2.5 sm:py-2.5">
                         ${invoice.total.toFixed(2)}
                       </td>
-                      <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">
+                      <td
+                        className="px-2 py-2 sm:px-2.5 sm:py-2.5"
+                        onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => event.stopPropagation()}
+                      >
                         <div className="flex flex-wrap items-center justify-end gap-1">
-                          {invoice.pdfUrl ? (
-                            <a
-                              href={getAssetUrl(invoice.pdfUrl)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="ui-button-ghost px-2 py-1 text-[11px] font-semibold"
-                            >
-                              {t("admin.invoices.list.viewPdf")}
-                            </a>
-                          ) : null}
                           {canEdit ? (
                             <a
                               href={`/admin/invoices/${invoice.id}`}
