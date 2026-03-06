@@ -2280,7 +2280,7 @@
         "photoCount": "{{count}} seleccionadas",
         "renamePreviewTitle": "Vista previa de renombre (.jpg)",
         "repositoryPathLabel": "Ruta del repositorio:",
-        "repositoryAdminOnly": "Se guarda en el repositorio del cliente (solo admin).",
+        "repositoryAdminOnly": "Se guarda en el repositorio del cliente (subido por tecnico o admin).",
         "quickHintPhoto": "Agrega al menos una foto para completar la visita.",
         "quickHintChecklist": "Completa los items del checklist para continuar.",
         "quickHintReady": "Todo listo. Toca completar.",

@@ -2280,7 +2280,7 @@
         "photoCount": "{{count}} selected",
         "renamePreviewTitle": "Rename preview (.jpg)",
         "repositoryPathLabel": "Repository path:",
-        "repositoryAdminOnly": "Saved in client repository (admin access only).",
+        "repositoryAdminOnly": "Saved in client repository (uploaded by technician or admin).",
         "quickHintPhoto": "Add at least one photo to complete this visit.",
         "quickHintChecklist": "Complete checklist items to continue.",
         "quickHintReady": "Everything is ready. Tap complete.",
