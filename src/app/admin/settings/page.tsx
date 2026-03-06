@@ -869,7 +869,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                         ))}
                       </div>
 
-                      <form action={saveEmailTemplate} className="mt-5 space-y-4">
+                      <form
+                        key={`email-template-editor-${selectedTemplateId}`}
+                        action={saveEmailTemplate}
+                        className="mt-5 space-y-4"
+                      >
                         <input type="hidden" name="templateId" value={selectedTemplateId} />
                         <label className="block">
                           <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
