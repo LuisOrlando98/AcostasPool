@@ -76,6 +76,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Next.js",
     short: "NX",
     category: "platform",
+    imageSrc: "/brand/logos/nextjs.svg",
     accentHex: "#111827",
   },
   {
@@ -83,6 +84,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "React",
     short: "RE",
     category: "platform",
+    imageSrc: "/brand/logos/react.svg",
     accentHex: "#0891b2",
   },
   {
@@ -90,6 +92,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "TypeScript",
     short: "TS",
     category: "platform",
+    imageSrc: "/brand/logos/typescript.svg",
     accentHex: "#2563eb",
   },
   {
@@ -97,6 +100,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Node.js",
     short: "ND",
     category: "platform",
+    imageSrc: "/brand/logos/nodejs.svg",
     accentHex: "#15803d",
   },
   {
@@ -104,6 +108,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Prisma ORM",
     short: "PR",
     category: "platform",
+    imageSrc: "/brand/logos/prisma.svg",
     accentHex: "#0f172a",
   },
   {
@@ -111,6 +116,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "PostgreSQL",
     short: "PG",
     category: "platform",
+    imageSrc: "/brand/logos/postgresql.svg",
     accentHex: "#334155",
   },
   {
@@ -118,6 +124,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Tailwind CSS",
     short: "TW",
     category: "platform",
+    imageSrc: "/brand/logos/tailwindcss.svg",
     accentHex: "#0284c7",
   },
   {
@@ -125,6 +132,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "PDF-Lib",
     short: "PDF",
     category: "platform",
+    imageSrc: "/brand/logos/adobe-pdf.svg",
     accentHex: "#1d4ed8",
   },
   {
@@ -132,6 +140,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "REST API",
     short: "API",
     category: "platform",
+    imageSrc: "/brand/logos/swagger.svg",
     accentHex: "#1f2937",
   },
   {
@@ -139,6 +148,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "PWA",
     short: "PWA",
     category: "platform",
+    imageSrc: "/brand/logos/pwa.svg",
     accentHex: "#7c3aed",
   },
   {
@@ -146,6 +156,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Service Worker",
     short: "SW",
     category: "platform",
+    imageSrc: "/brand/logos/chrome.svg",
     accentHex: "#0f766e",
   },
   {
@@ -153,6 +164,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "AWS S3",
     short: "S3",
     category: "infrastructure",
+    imageSrc: "/brand/logos/aws.svg",
     accentHex: "#b45309",
   },
   {
@@ -160,6 +172,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Cloudflare R2",
     short: "R2",
     category: "infrastructure",
+    imageSrc: "/brand/logos/cloudflare.svg",
     accentHex: "#ea580c",
   },
   {
@@ -167,6 +180,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "PostgreSQL Server",
     short: "DB",
     category: "infrastructure",
+    imageSrc: "/brand/logos/postgresql.svg",
     accentHex: "#1e3a8a",
   },
   {
@@ -174,6 +188,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Web Server",
     short: "WEB",
     category: "infrastructure",
+    imageSrc: "/brand/logos/nginx.svg",
     accentHex: "#0f766e",
   },
   {
@@ -181,6 +196,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Cron Service",
     short: "CRN",
     category: "infrastructure",
+    imageSrc: "/brand/logos/airflow.svg",
     accentHex: "#a16207",
   },
   {
@@ -188,6 +204,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "SMTP Microsoft 365",
     short: "SMTP",
     category: "infrastructure",
+    imageSrc: "/brand/logos/microsoft.svg",
     accentHex: "#1d4ed8",
   },
   {
@@ -195,6 +212,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Google Maps",
     short: "MAP",
     category: "operation",
+    imageSrc: "/brand/logos/googlemaps.svg",
     accentHex: "#dc2626",
   },
   {
@@ -202,6 +220,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Route Assistant",
     short: "RA",
     category: "operation",
+    imageSrc: "/brand/logos/mapbox.svg",
     accentHex: "#0f766e",
   },
   {
@@ -209,6 +228,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Notifications Engine",
     short: "NTF",
     category: "operation",
+    imageSrc: "/brand/logos/twilio.svg",
     accentHex: "#7c3aed",
   },
   {
@@ -216,6 +236,7 @@ export const SERVICE_AGREEMENT_LOGOS: AgreementLogoEntry[] = [
     name: "Customer Portal",
     short: "CP",
     category: "operation",
+    imageSrc: "/brand/logos/auth0.svg",
     accentHex: "#0c4a6e",
   },
 ];
