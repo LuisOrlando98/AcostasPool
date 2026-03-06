@@ -27,6 +27,11 @@ import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizePropertyAddress } from "@/lib/routing/address";
+import {
+  endOfBusinessDay,
+  formatInBusinessTimeZone,
+  getBusinessTimeParts,
+} from "@/lib/timezone";
 
 async function createProperty(formData: FormData) {
   "use server";
@@ -260,33 +265,6 @@ async function updateProperty(formData: FormData) {
   revalidatePath(`/admin/customers/${customerId}`);
 }
 
-async function deleteJob(formData: FormData) {
-  "use server";
-  await requireRole("ADMIN");
-
-  const jobId = String(formData.get("jobId"));
-  const customerId = String(formData.get("customerId"));
-
-  if (!jobId || !customerId) {
-    return;
-  }
-
-  await prisma.invoice.updateMany({
-    where: { jobId },
-    data: { jobId: null },
-  });
-
-  await prisma.jobPhoto.deleteMany({
-    where: { jobId },
-  });
-
-  await prisma.job.delete({
-    where: { id: jobId },
-  });
-
-  revalidatePath(`/admin/customers/${customerId}`);
-}
-
 async function createJob(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
@@ -320,10 +298,9 @@ async function createJob(formData: FormData) {
     scheduledDateRaw,
     scheduledTime || "09:00"
   );
-  const sortOrder =
-    scheduledDate.getHours() * 60 + scheduledDate.getMinutes();
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const timeParts = getBusinessTimeParts(scheduledDate);
+  const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
+  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
   const status = scheduledDate > endOfToday ? "SCHEDULED" : "PENDING";
   const estimatedDurationMinutes = estimatedDurationRaw
     ? Number(estimatedDurationRaw)
@@ -510,10 +487,9 @@ async function createJobFromPlan(formData: FormData) {
         scheduledTime || plan.preferredTime || "09:00"
       )
     : plan.nextRunAt;
-  const sortOrderPlan =
-    scheduledDate.getHours() * 60 + scheduledDate.getMinutes();
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const timePartsPlan = getBusinessTimeParts(scheduledDate);
+  const sortOrderPlan = (timePartsPlan?.hour ?? 0) * 60 + (timePartsPlan?.minute ?? 0);
+  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
   const status = scheduledDate > endOfToday ? "SCHEDULED" : "PENDING";
 
   const planTierId =
@@ -755,7 +731,9 @@ export default async function CustomerDetailPage({
     total: Number(invoice.total),
     createdAt: invoice.createdAt.toISOString(),
     jobLabel: invoice.job
-      ? `${invoice.job.scheduledDate.toLocaleDateString(locale)} - ${invoice.job.technician?.user.fullName ?? t("admin.invoices.list.noTech")}`
+      ? `${formatInBusinessTimeZone(invoice.job.scheduledDate, locale, {
+          dateStyle: "short",
+        })} - ${invoice.job.technician?.user.fullName ?? t("admin.invoices.list.noTech")}`
       : null,
     pdfUrl: invoice.pdfUrl,
   }));
@@ -992,8 +970,6 @@ export default async function CustomerDetailPage({
           <CustomerJobsTable
             rows={jobsRows}
             actionTargetId="new-job"
-            onDeleteJob={deleteJob}
-            customerId={customer.id}
           />
 
           <CustomerPlansTable
@@ -1006,13 +982,13 @@ export default async function CustomerDetailPage({
       </section>
 
       <input id="edit-customer" type="checkbox" className="peer/profile hidden" />
-      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/profile:flex">
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/profile:flex">
         <label
           htmlFor="edit-customer"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
         />
-        <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -1200,13 +1176,13 @@ export default async function CustomerDetailPage({
           </div>
         </div>
       </div>
-      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
         <label
           htmlFor="new-property"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
         />
-        <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -1389,13 +1365,13 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
         <label
           htmlFor="new-job"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
         />
-        <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -1577,13 +1553,13 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
         <label
           htmlFor="new-plan"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
         />
-        <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -1781,5 +1757,7 @@ export default async function CustomerDetailPage({
     </AppShell>
   );
 }
+
+
 
 

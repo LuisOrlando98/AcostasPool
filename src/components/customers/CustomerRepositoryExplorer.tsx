@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useI18n } from "@/i18n/client";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type RepositoryEntry = {
   type: "folder" | "file";
@@ -844,7 +845,10 @@ export default function CustomerRepositoryExplorer({
                           </td>
                           <td className="hidden px-3 py-2.5 lg:table-cell">
                             {entry.lastModified
-                              ? new Date(entry.lastModified).toLocaleString(locale)
+                              ? formatInBusinessTimeZone(entry.lastModified, locale, {
+                                  dateStyle: "short",
+                                  timeStyle: "short",
+                                })
                               : "--"}
                           </td>
                         </tr>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAssetUrl } from "@/lib/assets";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type EvidencePhoto = {
   id: string;
@@ -61,7 +62,12 @@ export default function ClientJobEvidenceGallery({
               className="h-36 w-full object-cover transition duration-200 group-hover:scale-[1.02]"
             />
             <div className="flex items-center justify-between gap-3 px-3 py-2 text-xs text-slate-500">
-              <span>{new Date(photo.takenAt).toLocaleString(locale)}</span>
+              <span>
+                {formatInBusinessTimeZone(photo.takenAt, locale, {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </span>
               <span className="font-semibold text-sky-700">{viewLabel}</span>
             </div>
           </button>
@@ -78,9 +84,12 @@ export default function ClientJobEvidenceGallery({
           />
           <div className="relative z-[1] w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {new Date(activePhoto.takenAt).toLocaleString(locale)}
-              </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {formatInBusinessTimeZone(activePhoto.takenAt, locale, {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </p>
               <button
                 type="button"
                 onClick={() => setActivePhoto(null)}

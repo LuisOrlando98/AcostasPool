@@ -158,7 +158,8 @@
       "reports": "Reports",
       "settings": "Settings",
       "routes": "Routes & Jobs",
-      "serviceAgreement": "Service Agreement"
+      "serviceAgreement": "Service Agreement",
+      "helpCenter": "Help"
     },
     "tech": {
       "route": "My Route",
@@ -503,8 +504,12 @@
       "assignTech": "Assign technician",
       "actions": {
         "saveAssignment": "Save assignment",
-        "updateStatus": "Update status"
+        "updateStatus": "Update status",
+        "delete": "Delete job"
       },
+      "dangerTitle": "Danger zone",
+      "dangerSubtitle": "Permanently delete this job. Invoices will remain without an associated job.",
+      "confirmDelete": "Confirm deletion",
       "statusTitle": "Status",
       "checklist": "Checklist",
       "noChecklist": "No checklist attached.",
@@ -527,6 +532,10 @@
     "agreement": {
       "title": "Service agreement",
       "subtitle": "Executive, functional, and contractual summary for commercial presentation."
+    },
+    "help": {
+      "title": "Help center",
+      "subtitle": "Complete operational guide for administrators."
     },
     "dashboard": {
       "title": "Administration dashboard",
@@ -1124,6 +1133,11 @@
               "identity": "Property identity",
               "specs": "Pool specs",
               "access": "Access and notes"
+            },
+            "danger": {
+              "title": "Danger zone",
+              "subtitle": "Confirm before removing this property from the customer.",
+              "confirm": "Confirm deletion"
             }
           },
           "spaNo": "Spa: No",
@@ -1240,6 +1254,12 @@
           "search": "Property, address, or technician"
         },
         "filters": {
+          "open": "Open filters",
+          "activeCount": "{{count}} active",
+          "modalTitle": "Job filters",
+          "modalSubtitle": "Organize the agenda by search, status, service, technician, and dates.",
+          "search": "Search",
+          "sort": "Sort",
           "status": "Status",
           "priority": "Priority",
           "service": "Service",
@@ -1247,10 +1267,13 @@
           "evidence": "Evidence",
           "withEvidence": "With evidence",
           "withoutEvidence": "Without evidence",
+          "dateRange": "Date range",
           "from": "From",
           "to": "To",
           "upcoming": "Upcoming",
-          "recent": "Most recent"
+          "recent": "Most recent",
+          "apply": "Apply",
+          "reset": "Reset filters"
         },
         "table": {
           "date": "Date",

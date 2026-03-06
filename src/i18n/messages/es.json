@@ -158,7 +158,8 @@
       "reports": "Reportes",
       "settings": "Ajustes",
       "routes": "Rutas y trabajos",
-      "serviceAgreement": "Acuerdo de servicio"
+      "serviceAgreement": "Acuerdo de servicio",
+      "helpCenter": "Ayuda"
     },
     "tech": {
       "route": "Mi ruta",
@@ -503,8 +504,12 @@
       "assignTech": "Asignar tecnico",
       "actions": {
         "saveAssignment": "Guardar asignacion",
-        "updateStatus": "Actualizar estado"
+        "updateStatus": "Actualizar estado",
+        "delete": "Eliminar trabajo"
       },
+      "dangerTitle": "Zona de eliminacion",
+      "dangerSubtitle": "Elimina este trabajo de forma permanente. Las facturas quedaran sin trabajo asociado.",
+      "confirmDelete": "Confirmar eliminacion",
       "statusTitle": "Estado",
       "checklist": "Checklist",
       "noChecklist": "No hay checklist asociado.",
@@ -527,6 +532,10 @@
     "agreement": {
       "title": "Acuerdo de servicio",
       "subtitle": "Resumen ejecutivo, funcional y contractual para presentacion comercial."
+    },
+    "help": {
+      "title": "Centro de ayuda",
+      "subtitle": "Guia operativa completa para administradores."
     },
     "dashboard": {
       "title": "Panel de administracion",
@@ -1124,6 +1133,11 @@
               "identity": "Identidad de propiedad",
               "specs": "Especificaciones de piscina",
               "access": "Accesos y notas"
+            },
+            "danger": {
+              "title": "Zona de eliminacion",
+              "subtitle": "Confirma antes de eliminar esta propiedad del cliente.",
+              "confirm": "Confirmar eliminacion"
             }
           },
           "spaNo": "Spa: No",
@@ -1240,6 +1254,12 @@
           "search": "Propiedad, direccion o tecnico"
         },
         "filters": {
+          "open": "Abrir filtros",
+          "activeCount": "{{count}} activos",
+          "modalTitle": "Filtros de trabajos",
+          "modalSubtitle": "Organiza la agenda por busqueda, estado, servicio, tecnico y fechas.",
+          "search": "Busqueda",
+          "sort": "Orden",
           "status": "Estado",
           "priority": "Prioridad",
           "service": "Servicio",
@@ -1247,10 +1267,13 @@
           "evidence": "Evidencia",
           "withEvidence": "Con evidencia",
           "withoutEvidence": "Sin evidencia",
+          "dateRange": "Rango de fechas",
           "from": "Desde",
           "to": "Hasta",
           "upcoming": "Mas proximos",
-          "recent": "Mas recientes"
+          "recent": "Mas recientes",
+          "apply": "Aplicar",
+          "reset": "Limpiar filtros"
         },
         "table": {
           "date": "Fecha",

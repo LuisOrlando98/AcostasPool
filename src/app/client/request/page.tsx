@@ -4,6 +4,8 @@ import AppShell from "@/components/layout/AppShell";
 import { useEffect, useMemo, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { useRouter } from "next/navigation";
+import { DateTime } from "luxon";
+import { BUSINESS_TIMEZONE, parseBusinessDateInput } from "@/lib/timezone";
 
 type PropertyOption = {
   id: string;
@@ -27,26 +29,43 @@ type AvailabilityResponse = {
 };
 
 function parseDateKey(value: string) {
-  const parsed = new Date(`${value}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parseBusinessDateInput(value);
 }
 
 function toDateKey(value: Date) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(
-    value.getDate()
-  ).padStart(2, "0")}`;
+  return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM-dd");
 }
 
 function startOfMonth(value: Date) {
-  return new Date(value.getFullYear(), value.getMonth(), 1);
+  return DateTime.fromJSDate(value)
+    .setZone(BUSINESS_TIMEZONE)
+    .startOf("month")
+    .toUTC()
+    .toJSDate();
 }
 
 function addMonths(value: Date, months: number) {
-  return new Date(value.getFullYear(), value.getMonth() + months, 1);
+  return DateTime.fromJSDate(value)
+    .setZone(BUSINESS_TIMEZONE)
+    .plus({ months })
+    .startOf("month")
+    .toUTC()
+    .toJSDate();
 }
 
 function isSameMonth(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+  return (
+    DateTime.fromJSDate(a).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM") ===
+    DateTime.fromJSDate(b).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM")
+  );
+}
+
+function getBusinessWeekdayIndex(value: Date) {
+  return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).weekday % 7;
+}
+
+function getBusinessDayNumber(value: Date) {
+  return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).day;
 }
 
 export default function ClientRequestPage() {
@@ -200,12 +219,17 @@ export default function ClientRequestPage() {
     : false;
 
   const weekdayLabels = useMemo(() => {
-    const sunday = new Date(2024, 0, 7);
+    const sunday = DateTime.fromObject(
+      { year: 2024, month: 1, day: 7 },
+      { zone: BUSINESS_TIMEZONE }
+    );
     return Array.from({ length: 7 }, (_, index) => {
-      const day = new Date(sunday);
-      day.setDate(sunday.getDate() + index);
-      return day
-        .toLocaleDateString(localeTag, { weekday: "short" })
+      return sunday
+        .plus({ days: index })
+        .setLocale(localeTag)
+        .toLocaleString({
+          weekday: "short",
+        })
         .replace(".", "")
         .slice(0, 2)
         .toUpperCase();
@@ -213,26 +237,23 @@ export default function ClientRequestPage() {
   }, [localeTag]);
 
   const calendarDays = useMemo(() => {
-    const monthStart = startOfMonth(calendarMonth);
-    const monthEnd = new Date(
-      calendarMonth.getFullYear(),
-      calendarMonth.getMonth() + 1,
-      0
-    );
-
-    const startOffset = monthStart.getDay();
-    const gridStart = new Date(monthStart);
-    gridStart.setDate(monthStart.getDate() - startOffset);
-
-    const endOffset = 6 - monthEnd.getDay();
-    const gridEnd = new Date(monthEnd);
-    gridEnd.setDate(monthEnd.getDate() + endOffset);
-
+    const monthStart = DateTime.fromJSDate(calendarMonth)
+      .setZone(BUSINESS_TIMEZONE)
+      .startOf("month");
+    const monthEnd = monthStart.endOf("month");
+    const gridStart = monthStart
+      .minus({ days: monthStart.weekday % 7 })
+      .startOf("day");
+    const gridEnd = monthEnd
+      .plus({ days: 6 - (monthEnd.weekday % 7) })
+      .endOf("day");
     const days: Date[] = [];
-    const cursor = new Date(gridStart);
-    while (cursor <= gridEnd) {
-      days.push(new Date(cursor));
-      cursor.setDate(cursor.getDate() + 1);
+    for (
+      let cursor = gridStart;
+      cursor.toMillis() <= gridEnd.toMillis();
+      cursor = cursor.plus({ days: 1 })
+    ) {
+      days.push(cursor.toUTC().toJSDate());
     }
 
     return days;
@@ -262,21 +283,16 @@ export default function ClientRequestPage() {
       month: "long",
       day: "numeric",
       year: "numeric",
+      timeZone: BUSINESS_TIMEZONE,
     });
   };
 
   const formatTime = (value: string) => {
-    const [hourRaw, minuteRaw] = value.split(":");
-    const hour = Number(hourRaw);
-    const minute = Number(minuteRaw);
-
-    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    const parsed = DateTime.fromFormat(value, "HH:mm", { zone: BUSINESS_TIMEZONE });
+    if (!parsed.isValid) {
       return value;
     }
-
-    const date = new Date();
-    date.setHours(hour, minute, 0, 0);
-    return date.toLocaleTimeString(localeTag, {
+    return parsed.setLocale(localeTag).toLocaleString({
       hour: "numeric",
       minute: "2-digit",
     });
@@ -528,6 +544,7 @@ export default function ClientRequestPage() {
                         {calendarMonth.toLocaleDateString(localeTag, {
                           month: "long",
                           year: "numeric",
+                          timeZone: BUSINESS_TIMEZONE,
                         })}
                       </p>
                     </div>
@@ -571,7 +588,8 @@ export default function ClientRequestPage() {
                       const inMonth = isSameMonth(date, calendarMonth);
                       const isAvailable = Boolean(day && day.remainingCapacity > 0);
                       const isSelected = preferredDate === dateKey;
-                      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                      const weekday = getBusinessWeekdayIndex(date);
+                      const isWeekend = weekday === 0 || weekday === 6;
                       const showUnavailableMarker = inMonth && !isAvailable;
                       const unavailableStyle = isWeekend
                         ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400"
@@ -594,7 +612,7 @@ export default function ClientRequestPage() {
                           }`}
                         >
                           <span className="block text-sm font-semibold leading-none">
-                            {date.getDate()}
+                            {getBusinessDayNumber(date)}
                           </span>
                           {showUnavailableMarker ? (
                             <>
@@ -716,17 +734,17 @@ export default function ClientRequestPage() {
       </section>
 
       {showConfirmationModal ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
+            className="app-modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
             aria-label={t("common.actions.close")}
             onClick={() => {
               setShowConfirmationModal(false);
               router.push("/client");
             }}
           />
-          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl">
+          <div className="app-modal-card relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl">
             <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
                 {locale === "es" ? "Solicitud enviada" : "Request sent"}
@@ -758,3 +776,4 @@ export default function ClientRequestPage() {
     </AppShell>
   );
 }
+

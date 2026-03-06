@@ -1,11 +1,10 @@
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
+
 export const TECH_DAILY_CAPACITY = 6;
 export const SLOT_INTERVAL_MINUTES = 60;
 export const SLOT_START_HOUR = 8;
 export const MIN_BOOKING_LEAD_DAYS = 2;
-export const BUSINESS_TIMEZONE =
-  process.env.NEXT_PUBLIC_BUSINESS_TIMEZONE ||
-  process.env.BUSINESS_TIMEZONE ||
-  "America/New_York";
+export { BUSINESS_TIMEZONE };
 
 const MINUTES_PER_DAY = 24 * 60;
 const SLOT_START_MINUTES = SLOT_START_HOUR * 60;

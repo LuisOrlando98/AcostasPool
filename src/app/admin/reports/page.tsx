@@ -16,6 +16,7 @@ import {
   getReportFilters,
   type ReportFilters,
 } from "@/lib/reports/filters";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type ReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -865,8 +866,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                         <Badge label={log.status} tone={statusTone} />
                         <span>
                           {log.sentAt
-                            ? log.sentAt.toLocaleString(locale)
-                            : log.createdAt.toLocaleString(locale)}
+                            ? formatInBusinessTimeZone(log.sentAt, locale, {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })
+                            : formatInBusinessTimeZone(log.createdAt, locale, {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
                         </span>
                       </div>
                     </div>

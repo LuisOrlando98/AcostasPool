@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
+import { endOfBusinessDay, getBusinessTimeParts } from "@/lib/timezone";
 
 type UpdatePayload = {
   jobId: string;
@@ -11,7 +12,13 @@ type UpdatePayload = {
 };
 
 const toSortOrder = (value: Date) =>
-  value.getHours() * 60 + value.getMinutes();
+  (() => {
+    const parts = getBusinessTimeParts(value);
+    if (!parts) {
+      return 0;
+    }
+    return parts.hour * 60 + parts.minute;
+  })();
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -25,8 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
 
   for (const update of updates as UpdatePayload[]) {
     if (!update.jobId) {

@@ -178,30 +178,35 @@ export default function AdminCustomerProperties({
       </section>
 
       {activeProperty ? (
-        <div className="fixed inset-0 z-[2300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[2300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
             aria-label={t("common.actions.close")}
-            className="absolute inset-0 bg-slate-900/60"
+            className="app-modal-backdrop absolute inset-0"
             onClick={() => setActivePropertyId(null)}
           />
-          <div className="relative z-[1] w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+          <div className="app-modal-card relative z-[1] w-full max-w-5xl overflow-hidden rounded-3xl border bg-white">
+            <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+              <div className="app-modal-header">
+                <div className="min-w-0">
+                  <p className="app-modal-kicker">
                     {t("admin.customers.detail.properties.edit.summary")}
                   </p>
-                  <h3 className="text-lg font-semibold text-slate-900">
+                  <h3 className="app-modal-title">
                     {activeProperty.name ||
                       t("admin.customers.detail.properties.nameFallback")}
                   </h3>
-                  <p className="text-sm text-slate-500">{activeProperty.address}</p>
+                  <p
+                    className="app-modal-subtitle truncate sm:max-w-[42rem]"
+                    title={activeProperty.address}
+                  >
+                    {activeProperty.address}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActivePropertyId(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                  className="app-modal-close"
                   aria-label={t("common.actions.close")}
                 >
                   <svg
@@ -220,144 +225,159 @@ export default function AdminCustomerProperties({
                 </button>
               </div>
 
-              <form action={onUpdateProperty} className="mt-5 space-y-4">
+              <form action={onUpdateProperty} className="grid gap-3">
                 <input type="hidden" name="propertyId" value={activeProperty.id} />
                 <input type="hidden" name="customerId" value={customerId} />
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.customers.detail.properties.fields.name")}
-                    </label>
-                    <input
-                      name="name"
-                      defaultValue={activeProperty.name ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      placeholder={t("admin.customers.detail.properties.placeholders.name")}
+                <section className="app-modal-section">
+                  <p className="app-modal-section-title">
+                    {t("admin.customers.detail.properties.edit.sections.identity")}
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.customers.detail.properties.fields.name")}
+                      </label>
+                      <input
+                        name="name"
+                        defaultValue={activeProperty.name ?? ""}
+                        className="app-input app-modal-input"
+                        placeholder={t("admin.customers.detail.properties.placeholders.name")}
+                      />
+                    </div>
+                    <AddressAutocompleteSingle
+                      name="address"
+                      label={t("admin.routes.labels.address")}
+                      defaultValue={activeProperty.address}
+                      placeholder={t("admin.customers.detail.properties.placeholders.address")}
+                      required
                     />
                   </div>
-                  <AddressAutocompleteSingle
-                    name="address"
-                    label={t("admin.routes.labels.address")}
-                    defaultValue={activeProperty.address}
-                    placeholder={t("admin.customers.detail.properties.placeholders.address")}
-                    required
-                  />
-                </div>
+                </section>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.routes.labels.poolType")}
-                    </label>
-                    <select
-                      name="poolType"
-                      defaultValue={activeProperty.poolType ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="">
-                        {t("admin.customers.detail.properties.options.select")}
-                      </option>
-                      {poolTypeOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                <section className="app-modal-section">
+                  <p className="app-modal-section-title">
+                    {t("admin.customers.detail.properties.edit.sections.specs")}
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.routes.labels.poolType")}
+                      </label>
+                      <select
+                        name="poolType"
+                        defaultValue={activeProperty.poolType ?? ""}
+                        className="app-input app-modal-input bg-white"
+                      >
+                        <option value="">
+                          {t("admin.customers.detail.properties.options.select")}
                         </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.customers.detail.properties.fields.sanitizerType")}
-                    </label>
-                    <select
-                      name="sanitizerType"
-                      defaultValue={activeProperty.sanitizerType ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="">
-                        {t("admin.customers.detail.properties.options.select")}
-                      </option>
-                      {sanitizerOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
+                        {poolTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.customers.detail.properties.fields.sanitizerType")}
+                      </label>
+                      <select
+                        name="sanitizerType"
+                        defaultValue={activeProperty.sanitizerType ?? ""}
+                        className="app-input app-modal-input bg-white"
+                      >
+                        <option value="">
+                          {t("admin.customers.detail.properties.options.select")}
                         </option>
-                      ))}
-                    </select>
+                        {sanitizerOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.routes.labels.poolVolume")}
-                    </label>
-                    <input
-                      name="poolVolumeGallons"
-                      type="number"
-                      defaultValue={activeProperty.poolVolumeGallons ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.routes.labels.poolVolume")}
+                      </label>
+                      <input
+                        name="poolVolumeGallons"
+                        type="number"
+                        defaultValue={activeProperty.poolVolumeGallons ?? ""}
+                        className="app-input app-modal-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.routes.labels.waterType")}
+                      </label>
+                      <input
+                        name="waterType"
+                        defaultValue={activeProperty.waterType ?? ""}
+                        className="app-input app-modal-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.routes.labels.filterType")}
+                      </label>
+                      <input
+                        name="filterType"
+                        defaultValue={activeProperty.filterType ?? ""}
+                        className="app-input app-modal-input"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.routes.labels.waterType")}
-                    </label>
-                    <input
-                      name="waterType"
-                      defaultValue={activeProperty.waterType ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.routes.labels.filterType")}
-                    </label>
-                    <input
-                      name="filterType"
-                      defaultValue={activeProperty.filterType ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <div className="mt-3 max-w-[20rem]">
+                    <label className="app-modal-field-label">
                       {t("admin.customers.detail.properties.fields.spa")}
                     </label>
                     <select
                       name="hasSpa"
                       defaultValue={activeProperty.hasSpa ? "yes" : "no"}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                      className="app-input app-modal-input bg-white"
                     >
                       <option value="no">{t("common.labels.no")}</option>
                       <option value="yes">{t("common.labels.yes")}</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.customers.detail.properties.fields.accessInfo")}
-                    </label>
-                    <textarea
-                      name="accessInfo"
-                      defaultValue={activeProperty.accessInfo ?? ""}
-                      className="mt-2 min-h-[88px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
+                </section>
+
+                <section className="app-modal-section">
+                  <p className="app-modal-section-title">
+                    {t("admin.customers.detail.properties.edit.sections.access")}
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.customers.detail.properties.fields.accessInfo")}
+                      </label>
+                      <textarea
+                        name="accessInfo"
+                        defaultValue={activeProperty.accessInfo ?? ""}
+                        className="app-input app-modal-input app-modal-input-textarea"
+                      />
+                    </div>
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.customers.detail.properties.fields.locationNotes")}
+                      </label>
+                      <textarea
+                        name="locationNotes"
+                        defaultValue={activeProperty.locationNotes ?? ""}
+                        className="app-input app-modal-input app-modal-input-textarea"
+                      />
+                    </div>
                   </div>
-                </div>
+                </section>
 
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.customers.detail.properties.fields.locationNotes")}
-                  </label>
-                  <textarea
-                    name="locationNotes"
-                    defaultValue={activeProperty.locationNotes ?? ""}
-                    className="mt-2 min-h-[88px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  />
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
+                <div className="app-modal-actions">
                   <FormSubmitButton
                     idleLabel={t("admin.customers.detail.actions.saveChanges")}
                     pendingLabel={t("admin.customers.detail.actions.saving")}
@@ -366,33 +386,43 @@ export default function AdminCustomerProperties({
                 </div>
               </form>
 
-              <div className="mt-3 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-rose-200 bg-rose-50/60 px-3 py-3">
-                <label className="flex items-center gap-2 text-xs text-rose-700">
-                  <input
-                    type="checkbox"
-                    checked={confirmDelete}
-                    onChange={(event) => setConfirmDelete(event.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  Confirm delete
-                </label>
-                <form action={onDeleteProperty}>
-                  <input type="hidden" name="propertyId" value={activeProperty.id} />
-                  <input type="hidden" name="customerId" value={customerId} />
-                  <input
-                    type="hidden"
-                    name="confirmDelete"
-                    value={confirmDelete ? "yes" : "no"}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!confirmDelete}
-                    className="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 transition disabled:opacity-50"
-                  >
-                    {t("common.actions.delete")}
-                  </button>
-                </form>
-              </div>
+              <section className="app-modal-danger mt-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="app-modal-danger-title">
+                      {t("admin.customers.detail.properties.edit.danger.title")}
+                    </p>
+                    <p className="app-modal-danger-subtitle">
+                      {t("admin.customers.detail.properties.edit.danger.subtitle")}
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-rose-700">
+                    <input
+                      type="checkbox"
+                      checked={confirmDelete}
+                      onChange={(event) => setConfirmDelete(event.target.checked)}
+                      className="h-4 w-4 rounded border-rose-300"
+                    />
+                    {t("admin.customers.detail.properties.edit.danger.confirm")}
+                  </label>
+                  <form action={onDeleteProperty}>
+                    <input type="hidden" name="propertyId" value={activeProperty.id} />
+                    <input type="hidden" name="customerId" value={customerId} />
+                    <input
+                      type="hidden"
+                      name="confirmDelete"
+                      value={confirmDelete ? "yes" : "no"}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!confirmDelete}
+                      className="rounded-full border border-rose-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {t("common.actions.delete")}
+                    </button>
+                  </form>
+                </div>
+              </section>
             </div>
           </div>
         </div>

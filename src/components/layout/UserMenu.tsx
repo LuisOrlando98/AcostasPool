@@ -10,6 +10,7 @@ import {
   getNotificationTitle,
 } from "@/lib/notifications/view";
 import { emitNotificationSignal } from "@/lib/notifications/client-alert";
+import { addBusinessDays, startOfBusinessDay } from "@/lib/timezone";
 
 type UserInfo = {
   id: string;
@@ -152,16 +153,12 @@ export default function UserMenu() {
       week: [] as NotificationItem[],
       older: [] as NotificationItem[],
     };
-    const now = new Date();
-    const startOfToday = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate()
-    );
-    const startOfYesterday = new Date(startOfToday);
-    startOfYesterday.setDate(startOfToday.getDate() - 1);
-    const startOfWeek = new Date(startOfToday);
-    startOfWeek.setDate(startOfToday.getDate() - 7);
+    const startOfToday = startOfBusinessDay(new Date());
+    if (!startOfToday) {
+      return groups;
+    }
+    const startOfYesterday = addBusinessDays(startOfToday, -1) ?? startOfToday;
+    const startOfWeek = addBusinessDays(startOfToday, -7) ?? startOfToday;
 
     for (const item of notifications) {
       const createdAt = new Date(item.createdAt);

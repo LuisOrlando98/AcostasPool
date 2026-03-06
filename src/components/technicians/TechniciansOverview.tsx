@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import { formatUsPhone } from "@/lib/phones";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type TechnicianRow = {
   id: string;
@@ -101,6 +103,7 @@ function getTelHref(value?: string | null) {
 
 export default function TechniciansOverview({ rows, deleteTechnicianAction }: Props) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [sortKey, setSortKey] = useState<"pending" | "completed" | "name">("pending");
@@ -160,7 +163,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
     if (Number.isNaN(date.getTime())) {
       return t("admin.technicians.overview.activity.none");
     }
-    return date.toLocaleString(locale, {
+    return formatInBusinessTimeZone(date, locale, {
       dateStyle: "medium",
       timeStyle: "short",
     });
@@ -430,7 +433,19 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {sortedRows.map((row) => (
-                        <tr key={row.id} className="group bg-white hover:bg-slate-50">
+                        <tr
+                          key={row.id}
+                          onClick={() => router.push(`/admin/technicians/${row.id}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              router.push(`/admin/technicians/${row.id}`);
+                            }
+                          }}
+                          className="group cursor-pointer bg-white hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-1"
+                          role="link"
+                          tabIndex={0}
+                        >
                           <td className="px-4 py-3">
                             <div className="flex min-w-[15rem] items-center gap-3">
                               <span
@@ -504,7 +519,11 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                               {formatLastActivity(row.lastActivity)}
                             </p>
                           </td>
-                          <td className="px-4 py-3 text-right">
+                          <td
+                            className="px-4 py-3 text-right"
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => event.stopPropagation()}
+                          >
                             <div className="flex items-center justify-end gap-1">
                               <Link
                                 href={`/admin/routes?tech=${row.id}`}

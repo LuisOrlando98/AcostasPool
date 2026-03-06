@@ -5,6 +5,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import {
+  addBusinessDays,
+  formatBusinessDateInput,
+  formatInBusinessTimeZone,
+  parseBusinessDateInput,
+} from "@/lib/timezone";
 
 type ReportsFiltersBarProps = {
   technicians: Array<{ id: string; name: string }>;
@@ -27,13 +33,9 @@ type FilterState = {
   priority: string;
 };
 
-function formatInputDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function buildPresetRange(range: string) {
   const now = new Date();
-  const today = formatInputDate(now);
+  const today = formatBusinessDateInput(now);
 
   if (range === "today") {
     return { from: today, to: today };
@@ -41,9 +43,8 @@ function buildPresetRange(range: string) {
 
   const days = Number(range);
   if (!Number.isNaN(days) && days > 0) {
-    const start = new Date(now);
-    start.setDate(start.getDate() - (days - 1));
-    return { from: formatInputDate(start), to: today };
+    const start = addBusinessDays(now, -(days - 1)) ?? now;
+    return { from: formatBusinessDateInput(start), to: today };
   }
 
   return { from: today, to: today };
@@ -61,7 +62,7 @@ export default function ReportsFiltersBar({
   technicians,
   defaults,
 }: ReportsFiltersBarProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -137,13 +138,17 @@ export default function ReportsFiltersBar({
   }, [state.range, t]);
 
   const dateLabel = useMemo(() => {
-    const from = state.from ? new Date(`${state.from}T00:00:00`) : null;
-    const to = state.to ? new Date(`${state.to}T00:00:00`) : null;
+    const from = state.from ? parseBusinessDateInput(state.from) : null;
+    const to = state.to ? parseBusinessDateInput(state.to) : null;
     if (!from || Number.isNaN(from.getTime()) || !to || Number.isNaN(to.getTime())) {
       return "--";
     }
-    return `${from.toLocaleDateString()} - ${to.toLocaleDateString()}`;
-  }, [state.from, state.to]);
+    return `${formatInBusinessTimeZone(from, locale, {
+      dateStyle: "short",
+    })} - ${formatInBusinessTimeZone(to, locale, {
+      dateStyle: "short",
+    })}`;
+  }, [locale, state.from, state.to]);
 
   const pushState = (next: FilterState) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -248,18 +253,16 @@ export default function ReportsFiltersBar({
 
   return (
     <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 sm:px-5">
-      <div className="flex w-full flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1 overflow-x-auto">
-          <p className="inline-flex min-w-max items-center whitespace-nowrap text-sm text-slate-700">
-            <span className="font-semibold">{t("admin.reports.filters.showing")}:</span>
-            <span className="ml-2 font-semibold">{rangeLabel}</span>
-            <span className="mx-2 text-slate-400">-</span>
-            <span className="text-slate-600">{dateLabel}</span>
-          </p>
-        </div>
-        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+      <div className="flex w-full items-center gap-2 sm:gap-3">
+        <p className="min-w-0 flex-1 truncate whitespace-nowrap pr-1 text-[13px] text-slate-700 sm:text-sm">
+          <span className="font-semibold">{t("admin.reports.filters.showing")}:</span>
+          <span className="ml-1.5 font-semibold sm:ml-2">{rangeLabel}</span>
+          <span className="mx-1.5 text-slate-400 sm:mx-2">-</span>
+          <span className="text-slate-600">{dateLabel}</span>
+        </p>
+        <div className="flex shrink-0 items-center gap-2">
           {activeCount > 0 ? (
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+            <span className="hidden rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 sm:inline-flex">
               {t("admin.reports.filters.activeCount", { count: activeCount })}
             </span>
           ) : null}
@@ -269,10 +272,13 @@ export default function ReportsFiltersBar({
               setDraft(state);
               setOpen(true);
             }}
-            className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+            className="app-button-ghost relative inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
             aria-label={t("admin.reports.filters.open")}
             title={t("admin.reports.filters.open")}
           >
+            {activeCount > 0 ? (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sky-500 sm:hidden" />
+            ) : null}
             <svg
               viewBox="0 0 24 24"
               fill="none"

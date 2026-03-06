@@ -290,8 +290,8 @@ export default function TechnicianCreateForm({ createTechnicianAction }: Props) 
       </p>
 
       {showSuccess ? (
-        <div className="fixed inset-0 z-[1320] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]" />
+        <div className="app-modal-layer fixed inset-0 z-[1320] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+          <div className="app-modal-backdrop absolute inset-0 bg-slate-900/40 backdrop-blur-[1px]" />
           <div className="relative w-full max-w-sm animate-fade rounded-2xl border border-emerald-200 bg-[linear-gradient(135deg,#ecfdf5,#eff6ff)] px-5 py-4 shadow-xl">
             <div className="flex items-center gap-3">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">

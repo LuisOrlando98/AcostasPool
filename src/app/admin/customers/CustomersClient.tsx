@@ -88,16 +88,16 @@ export default function CustomersClient({
     }
 
     return createPortal(
-      <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+      <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
         <button
           type="button"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
           aria-label={t("common.actions.close")}
           onClick={() => setOpen(false)}
         />
-        <div className="relative z-10 w-full max-w-6xl">
+        <div className="app-modal-card relative z-10 w-full max-w-6xl">
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+            <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -335,3 +335,5 @@ export default function CustomersClient({
     </>
   );
 }
+
+

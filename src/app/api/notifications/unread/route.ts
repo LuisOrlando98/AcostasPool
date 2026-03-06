@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { getNotificationPreferences } from "@/lib/notifications/preferences";
 import { buildTechRecipientWhere } from "@/lib/notifications/tech";
+import { addBusinessDays } from "@/lib/timezone";
 
 export async function GET() {
   const json = (data: unknown, status = 200) =>
@@ -42,8 +43,7 @@ export async function GET() {
     if (!customer) {
       return json({ unread: 0 });
     }
-    const since = new Date();
-    since.setDate(since.getDate() - 7);
+    const since = addBusinessDays(new Date(), -7) ?? new Date();
     const { disabled } = await getNotificationPreferences(
       session.sub,
       session.role
@@ -61,8 +61,7 @@ export async function GET() {
   }
 
   if (session.role === "TECH") {
-    const since = new Date();
-    since.setDate(since.getDate() - 7);
+    const since = addBusinessDays(new Date(), -7) ?? new Date();
     const { disabled } = await getNotificationPreferences(
       session.sub,
       session.role

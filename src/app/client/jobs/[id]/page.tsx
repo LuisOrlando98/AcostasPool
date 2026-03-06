@@ -5,6 +5,7 @@ import { resolveParams } from "@/lib/utils/params";
 import { getJobStatusLabel } from "@/lib/constants";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import ClientJobEvidenceGallery from "@/components/client/ClientJobEvidenceGallery";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function ClientJobDetailPage({
   params,
@@ -83,7 +84,11 @@ export default async function ClientJobDetailPage({
               {t("jobs.detail.serviceTitle")}
             </h2>
             <p className="text-sm text-slate-500">
-              {job.scheduledDate.toLocaleString(locale)} -{" "}
+              {formatInBusinessTimeZone(job.scheduledDate, locale, {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}{" "}
+              -{" "}
               {getJobStatusLabel(job.status, t)}
             </p>
             {job.serviceTier?.name ? (
@@ -105,7 +110,10 @@ export default async function ClientJobDetailPage({
               {t("client.home.recent.columns.date")}
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
-              {completedOrScheduledAt.toLocaleString(locale)}
+              {formatInBusinessTimeZone(completedOrScheduledAt, locale, {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
             </p>
           </article>
           <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">

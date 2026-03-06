@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import ServiceAgreementPage from "@/components/agreements/ServiceAgreementPage";
 import { requireRole } from "@/lib/auth/guards";
+import { isDeveloperEmail } from "@/lib/auth/developer";
 import { getTranslations } from "@/i18n/server";
 
 export const metadata: Metadata = {
@@ -11,7 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminAgreementServicePage() {
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
+  if (!isDeveloperEmail(session.email)) {
+    redirect("/unauthorized?next=/admin");
+  }
   const t = await getTranslations();
 
   return (

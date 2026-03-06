@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function ClientInvoicesPage() {
   const session = await requireRole("CUSTOMER");
@@ -61,7 +62,9 @@ export default async function ClientInvoicesPage() {
                 <div>
                   <p className="font-medium text-slate-900">{invoice.number}</p>
                   <p className="text-xs text-slate-500">
-                    {invoice.createdAt.toLocaleDateString(locale)}
+                    {formatInBusinessTimeZone(invoice.createdAt, locale, {
+                      dateStyle: "short",
+                    })}
                   </p>
                 </div>
                 <div className="text-right">

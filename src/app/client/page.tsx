@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { getJobStatusLabel } from "@/lib/constants";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function ClientPage() {
   const session = await requireRole("CUSTOMER");
@@ -71,7 +72,9 @@ export default async function ClientPage() {
           </p>
           <p className="mt-2 break-words text-2xl font-semibold leading-tight text-slate-900 sm:text-[1.8rem]">
             {upcomingJob
-              ? upcomingJob.scheduledDate.toLocaleDateString(locale)
+              ? formatInBusinessTimeZone(upcomingJob.scheduledDate, locale, {
+                  dateStyle: "short",
+                })
               : t("client.home.stats.notScheduled")}
           </p>
           <p className="mt-2 break-words text-xs text-slate-600">
@@ -144,7 +147,11 @@ export default async function ClientPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-900">
-                      {(job.completedAt ?? job.scheduledDate).toLocaleDateString(locale)}
+                      {formatInBusinessTimeZone(
+                        job.completedAt ?? job.scheduledDate,
+                        locale,
+                        { dateStyle: "short" }
+                      )}
                     </p>
                     <span
                       className="app-chip inline-flex items-center px-2 py-1 text-[11px]"
@@ -194,7 +201,11 @@ export default async function ClientPage() {
                           href={`/client/jobs/${job.id}`}
                           className="block whitespace-nowrap px-3 py-3"
                         >
-                          {(job.completedAt ?? job.scheduledDate).toLocaleDateString(locale)}
+                          {formatInBusinessTimeZone(
+                            job.completedAt ?? job.scheduledDate,
+                            locale,
+                            { dateStyle: "short" }
+                          )}
                         </Link>
                       </td>
                       <td className="p-0">

@@ -17,6 +17,12 @@ import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import {
+  endOfBusinessDay,
+  formatInBusinessTimeZone,
+  parseBusinessDateInput,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 import type { Prisma } from "@prisma/client";
 
 async function createInvoice(formData: FormData) {
@@ -225,11 +231,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   const customerIds = new Set(customers.map((customer) => customer.id));
 
   const isValidDateInput = (value: string) =>
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+    Boolean(parseBusinessDateInput(value));
 
-  const toDayStart = (value: string) => new Date(`${value}T00:00:00`);
-  const toDayEnd = (value: string) => new Date(`${value}T23:59:59.999`);
+  const toDayStart = (value: string) =>
+    startOfBusinessDay(parseBusinessDateInput(value) ?? new Date(value));
+  const toDayEnd = (value: string) =>
+    endOfBusinessDay(parseBusinessDateInput(value) ?? new Date(value));
 
   const normalizedExactDate = isValidDateInput(exactDateParam)
     ? exactDateParam
@@ -239,10 +246,16 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
 
   let createdAtFilter: Prisma.DateTimeFilter | undefined;
   if (normalizedExactDate) {
+    const dayStart = toDayStart(normalizedExactDate);
+    const dayEnd = toDayEnd(normalizedExactDate);
+    if (!dayStart || !dayEnd) {
+      createdAtFilter = undefined;
+    } else {
     createdAtFilter = {
-      gte: toDayStart(normalizedExactDate),
-      lte: toDayEnd(normalizedExactDate),
+      gte: dayStart,
+      lte: dayEnd,
     };
+    }
   } else if (normalizedFromDate || normalizedToDate) {
     const rangeStart = normalizedFromDate ? toDayStart(normalizedFromDate) : null;
     const rangeEnd = normalizedToDate ? toDayEnd(normalizedToDate) : null;
@@ -501,7 +514,9 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                           ${invoice.total.toFixed(2)}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {invoice.createdAt.toLocaleDateString(locale)}
+                          {formatInBusinessTimeZone(invoice.createdAt, locale, {
+                            dateStyle: "short",
+                          })}
                         </p>
                       </div>
                     </div>
@@ -526,7 +541,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                       {job ? (
                         <>
                           <Badge
-                            label={`${t("admin.invoices.list.job")}: ${job.scheduledDate.toLocaleDateString(locale)}`}
+                            label={`${t("admin.invoices.list.job")}: ${formatInBusinessTimeZone(
+                              job.scheduledDate,
+                              locale,
+                              { dateStyle: "short" }
+                            )}`}
                             tone="info"
                           />
                           <Badge
@@ -612,13 +631,13 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         </div>
       </section>
 
-      <div className="fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/invoice-filters:flex">
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/invoice-filters:flex">
         <label
           htmlFor="invoice-filters"
-          className="absolute inset-0 bg-slate-900/60"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
         />
-        <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -742,3 +761,5 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     </AppShell>
   );
 }
+
+

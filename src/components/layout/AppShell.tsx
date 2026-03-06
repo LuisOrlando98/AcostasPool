@@ -10,6 +10,7 @@ import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
+import { isDeveloperEmail } from "@/lib/auth/developer";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 export type NavItem = {
@@ -408,6 +409,9 @@ export default function AppShell({
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
+  const canAccessHelpCenter = role === "ADMIN";
+  const canAccessServiceAgreement =
+    role === "ADMIN" && isDeveloperEmail(mobileUser?.email);
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
@@ -611,35 +615,50 @@ export default function AppShell({
             <SidebarAccount />
           </div>
           <div className="sidebar-footer relative z-10 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
-            <div className="sidebar-footer-meta flex items-center justify-between gap-2">
+            <div className="sidebar-footer-meta flex items-start justify-between gap-2">
               <span className="sidebar-footer-version">AcostasPool v1.0</span>
-              {role === "ADMIN" ? (
-                <Link
-                  href="/admin/agreement-service"
-                  className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-3.5 w-3.5 shrink-0"
+              {canAccessHelpCenter ? (
+                <div className="flex flex-col items-end gap-1">
+                  {canAccessServiceAgreement ? (
+                    <Link
+                      href="/admin/agreement-service"
+                      className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        className="h-3.5 w-3.5 shrink-0"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 3.5v4h4M9 12h6M9 16h6"
+                        />
+                      </svg>
+                      <span className="sidebar-footer-link-label">
+                        {t("nav.admin.serviceAgreement")}
+                      </span>
+                    </Link>
+                  ) : null}
+                  <Link
+                    href="/admin/help"
+                    className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 3.5v4h4M9 12h6M9 16h6"
-                    />
-                  </svg>
-                  <span className="sidebar-footer-link-label">
-                    {t("nav.admin.serviceAgreement")}
-                  </span>
-                </Link>
+                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
+                      ?
+                    </span>
+                    <span className="sidebar-footer-link-label">
+                      {t("nav.admin.helpCenter")}
+                    </span>
+                  </Link>
+                </div>
               ) : null}
             </div>
           </div>
@@ -781,7 +800,7 @@ export default function AppShell({
                 })}
               </nav>
 
-              <div className="relative z-10 border-t border-[var(--sidebar-border)] px-3 py-3">
+              <div className="mobile-sidebar-actions relative z-10 border-t border-[var(--sidebar-border)] px-3 py-3">
                 <Link
                   href={accountHref}
                   onClick={() => setMobileNavOpen(false)}
@@ -869,34 +888,48 @@ export default function AppShell({
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-start justify-between gap-2">
                   <span>AcostasPool v1.0</span>
-                  {role === "ADMIN" ? (
-                    <Link
-                      href="/admin/agreement-service"
-                      onClick={() => setMobileNavOpen(false)}
-                      className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        className="h-3.5 w-3.5"
+                  {canAccessHelpCenter ? (
+                    <div className="flex flex-col items-end gap-1">
+                      {canAccessServiceAgreement ? (
+                        <Link
+                          href="/admin/agreement-service"
+                          onClick={() => setMobileNavOpen(false)}
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            className="h-3.5 w-3.5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M15 3.5v4h4M9 12h6M9 16h6"
+                            />
+                          </svg>
+                          <span>{t("nav.admin.serviceAgreement")}</span>
+                        </Link>
+                      ) : null}
+                      <Link
+                        href="/admin/help"
+                        onClick={() => setMobileNavOpen(false)}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 3.5v4h4M9 12h6M9 16h6"
-                        />
-                      </svg>
-                      <span>{t("nav.admin.serviceAgreement")}</span>
-                    </Link>
+                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
+                          ?
+                        </span>
+                        <span>{t("nav.admin.helpCenter")}</span>
+                      </Link>
+                    </div>
                   ) : null}
                 </div>
               </div>

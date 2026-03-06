@@ -18,6 +18,12 @@ import {
   toDateKey,
   timeValueToMinutes,
 } from "@/lib/jobs/capacity";
+import {
+  addBusinessDays,
+  endOfBusinessDay,
+  getBusinessTimeParts,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 const requestSchema = z.object({
   propertyId: z.string().min(1),
@@ -143,8 +149,9 @@ export async function POST(request: Request) {
       preferredDate ?? toDateKey(leadStartDate),
       normalizedPreferredTime ?? "09:00"
     );
+    const urgentTimeParts = getBusinessTimeParts(urgentDate);
     const urgentSortOrder =
-      urgentDate.getHours() * 60 + urgentDate.getMinutes();
+      (urgentTimeParts?.hour ?? 0) * 60 + (urgentTimeParts?.minute ?? 0);
 
     const pendingJob = await prisma.job.create({
       data: {
@@ -164,17 +171,19 @@ export async function POST(request: Request) {
     });
     createdJobs = [pendingJob];
   } else {
-    const preferredStartDate = parsedPreferredDate
+    const preferredStartDateBase = parsedPreferredDate
       ? new Date(
           Math.max(parsedPreferredDate.getTime(), leadStartDate.getTime())
         )
       : new Date(leadStartDate);
-    preferredStartDate.setHours(0, 0, 0, 0);
+    const preferredStartDate =
+      startOfBusinessDay(preferredStartDateBase) ?? preferredStartDateBase;
 
     const planningDays = Math.max(56, weeks * 18);
-    const planningEnd = new Date(preferredStartDate);
-    planningEnd.setDate(preferredStartDate.getDate() + planningDays);
-    planningEnd.setHours(23, 59, 59, 999);
+    const planningEnd =
+      endOfBusinessDay(
+        addBusinessDays(preferredStartDate, planningDays) ?? preferredStartDate
+      ) ?? preferredStartDate;
 
     const [techniciansCount, existingJobs] = await Promise.all([
       prisma.technician.count({ where: { user: { isActive: true } } }),
@@ -272,8 +281,8 @@ export async function POST(request: Request) {
     const now = new Date();
     createdJobs = await prisma.$transaction(
       scheduledDates.map((scheduledDate) => {
-        const sortOrder =
-          scheduledDate.getHours() * 60 + scheduledDate.getMinutes();
+        const timeParts = getBusinessTimeParts(scheduledDate);
+        const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
         return prisma.job.create({
           data: {
             customerId: customer.id,

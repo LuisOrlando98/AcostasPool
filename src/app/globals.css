@@ -535,17 +535,17 @@ h3 {
   content: none;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-item {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-item {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-item:hover {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-item:hover {
   background: transparent;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-item:hover .sidebar-icon {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-item:hover .sidebar-icon {
   background: rgba(48, 188, 237, 0.16);
   border-color: rgba(48, 188, 237, 0.5);
   color: #eaf6ff;
@@ -554,7 +554,7 @@ h3 {
     0 0 0 2px rgba(48, 188, 237, 0.08);
 }
 
-#sidebar-toggle:checked ~ div .sidebar-item[data-active="true"] .sidebar-icon {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-item[data-active="true"] .sidebar-icon {
   background: var(--sidebar-icon-bg);
   border-color: rgba(48, 188, 237, 0.75);
   color: var(--sidebar-accent);
@@ -563,27 +563,27 @@ h3 {
     0 0 0 2px rgba(48, 188, 237, 0.08);
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-card {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-card {
   border-color: transparent;
   background: transparent;
   box-shadow: none;
   padding: 0.5rem 0;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-header {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-header {
   justify-content: center;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-text {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-text {
   display: none;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-actions {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-actions {
   margin-top: 0.6rem;
   justify-items: center;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-link {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-link {
   width: 36px;
   height: 36px;
   justify-content: center;
@@ -593,34 +593,46 @@ h3 {
   border-color: rgba(255, 255, 255, 0.16);
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-link:hover {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-link:hover {
   background: rgba(48, 188, 237, 0.2);
   border-color: rgba(48, 188, 237, 0.45);
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-danger:hover {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-danger:hover {
   background: rgba(239, 68, 68, 0.6);
   border-color: rgba(239, 68, 68, 0.8);
 }
 
-#sidebar-toggle:checked ~ div .sidebar-account-label {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-account-label {
   display: none;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-footer-meta {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-footer-meta {
   justify-content: center;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-footer-version {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-footer-version {
   display: none;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-footer-link {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-footer-link {
   justify-content: center;
 }
 
-#sidebar-toggle:checked ~ div .sidebar-footer-link-label {
+#sidebar-toggle:checked ~ div .sidebar-shell-desktop .sidebar-footer-link-label {
   display: none;
+}
+
+#sidebar-toggle:checked ~ div .mobile-sidebar-actions .sidebar-account-link {
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  padding: 0.45rem 0.6rem;
+  border-radius: 12px;
+}
+
+#sidebar-toggle:checked ~ div .mobile-sidebar-actions .sidebar-account-label {
+  display: inline;
 }
 
 .pool-login-shell {
@@ -1483,6 +1495,16 @@ h3 {
   vertical-align: top;
 }
 
+.customers-table.customer-jobs-table {
+  min-width: 50rem;
+}
+
+.customer-jobs-table th,
+.customer-jobs-table td {
+  padding-left: 0.62rem;
+  padding-right: 0.62rem;
+}
+
 .customers-table th {
   white-space: nowrap;
 }
@@ -1579,10 +1601,20 @@ h3 {
     min-width: 720px;
   }
 
+  .customers-table.customer-jobs-table {
+    min-width: 42rem;
+  }
+
   .customers-table th,
   .customers-table td {
     padding: 0.62rem 0.68rem;
     font-size: 0.72rem;
+  }
+
+  .customer-jobs-table th,
+  .customer-jobs-table td {
+    padding-left: 0.52rem;
+    padding-right: 0.52rem;
   }
 
   .customers-overview-table .sticky {
@@ -1668,6 +1700,146 @@ h3 {
   background: rgba(100, 116, 139, 0.8);
   border: 2px solid transparent;
   background-clip: content-box;
+}
+
+.app-modal-layer {
+  isolation: isolate;
+  overscroll-behavior: contain;
+}
+
+.app-modal-backdrop {
+  background: rgba(2, 6, 23, 0.62);
+  backdrop-filter: blur(2px);
+}
+
+.app-modal-card {
+  border-color: rgba(148, 163, 184, 0.34);
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.9), #ffffff 30%),
+    #ffffff;
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.28);
+}
+
+.app-modal-scroll {
+  scrollbar-gutter: stable;
+}
+
+.app-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.app-modal-kicker {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.app-modal-title {
+  margin-top: 0.18rem;
+  font-size: 1.55rem;
+  line-height: 1.15;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.app-modal-subtitle {
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.app-modal-close {
+  display: inline-flex;
+  height: 2.15rem;
+  width: 2.15rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #64748b;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+
+.app-modal-close:hover {
+  border-color: rgba(100, 116, 139, 0.65);
+  background: rgba(248, 250, 252, 0.8);
+  color: #0f172a;
+}
+
+.app-modal-section {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(248, 250, 252, 0.72);
+  padding: 0.9rem;
+}
+
+.app-modal-section-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.app-modal-field-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.app-modal-input {
+  margin-top: 0.42rem;
+  width: 100%;
+  padding: 0.68rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.app-modal-input-textarea {
+  min-height: 6.25rem;
+  resize: vertical;
+}
+
+.app-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.75rem;
+}
+
+.app-modal-danger {
+  border-radius: 0.95rem;
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  background: rgba(255, 241, 242, 0.68);
+  padding: 0.8rem;
+}
+
+.app-modal-danger-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #be123c;
+}
+
+.app-modal-danger-subtitle {
+  margin-top: 0.18rem;
+  font-size: 0.76rem;
+  color: #9f1239;
 }
 
 summary.no-marker {

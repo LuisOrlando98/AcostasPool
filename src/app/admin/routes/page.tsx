@@ -5,22 +5,23 @@ import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
 import { getServiceTiers } from "@/lib/service-tiers";
+import { DateTime } from "luxon";
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 function toMonthKey(value: Date) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
+  return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM");
 }
 
 function resolveMonthStart(rawMonth?: string) {
   if (rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth)) {
-    const [yearPart, monthPart] = rawMonth.split("-");
-    const year = Number(yearPart);
-    const month = Number(monthPart);
-    if (Number.isFinite(year) && Number.isFinite(month)) {
-      return new Date(year, month - 1, 1);
+    const parsed = DateTime.fromFormat(rawMonth, "yyyy-MM", {
+      zone: BUSINESS_TIMEZONE,
+    }).startOf("month");
+    if (parsed.isValid) {
+      return parsed.toUTC().toJSDate();
     }
   }
-  const today = new Date();
-  return new Date(today.getFullYear(), today.getMonth(), 1);
+  return DateTime.now().setZone(BUSINESS_TIMEZONE).startOf("month").toUTC().toJSDate();
 }
 
 type RoutesPageProps = {
@@ -35,26 +36,26 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
   const monthParam = Array.isArray(monthRaw) ? monthRaw[0] : monthRaw;
 
   const monthStart = resolveMonthStart(monthParam);
-  const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-  const nextMonthStart = new Date(
-    monthStart.getFullYear(),
-    monthStart.getMonth() + 1,
-    1
-  );
-  const nextMonthEnd = new Date(
-    monthStart.getFullYear(),
-    monthStart.getMonth() + 2,
-    0
-  );
-  nextMonthEnd.setHours(23, 59, 59, 999);
-  const calendarStart = new Date(monthStart);
-  const startOffset = calendarStart.getDay();
-  calendarStart.setDate(calendarStart.getDate() - startOffset);
-  calendarStart.setHours(0, 0, 0, 0);
-  const calendarEnd = new Date(monthEnd);
-  const endOffset = 6 - calendarEnd.getDay();
-  calendarEnd.setDate(calendarEnd.getDate() + endOffset);
-  calendarEnd.setHours(23, 59, 59, 999);
+  const monthStartEt = DateTime.fromJSDate(monthStart)
+    .setZone(BUSINESS_TIMEZONE)
+    .startOf("month");
+  const monthEndEt = monthStartEt.endOf("month");
+  const nextMonthStartEt = monthStartEt.plus({ months: 1 }).startOf("month");
+  const nextMonthEndEt = nextMonthStartEt.endOf("month");
+  const startOffset = monthStartEt.weekday % 7;
+  const endOffset = 6 - (monthEndEt.weekday % 7);
+  const calendarStart = monthStartEt
+    .minus({ days: startOffset })
+    .startOf("day")
+    .toUTC()
+    .toJSDate();
+  const calendarEnd = monthEndEt
+    .plus({ days: endOffset })
+    .endOf("day")
+    .toUTC()
+    .toJSDate();
+  const nextMonthStart = nextMonthStartEt.toUTC().toJSDate();
+  const nextMonthEnd = nextMonthEndEt.toUTC().toJSDate();
 
   const [jobs, technicians, customers, serviceTiers, nextMonthJobsCount] =
     await Promise.all([

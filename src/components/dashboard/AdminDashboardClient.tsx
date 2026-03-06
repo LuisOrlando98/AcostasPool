@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import StatCard from "@/components/ui/StatCard";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 type DashboardJob = {
   id: string;
@@ -68,7 +69,11 @@ function formatLocalTime(dateIso: string) {
   if (Number.isNaN(date.getTime())) {
     return "--:--";
   }
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: BUSINESS_TIMEZONE,
+  });
 }
 
 function getInvoiceHref(invoice: DashboardInvoice) {

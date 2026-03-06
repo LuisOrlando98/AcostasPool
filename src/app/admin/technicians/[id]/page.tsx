@@ -9,6 +9,11 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { formatUsPhone, normalizeUsPhone } from "@/lib/phones";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { sendTechnicianInvite } from "@/lib/technicians/invite";
+import {
+  endOfBusinessDay,
+  formatInBusinessTimeZone,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 async function updateTechnician(formData: FormData) {
   "use server";
@@ -161,12 +166,13 @@ export default async function TechnicianDetailPage({
         : "border-slate-200 bg-slate-100 text-slate-700";
   const latestInvite = inviteTokens[0]?.createdAt ?? null;
   const latestInviteLabel = latestInvite
-    ? latestInvite.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })
+    ? formatInBusinessTimeZone(latestInvite, locale, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
     : null;
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = startOfBusinessDay(now) ?? new Date(now);
+  const endOfDay = endOfBusinessDay(now) ?? new Date(now);
   const upcoming = technician.jobs.filter(
     (job) => job.scheduledDate >= now && job.status !== "COMPLETED"
   );
@@ -187,7 +193,7 @@ export default async function TechnicianDetailPage({
     return latest;
   }, null);
   const lastActivityLabel = lastActivity
-    ? lastActivity.toLocaleString(locale, {
+    ? formatInBusinessTimeZone(lastActivity, locale, {
         dateStyle: "medium",
         timeStyle: "short",
       })

@@ -14,6 +14,7 @@ import {
   type InvoiceTemplateLocale,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 const require = createRequire(import.meta.url);
 
@@ -302,7 +303,11 @@ async function generateInvoicePdfWithPdfLibBytes(
       whiteColor
     );
     drawRightText(
-      `${template.issueDateLabel}: ${input.issueDate.toLocaleDateString(localeCopy.intlLocale)}`,
+      `${template.issueDateLabel}: ${formatInBusinessTimeZone(
+        input.issueDate,
+        localeCopy.intlLocale,
+        { dateStyle: "short" }
+      )}`,
       marginX + contentWidth,
       pageHeight - 114,
       11,
@@ -786,7 +791,9 @@ export async function generateInvoicePdfBytes(input: InvoicePdfRenderInput) {
     theme,
     locale,
     invoiceNumber: input.invoiceNumber,
-    issueDateLabel: input.issueDate.toLocaleDateString(localeCopy.intlLocale),
+    issueDateLabel: formatInBusinessTimeZone(input.issueDate, localeCopy.intlLocale, {
+      dateStyle: "short",
+    }),
     customerName: input.customerName,
     customerAddress: input.customerAddress,
     customerEmail: input.customerEmail,

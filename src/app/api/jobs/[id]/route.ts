@@ -5,13 +5,17 @@ import { getServiceTierChecklist } from "@/lib/service-tiers";
 import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
 import { prisma } from "@/lib/db";
 import { logAuditEvent } from "@/lib/audit/log";
+import { getBusinessTimeParts } from "@/lib/timezone";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 const toSortOrder = (value: Date) =>
-  value.getHours() * 60 + value.getMinutes();
+  (() => {
+    const parts = getBusinessTimeParts(value);
+    return (parts?.hour ?? 0) * 60 + (parts?.minute ?? 0);
+  })();
 
 export async function PATCH(
   request: Request,

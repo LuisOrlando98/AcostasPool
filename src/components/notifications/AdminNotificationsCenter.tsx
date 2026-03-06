@@ -10,6 +10,13 @@ import {
   getNotificationSource,
   getNotificationTitle,
 } from "@/lib/notifications/view";
+import {
+  addBusinessDays,
+  endOfBusinessDay,
+  formatInBusinessTimeZone,
+  parseBusinessDateInput,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 type NotificationRow = {
   id: string;
@@ -55,26 +62,15 @@ const DEFAULT_FILTERS: NotificationsFilters = {
 };
 
 function startOfDay(value: Date) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  return startOfBusinessDay(value) ?? new Date(value);
 }
 
 function endOfDay(value: Date) {
-  const date = new Date(value);
-  date.setHours(23, 59, 59, 999);
-  return date;
+  return endOfBusinessDay(value) ?? new Date(value);
 }
 
 function parseDateInput(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return null;
-  }
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-  return parsed;
+  return parseBusinessDateInput(value);
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -177,13 +173,11 @@ export default function AdminNotificationsCenter({
       rangeTo = endOfDay(now);
     } else if (filters.range === "7D") {
       rangeTo = endOfDay(now);
-      const from = new Date(now);
-      from.setDate(from.getDate() - 6);
+      const from = addBusinessDays(now, -6) ?? now;
       rangeFrom = startOfDay(from);
     } else if (filters.range === "30D") {
       rangeTo = endOfDay(now);
-      const from = new Date(now);
-      from.setDate(from.getDate() - 29);
+      const from = addBusinessDays(now, -29) ?? now;
       rangeFrom = startOfDay(from);
     } else if (filters.range === "CUSTOM") {
       const from = parseDateInput(filters.from);
@@ -379,57 +373,57 @@ export default function AdminNotificationsCenter({
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <article className="app-card p-5 shadow-contrast">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+      <section className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+        <article className="app-card p-3.5 shadow-contrast sm:p-5">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-xs sm:tracking-[0.22em]">
             {t("admin.notifications.stats.total")}
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-1.5 text-xl font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
             {notifications.length}
           </p>
         </article>
-        <article className="app-card p-5 shadow-contrast">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+        <article className="app-card p-3.5 shadow-contrast sm:p-5">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-xs sm:tracking-[0.22em]">
             {t("admin.notifications.stats.unread")}
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-1.5 text-xl font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
             {unreadCount}
           </p>
         </article>
-        <article className="app-card p-5 shadow-contrast">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+        <article className="app-card p-3.5 shadow-contrast sm:p-5">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-xs sm:tracking-[0.22em]">
             {t("admin.notifications.stats.failed")}
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-1.5 text-xl font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
             {failedCount}
           </p>
         </article>
-        <article className="app-card p-5 shadow-contrast">
-          <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+        <article className="app-card p-3.5 shadow-contrast sm:p-5">
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-xs sm:tracking-[0.22em]">
             {t("admin.notifications.stats.filtered")}
           </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
+          <p className="mt-1.5 text-xl font-semibold text-slate-900 sm:mt-2 sm:text-2xl">
             {filtered.length}
           </p>
         </article>
       </section>
 
-      <section className="ui-panel overflow-hidden p-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">
+      <section className="ui-panel overflow-hidden p-3 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-2.5 sm:items-center sm:gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-semibold leading-tight text-slate-900">
               {t("admin.notifications.list.title")}
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="mt-0.5 truncate text-[11px] text-slate-500 sm:text-xs">
               {t("admin.notifications.list.showing", {
                 count: pagedRows.length,
                 total: filtered.length,
               })}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {activeFiltersCount > 0 ? (
-              <span className="app-chip px-3 py-1 text-xs" data-tone="warning">
+              <span className="app-chip hidden px-3 py-1 text-xs sm:inline-flex" data-tone="warning">
                 {t("admin.notifications.filters.activeCount", {
                   count: activeFiltersCount,
                 })}
@@ -438,10 +432,13 @@ export default function AdminNotificationsCenter({
             <button
               type="button"
               onClick={openFilters}
-              className="app-button-ghost inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+              className="app-button-ghost relative inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
               aria-label={t("admin.notifications.filters.open")}
               title={t("admin.notifications.filters.open")}
             >
+              {activeFiltersCount > 0 ? (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-amber-500 sm:hidden" />
+              ) : null}
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -457,7 +454,7 @@ export default function AdminNotificationsCenter({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="app-button-ghost px-3 py-2 text-xs font-semibold"
+                className="app-button-ghost hidden px-3 py-2 text-xs font-semibold sm:inline-flex"
               >
                 {t("admin.notifications.filters.reset")}
               </button>
@@ -466,7 +463,7 @@ export default function AdminNotificationsCenter({
               type="button"
               onClick={() => void clearAll()}
               disabled={clearing || notifications.length === 0}
-              className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-60"
+              className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 sm:px-3 sm:py-2 sm:text-xs disabled:opacity-60"
             >
               {clearing
                 ? t("common.feedback.saving")
@@ -535,7 +532,11 @@ export default function AdminNotificationsCenter({
                       <p className="text-sm font-medium text-slate-800">{item.customerName}</p>
                       <p className="text-xs text-slate-500">{item.detail}</p>
                       <p className="text-[11px] text-slate-400">
-                        {item.source} | {new Date(item.createdAt).toLocaleString(locale)}
+                        {item.source} |{" "}
+                        {formatInBusinessTimeZone(item.createdAt, locale, {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
                       </p>
                       {item.actorName ? (
                         <p className="text-[11px] text-slate-400">
@@ -619,15 +620,15 @@ export default function AdminNotificationsCenter({
 
       {filtersOpen && typeof document !== "undefined"
         ? createPortal(
-        <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/60 p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/60 p-3 sm:p-6">
           <button
             type="button"
             onClick={() => setFiltersOpen(false)}
             className="absolute inset-0"
             aria-label={t("common.actions.close")}
           />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">

@@ -9,6 +9,7 @@ import {
   buildAvailabilityDays,
   getLeadStartDate,
 } from "@/lib/jobs/capacity";
+import { addBusinessDays, endOfBusinessDay } from "@/lib/timezone";
 
 const DEFAULT_DAYS = 56;
 const MAX_DAYS = 120;
@@ -42,9 +43,8 @@ export async function GET(request: Request) {
       : DEFAULT_DAYS;
 
   const startDate = getLeadStartDate(new Date(), MIN_BOOKING_LEAD_DAYS);
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + days);
-  endDate.setHours(23, 59, 59, 999);
+  const endDate =
+    endOfBusinessDay(addBusinessDays(startDate, days) ?? startDate) ?? startDate;
 
   const [techniciansCount, jobs] = await Promise.all([
     prisma.technician.count({

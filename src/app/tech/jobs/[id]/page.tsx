@@ -6,6 +6,7 @@ import { resolveParams } from "@/lib/utils/params";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function TechJobUploadPage({
   params,
@@ -105,7 +106,10 @@ export default async function TechJobUploadPage({
           existingPhotosCount: job.photos.length,
           customerPhone: job.customer.telefono ?? null,
           propertyAddress: job.property.address,
-          scheduledTime: job.scheduledDate.toLocaleTimeString(locale),
+          scheduledTime: formatInBusinessTimeZone(job.scheduledDate, locale, {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
           serviceLabel: serviceDescriptor,
           priorityLabel:
             job.priority === "URGENT"

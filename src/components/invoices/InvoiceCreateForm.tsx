@@ -6,6 +6,7 @@ import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { roundCurrency } from "@/lib/invoices/line-items";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type CustomerOption = {
   id: string;
@@ -99,7 +100,9 @@ export default function InvoiceCreateForm({
   const jobLabel = (job: JobOption) => {
     const serviceLabel =
       serviceCatalog.find((item) => item.value === job.serviceType)?.label ?? job.serviceType;
-    const dateLabel = new Date(job.scheduledDate).toLocaleDateString(locale);
+    const dateLabel = formatInBusinessTimeZone(job.scheduledDate, locale, {
+      dateStyle: "short",
+    });
     return `${serviceLabel} - ${dateLabel}`;
   };
 

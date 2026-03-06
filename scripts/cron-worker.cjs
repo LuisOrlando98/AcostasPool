@@ -11,6 +11,8 @@ const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 const TEMPLATE_CACHE_MS = 60 * 1000;
 const SPANISH_HINT_PATTERN =
   /\b(hola|servicio|factura|correo|gracias|direccion|reprogramado|completado|contrasena|solicitud)\b/i;
+const ENGLISH_HINT_PATTERN =
+  /\b(hi|hello|service|invoice|email|thanks|address|rescheduled|completed|password|request|welcome)\b/i;
 
 const EMAIL_TEMPLATE_DEFAULTS = {
   CUSTOMER_SERVICE_SCHEDULED: {
@@ -221,6 +223,38 @@ const guessTemplateLocale = (template) => {
   return SPANISH_HINT_PATTERN.test(haystack) ? "ES" : "EN";
 };
 
+const detectSnippetLocale = (value) => {
+  const snippet = String(value || "").trim();
+  if (!snippet) {
+    return null;
+  }
+  const hasSpanishHints = SPANISH_HINT_PATTERN.test(snippet);
+  const hasEnglishHints = ENGLISH_HINT_PATTERN.test(snippet);
+  if (hasSpanishHints && !hasEnglishHints) {
+    return "ES";
+  }
+  if (hasEnglishHints && !hasSpanishHints) {
+    return "EN";
+  }
+  return null;
+};
+
+const alignSubjectToBodyLocale = (locale, subject, text, fallbackSubject) => {
+  const safeSubject = String(subject || "").trim();
+  if (!safeSubject) {
+    return fallbackSubject;
+  }
+  const subjectLocale = detectSnippetLocale(safeSubject);
+  const bodyLocale = detectSnippetLocale(String(text || ""));
+  if (!subjectLocale || !bodyLocale || subjectLocale === bodyLocale) {
+    return safeSubject;
+  }
+  if (bodyLocale === locale) {
+    return fallbackSubject;
+  }
+  return safeSubject;
+};
+
 const buildEmailBodyBlocks = (templateId, text) => {
   const rawLines = String(text ?? "").replace(/\r/g, "").split("\n");
   const blocks = [];
@@ -337,10 +371,15 @@ const buildPremiumEmailTemplateHtml = (templateId, subject, text) => {
   ].join("");
 };
 
-const normalizeTemplateContent = (templateId, value, fallback) => {
+const normalizeTemplateContent = (templateId, value, fallback, locale = "EN") => {
   const input = value && typeof value === "object" ? value : {};
-  const subject = String(input.subject ?? fallback.subject);
   const text = String(input.text ?? fallback.text);
+  const subject = alignSubjectToBodyLocale(
+    locale,
+    String(input.subject ?? fallback.subject),
+    text,
+    fallback.subject
+  );
   return {
     subject,
     text,
@@ -362,18 +401,25 @@ const normalizeTemplateConfig = (value) => {
 
     if (rawEN || rawES) {
       normalized[templateId] = {
-        EN: normalizeTemplateContent(templateId, rawEN || rawES, fallbackByLocale.EN),
-        ES: normalizeTemplateContent(templateId, rawES || rawEN, fallbackByLocale.ES),
+        EN: normalizeTemplateContent(templateId, rawEN || rawES, fallbackByLocale.EN, "EN"),
+        ES: normalizeTemplateContent(templateId, rawES || rawEN, fallbackByLocale.ES, "ES"),
       };
       continue;
     }
 
+    const legacyTemplateEN = normalizeTemplateContent(
+      templateId,
+      rawTemplate || input[templateId],
+      fallbackByLocale.EN,
+      "EN"
+    );
+    const guessedLocale = guessTemplateLocale(legacyTemplateEN);
     const legacyTemplate = normalizeTemplateContent(
       templateId,
       rawTemplate || input[templateId],
-      fallbackByLocale.EN
+      fallbackByLocale[guessedLocale] || fallbackByLocale.EN,
+      guessedLocale
     );
-    const guessedLocale = guessTemplateLocale(legacyTemplate);
     normalized[templateId] = {
       EN: guessedLocale === "EN" ? legacyTemplate : fallbackByLocale.EN,
       ES: guessedLocale === "ES" ? legacyTemplate : fallbackByLocale.ES,

@@ -78,7 +78,7 @@ export default function NewInvoiceModal({
       {isOpen && portalReady
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto p-3 sm:p-6"
+              className="app-modal-layer fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto p-3 sm:p-6"
               role="dialog"
               aria-modal="true"
               aria-label={title}
@@ -86,21 +86,21 @@ export default function NewInvoiceModal({
               <button
                 type="button"
                 aria-label={closeLabel}
-                className="absolute inset-0 bg-slate-900/60"
+                className="app-modal-backdrop absolute inset-0"
                 onClick={() => setIsOpen(false)}
               />
-              <div className="relative z-10 my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl xl:max-w-5xl">
-                <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                  <div className="flex items-center justify-between gap-3">
+              <div className="app-modal-card relative z-10 my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl xl:max-w-5xl">
+                <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+                  <div className="app-modal-header flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                         {kicker}
                       </p>
-                      <h2 className="text-lg font-semibold">{title}</h2>
+                      <h2 className="app-modal-title text-lg font-semibold">{title}</h2>
                     </div>
                     <button
                       type="button"
-                      className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                      className="app-modal-close"
                       aria-label={closeLabel}
                       title={closeLabel}
                       onClick={() => setIsOpen(false)}

@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { DateTime } from "luxon";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
@@ -10,6 +11,15 @@ import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import {
+  applyBusinessTime,
+  BUSINESS_TIMEZONE,
+  endOfBusinessDay,
+  getBusinessTimeParts,
+  parseBusinessDateInput,
+  parseBusinessDateTimeInput,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 type JobItem = {
   id: string;
@@ -139,7 +149,10 @@ type RoutesCalendarProps = {
 const buildDaysShort = (locale: string) => {
   const base = new Date(2024, 0, 7); // Sunday
   return Array.from({ length: 7 }, (_, index) =>
-    new Intl.DateTimeFormat(locale, { weekday: "short" })
+    new Intl.DateTimeFormat(locale, {
+      weekday: "short",
+      timeZone: BUSINESS_TIMEZONE,
+    })
       .format(new Date(base.getTime() + index * 86400000))
       .replace(".", "")
       .toUpperCase()
@@ -147,20 +160,23 @@ const buildDaysShort = (locale: string) => {
 };
 
 const parseMonthKey = (value: string) => {
-  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(value);
-  if (!match) {
+  const parsed = DateTime.fromFormat(value, "yyyy-MM", {
+    zone: BUSINESS_TIMEZONE,
+  });
+  if (!parsed.isValid) {
     return null;
   }
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  if (!Number.isFinite(year) || !Number.isFinite(month)) {
-    return null;
-  }
-  return new Date(year, month - 1, 1);
+  return parsed.startOf("month").toUTC().toJSDate();
 };
 
 const toMonthKey = (value: Date) =>
-  `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}`;
+  DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM");
+
+const getBusinessDayNumber = (value: Date) =>
+  DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).day;
+
+const getBusinessWeekdayIndex = (value: Date) =>
+  DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).weekday % 7;
 
 const getJobTimestamp = (value: string) => {
   const time = new Date(value).getTime();
@@ -271,6 +287,7 @@ export default function RoutesCalendar({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [jobModal, setJobModal] = useState<JobModalState | null>(null);
   const [mobileDayKey, setMobileDayKey] = useState<string | null>(null);
+  const [mobileDeleteConfirmId, setMobileDeleteConfirmId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [techFilter, setTechFilter] = useState("ALL");
@@ -357,6 +374,7 @@ export default function RoutesCalendar({
 
   useEffect(() => {
     if (!mobileDayKey) {
+      setMobileDeleteConfirmId(null);
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -371,6 +389,16 @@ export default function RoutesCalendar({
       unlock();
     };
   }, [mobileDayKey]);
+
+  useEffect(() => {
+    if (!mobileDeleteConfirmId) {
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      setMobileDeleteConfirmId(null);
+    }, 1800);
+    return () => window.clearTimeout(timeout);
+  }, [mobileDeleteConfirmId]);
 
   useEffect(() => {
     if (!selectedDate && !jobModal) {
@@ -419,36 +447,30 @@ export default function RoutesCalendar({
     }
   }, [jobsState, selectedJobId]);
 
-  const today = new Date();
-  const todayKey = toDateKey(today);
-  const startOfToday = new Date(today);
-  startOfToday.setHours(0, 0, 0, 0);
-  const viewedMonthStart =
-    parseMonthKey(monthKey) ?? new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthStart = new Date(
-    viewedMonthStart.getFullYear(),
-    viewedMonthStart.getMonth(),
-    1
-  );
-  const monthEnd = new Date(
-    viewedMonthStart.getFullYear(),
-    viewedMonthStart.getMonth() + 1,
-    0
-  );
-  const calendarStart = new Date(monthStart);
-  const startOffset = calendarStart.getDay();
-  calendarStart.setDate(calendarStart.getDate() - startOffset);
-  calendarStart.setHours(0, 0, 0, 0);
-  const calendarEnd = new Date(monthEnd);
-  const endOffset = 6 - calendarEnd.getDay();
-  calendarEnd.setDate(calendarEnd.getDate() + endOffset);
-  calendarEnd.setHours(23, 59, 59, 999);
+  const businessNow = DateTime.now().setZone(BUSINESS_TIMEZONE);
+  const today = businessNow.toUTC().toJSDate();
+  const todayKey = businessNow.toFormat("yyyy-MM-dd");
+  const startOfToday = startOfBusinessDay(today) ?? today;
+  const viewedMonthStart = parseMonthKey(monthKey) ?? businessNow.startOf("month").toUTC().toJSDate();
+  const viewedMonth = DateTime.fromJSDate(viewedMonthStart).setZone(BUSINESS_TIMEZONE).startOf("month");
+  const monthStart = viewedMonth.startOf("month").toUTC().toJSDate();
+  const monthEnd = viewedMonth.endOf("month").toUTC().toJSDate();
+  const viewedMonthKey = viewedMonth.toFormat("yyyy-MM");
+  const calendarStart = viewedMonth
+    .minus({ days: viewedMonth.weekday % 7 })
+    .startOf("day");
+  const monthEndDt = viewedMonth.endOf("month");
+  const calendarEnd = monthEndDt
+    .plus({ days: 6 - (monthEndDt.weekday % 7) })
+    .endOf("day");
 
   const calendarDays: Date[] = [];
-  const cursor = new Date(calendarStart);
-  while (cursor <= calendarEnd) {
-    calendarDays.push(new Date(cursor));
-    cursor.setDate(cursor.getDate() + 1);
+  for (
+    let cursor = calendarStart;
+    cursor.toMillis() <= calendarEnd.toMillis();
+    cursor = cursor.plus({ days: 1 })
+  ) {
+    calendarDays.push(cursor.toUTC().toJSDate());
   }
 
   const jobsByDate = useMemo(() => {
@@ -470,27 +492,23 @@ export default function RoutesCalendar({
   const monthLabelRaw = monthStart.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
+    timeZone: BUSINESS_TIMEZONE,
   });
   const monthLabel =
     monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
-  const nextMonthJobsLabel = "Next Month:";
+  const nextMonthJobsLabel = locale === "es" ? "Proximo mes" : "Next month";
 
   const moveMonth = (offset: number) => {
-    const nextMonth = new Date(
-      monthStart.getFullYear(),
-      monthStart.getMonth() + offset,
-      1
-    );
+    const nextMonth = viewedMonth.plus({ months: offset }).startOf("month").toUTC().toJSDate();
     const params = new URLSearchParams(searchParams.toString());
     params.set("month", toMonthKey(nextMonth));
     router.push(`${pathname}?${params.toString()}`);
   };
-  const isCurrentMonthViewed =
-    monthStart.getFullYear() === today.getFullYear() &&
-    monthStart.getMonth() === today.getMonth();
+  const currentMonthKey = businessNow.toFormat("yyyy-MM");
+  const isCurrentMonthViewed = viewedMonthKey === currentMonthKey;
   const goToCurrentMonth = () => {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("month", toMonthKey(new Date(today.getFullYear(), today.getMonth(), 1)));
+    params.set("month", currentMonthKey);
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -503,12 +521,18 @@ export default function RoutesCalendar({
     return { todayJobs, urgent, unassigned };
   }, [jobsState, todayKey]);
 
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  weekEnd.setHours(23, 59, 59, 999);
+  const todayBusinessStart = businessNow.startOf("day");
+  const weekStart = todayBusinessStart
+    .minus({ days: todayBusinessStart.weekday % 7 })
+    .startOf("day")
+    .toUTC()
+    .toJSDate();
+  const weekEnd = DateTime.fromJSDate(weekStart)
+    .setZone(BUSINESS_TIMEZONE)
+    .plus({ days: 6 })
+    .endOf("day")
+    .toUTC()
+    .toJSDate();
 
   useEffect(() => {
     if (rangeFilter !== "CUSTOM") {
@@ -524,12 +548,12 @@ export default function RoutesCalendar({
 
   const rangeStart = useMemo(() => {
     if (rangeFilter === "MONTH") {
-      return new Date(monthStart);
+      return startOfBusinessDay(monthStart) ?? monthStart;
     }
     if (rangeFilter === "CUSTOM") {
-      const date = new Date(`${customStart}T00:00:00`);
-      if (!Number.isNaN(date.getTime())) {
-        return date;
+      const date = parseBusinessDateInput(customStart);
+      if (date) {
+        return startOfBusinessDay(date) ?? date;
       }
     }
     return weekStart;
@@ -537,14 +561,12 @@ export default function RoutesCalendar({
 
   const rangeEnd = useMemo(() => {
     if (rangeFilter === "MONTH") {
-      const end = new Date(monthEnd);
-      end.setHours(23, 59, 59, 999);
-      return end;
+      return endOfBusinessDay(monthEnd) ?? monthEnd;
     }
     if (rangeFilter === "CUSTOM") {
-      const date = new Date(`${customEnd}T23:59:59`);
-      if (!Number.isNaN(date.getTime())) {
-        return date;
+      const date = parseBusinessDateInput(customEnd);
+      if (date) {
+        return endOfBusinessDay(date) ?? date;
       }
     }
     return weekEnd;
@@ -680,6 +702,7 @@ export default function RoutesCalendar({
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: BUSINESS_TIMEZONE,
     });
   const rangeLabel = `${formatRangeDate(rangeStart)} - ${formatRangeDate(
     rangeEnd
@@ -810,9 +833,7 @@ export default function RoutesCalendar({
     () => (mobileDayKey ? sortJobsForDay(jobsByDate.get(mobileDayKey) ?? []) : []),
     [mobileDayKey, jobsByDate]
   );
-  const mobileDayDate = mobileDayKey
-    ? new Date(`${mobileDayKey}T00:00:00`)
-    : null;
+  const mobileDayDate = mobileDayKey ? parseBusinessDateInput(mobileDayKey) : null;
 
   const cellPadding = "px-3 py-2.5 xl:px-4 xl:py-3";
   const tableTextSize = "text-[11px] xl:text-xs";
@@ -856,13 +877,7 @@ export default function RoutesCalendar({
     const sourceKey = toDateKey(originalDate);
     const targetKey = toDateKey(targetDate);
 
-    const updatedDate = new Date(targetDate);
-    updatedDate.setHours(
-      originalDate.getHours(),
-      originalDate.getMinutes(),
-      0,
-      0
-    );
+    const updatedDate = applyBusinessTime(targetDate, originalDate) ?? new Date(targetDate);
 
     const pendingUpdates: Record<string, PendingUpdate> = {};
     const addPending = (id: string, patch: PendingUpdate) => {
@@ -871,7 +886,8 @@ export default function RoutesCalendar({
 
     if (sourceKey !== targetKey) {
       dragged.scheduledDate = updatedDate.toISOString();
-      dragged.sortOrder = updatedDate.getHours() * 60 + updatedDate.getMinutes();
+      const timeParts = getBusinessTimeParts(updatedDate);
+      dragged.sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
       jobMap.set(jobId, dragged);
       addPending(jobId, {
         scheduledDate: dragged.scheduledDate,
@@ -903,10 +919,9 @@ export default function RoutesCalendar({
   const openJobModal = (job: JobItem) => {
     const scheduled = new Date(job.scheduledDate);
     const scheduledDate = toDateKey(scheduled);
-    const scheduledTime = scheduled.toLocaleTimeString(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const scheduledTime = DateTime.fromJSDate(scheduled)
+      .setZone(BUSINESS_TIMEZONE)
+      .toFormat("HH:mm");
     const checklistItems = Array.isArray(job.checklist)
       ? job.checklist.map((item) => ({
           label: item?.label,
@@ -1129,9 +1144,14 @@ export default function RoutesCalendar({
     if (!jobModal) {
       return;
     }
-    const scheduledDateTime = new Date(
-      `${jobModal.scheduledDate}T${jobModal.scheduledTime || "00:00"}:00`
+    const scheduledDateTime = parseBusinessDateTimeInput(
+      jobModal.scheduledDate,
+      jobModal.scheduledTime || "00:00"
     );
+    if (!scheduledDateTime) {
+      setErrorMessage(t("admin.routes.errors.saveJobFailed"));
+      return;
+    }
     setErrorMessage(null);
     setSaving(true);
     const res = await fetch(`/api/jobs/${jobModal.jobId}`, {
@@ -1161,8 +1181,8 @@ export default function RoutesCalendar({
     const techInfo = jobModal.technicianId
       ? techniciansById.get(jobModal.technicianId)
       : null;
-    const nextSortOrder =
-      scheduledDateTime.getHours() * 60 + scheduledDateTime.getMinutes();
+    const timeParts = getBusinessTimeParts(scheduledDateTime);
+    const nextSortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
     setJobsState((current) =>
       sortJobsChronologically(current.map((job) =>
         job.id === jobModal.jobId
@@ -1265,28 +1285,107 @@ export default function RoutesCalendar({
     customEnd === todayKey;
   const urgentActive = priorityFilter === "URGENT";
   const unassignedActive = techFilter === "UNASSIGNED";
+  const helperCopy = editMode
+    ? locale === "es"
+      ? "Modo edicion activo: en movil abre un dia y edita desde el modal."
+      : "Edit mode active: on mobile open a day and edit from the modal."
+    : locale === "es"
+      ? "Filtra por urgentes, sin tecnico o por trabajos de hoy."
+      : "Filter by urgent, unassigned, or jobs for today.";
+  const summaryCards = [
+    {
+      key: "today",
+      active: todayActive,
+      label: locale === "es" ? "Trabajos hoy" : "Jobs today",
+      value: summary.todayJobs,
+      onClick: () => {
+        if (todayActive) {
+          setRangeFilter("WEEK");
+          return;
+        }
+        setRangeFilter("CUSTOM");
+        setCustomStart(todayKey);
+        setCustomEnd(todayKey);
+      },
+      activeCardClass: "border-sky-200 bg-sky-50 text-sky-700",
+      activeIconClass: "border-sky-200 bg-sky-500 text-white",
+      idleIconClass: "border-sky-100 bg-sky-100 text-sky-600",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="h-4 w-4"
+        >
+          <rect x="4" y="5" width="16" height="14" rx="2" />
+          <path d="M8 3.5v3M16 3.5v3M4 9h16" />
+        </svg>
+      ),
+    },
+    {
+      key: "urgent",
+      active: urgentActive,
+      label: t("admin.routes.labels.urgent"),
+      value: summary.urgent,
+      onClick: () =>
+        setPriorityFilter((current) => (current === "URGENT" ? "ALL" : "URGENT")),
+      activeCardClass: "border-indigo-200 bg-indigo-50 text-indigo-700",
+      activeIconClass: "border-indigo-200 bg-indigo-500 text-white",
+      idleIconClass: "border-indigo-100 bg-indigo-100 text-indigo-600",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="h-4 w-4"
+        >
+          <path d="M12 4l8 14H4l8-14z" />
+          <path d="M12 9v4m0 3h.01" />
+        </svg>
+      ),
+    },
+    {
+      key: "unassigned",
+      active: unassignedActive,
+      label: t("jobs.detail.noTech"),
+      value: summary.unassigned,
+      onClick: () =>
+        setTechFilter((current) => (current === "UNASSIGNED" ? "ALL" : "UNASSIGNED")),
+      activeCardClass: "border-rose-200 bg-rose-50 text-rose-700",
+      activeIconClass: "border-rose-200 bg-rose-500 text-white",
+      idleIconClass: "border-rose-100 bg-rose-100 text-rose-600",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          className="h-4 w-4"
+        >
+          <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path d="M5 19a7 7 0 0114 0" />
+          <path d="M4 4l16 16" />
+        </svg>
+      ),
+    },
+  ] as const;
 
   return (
     <div className="space-y-6" onClick={() => setActiveTechJobId(null)}>
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               {t("admin.routes.title")}
             </p>
-            <p className="text-xs text-slate-500">
-              {editMode
-                ? locale === "es"
-                  ? "Modo edicion activo: en movil toca un dia para abrir el modal de asignacion."
-                  : "Edit mode active: on mobile tap a day to open the assignment modal."
-                : locale === "es"
-                  ? "Filtra por urgentes, sin tecnico o por trabajos de hoy."
-                  : "Filter by urgent, unassigned, or jobs for today."}
-            </p>
+            <p className="text-sm text-slate-500">{helperCopy}</p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <RoutesSectionTabs />
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5">
+            <div className="inline-flex h-10 w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {nextMonthJobsLabel}
               </span>
@@ -1295,281 +1394,182 @@ export default function RoutesCalendar({
           </div>
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => moveMonth(-1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
-              aria-label={t("client.request.calendar.previousMonth")}
-              title={t("client.request.calendar.previousMonth")}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15 18l-6-6 6-6"
-                />
-              </svg>
-            </button>
-            <h2 className="text-[clamp(1.5rem,5.2vw,2.25rem)] font-semibold leading-none text-slate-900">
-              {monthLabel}
-            </h2>
-            <button
-              type="button"
-              onClick={() => moveMonth(1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-slate-300 hover:bg-white hover:text-slate-800"
-              aria-label={t("client.request.calendar.nextMonth")}
-              title={t("client.request.calendar.nextMonth")}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 6l6 6-6 6"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={goToCurrentMonth}
-              disabled={isCurrentMonthViewed}
-              className="inline-flex h-10 items-center rounded-xl border border-slate-200 bg-white px-3.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
-            >
-              {locale === "es" ? "Este mes" : "Current month"}
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={toggleEditMode}
-              disabled={saving}
-              className={`inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition ${
-                editMode
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-              } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
-            >
-              <span
-                className={`flex h-6 w-6 items-center justify-center rounded-md border ${
-                  editMode
-                    ? "border-white/30 bg-white text-slate-900"
-                    : "border-slate-200 bg-slate-100 text-slate-600"
-                }`}
-              >
-                {saveSuccess ? (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
-                    />
-                  </svg>
-                )}
-              </span>
-              <span>
-                {editMode
-                  ? t("common.actions.save")
-                  : locale === "es"
-                    ? "Editar calendario"
-                    : "Edit calendar"}
-              </span>
-            </button>
-
-            {editMode ? (
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 rounded-2xl border border-slate-200 bg-slate-50/70 p-1.5">
               <button
                 type="button"
-                onClick={() => {
-                  if (!selectedJobId || saving) {
-                    return;
-                  }
-                  void deleteJobById(selectedJobId);
-                }}
-                disabled={!selectedJobId || saving}
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 text-xs font-semibold uppercase tracking-[0.12em] text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                onClick={() => moveMonth(-1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                aria-label={t("client.request.calendar.previousMonth")}
+                title={t("client.request.calendar.previousMonth")}
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.8"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 13h12l1-13"
-                    />
-                  </svg>
-                </span>
-                <span>{t("common.actions.delete")}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 18l-6-6 6-6"
+                  />
+                </svg>
               </button>
-            ) : null}
+              <h2 className="px-1 text-[clamp(1.5rem,5.2vw,2.1rem)] font-semibold leading-none text-slate-900 sm:px-2">
+                {monthLabel}
+              </h2>
+              <button
+                type="button"
+                onClick={() => moveMonth(1)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                aria-label={t("client.request.calendar.nextMonth")}
+                title={t("client.request.calendar.nextMonth")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 6l6 6-6 6"
+                  />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={goToCurrentMonth}
+                disabled={isCurrentMonthViewed}
+                className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300"
+              >
+                {locale === "es" ? "Este mes" : "Current month"}
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleEditMode}
+                disabled={saving}
+                className={`hidden h-10 items-center gap-2 rounded-xl border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition lg:inline-flex ${
+                  editMode
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
+              >
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-md border ${
+                    editMode
+                      ? "border-white/30 bg-white text-slate-900"
+                      : "border-slate-200 bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {saveSuccess ? (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z"
+                      />
+                    </svg>
+                  )}
+                </span>
+                <span>
+                  {editMode
+                    ? t("common.actions.save")
+                    : locale === "es"
+                      ? "Editar calendario"
+                      : "Edit calendar"}
+                </span>
+              </button>
+
+              {editMode ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!selectedJobId || saving) {
+                      return;
+                    }
+                    void deleteJobById(selectedJobId);
+                  }}
+                  disabled={!selectedJobId || saving}
+                  className="hidden h-10 items-center gap-2 rounded-xl border border-rose-200 bg-white px-3 text-xs font-semibold uppercase tracking-[0.12em] text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 lg:inline-flex"
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md border border-rose-200 bg-rose-50 text-rose-600">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 7h12M9 7V5h6v2m-7 3v8m4-8v8m4-8v8M5 7l1 13h12l1-13"
+                      />
+                    </svg>
+                  </span>
+                  <span>{t("common.actions.delete")}</span>
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => {
-              if (todayActive) {
-                setRangeFilter("WEEK");
-                return;
-              }
-              setRangeFilter("CUSTOM");
-              setCustomStart(todayKey);
-              setCustomEnd(todayKey);
-            }}
-            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
-              todayActive
-                ? "border-sky-200 bg-sky-50 text-sky-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                todayActive
-                  ? "border-sky-200 bg-sky-500 text-white"
-                  : "border-sky-100 bg-sky-100 text-sky-600"
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          {summaryCards.map((card) => (
+            <button
+              key={card.key}
+              type="button"
+              onClick={card.onClick}
+              className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
+                card.active
+                  ? card.activeCardClass
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
               }`}
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
+                  card.active ? card.activeIconClass : card.idleIconClass
+                }`}
               >
-                <rect x="4" y="5" width="16" height="14" rx="2" />
-                <path d="M8 3.5v3M16 3.5v3M4 9h16" />
-              </svg>
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-                {locale === "es" ? "Trabajos hoy" : "Jobs today"}
+                {card.icon}
               </span>
-              <span className="text-sm font-semibold text-slate-900">
-                {summary.todayJobs}
+              <span className="flex flex-col leading-tight">
+                <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                  {card.label}
+                </span>
+                <span className="text-sm font-semibold text-slate-900">{card.value}</span>
               </span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setPriorityFilter((current) =>
-                current === "URGENT" ? "ALL" : "URGENT"
-              )
-            }
-            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
-              urgentActive
-                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                urgentActive
-                  ? "border-indigo-200 bg-indigo-500 text-white"
-                  : "border-indigo-100 bg-indigo-100 text-indigo-600"
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path d="M12 4l8 14H4l8-14z" />
-                <path d="M12 9v4m0 3h.01" />
-              </svg>
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-                {t("admin.routes.labels.urgent")}
-              </span>
-              <span className="text-sm font-semibold text-slate-900">
-                {summary.urgent}
-              </span>
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setTechFilter((current) =>
-                current === "UNASSIGNED" ? "ALL" : "UNASSIGNED"
-              )
-            }
-            className={`group flex items-center gap-2 rounded-xl border px-3 py-2.5 text-left transition ${
-              unassignedActive
-                ? "border-rose-200 bg-rose-50 text-rose-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-xl border text-[11px] ${
-                unassignedActive
-                  ? "border-rose-200 bg-rose-500 text-white"
-                  : "border-rose-100 bg-rose-100 text-rose-600"
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path d="M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path d="M5 19a7 7 0 0114 0" />
-                <path d="M4 4l16 16" />
-              </svg>
-            </span>
-            <span className="flex flex-col leading-tight">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-                {t("jobs.detail.noTech")}
-              </span>
-              <span className="text-sm font-semibold text-slate-900">
-                {summary.unassigned}
-              </span>
-            </span>
-          </button>
+            </button>
+          ))}
+        </div>
         </div>
         {errorMessage ? (
           <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
@@ -1582,8 +1582,8 @@ export default function RoutesCalendar({
             <p className="text-[11px] text-slate-500">
               {editMode
                 ? locale === "es"
-                  ? "Modo edicion: toca un dia para abrir el modal y asignar trabajos."
-                  : "Edit mode: tap a day to open the modal and assign jobs."
+                  ? "Modo edicion: toca un dia para mover, eliminar o asignar trabajos desde el modal."
+                  : "Edit mode: tap a day to move, delete, or assign jobs from the modal."
                 : t("admin.routes.calendarMobile.helper")}
             </p>
             <div className="mt-3 grid grid-cols-7 gap-1">
@@ -1599,12 +1599,10 @@ export default function RoutesCalendar({
             <div className="mt-2 grid grid-cols-7 gap-1">
               {calendarDays.map((day) => {
                 const key = toDateKey(day);
-                const isCurrentMonth =
-                  day.getMonth() === monthStart.getMonth() &&
-                  day.getFullYear() === monthStart.getFullYear();
+                const isCurrentMonth = toMonthKey(day) === viewedMonthKey;
                 const jobsForDay = sortJobsForDay(jobsByDate.get(key) ?? []);
                 const jobsCount = jobsForDay.length;
-                const isToday = key === toDateKey(startOfToday);
+                const isToday = key === todayKey;
                 const isSelected = mobileDayKey === key;
                 const capacityColor = getCapacityColor(jobsCount);
                 const capacitySoft = getCapacitySoftColor(jobsCount);
@@ -1620,10 +1618,6 @@ export default function RoutesCalendar({
                     type="button"
                     disabled={!isCurrentMonth}
                     onClick={() => {
-                      if (editMode) {
-                        openModalForDate(day);
-                        return;
-                      }
                       setMobileDayKey(key);
                     }}
                     className={`relative h-12 overflow-hidden rounded-lg border px-1 py-1 text-center transition sm:h-14 ${
@@ -1649,7 +1643,7 @@ export default function RoutesCalendar({
                     }
                   >
                     <span className="block text-sm font-semibold leading-none">
-                      {day.getDate()}
+                      {getBusinessDayNumber(day)}
                     </span>
                     {isCurrentMonth ? (
                       <span
@@ -1682,17 +1676,15 @@ export default function RoutesCalendar({
           {(() => {
             return calendarDays.map((day) => {
               const key = toDateKey(day);
-              const isCurrentMonth =
-                day.getMonth() === monthStart.getMonth() &&
-                day.getFullYear() === monthStart.getFullYear();
+              const isCurrentMonth = toMonthKey(day) === viewedMonthKey;
               const isPastDay = day < startOfToday;
               const jobsForDay = sortJobsForDay(jobsByDate.get(key) ?? []);
               const fillPct = Math.round((jobsForDay.length / dayCapacity) * 100);
               const fillWidth =
                 jobsForDay.length === 0 ? 0 : Math.max(10, fillPct);
-              const dayIndex = day.getDay();
+              const dayIndex = getBusinessWeekdayIndex(day);
               const dayLabel = daysShort[dayIndex];
-              const isToday = key === toDateKey(startOfToday);
+              const isToday = key === todayKey;
               const dayTone = isCurrentMonth
                 ? isPastDay
                   ? "border-sky-100 bg-sky-50/90 text-slate-600"
@@ -1740,7 +1732,7 @@ export default function RoutesCalendar({
                           isCurrentMonth ? "text-slate-900" : "text-slate-400"
                         }`}
                       >
-                        {day.getDate()}
+                        {getBusinessDayNumber(day)}
                       </span>
                       <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:tracking-[0.28em]">
                         {dayLabel}
@@ -1790,6 +1782,7 @@ export default function RoutesCalendar({
                     ).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: BUSINESS_TIMEZONE,
                     });
                     const serviceOption = serviceTypeOptions.find(
                       (option) => option.value === job.serviceType
@@ -2113,10 +2106,12 @@ export default function RoutesCalendar({
                   const dateLabel = scheduled.toLocaleDateString(locale, {
                     day: "2-digit",
                     month: "short",
+                    timeZone: BUSINESS_TIMEZONE,
                   });
                   const timeLabel = scheduled.toLocaleTimeString(locale, {
                     hour: "2-digit",
                     minute: "2-digit",
+                    timeZone: BUSINESS_TIMEZONE,
                   });
                   const propertyName =
                     job.property.name?.trim() ||
@@ -2322,10 +2317,12 @@ export default function RoutesCalendar({
                     const dateLabel = scheduled.toLocaleDateString(locale, {
                       day: "2-digit",
                       month: "short",
+                      timeZone: BUSINESS_TIMEZONE,
                     });
                     const timeLabel = scheduled.toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
+                      timeZone: BUSINESS_TIMEZONE,
                     });
                     const propertyName =
                       job.property.name?.trim() ||
@@ -2525,14 +2522,14 @@ export default function RoutesCalendar({
 
       {mounted && filtersOpen
         ? createPortal(
-            <div className="fixed inset-0 z-[1295] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
+            <div className="app-modal-layer fixed inset-0 z-[1295] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
               <button
                 type="button"
                 className="absolute inset-0"
                 aria-label={t("common.actions.close")}
                 onClick={() => setFiltersOpen(false)}
               />
-              <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
                 <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -2769,14 +2766,14 @@ export default function RoutesCalendar({
 
       {mounted && mobileDayKey
         ? createPortal(
-            <div className="fixed inset-0 z-[1298] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
+            <div className="app-modal-layer fixed inset-0 z-[1298] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
               <button
                 type="button"
                 className="absolute inset-0"
                 aria-label={t("common.actions.close")}
                 onClick={() => setMobileDayKey(null)}
               />
-              <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
                 <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -2789,6 +2786,7 @@ export default function RoutesCalendar({
                               weekday: "long",
                               month: "long",
                               day: "numeric",
+                              timeZone: BUSINESS_TIMEZONE,
                             })
                           : mobileDayKey}
                       </h2>
@@ -2799,23 +2797,43 @@ export default function RoutesCalendar({
                         })}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setMobileDayKey(null)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
-                      aria-label={t("common.actions.close")}
-                      title={t("common.actions.close")}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="h-4 w-4"
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void toggleEditMode()}
+                        disabled={saving}
+                        className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-[11px] font-semibold uppercase tracking-[0.12em] transition ${
+                          editMode
+                            ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                        } ${saving ? "cursor-not-allowed opacity-70" : ""}`}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                      </svg>
-                    </button>
+                        {editMode
+                          ? saving
+                            ? t("admin.routes.actions.saving")
+                            : t("admin.routes.actions.saveChanges")
+                          : locale === "es"
+                            ? "Editar calendario"
+                            : "Edit calendar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileDayKey(null)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+                        aria-label={t("common.actions.close")}
+                        title={t("common.actions.close")}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="h-4 w-4"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2841,6 +2859,7 @@ export default function RoutesCalendar({
                           {
                             hour: "2-digit",
                             minute: "2-digit",
+                            timeZone: BUSINESS_TIMEZONE,
                           }
                         );
                         const statusInfo =
@@ -2856,7 +2875,83 @@ export default function RoutesCalendar({
                             className: "border-slate-200 bg-slate-50 text-slate-600",
                           } as const);
 
-                        return (
+                        return editMode ? (
+                          <div
+                            key={`mobile-day-job-${job.id}`}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {job.customer.name}
+                                </p>
+                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                  {job.property.address}
+                                </p>
+                              </div>
+                              <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                                {timeLabel}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {tierLabel ? `${tierLabel} - ` : ""}
+                              {serviceLabel}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                              >
+                                {statusInfo.label}
+                              </span>
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                              >
+                                {priorityInfo.label}
+                              </span>
+                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {job.type === "ON_DEMAND"
+                                  ? t("jobs.type.onDemand")
+                                  : t("jobs.type.routine")}
+                              </span>
+                            </div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                              <label>
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                  {t("admin.routes.labels.date")}
+                                </span>
+                                <input
+                                  type="date"
+                                  value={toDateKey(new Date(job.scheduledDate))}
+                                  onChange={(event) => {
+                                    const nextDate = parseBusinessDateInput(event.target.value);
+                                    if (!nextDate) {
+                                      return;
+                                    }
+                                    moveJobToDate(nextDate, job.id);
+                                  }}
+                                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() => {
+                                  if (mobileDeleteConfirmId === job.id) {
+                                    setMobileDeleteConfirmId(null);
+                                    void deleteJobById(job.id);
+                                    return;
+                                  }
+                                  setMobileDeleteConfirmId(job.id);
+                                }}
+                                className="inline-flex h-10 items-center justify-center self-end rounded-xl border border-rose-200 px-3 text-xs font-semibold uppercase tracking-[0.14em] text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                              >
+                                {mobileDeleteConfirmId === job.id
+                                  ? t("notifications.deleteConfirm")
+                                  : t("common.actions.delete")}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                           <button
                             key={`mobile-day-job-${job.id}`}
                             type="button"
@@ -2931,18 +3026,19 @@ export default function RoutesCalendar({
         : null}
 
       {selectedDate ? (
-        <div className="fixed inset-0 z-[1300] flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-6">
-          <div className="absolute inset-0 bg-slate-900/60" />
-          <div className="relative z-10 w-full max-w-5xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
-            <div className="modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90vh] sm:p-6 sm:pr-5">
+        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-6">
+          <div className="app-modal-backdrop absolute inset-0 bg-slate-900/60" />
+          <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
+            <div className="app-modal-scroll modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90vh] sm:p-6 sm:pr-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   {t("admin.routes.actions.assignJobs")}
                 </p>
                 <h2 className="text-lg font-semibold">
-                  {new Date(`${selectedDate}T00:00:00`).toLocaleDateString(
-                    locale
+                  {(parseBusinessDateInput(selectedDate) ?? new Date(selectedDate)).toLocaleDateString(
+                    locale,
+                    { timeZone: BUSINESS_TIMEZONE }
                   )}
                 </h2>
               </div>
@@ -3202,7 +3298,7 @@ export default function RoutesCalendar({
       {mounted && jobModal
         ? createPortal(
             <div
-              className="fixed inset-0 z-[1310] overflow-y-auto bg-slate-900/60"
+              className="app-modal-layer fixed inset-0 z-[1310] overflow-y-auto bg-slate-900/60"
               onClick={() => setJobModal(null)}
             >
               <div className="flex min-h-screen items-end justify-center px-0 py-0 sm:items-center sm:px-6 sm:py-10">
@@ -3261,7 +3357,7 @@ export default function RoutesCalendar({
                       </div>
                     </div>
 
-                    <div className="modal-scroll flex-1 min-h-0 overflow-y-auto bg-slate-50">
+                    <div className="app-modal-scroll modal-scroll flex-1 min-h-0 overflow-y-auto bg-slate-50">
                       <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
                         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
                           <div className="space-y-6">
@@ -3655,6 +3751,7 @@ export default function RoutesCalendar({
                                     {new Date(photo.takenAt).toLocaleString(locale, {
                                       dateStyle: "medium",
                                       timeStyle: "short",
+                                      timeZone: BUSINESS_TIMEZONE,
                                     })}
                                   </div>
                                 </a>

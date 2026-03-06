@@ -7,6 +7,20 @@ export type UpdateEntry = {
 
 export const updates: UpdateEntry[] = [
   {
+    date: "2026-03-06",
+    title: "Eastern Time standardization, mobile route controls, and admin help center",
+    tag: "Major",
+    items: [
+      "Standardized scheduling and reporting time behavior to Eastern Time (America/New_York) across admin/client/tech experiences and key API date-range logic.",
+      "Improved routes calendar edit behavior for small screens so admins can manage day-level edits from the mobile day modal flow.",
+      "Refined routes and calendar date/time handling to avoid browser-local timezone drift when moving jobs between days or saving edits.",
+      "Added admin Help center with a complete operational guide covering routes, filters, technicians, customers, invoices, reports, notifications, settings, mobile strategy, routines, and troubleshooting.",
+      "Added a footer Help shortcut with a question-mark icon in desktop and mobile sidebar footers for faster operator onboarding.",
+      "Restricted Service Agreement visibility and access to the authorized developer account only (luiso.rodriguezcabrera@gmail.com), including direct page and PDF endpoint protection.",
+      "Aligned admin UX details from recent improvements: cleaner filter workflows, tighter table density targets, and click-to-open row interaction patterns where applicable.",
+    ],
+  },
+  {
     date: "2026-03-05",
     title: "Security hardening, notifications reliability, and responsive stability",
     tag: "Major",

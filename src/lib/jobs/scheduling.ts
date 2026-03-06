@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import { BUSINESS_TIMEZONE } from "@/lib/jobs/capacity";
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 export function combineDateAndTime(dateValue: string, timeValue: string) {
   const normalizedTime = /^(\d{1,2}):(\d{2})$/.exec(timeValue);
@@ -17,19 +17,15 @@ export function combineDateAndTime(dateValue: string, timeValue: string) {
 }
 
 export function addPlanFrequency(date: Date, frequency: string) {
-  const next = new Date(date);
+  const base = DateTime.fromJSDate(date).setZone(BUSINESS_TIMEZONE);
   switch (frequency) {
     case "BIWEEKLY":
-      next.setDate(next.getDate() + 14);
-      break;
+      return base.plus({ weeks: 2 }).toUTC().toJSDate();
     case "MONTHLY":
-      next.setMonth(next.getMonth() + 1);
-      break;
+      return base.plus({ months: 1 }).toUTC().toJSDate();
     case "WEEKLY":
     default:
-      next.setDate(next.getDate() + 7);
-      break;
+      return base.plus({ weeks: 1 }).toUTC().toJSDate();
   }
-  return next;
 }
 

@@ -1,12 +1,16 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import {
+  BUSINESS_TIMEZONE,
+  endOfBusinessDay,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
-export const TECH_DIGEST_TIMEZONE = "America/New_York";
+export const TECH_DIGEST_TIMEZONE = BUSINESS_TIMEZONE;
 
 export const getRouteDate = (value: Date) => {
-  const routeDate = new Date(value);
-  routeDate.setHours(0, 0, 0, 0);
-  return routeDate;
+  const routeDate = startOfBusinessDay(value);
+  return routeDate ?? new Date(value);
 };
 
 type DigestItemInput = {
@@ -37,7 +41,6 @@ export const queueTechDigestItem = async ({
 
 export const getRouteDayRange = (value: Date) => {
   const start = getRouteDate(value);
-  const end = new Date(start);
-  end.setHours(23, 59, 59, 999);
+  const end = endOfBusinessDay(start) ?? new Date(start);
   return { start, end };
 };

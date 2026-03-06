@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { JobStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
@@ -13,6 +14,7 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 async function updateJobStatus(formData: FormData) {
   "use server";
@@ -62,6 +64,45 @@ async function updateJobTechnician(formData: FormData) {
   });
 
   revalidatePath(`/admin/routes/${jobId}`);
+}
+
+async function deleteJob(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const jobId = String(formData.get("jobId"));
+  const confirmDelete = String(formData.get("confirmDelete") ?? "no");
+
+  if (!jobId || confirmDelete !== "yes") {
+    return;
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: { customerId: true },
+  });
+
+  if (!job) {
+    return;
+  }
+
+  await prisma.invoice.updateMany({
+    where: { jobId },
+    data: { jobId: null },
+  });
+
+  await prisma.jobPhoto.deleteMany({
+    where: { jobId },
+  });
+
+  await prisma.job.delete({
+    where: { id: jobId },
+  });
+
+  revalidatePath("/admin/routes");
+  revalidatePath(`/admin/routes/${jobId}`);
+  revalidatePath(`/admin/customers/${job.customerId}`);
+  redirect("/admin/routes");
 }
 
 export default async function JobDetailPage({
@@ -148,7 +189,10 @@ export default async function JobDetailPage({
                 {t("jobs.detail.infoTitle")}
               </h2>
               <p className="text-sm text-slate-500">
-                {job.scheduledDate.toLocaleString(locale)}
+                {formatInBusinessTimeZone(job.scheduledDate, locale, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
               </p>
             </div>
             <span className="app-chip px-3 py-1 text-xs text-slate-500">
@@ -358,12 +402,43 @@ export default async function JobDetailPage({
                       className="h-32 w-full object-cover"
                     />
                     <div className="px-3 py-2 text-xs text-slate-500">
-                      {new Date(photo.takenAt).toLocaleString(locale)}
+                      {formatInBusinessTimeZone(photo.takenAt, locale, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
                     </div>
                   </div>
                 ))
               )}
             </div>
+          </div>
+
+          <div className="app-card border-rose-200 bg-rose-50/40 p-6 shadow-contrast">
+            <h2 className="text-lg font-semibold text-rose-700">
+              {t("jobs.detail.dangerTitle")}
+            </h2>
+            <p className="mt-1 text-sm text-rose-700/90">
+              {t("jobs.detail.dangerSubtitle")}
+            </p>
+            <form action={deleteJob} className="mt-4 space-y-3">
+              <input type="hidden" name="jobId" value={job.id} />
+              <label className="flex items-center gap-2 text-sm text-rose-700">
+                <input
+                  type="checkbox"
+                  name="confirmDelete"
+                  value="yes"
+                  required
+                  className="h-4 w-4 rounded border-rose-300 text-rose-600"
+                />
+                <span>{t("jobs.detail.confirmDelete")}</span>
+              </label>
+              <button
+                type="submit"
+                className="inline-flex rounded-full border border-rose-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-rose-700 transition hover:bg-rose-100"
+              >
+                {t("jobs.detail.actions.delete")}
+              </button>
+            </form>
           </div>
         </div>
       </section>

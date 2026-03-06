@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function TechHistoryPage() {
   const session = await requireRole("TECH");
@@ -52,7 +53,9 @@ export default async function TechHistoryPage() {
                 </p>
                 <p className="text-xs text-slate-500">
                   {job.completedAt
-                    ? job.completedAt.toLocaleDateString(locale)
+                    ? formatInBusinessTimeZone(job.completedAt, locale, {
+                        dateStyle: "short",
+                      })
                     : t("tech.history.noDate")}{" "}
                   · {t("tech.history.photos", { count: job.photos.length })}
                 </p>

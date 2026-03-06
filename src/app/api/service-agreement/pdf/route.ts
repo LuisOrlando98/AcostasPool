@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { buildServiceAgreementPdfBytes } from "@/lib/service-agreement-pdf";
 import { getSession } from "@/lib/auth/session";
+import { isDeveloperEmail } from "@/lib/auth/developer";
 
 export async function GET() {
   const session = await getSession();
-  if (!session || session.role !== "ADMIN") {
+  if (!session || session.role !== "ADMIN" || !isDeveloperEmail(session.email)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

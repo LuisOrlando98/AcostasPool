@@ -10,6 +10,7 @@ import { getRouteDayRange, queueTechDigestItem } from "@/lib/notifications/techD
 import { formatCustomerName } from "@/lib/customers/format";
 import { createNotification } from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
+import { endOfBusinessDay, getBusinessTimeParts } from "@/lib/timezone";
 
 type DraftPayload = {
   customerId: string;
@@ -53,8 +54,7 @@ export async function POST(request: Request) {
     properties.map((property) => [property.id, property.customerId])
   );
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
 
   const created: Array<{
     id: string;
@@ -106,8 +106,8 @@ export async function POST(request: Request) {
       date,
       draft.scheduledTime || "09:00"
     );
-    const sortOrder =
-      scheduledDate.getHours() * 60 + scheduledDate.getMinutes();
+    const timeParts = getBusinessTimeParts(scheduledDate);
+    const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
     const status = scheduledDate > endOfToday ? "SCHEDULED" : "PENDING";
     const serviceType =
       draft.serviceType === "FILTER_CHECK" ||

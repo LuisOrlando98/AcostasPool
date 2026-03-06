@@ -2,6 +2,7 @@ import AppShell from "@/components/layout/AppShell";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function DeveloperPage() {
   await requireDeveloper();
@@ -41,7 +42,10 @@ export default async function DeveloperPage() {
             {latestAudit
               ? t("admin.developer.cards.auditLogs.latest", {
                   action: latestAudit.action,
-                  date: latestAudit.createdAt.toLocaleString(locale),
+                  date: formatInBusinessTimeZone(latestAudit.createdAt, locale, {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  }),
                 })
               : t("admin.developer.cards.auditLogs.empty")}
           </p>

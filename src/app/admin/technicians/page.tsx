@@ -10,6 +10,7 @@ import { getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizeUsPhone } from "@/lib/phones";
 import { sendTechnicianInvite } from "@/lib/technicians/invite";
+import { endOfBusinessDay, startOfBusinessDay } from "@/lib/timezone";
 
 type CreateTechnicianActionState = {
   ok: boolean;
@@ -216,10 +217,8 @@ export default async function TechniciansPage() {
   const t = await getTranslations();
 
   const today = new Date();
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = startOfBusinessDay(today) ?? new Date(today);
+  const endOfDay = endOfBusinessDay(today) ?? new Date(today);
 
   const [technicians, jobStats, todaysStats, activityStats] = await Promise.all([
     prisma.technician.findMany({
@@ -325,13 +324,13 @@ export default async function TechniciansPage() {
         <input id="new-tech" type="checkbox" className="peer hidden" />
         <TechniciansOverview rows={rows} deleteTechnicianAction={deleteTechnician} />
 
-        <div className="fixed inset-0 z-[1300] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
+        <div className="app-modal-layer fixed inset-0 z-[1300] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
           <label
             htmlFor="new-tech"
-            className="absolute inset-0 bg-slate-900/60"
+            className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
           />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-contrast xl:max-w-5xl">
-            <div className="modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-contrast xl:max-w-5xl">
+            <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -366,3 +365,5 @@ export default async function TechniciansPage() {
     </AppShell>
   );
 }
+
+

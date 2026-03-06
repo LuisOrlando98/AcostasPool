@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
+import {
+  formatBusinessDateInput,
+  formatInBusinessTimeZone,
+} from "@/lib/timezone";
 
 type PlanRow = {
   id: string;
@@ -28,18 +32,17 @@ type CustomerPlansTableProps = {
 };
 
 const formatDate = (value: string, locale: string) =>
-  new Date(value).toLocaleDateString(locale, {
+  formatInBusinessTimeZone(value, locale, {
     dateStyle: "medium",
   });
 
 const formatTime = (value: string, locale: string) =>
-  new Date(value).toLocaleTimeString(locale, {
+  formatInBusinessTimeZone(value, locale, {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-const toDateInput = (value: string) =>
-  new Date(value).toLocaleDateString("en-CA");
+const toDateInput = (value: string) => formatBusinessDateInput(value);
 
 const PAGE_SIZE = 8;
 

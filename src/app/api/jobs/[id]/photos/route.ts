@@ -16,6 +16,7 @@ import {
   buildCustomerJobPhotoAssetPath,
   buildTechJobPhotoFileName,
 } from "@/lib/storage/paths";
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 export const runtime = "nodejs";
 
@@ -54,6 +55,7 @@ function resolvePhotoContentType(file: File) {
 
 function formatDateTimeLabel(date: Date, locale: "EN" | "ES") {
   return new Intl.DateTimeFormat(locale === "ES" ? "es-US" : "en-US", {
+    timeZone: BUSINESS_TIMEZONE,
     month: "short",
     day: "2-digit",
     year: "numeric",

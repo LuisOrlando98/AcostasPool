@@ -1,3 +1,5 @@
+import { formatInBusinessTimeZone } from "@/lib/timezone";
+
 type TranslateFn = (key: string, values?: Record<string, string | number>) => string;
 
 type NotificationItem = {
@@ -32,7 +34,7 @@ function formatDateTime(value: string | null, locale: string) {
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-  return date.toLocaleString(locale, {
+  return formatInBusinessTimeZone(date, locale, {
     dateStyle: "short",
     timeStyle: "short",
   });

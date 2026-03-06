@@ -1,4 +1,11 @@
 import type { Prisma } from "@prisma/client";
+import {
+  addBusinessDays,
+  endOfBusinessDay,
+  formatBusinessDateInput,
+  parseBusinessDateInput,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 export type ReportFilters = {
   from: Date;
@@ -13,6 +20,10 @@ const parseDate = (value?: string | null) => {
   if (!value) {
     return null;
   }
+  const businessDate = parseBusinessDateInput(value);
+  if (businessDate) {
+    return businessDate;
+  }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return null;
@@ -20,14 +31,9 @@ const parseDate = (value?: string | null) => {
   return date;
 };
 
-const startOfDay = (date: Date) =>
-  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const startOfDay = (date: Date) => startOfBusinessDay(date) ?? date;
 
-const endOfDay = (date: Date) => {
-  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-  next.setMilliseconds(next.getMilliseconds() - 1);
-  return next;
-};
+const endOfDay = (date: Date) => endOfBusinessDay(date) ?? date;
 
 export const getReportFilters = (
   searchParams?: Record<string, string | string[] | undefined>
@@ -53,13 +59,11 @@ export const getReportFilters = (
     from = now;
     to = now;
   } else if (isDayPreset) {
-    const start = new Date(now);
-    start.setDate(start.getDate() - (days - 1));
+    const start = addBusinessDays(now, -(days - 1)) ?? now;
     from = start;
     to = now;
   } else if (!from || !to) {
-    const start = new Date(now);
-    start.setDate(start.getDate() - 29);
+    const start = addBusinessDays(now, -29) ?? now;
     from = start;
     to = now;
   }
@@ -93,8 +97,7 @@ export const getReportFilters = (
   };
 };
 
-export const formatDateInput = (date: Date) =>
-  date.toISOString().slice(0, 10);
+export const formatDateInput = (date: Date) => formatBusinessDateInput(date);
 
 export const buildJobWhere = (filters: ReportFilters): Prisma.JobWhereInput => {
   return {

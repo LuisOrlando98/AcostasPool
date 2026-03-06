@@ -5,16 +5,15 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
+import { endOfBusinessDay, startOfBusinessDay } from "@/lib/timezone";
 
 export default async function AdminPage() {
   const session = await requireRole("ADMIN");
   const t = await getTranslations();
 
   const today = new Date();
-  const startOfDay = new Date(today);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(today);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = startOfBusinessDay(today) ?? new Date(today);
+  const endOfDay = endOfBusinessDay(today) ?? new Date(today);
 
   const [
     jobsToday,

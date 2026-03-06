@@ -1,7 +1,11 @@
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
-import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  renderEmailTemplate,
+  resolveEmailTemplateLocale,
+} from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
 import { hashPasswordResetToken } from "@/lib/auth/reset-token";
@@ -96,7 +100,9 @@ export async function sendTechnicianInvite(technicianId: string): Promise<Invite
     return { ok: false, error: "SMTP no configurado" };
   }
 
-  const templates = await getEmailTemplatesConfig();
+  const templates = await getEmailTemplatesConfig(
+    resolveEmailTemplateLocale(technician.user.locale)
+  );
   const rendered = renderEmailTemplate(templates.TECH_ACCOUNT_INVITE, {
     tech_name: techName,
     tech_name_html: escapeHtml(techName),

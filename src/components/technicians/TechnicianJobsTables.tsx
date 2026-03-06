@@ -5,6 +5,14 @@ import Link from "next/link";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { getJobStatusLabel } from "@/lib/constants";
 import { useI18n } from "@/i18n/client";
+import {
+  addBusinessDays,
+  endOfBusinessDay,
+  formatBusinessDateInput,
+  formatInBusinessTimeZone,
+  parseBusinessDateInput,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 type JobRow = {
   id: string;
@@ -46,35 +54,34 @@ const priorityTone: Record<string, "danger" | "info"> = {
 };
 
 const formatDateTime = (value: string, locale: string) =>
-  new Date(value).toLocaleString(locale, {
+  formatInBusinessTimeZone(value, locale, {
     dateStyle: "medium",
     timeStyle: "short",
   });
 
 const formatDayLabel = (value: Date, locale: string) =>
-  value
-    .toLocaleDateString(locale, { weekday: "short" })
+  formatInBusinessTimeZone(value, locale, { weekday: "short" })
     .replace(".", "")
     .toUpperCase();
 
 const formatTime = (value: string, locale: string) =>
-  new Date(value).toLocaleTimeString(locale, {
+  formatInBusinessTimeZone(value, locale, {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-const toDateInput = (value: Date) => value.toLocaleDateString("en-CA");
+const toDateInput = (value: Date) => formatBusinessDateInput(value);
 
 const buildCalendarDays = (start: Date, count: number, locale: string) =>
   Array.from({ length: count }, (_, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
-    const key = date.toISOString().slice(0, 10);
+    const date = addBusinessDays(start, index) ?? new Date(start);
+    const key = formatBusinessDateInput(date);
+    const dayToken = key.split("-")[2] ?? "0";
     return {
       key,
       date,
       label: formatDayLabel(date, locale),
-      number: date.getDate(),
+      number: Number(dayToken),
     };
   });
 
@@ -121,14 +128,16 @@ const filterRows = (
       }
     }
     if (startDate) {
-      const start = new Date(`${startDate}T00:00:00`);
-      if (new Date(row.scheduledDate) < start) {
+      const parsedStart = parseBusinessDateInput(startDate);
+      const start = parsedStart ? startOfBusinessDay(parsedStart) : null;
+      if (start && new Date(row.scheduledDate) < start) {
         return false;
       }
     }
     if (endDate) {
-      const end = new Date(`${endDate}T23:59:59`);
-      if (new Date(row.scheduledDate) > end) {
+      const parsedEnd = parseBusinessDateInput(endDate);
+      const end = parsedEnd ? endOfBusinessDay(parsedEnd) : null;
+      if (end && new Date(row.scheduledDate) > end) {
         return false;
       }
     }
@@ -496,16 +505,18 @@ const UpcomingCalendarSection = ({
     sortDir,
   ]);
 
-  const calendarStart = startDate ? new Date(`${startDate}T00:00:00`) : new Date();
-  calendarStart.setHours(0, 0, 0, 0);
+  const calendarStart =
+    (startDate
+      ? startOfBusinessDay(parseBusinessDateInput(startDate) ?? new Date(startDate))
+      : startOfBusinessDay(new Date())) ?? new Date();
+  const parsedCalendarEnd = endDate ? parseBusinessDateInput(endDate) : null;
   const daysCount = endDate
     ? Math.min(
         30,
         Math.max(
           7,
           Math.round(
-            (new Date(`${endDate}T00:00:00`).getTime() -
-              calendarStart.getTime()) /
+            ((parsedCalendarEnd ?? calendarStart).getTime() - calendarStart.getTime()) /
               86400000
           ) + 1
         )
@@ -520,7 +531,7 @@ const UpcomingCalendarSection = ({
   const grouped = useMemo(() => {
     const map = new Map<string, JobRow[]>();
     filteredRows.forEach((row) => {
-      const key = new Date(row.scheduledDate).toISOString().slice(0, 10);
+      const key = formatBusinessDateInput(row.scheduledDate);
       const list = map.get(key) ?? [];
       list.push(row);
       map.set(key, list);

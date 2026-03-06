@@ -13,6 +13,7 @@ import {
   SERVICE_AGREEMENT_REFERENCES,
   SERVICE_AGREEMENT_VALUE_PROPS,
 } from "@/lib/service-agreement-content";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type ServiceAgreementPageProps = {
   canonicalPath: "/admin/agreement-service";
@@ -21,7 +22,9 @@ type ServiceAgreementPageProps = {
 export default function ServiceAgreementPage({
   canonicalPath,
 }: ServiceAgreementPageProps) {
-  const generatedAt = new Date().toLocaleDateString("es-US");
+  const generatedAt = formatInBusinessTimeZone(new Date(), "es-US", {
+    dateStyle: "short",
+  });
   const categoryLabel: Record<(typeof SERVICE_AGREEMENT_LOGOS)[number]["category"], string> = {
     brand: "Brand",
     platform: "Platform",

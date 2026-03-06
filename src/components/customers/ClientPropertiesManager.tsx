@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export type ClientPropertyItem = {
   id: string;
@@ -274,9 +275,11 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
         className="cursor-pointer transition hover:bg-sky-50/70 focus:outline-none focus-visible:bg-sky-50/70"
       >
         <td className="px-3 py-3 text-[13px] sm:text-sm">
-          {new Date(
-            useCompletedDate ? job.completedAt ?? job.scheduledDate : job.scheduledDate
-          ).toLocaleDateString(locale)}
+          {formatInBusinessTimeZone(
+            useCompletedDate ? job.completedAt ?? job.scheduledDate : job.scheduledDate,
+            locale,
+            { dateStyle: "short" }
+          )}
         </td>
         <td className="hidden px-3 py-3 lg:table-cell">
           <span className="block max-w-[18rem] truncate" title={job.propertyAddress}>
@@ -424,31 +427,31 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       </section>
 
       {editorOpen ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
+            className="app-modal-backdrop absolute inset-0 bg-slate-950/60"
             aria-label={t("common.actions.close")}
             onClick={closeModals}
           />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-3">
+          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+              <div className="app-modal-header flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
                     {mode === "create" ? t("client.properties.editor.createKicker") : t("client.properties.editor.editKicker")}
                   </p>
-                  <h3 className="mt-1 text-xl font-semibold text-slate-900">
+                  <h3 className="app-modal-title mt-1 text-xl font-semibold text-slate-900">
                     {mode === "create" ? t("client.properties.editor.createTitle") : t("client.properties.editor.editTitle")}
                   </h3>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="app-modal-subtitle mt-1 text-sm text-slate-500">
                     {mode === "create" ? t("client.properties.editor.createSubtitle") : t("client.properties.editor.editSubtitle")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={closeModals}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                  className="app-modal-close"
                   aria-label={t("common.actions.close")}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
@@ -529,18 +532,18 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       ) : null}
 
       {confirmOpen ? (
-        <div className="fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/65 backdrop-blur-[2px]"
+            className="app-modal-backdrop absolute inset-0 bg-slate-950/65"
             aria-label={t("common.actions.close")}
             onClick={() => !saving && setConfirmOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">{t("client.properties.confirm.kicker")}</p>
-              <h3 className="mt-1 text-xl font-semibold text-slate-900">{t("client.properties.confirm.title")}</h3>
-              <p className="mt-1 text-sm text-slate-500">{t("client.properties.confirm.subtitle")}</p>
+          <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="app-modal-scroll p-5 sm:p-6">
+              <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">{t("client.properties.confirm.kicker")}</p>
+              <h3 className="app-modal-title mt-1 text-xl font-semibold text-slate-900">{t("client.properties.confirm.title")}</h3>
+              <p className="app-modal-subtitle mt-1 text-sm text-slate-500">{t("client.properties.confirm.subtitle")}</p>
 
               <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 sm:grid-cols-2">
                 <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.name")}:</span> {show(draft.name)}</p>

@@ -2,6 +2,7 @@ import AppShell from "@/components/layout/AppShell";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function DeveloperAuditLogPage() {
   await requireDeveloper();
@@ -59,7 +60,10 @@ export default async function DeveloperAuditLogPage() {
                   return (
                     <tr key={entry.id} className="align-top">
                       <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                        {entry.createdAt.toLocaleString(locale)}
+                        {formatInBusinessTimeZone(entry.createdAt, locale, {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
                         <p className="font-semibold text-slate-800">

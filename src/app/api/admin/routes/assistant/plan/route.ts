@@ -7,6 +7,11 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { parseDateOnly, toDateKey } from "@/lib/jobs/capacity";
 import { geocodeAddresses } from "@/lib/routing/geo";
 import { buildRouteAssistantPlans } from "@/lib/routing/planner";
+import {
+  addBusinessDays,
+  endOfBusinessDay,
+  startOfBusinessDay,
+} from "@/lib/timezone";
 
 const statusValues = ["SCHEDULED", "PENDING", "ON_THE_WAY", "IN_PROGRESS"] as const;
 
@@ -37,16 +42,13 @@ export async function POST(request: Request) {
 
   let scheduledDateFilter: { gte: Date; lte?: Date } | undefined;
   if (ignoreDate) {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const startOfToday = startOfBusinessDay(new Date()) ?? new Date();
     scheduledDateFilter = { gte: startOfToday };
   } else if (routeDate) {
-    const searchStart = new Date(routeDate);
-    searchStart.setUTCDate(searchStart.getUTCDate() - 1);
-    searchStart.setUTCHours(0, 0, 0, 0);
-    const searchEnd = new Date(routeDate);
-    searchEnd.setUTCDate(searchEnd.getUTCDate() + 1);
-    searchEnd.setUTCHours(23, 59, 59, 999);
+    const searchStart =
+      startOfBusinessDay(addBusinessDays(routeDate, -1) ?? routeDate) ?? routeDate;
+    const searchEnd =
+      endOfBusinessDay(addBusinessDays(routeDate, 1) ?? routeDate) ?? routeDate;
     scheduledDateFilter = {
       gte: searchStart,
       lte: searchEnd,

@@ -434,15 +434,15 @@ export default function ClientProfilePanel({ initialData }: Props) {
       </section>
 
       {editor ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
+            className="app-modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
             aria-label={t("common.actions.close")}
             onClick={closeModal}
           />
-          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+          <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
               <h3 className="text-xl font-semibold text-slate-900">
                 {editor === "personal"
                   ? t("client.profile.editor.personalTitle")
@@ -613,14 +613,14 @@ export default function ClientProfilePanel({ initialData }: Props) {
       ) : null}
 
       {confirmOpen && editor ? (
-        <div className="fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+        <div className="app-modal-layer fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/65 backdrop-blur-[2px]"
+            className="app-modal-backdrop absolute inset-0 bg-slate-950/65 backdrop-blur-[2px]"
             aria-label={t("common.actions.close")}
             onClick={() => !saving && setConfirmOpen(false)}
           />
-          <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="p-5 sm:p-6">
               <h3 className="text-xl font-semibold text-slate-900">
                 {t("client.profile.confirm.title")}
@@ -687,3 +687,5 @@ export default function ClientProfilePanel({ initialData }: Props) {
     </div>
   );
 }
+
+

@@ -20,6 +20,7 @@ import {
   type SiteInvoiceTemplateConfig,
 } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE";
 type InvoiceTheme = "STANDARD" | "SPECIAL" | "ESTIMATE";
@@ -233,7 +234,11 @@ export default async function InvoiceEditorPage({
     theme: invoice.theme,
     locale: invoiceLocale,
     invoiceNumber: invoice.number,
-    issueDateLabel: invoice.createdAt.toLocaleDateString(localeCopy.intlLocale),
+    issueDateLabel: formatInBusinessTimeZone(
+      invoice.createdAt,
+      localeCopy.intlLocale,
+      { dateStyle: "short" }
+    ),
     customerName: formatCustomerName(invoice.customer),
     customerAddress: formatCustomerAddress(invoice.customer),
     customerEmail: invoice.customer.email,
@@ -281,7 +286,10 @@ export default async function InvoiceEditorPage({
               </p>
               <h2 className="text-lg font-semibold text-slate-900">{invoice.number}</h2>
               <p className="text-xs text-slate-500">
-                {formatCustomerName(invoice.customer)} - {invoice.createdAt.toLocaleDateString(locale)}
+                {formatCustomerName(invoice.customer)} -{" "}
+                {formatInBusinessTimeZone(invoice.createdAt, locale, {
+                  dateStyle: "short",
+                })}
               </p>
             </div>
             <div className="ui-segment">
@@ -316,7 +324,10 @@ export default async function InvoiceEditorPage({
                   <p className="mt-1">{lockedDescription}</p>
                   {invoice.sentAt ? (
                     <p className="mt-1 text-xs text-amber-800">
-                      {lockedSentAtLabel}: {invoice.sentAt.toLocaleDateString(locale)}
+                      {lockedSentAtLabel}:{" "}
+                      {formatInBusinessTimeZone(invoice.sentAt, locale, {
+                        dateStyle: "short",
+                      })}
                     </p>
                   ) : null}
                 </div>

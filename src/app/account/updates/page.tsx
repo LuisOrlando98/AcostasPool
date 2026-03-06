@@ -1,11 +1,13 @@
 import AppShell from "@/components/layout/AppShell";
 import { updates } from "@/content/updates";
 import { requireRole } from "@/lib/auth/guards";
-import { getTranslations } from "@/i18n/server";
+import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function UpdatesPage() {
   await requireRole("ADMIN");
   const t = await getTranslations();
+  const locale = await getRequestLocale();
 
   return (
     <AppShell
@@ -27,7 +29,7 @@ export default async function UpdatesPage() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    {new Date(entry.date).toLocaleDateString()}
+                    {formatInBusinessTimeZone(entry.date, locale, { dateStyle: "medium" })}
                   </p>
                   <h2 className="mt-2 text-lg font-semibold">{entry.title}</h2>
                 </div>

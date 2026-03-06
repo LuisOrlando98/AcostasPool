@@ -11,6 +11,7 @@ import {
   SERVICE_AGREEMENT_PLUS_PLAN,
   SERVICE_AGREEMENT_REFERENCES,
 } from "@/lib/service-agreement-content";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 const PAGE_WIDTH = 595.28; // A4 portrait
 const PAGE_HEIGHT = 841.89;
@@ -408,7 +409,9 @@ export async function buildServiceAgreementPdfBytes() {
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const generatedAt = new Date().toLocaleDateString("es-US");
+  const generatedAt = formatInBusinessTimeZone(new Date(), "es-US", {
+    dateStyle: "short",
+  });
   const ctx: RenderContext = {
     doc,
     regular,

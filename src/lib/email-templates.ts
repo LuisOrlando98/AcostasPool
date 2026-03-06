@@ -602,6 +602,8 @@ const LOCALIZED_EMAIL_TEMPLATE_DEFAULTS: LocalizedEmailTemplateDefaultsInput = {
 
 const SPANISH_HINT_PATTERN =
   /\b(hola|servicio|factura|correo|gracias|direccion|reprogramado|completado|contrasena|solicitud)\b/i;
+const ENGLISH_HINT_PATTERN =
+  /\b(hi|hello|service|invoice|email|thanks|address|rescheduled|completed|password|request|welcome)\b/i;
 
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 
@@ -770,6 +772,44 @@ function buildTemplateContent(
   };
 }
 
+function detectSnippetLocale(value: string): EmailTemplateLocale | null {
+  const snippet = value.trim();
+  if (!snippet) {
+    return null;
+  }
+  const hasSpanishHints = SPANISH_HINT_PATTERN.test(snippet);
+  const hasEnglishHints = ENGLISH_HINT_PATTERN.test(snippet);
+  if (hasSpanishHints && !hasEnglishHints) {
+    return "ES";
+  }
+  if (hasEnglishHints && !hasSpanishHints) {
+    return "EN";
+  }
+  return null;
+}
+
+function alignSubjectToBodyLocale(
+  locale: EmailTemplateLocale,
+  subject: string,
+  text: string,
+  fallbackSubject: string
+) {
+  const safeSubject = subject.trim();
+  if (!safeSubject) {
+    return fallbackSubject;
+  }
+
+  const subjectLocale = detectSnippetLocale(safeSubject);
+  const bodyLocale = detectSnippetLocale(text);
+  if (!subjectLocale || !bodyLocale || subjectLocale === bodyLocale) {
+    return safeSubject;
+  }
+  if (bodyLocale === locale) {
+    return fallbackSubject;
+  }
+  return safeSubject;
+}
+
 function guessTemplateLocale(content: EmailTemplateContent): EmailTemplateLocale {
   const haystack = `${content.subject}\n${content.text}\n${content.html}`;
   return SPANISH_HINT_PATTERN.test(haystack) ? "ES" : "EN";
@@ -777,11 +817,18 @@ function guessTemplateLocale(content: EmailTemplateContent): EmailTemplateLocale
 
 function normalizeTemplateForLocale(
   templateId: EmailTemplateId,
+  locale: EmailTemplateLocale,
   value: unknown,
   fallback: EmailTemplateContent
 ) {
   const normalized = normalizeEmailTemplateContent(value, fallback);
-  return buildTemplateContent(templateId, normalized.subject, normalized.text);
+  const subject = alignSubjectToBodyLocale(
+    locale,
+    normalized.subject,
+    normalized.text,
+    fallback.subject
+  );
+  return buildTemplateContent(templateId, subject, normalized.text);
 }
 
 export function resolveEmailTemplateLocale(
@@ -857,11 +904,13 @@ export function normalizeLocalizedEmailTemplates(value: unknown): LocalizedEmail
       acc[templateId] = {
         EN: normalizeTemplateForLocale(
           templateId,
+          "EN",
           localizedEN ?? localizedES,
           defaults[templateId].EN
         ),
         ES: normalizeTemplateForLocale(
           templateId,
+          "ES",
           localizedES ?? localizedEN,
           defaults[templateId].ES
         ),
@@ -869,12 +918,19 @@ export function normalizeLocalizedEmailTemplates(value: unknown): LocalizedEmail
       return acc;
     }
 
-    const legacyContent = normalizeTemplateForLocale(
+    const legacyContentEN = normalizeTemplateForLocale(
       templateId,
+      "EN",
       rawTemplate,
       defaults[templateId].EN
     );
-    const guessedLocale = guessTemplateLocale(legacyContent);
+    const guessedLocale = guessTemplateLocale(legacyContentEN);
+    const legacyContent = normalizeTemplateForLocale(
+      templateId,
+      guessedLocale,
+      rawTemplate,
+      defaults[templateId][guessedLocale]
+    );
     const otherLocale: EmailTemplateLocale = guessedLocale === "EN" ? "ES" : "EN";
 
     acc[templateId] = {

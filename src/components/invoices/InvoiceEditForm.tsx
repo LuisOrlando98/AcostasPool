@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
 import { roundCurrency } from "@/lib/invoices/line-items";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE";
 type InvoiceTheme = "STANDARD" | "SPECIAL" | "ESTIMATE";
@@ -189,7 +190,10 @@ export default function InvoiceEditForm({
             <option value="">{t("admin.invoices.list.noJob")}</option>
             {jobs.map((job) => (
               <option key={job.id} value={job.id}>
-                {new Date(job.scheduledDate).toLocaleDateString(locale)} -{" "}
+                {formatInBusinessTimeZone(job.scheduledDate, locale, {
+                  dateStyle: "short",
+                })}{" "}
+                -{" "}
                 {job.technicianName ?? t("admin.invoices.list.noTech")}
               </option>
             ))}
