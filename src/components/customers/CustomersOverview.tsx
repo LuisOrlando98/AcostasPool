@@ -56,6 +56,7 @@ export default function CustomersOverview({
     filters.sort as "name" | "jobs" | "properties"
   );
   const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
+  const filtersLabel = locale === "es" ? "Filtros" : "Filters";
 
   useEffect(() => {
     setSearch(filters.query);
@@ -103,6 +104,22 @@ export default function CustomersOverview({
 
   const hasActiveFilters =
     search.trim().length > 0 || statusFilter !== "ALL" || sortKey !== "name";
+  const createControl = onCreate ? (
+    <button
+      type="button"
+      onClick={onCreate}
+      className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] md:w-auto"
+    >
+      {t("admin.customers.overview.actions.new")}
+    </button>
+  ) : createTargetId ? (
+    <label
+      htmlFor={createTargetId}
+      className="app-button-primary w-full cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em] md:w-auto"
+    >
+      {t("admin.customers.overview.actions.new")}
+    </label>
+  ) : null;
   const kpiCards = (
     <div className="customers-overview-kpis grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
       <div className="app-card customers-kpi p-4 sm:p-5">
@@ -166,26 +183,27 @@ export default function CustomersOverview({
               })}
             </p>
           </div>
-          {onCreate ? (
-            <button
-              type="button"
-              onClick={onCreate}
-              className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
-            >
-              {t("admin.customers.overview.actions.new")}
-            </button>
-          ) : createTargetId ? (
-            <label
-              htmlFor={createTargetId}
-              className="app-button-primary cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em] sm:w-auto"
-            >
-              {t("admin.customers.overview.actions.new")}
-            </label>
-          ) : null}
         </div>
 
-        <div className="ui-filter-bar mt-4 grid gap-2 px-3 py-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto] xl:items-center">
-          <label className="ui-search flex min-w-0 items-center gap-2 px-3 py-2 text-xs sm:col-span-2 xl:min-w-[240px] xl:flex-1">
+        <div className="ui-filter-bar mt-4 grid gap-2 px-3 py-3 md:grid-cols-2 xl:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto] xl:items-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 4h14l-5.4 6.3v4.3l-3.2 1.8v-6.1L3 4Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>{filtersLabel}</span>
+          </div>
+          <label className="ui-search flex min-w-0 items-center gap-2 px-3 py-2 text-xs md:col-span-2 xl:col-span-1 xl:min-w-[240px] xl:flex-1">
             <span className="ui-search-icon">
               {t("common.actions.search")}
             </span>
@@ -238,7 +256,10 @@ export default function CustomersOverview({
               {clearFiltersLabel}
             </button>
           ) : null}
+          {createControl}
         </div>
+
+        <div className="mt-4">{kpiCards}</div>
 
         <div className="mt-4">
           {rows.length === 0 ? (
@@ -249,8 +270,8 @@ export default function CustomersOverview({
             <>
               <div className="customers-table-shell ui-table-shell overflow-hidden">
                 <div className="customers-table-scroll overflow-x-auto">
-                  <table className="customers-table customers-overview-table w-full min-w-[900px] table-fixed text-left text-xs text-slate-600 md:min-w-[980px]">
-                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[10px] uppercase tracking-[0.08em] text-slate-100/85 sm:text-[11px] sm:tracking-[0.16em]">
+                  <table className="customers-table customers-overview-table w-full min-w-[940px] table-fixed text-left text-xs text-slate-600 md:min-w-[980px]">
+                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[10px] uppercase tracking-[0.07em] text-slate-100/85 sm:text-[11px] sm:tracking-[0.14em]">
                       <tr>
                         <th className="sticky left-0 z-20 w-[20%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
                         <th className="w-[14%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
@@ -392,8 +413,6 @@ export default function CustomersOverview({
           </div>
         ) : null}
       </div>
-
-      {kpiCards}
     </section>
   );
 }

@@ -1592,6 +1592,15 @@ h3 {
   text-align: center;
 }
 
+.customers-overview-table thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.customers-overview-table thead th + th {
+  border-left: 1px solid rgba(148, 163, 184, 0.28);
+}
+
 .customers-overview-address {
   max-width: 18rem;
   overflow: hidden;
@@ -1615,6 +1624,12 @@ h3 {
     -webkit-line-clamp: 2;
     line-height: 1.2rem;
     max-height: 2.4rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .customers-overview-table .sticky {
+    position: static;
   }
 }
 
@@ -1698,10 +1713,6 @@ h3 {
     padding-right: 0.42rem;
   }
 
-  .customers-overview-table .sticky {
-    position: static;
-  }
-
   .customers-overview-table th,
   .customers-overview-table td {
     padding-left: 0.52rem;
@@ -1709,8 +1720,8 @@ h3 {
   }
 
   .customers-overview-table th {
-    font-size: 0.64rem;
-    letter-spacing: 0.08em;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
   }
 
   .customers-overview-address {
