@@ -386,7 +386,7 @@
     },
     "reset": {
       "title": "Restablecer contrasena",
-      "subtitle": "Ingresa el token y tu nueva contrasena.",
+      "subtitle": "Ingresa tu nueva contrasena para completar el cambio.",
       "requestSubtitle": "Ingresa tu correo y te enviaremos un enlace seguro de cambio.",
       "token": "Token",
       "tokenPlaceholder": "Token",

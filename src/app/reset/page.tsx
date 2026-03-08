@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { LANDING_LOCALE_STORAGE_KEY } from "@/components/landing/preferences";
 import { useI18n } from "@/i18n/client";
@@ -9,12 +9,12 @@ import { LOCALE_COOKIE } from "@/i18n/config";
 
 export default function ResetPasswordPage() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const initialToken = searchParams.get("token") ?? "";
+  const token = (searchParams.get("token") ?? "").trim();
   const currentYear = new Date().getFullYear();
 
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState(initialToken);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -112,6 +112,10 @@ export default function ResetPasswordPage() {
     setMessage(t("auth.reset.success"));
     setMessageTone("success");
     setLoading(false);
+    window.setTimeout(() => {
+      router.push("/login?reset=success");
+      router.refresh();
+    }, 1200);
   };
 
   const handleRequestReset = async () => {
@@ -255,17 +259,6 @@ export default function ResetPasswordPage() {
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               {hasToken ? (
                 <>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                      {t("auth.reset.token")}
-                    </label>
-                    <input
-                      value={token}
-                      onChange={(event) => setToken(event.target.value)}
-                      className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      placeholder={t("auth.reset.tokenPlaceholder")}
-                    />
-                  </div>
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       {t("auth.reset.newPassword")}

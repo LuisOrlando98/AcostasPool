@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const resetSuccess = searchParams.get("reset") === "success";
 
   const handleLocaleChange = (nextLocale: "en" | "es") => {
     if (nextLocale === locale) {
@@ -307,6 +308,11 @@ export default function LoginPage() {
               {error ? (
                 <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {error}
+                </div>
+              ) : null}
+              {!error && resetSuccess ? (
+                <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {t("auth.reset.success")}
                 </div>
               ) : null}
 

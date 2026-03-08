@@ -244,7 +244,7 @@ const HELP_SECTIONS: HelpSection[] = [
       "Desactivar usuarios que ya no operan para evitar riesgo.",
       "Revisar permisos por rol (admin, tecnico, cliente).",
       "Usar logs de cambios para trazabilidad en ajustes delicados.",
-      "Apartados developer o acuerdo restringido solo para cuenta autorizada.",
+      "Mantener el acceso a Agreement Service para usuarios ADMIN y revisar permisos periodicamente.",
     ],
     tips: [
       "No compartas cuentas entre personas.",
@@ -360,8 +360,8 @@ export default async function AdminHelpPage() {
           </p>
           <p className="mt-1">
             {isSpanish
-              ? "El apartado de acuerdo de servicio esta restringido solo para la cuenta developer autorizada."
-              : "Service agreement access is restricted to the authorized developer account only."}
+              ? "El apartado de acuerdo de servicio esta disponible para administradores."
+              : "The service agreement section is available to administrators."}
           </p>
         </div>
 

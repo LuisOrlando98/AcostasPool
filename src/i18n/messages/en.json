@@ -386,7 +386,7 @@
     },
     "reset": {
       "title": "Reset password",
-      "subtitle": "Enter the token and your new password.",
+      "subtitle": "Enter your new password to complete the change.",
       "requestSubtitle": "Enter your email and we'll send a secure reset link.",
       "token": "Token",
       "tokenPlaceholder": "Token",

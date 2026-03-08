@@ -10,7 +10,6 @@ import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
-import { isDeveloperEmail } from "@/lib/auth/developer";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 export type NavItem = {
@@ -199,6 +198,30 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
           strokeLinecap="round"
           strokeLinejoin="round"
           d="M4 19h16M7 16v-5m5 5V6m5 10v-3"
+        />
+      </svg>
+    ),
+  },
+  {
+    label: t("nav.admin.serviceAgreement"),
+    href: "/admin/agreement-service",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M15 3.5v4h4M9 12h6M9 16h6"
         />
       </svg>
     ),
@@ -410,8 +433,7 @@ export default function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
   const canAccessHelpCenter = role === "ADMIN";
-  const canAccessServiceAgreement =
-    role === "ADMIN" && isDeveloperEmail(mobileUser?.email);
+  const canAccessServiceAgreement = role === "ADMIN";
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
