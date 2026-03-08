@@ -986,7 +986,13 @@
           "search": "Nombre o email"
         },
         "filters": {
-          "status": "Estado"
+          "status": "Estado",
+          "sort": "Orden",
+          "open": "Abrir filtros",
+          "modalTitle": "Filtros de clientes",
+          "modalSubtitle": "Filtra por nombre/email, estado y orden de listado.",
+          "apply": "Aplicar filtros",
+          "activeCount": "{{count}} filtros activos"
         },
         "sort": {
           "name": "Orden: Nombre",

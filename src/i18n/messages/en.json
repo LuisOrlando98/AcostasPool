@@ -986,7 +986,13 @@
           "search": "Name or email"
         },
         "filters": {
-          "status": "Status"
+          "status": "Status",
+          "sort": "Sort",
+          "open": "Open filters",
+          "modalTitle": "Customer filters",
+          "modalSubtitle": "Filter by name/email, account status, and list order.",
+          "apply": "Apply filters",
+          "activeCount": "{{count}} active filters"
         },
         "sort": {
           "name": "Sort: Name",

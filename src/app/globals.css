@@ -1592,11 +1592,6 @@ h3 {
   text-align: center;
 }
 
-.customers-overview-table thead th {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .customers-overview-table thead th + th {
   border-left: 1px solid rgba(148, 163, 184, 0.28);
 }
@@ -1624,12 +1619,6 @@ h3 {
     -webkit-line-clamp: 2;
     line-height: 1.2rem;
     max-height: 2.4rem;
-  }
-}
-
-@media (max-width: 1024px) {
-  .customers-overview-table .sticky {
-    position: static;
   }
 }
 
