@@ -1641,18 +1641,13 @@ h3 {
     gap: 0.9rem;
   }
 
-  .customers-overview > .grid:first-child {
-    display: flex;
-    flex-wrap: nowrap;
+  .customers-overview-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
-    overflow-x: auto;
-    padding-bottom: 0.2rem;
-    margin-right: -0.1rem;
   }
 
-  .customers-overview > .grid:first-child > .customers-kpi {
-    min-width: 12.8rem;
-    flex: 0 0 auto;
+  .customers-overview-kpis > .customers-kpi {
+    min-width: 0;
   }
 
   .customers-panel {
@@ -1711,6 +1706,11 @@ h3 {
   .customers-overview-table td {
     padding-left: 0.52rem;
     padding-right: 0.52rem;
+  }
+
+  .customers-overview-table th {
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
   }
 
   .customers-overview-address {

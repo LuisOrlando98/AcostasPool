@@ -103,56 +103,57 @@ export default function CustomersOverview({
 
   const hasActiveFilters =
     search.trim().length > 0 || statusFilter !== "ALL" || sortKey !== "name";
+  const kpiCards = (
+    <div className="customers-overview-kpis grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+      <div className="app-card customers-kpi p-4 sm:p-5">
+        <p className="break-words text-[10px] uppercase tracking-[0.22em] text-slate-400 sm:text-[11px] sm:tracking-[0.3em]">
+          {t("admin.customers.overview.cards.customers")}
+        </p>
+        <p className="mt-2 text-xl font-semibold text-slate-900 sm:text-2xl">
+          {summary.total}
+        </p>
+        <p className="text-xs text-slate-500">
+          {t("admin.customers.overview.cards.total")}
+        </p>
+      </div>
+      <div className="customers-kpi rounded-2xl border border-teal-200 bg-teal-50 p-4 sm:p-5">
+        <p className="break-words text-[10px] uppercase tracking-[0.22em] text-teal-700 sm:text-[11px] sm:tracking-[0.3em]">
+          {t("admin.customers.overview.cards.active")}
+        </p>
+        <p className="mt-2 text-xl font-semibold text-teal-900 sm:text-2xl">
+          {summary.active}
+        </p>
+        <p className="text-xs text-teal-700">
+          {t("admin.customers.overview.cards.activeHint")}
+        </p>
+      </div>
+      <div className="customers-kpi rounded-2xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5">
+        <p className="break-words text-[10px] uppercase tracking-[0.22em] text-indigo-700 sm:text-[11px] sm:tracking-[0.3em]">
+          {t("admin.customers.overview.cards.inactive")}
+        </p>
+        <p className="mt-2 text-xl font-semibold text-indigo-900 sm:text-2xl">
+          {summary.inactive}
+        </p>
+        <p className="text-xs text-indigo-700">
+          {t("admin.customers.overview.cards.inactiveHint")}
+        </p>
+      </div>
+      <div className="customers-kpi rounded-2xl border border-sky-200 bg-sky-50 p-4 sm:p-5">
+        <p className="break-words text-[10px] uppercase tracking-[0.22em] text-sky-700 sm:text-[11px] sm:tracking-[0.3em]">
+          {t("admin.customers.overview.cards.properties")}
+        </p>
+        <p className="mt-2 text-xl font-semibold text-sky-900 sm:text-2xl">
+          {summary.properties}
+        </p>
+        <p className="text-xs text-sky-700">
+          {t("admin.customers.overview.cards.propertiesHint")}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <section className="customers-scope customers-overview space-y-4 sm:space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="app-card customers-kpi p-5">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">
-            {t("admin.customers.overview.cards.customers")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">
-            {summary.total}
-          </p>
-          <p className="text-xs text-slate-500">
-            {t("admin.customers.overview.cards.total")}
-          </p>
-        </div>
-        <div className="customers-kpi rounded-2xl border border-teal-200 bg-teal-50 p-5">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-teal-700">
-            {t("admin.customers.overview.cards.active")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-teal-900">
-            {summary.active}
-          </p>
-          <p className="text-xs text-teal-700">
-            {t("admin.customers.overview.cards.activeHint")}
-          </p>
-        </div>
-        <div className="customers-kpi rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-indigo-700">
-            {t("admin.customers.overview.cards.inactive")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-indigo-900">
-            {summary.inactive}
-          </p>
-          <p className="text-xs text-indigo-700">
-            {t("admin.customers.overview.cards.inactiveHint")}
-          </p>
-        </div>
-        <div className="customers-kpi rounded-2xl border border-sky-200 bg-sky-50 p-5">
-          <p className="text-[11px] uppercase tracking-[0.35em] text-sky-700">
-            {t("admin.customers.overview.cards.properties")}
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-sky-900">
-            {summary.properties}
-          </p>
-          <p className="text-xs text-sky-700">
-            {t("admin.customers.overview.cards.propertiesHint")}
-          </p>
-        </div>
-      </div>
-
       <div className="customers-overview-shell rounded-3xl border border-[var(--border)] bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
@@ -248,16 +249,16 @@ export default function CustomersOverview({
             <>
               <div className="customers-table-shell ui-table-shell overflow-hidden">
                 <div className="customers-table-scroll overflow-x-auto">
-                  <table className="customers-table customers-overview-table w-full min-w-[980px] table-fixed text-left text-xs text-slate-600">
-                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
+                  <table className="customers-table customers-overview-table w-full min-w-[900px] table-fixed text-left text-xs text-slate-600 md:min-w-[980px]">
+                    <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[10px] uppercase tracking-[0.08em] text-slate-100/85 sm:text-[11px] sm:tracking-[0.16em]">
                       <tr>
-                        <th className="sticky left-0 z-20 w-[20%] whitespace-nowrap bg-slate-900 px-4 py-3">{t("admin.customers.overview.table.customer")}</th>
-                        <th className="w-[13%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.phone")}</th>
-                        <th className="w-[23%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.address")}</th>
-                        <th className="w-[24%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.properties")}</th>
-                        <th className="w-[6%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.jobs")}</th>
-                        <th className="w-[6%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.invoices")}</th>
-                        <th className="w-[8%] whitespace-nowrap px-4 py-3">{t("admin.customers.overview.table.status")}</th>
+                        <th className="sticky left-0 z-20 w-[20%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
+                        <th className="w-[14%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
+                        <th className="w-[23%] min-w-[10.5rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.address")}</th>
+                        <th className="w-[22%] min-w-[10rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.properties")}</th>
+                        <th className="w-[7%] min-w-[5.4rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.jobs")}</th>
+                        <th className="w-[7%] min-w-[5.4rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.invoices")}</th>
+                        <th className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.status")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -391,6 +392,8 @@ export default function CustomersOverview({
           </div>
         ) : null}
       </div>
+
+      {kpiCards}
     </section>
   );
 }
