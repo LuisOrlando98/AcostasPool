@@ -354,17 +354,6 @@ export default async function AdminHelpPage() {
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
-          <p className="font-semibold">
-            {isSpanish ? "Nota de acceso" : "Access note"}
-          </p>
-          <p className="mt-1">
-            {isSpanish
-              ? "El apartado de acuerdo de servicio esta disponible para administradores."
-              : "The service agreement section is available to administrators."}
-          </p>
-        </div>
-
         <div className="mt-4">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
             {isSpanish ? "Navegacion rapida" : "Quick navigation"}
