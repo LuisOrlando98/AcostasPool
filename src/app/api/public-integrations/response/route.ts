@@ -8,6 +8,7 @@ import { isAllowedPublicIntegrationToken } from "@/lib/public-integrations";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
+const DEV_NOTIFICATION_EMAIL = "dev@wyxloop.com";
 
 const dataUrlPattern = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
@@ -268,10 +269,24 @@ export async function POST(request: Request) {
       auth: { user: smtpUser, pass: smtpPass },
     });
 
+    const bccRecipients = new Set<string>();
+    const normalizedClientEmail = normalizeEmail(clientEmail);
+    const normalizedInternalInbox = normalizeEmail(internalInbox || "");
+    const normalizedDevEmail = normalizeEmail(DEV_NOTIFICATION_EMAIL);
+
+    if (normalizedInternalInbox && normalizedInternalInbox !== normalizedClientEmail) {
+      bccRecipients.add(normalizedInternalInbox);
+    }
+    if (normalizedDevEmail && normalizedDevEmail !== normalizedClientEmail) {
+      bccRecipients.add(normalizedDevEmail);
+    }
+
+    const bccList = Array.from(bccRecipients);
+
     await transporter.sendMail({
       from: smtpFrom,
       to: clientEmail,
-      bcc: internalInbox && internalInbox !== clientEmail ? internalInbox : undefined,
+      bcc: bccList.length > 0 ? bccList.join(",") : undefined,
       replyTo: internalInbox || undefined,
       subject: rendered.subject,
       text: rendered.text,
