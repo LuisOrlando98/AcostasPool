@@ -42,6 +42,8 @@ export default function PublicProposalResponseForm({ token }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successId, setSuccessId] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
+  const [loginRedirectUrl, setLoginRedirectUrl] = useState("/login");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -97,6 +99,17 @@ export default function PublicProposalResponseForm({ token }: Props) {
     }
     return "Sin decision seleccionada";
   }, [decision]);
+
+  useEffect(() => {
+    if (!successId) {
+      return;
+    }
+    setRedirecting(true);
+    const timer = window.setTimeout(() => {
+      window.location.assign(loginRedirectUrl);
+    }, 2200);
+    return () => window.clearTimeout(timer);
+  }, [successId, loginRedirectUrl]);
 
   const clearSignature = () => {
     const canvas = canvasRef.current;
@@ -169,6 +182,7 @@ export default function PublicProposalResponseForm({ token }: Props) {
     event.preventDefault();
     setError(null);
     setSuccessId(null);
+    setRedirecting(false);
 
     if (!clientName.trim() || !clientEmail.trim()) {
       setError("Completa nombre y correo del cliente.");
@@ -209,6 +223,7 @@ export default function PublicProposalResponseForm({ token }: Props) {
       const data = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
         id?: string;
+        loginUrl?: string;
         error?: string;
       };
 
@@ -218,6 +233,7 @@ export default function PublicProposalResponseForm({ token }: Props) {
       }
 
       setSuccessId(data.id);
+      setLoginRedirectUrl(data.loginUrl || "/login");
       signatureImageRef.current = signatureDataUrl;
     } catch {
       setError("No se pudo guardar la respuesta. Intenta de nuevo.");
@@ -375,14 +391,19 @@ export default function PublicProposalResponseForm({ token }: Props) {
 
         {successId ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            Respuesta registrada correctamente. Referencia: {" "}
+            Respuesta registrada y enviada por email. Referencia:{" "}
             <span className="font-semibold">{successId}</span>
+            {redirecting ? (
+              <p className="mt-1 text-xs text-emerald-700">
+                Redirigiendo al login de AcostasPool...
+              </p>
+            ) : null}
           </div>
         ) : null}
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || redirecting || Boolean(successId)}
           className="w-full rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           {submitting ? "Guardando..." : "Enviar confirmacion firmada"}
