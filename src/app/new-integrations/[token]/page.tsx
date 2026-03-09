@@ -1,21 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import PublicProposalResponseForm from "@/components/new-integrations/PublicProposalResponseForm";
+import { isAllowedPublicIntegrationToken } from "@/lib/public-integrations";
 
 type PageProps = {
   params: Promise<{ token: string }>;
 };
 
-const ALLOWED_PUBLIC_TOKENS = new Set([
-  "n7x4v2k9q1m8c5p3r6t0z4a9h2w7y5d1",
-]);
-
-function isAllowedToken(token: string) {
-  return ALLOWED_PUBLIC_TOKENS.has(token);
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { token } = await params;
-  if (!isAllowedToken(token)) {
+  if (!isAllowedPublicIntegrationToken(token)) {
     return {
       title: "Not Found",
       robots: { index: false, follow: false },
@@ -121,7 +115,7 @@ const deliveryItems = [
 
 export default async function StripeIntegrationProposalPage({ params }: PageProps) {
   const { token } = await params;
-  if (!isAllowedToken(token)) {
+  if (!isAllowedPublicIntegrationToken(token)) {
     notFound();
   }
 
@@ -295,6 +289,8 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
             Solo abre con el token exacto compartido por AcostasPool.
           </p>
         </section>
+
+        <PublicProposalResponseForm token={token} />
       </div>
     </main>
   );
