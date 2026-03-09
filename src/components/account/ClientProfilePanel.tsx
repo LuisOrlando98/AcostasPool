@@ -5,6 +5,7 @@ import AvatarUpload from "@/components/account/AvatarUpload";
 import ResetLinkButton from "@/components/account/ResetLinkButton";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import { useI18n } from "@/i18n/client";
+import { formatBusinessDateInput } from "@/lib/timezone";
 
 type ProfileData = {
   nombre: string;
@@ -22,6 +23,7 @@ type ProfileData = {
   statusLabel: string;
   displayName: string;
   email2faEnabled: boolean;
+  pauseServicesFrom: string | null;
 };
 
 type Props = {
@@ -68,8 +70,14 @@ export default function ClientProfilePanel({ initialData }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [securitySaving, setSecuritySaving] = useState(false);
+  const [serviceControlSaving, setServiceControlSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pauseFromInput, setPauseFromInput] = useState(
+    initialData.pauseServicesFrom
+      ? formatBusinessDateInput(initialData.pauseServicesFrom)
+      : formatBusinessDateInput(new Date())
+  );
   const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -256,6 +264,67 @@ export default function ClientProfilePanel({ initialData }: Props) {
     );
   };
 
+  const applyServicePause = async () => {
+    if (serviceControlSaving || !pauseFromInput) {
+      return;
+    }
+    setServiceControlSaving(true);
+    setError(null);
+    const response = await fetch("/api/client/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "serviceControl",
+        action: "PAUSE",
+        pauseFrom: pauseFromInput,
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setServiceControlSaving(false);
+      setError(
+        typeof body?.error === "string"
+          ? body.error
+          : t("client.profile.serviceControl.pauseError")
+      );
+      return;
+    }
+    const pauseIso =
+      typeof body?.pauseServicesFrom === "string" ? body.pauseServicesFrom : null;
+    setData((current) => ({ ...current, pauseServicesFrom: pauseIso }));
+    setNotice(t("client.profile.serviceControl.pausedOk", { date: pauseFromInput }));
+    setServiceControlSaving(false);
+  };
+
+  const resumeServices = async () => {
+    if (serviceControlSaving) {
+      return;
+    }
+    setServiceControlSaving(true);
+    setError(null);
+    const response = await fetch("/api/client/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "serviceControl",
+        action: "RESUME",
+      }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setServiceControlSaving(false);
+      setError(
+        typeof body?.error === "string"
+          ? body.error
+          : t("client.profile.serviceControl.resumeError")
+      );
+      return;
+    }
+    setData((current) => ({ ...current, pauseServicesFrom: null }));
+    setNotice(t("client.profile.serviceControl.resumedOk"));
+    setServiceControlSaving(false);
+  };
+
   return (
     <div className="space-y-6">
       {notice ? (
@@ -429,6 +498,53 @@ export default function ClientProfilePanel({ initialData }: Props) {
               {t("client.profile.sections.notificationsSubtitle")}
             </p>
             <NotificationPreferences />
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <h3 className="text-lg font-semibold text-slate-900">
+              {t("client.profile.serviceControl.title")}
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("client.profile.serviceControl.subtitle")}
+            </p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {data.pauseServicesFrom
+                ? t("client.profile.serviceControl.statusPaused")
+                : t("client.profile.serviceControl.statusActive")}
+            </p>
+            {data.pauseServicesFrom ? (
+              <p className="mt-1 text-sm text-slate-600">
+                {t("client.profile.serviceControl.pausedFrom", {
+                  date: formatBusinessDateInput(data.pauseServicesFrom),
+                })}
+              </p>
+            ) : null}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <input
+                type="date"
+                value={pauseFromInput}
+                onChange={(event) => setPauseFromInput(event.target.value)}
+                className="app-input w-full max-w-[190px] px-4 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={applyServicePause}
+                disabled={serviceControlSaving}
+                className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 transition hover:border-amber-400 disabled:opacity-60"
+              >
+                {serviceControlSaving
+                  ? t("common.feedback.saving")
+                  : t("client.profile.serviceControl.pauseButton")}
+              </button>
+              <button
+                type="button"
+                onClick={resumeServices}
+                disabled={serviceControlSaving || !data.pauseServicesFrom}
+                className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-400 disabled:opacity-60"
+              >
+                {t("client.profile.serviceControl.resumeButton")}
+              </button>
+            </div>
           </div>
         </div>
       </section>

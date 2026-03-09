@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "@/lib/auth/config";
 import { verifySessionToken } from "@/lib/auth/jwt";
 import { prisma } from "@/lib/db";
-import { isDeveloperAccount } from "@/lib/auth/developer";
+import { isDeveloperAccount, isDeveloperEmail } from "@/lib/auth/developer";
 
 export async function getSession() {
   const cookieStore = await cookies();
@@ -30,13 +30,14 @@ export async function getSession() {
   if (!user || !user.isActive) {
     return null;
   }
+  const developerAccess = isDeveloperAccount(user) || isDeveloperEmail(user.email);
 
   return {
     sub: user.id,
     email: user.email,
     name: user.fullName,
-    role: user.role,
+    role: developerAccess ? "ADMIN" : user.role,
     avatarUrl: user.avatarUrl,
-    isDeveloper: isDeveloperAccount(user),
+    isDeveloper: developerAccess,
   };
 }

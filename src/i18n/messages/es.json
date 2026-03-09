@@ -2081,6 +2081,7 @@
       "options": {
         "oncePerWeek": "1 visita / semana",
         "twicePerWeek": "2 visitas / semana",
+        "visitsPerWeekCount": "{{count}} visitas / semana",
         "weeksCount": "{{count}} semana(s)",
         "dayCapacity": "{{date}} · {{count}} espacio(s)",
         "timeCapacity": "{{time}} · {{count}} espacio(s)"
@@ -2092,11 +2093,18 @@
       "errors": {
         "property": "Selecciona una propiedad.",
         "availability": "Selecciona fecha y hora.",
+        "recurringPaused": "El servicio recurrente esta pausado. Reanudalo en tu perfil antes de crear una solicitud recurrente.",
         "submit": "No se pudo enviar la solicitud."
       },
       "successCount": "Solicitud programada correctamente. Visitas creadas: {{count}}.",
+      "successRecurringConfigured": "Servicio recurrente configurado: {{visits}} visita(s) por semana con {{plans}} plan(es) activo(s).",
       "successReview": "Solicitud urgente enviada. Nuestro equipo la revisara y confirmara lo antes posible.",
       "successPartial": "Se creo una programacion parcial por disponibilidad limitada. Visitas creadas: {{count}}.",
+      "hints": {
+        "recurringResidential": "El modo recurrente queda activo de forma indefinida. Cuentas residenciales permiten hasta 2 visitas por semana.",
+        "recurringCommercial": "El modo recurrente queda activo de forma indefinida. Cuentas comerciales permiten hasta 5 visitas por semana.",
+        "recurringPaused": "Tu servicio recurrente esta pausado desde el perfil."
+      },
       "reasons": {
         "emergency": "Emergencia / Bomba",
         "quickCleaning": "Limpieza rapida",
@@ -2159,6 +2167,19 @@
           "sent": "Se enviaron instrucciones para cambiar la contrasena.",
           "error": "No se pudieron enviar las instrucciones de cambio de contrasena."
         }
+      },
+      "serviceControl": {
+        "title": "Control de servicio",
+        "subtitle": "Pausa o reanuda los servicios recurrentes desde tu portal.",
+        "statusActive": "Servicio recurrente activo",
+        "statusPaused": "Servicio recurrente pausado",
+        "pausedFrom": "Pausado desde {{date}} en adelante.",
+        "pauseButton": "Pausar servicios",
+        "resumeButton": "Reanudar servicios",
+        "pausedOk": "Servicios pausados desde {{date}} en adelante.",
+        "resumedOk": "Servicios recurrentes reanudados.",
+        "pauseError": "No se pudo pausar servicios desde la fecha seleccionada.",
+        "resumeError": "No se pudo reanudar el servicio recurrente."
       },
       "property": {
         "pool": "Piscina",

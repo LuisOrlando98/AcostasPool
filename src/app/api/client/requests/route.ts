@@ -8,12 +8,11 @@ import {
   getDefaultServiceTierId,
   getServiceTierChecklist,
 } from "@/lib/service-tiers";
-import { combineDateAndTime } from "@/lib/jobs/scheduling";
+import { addPlanFrequency, combineDateAndTime } from "@/lib/jobs/scheduling";
 import {
   MIN_BOOKING_LEAD_DAYS,
   buildAvailabilityDays,
   getLeadStartDate,
-  getWeekStartKey,
   parseDateOnly,
   toDateKey,
   timeValueToMinutes,
@@ -32,8 +31,7 @@ const requestSchema = z.object({
   preferredTime: z.string().optional(),
   description: z.string().optional(),
   mode: z.enum(["SINGLE", "RECURRING"]).optional(),
-  weeks: z.coerce.number().int().min(1).max(12).optional(),
-  visitsPerWeek: z.coerce.number().int().min(1).max(2).optional(),
+  visitsPerWeek: z.coerce.number().int().min(1).max(5).optional(),
   urgentOverride: z.boolean().optional(),
 });
 
@@ -90,28 +88,54 @@ export async function POST(request: Request) {
     preferredTime,
     description,
     mode: modeRaw,
-    weeks: weeksRaw,
     visitsPerWeek: visitsPerWeekRaw,
     urgentOverride = false,
-  } =
-    parsed.data;
+  } = parsed.data;
+
   const mode = modeRaw === "RECURRING" ? "RECURRING" : "SINGLE";
-  const weeks = mode === "RECURRING" ? weeksRaw ?? 7 : 1;
-  const visitsPerWeek = mode === "RECURRING" ? visitsPerWeekRaw ?? 1 : 1;
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
+    select: {
+      id: true,
+      allowWeekendBooking: true,
+      tipoCliente: true,
+      estadoCuenta: true,
+      pauseServicesFrom: true,
+    },
   });
 
   if (!customer) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
+
+  if (customer.estadoCuenta !== "ACTIVE") {
+    return NextResponse.json(
+      { error: "Account is inactive. Contact support." },
+      { status: 403 }
+    );
+  }
+
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
     select: { id: true, customerId: true },
   });
   if (!property || property.customerId !== customer.id) {
     return NextResponse.json({ error: "Invalid property" }, { status: 403 });
+  }
+
+  const visitsCap = customer.tipoCliente === "COMMERCIAL" ? 5 : 2;
+  const visitsPerWeek = mode === "RECURRING" ? visitsPerWeekRaw ?? 1 : 1;
+  if (mode === "RECURRING" && visitsPerWeek > visitsCap) {
+    return NextResponse.json(
+      {
+        error:
+          customer.tipoCliente === "COMMERCIAL"
+            ? "Commercial accounts support up to 5 visits per week."
+            : "Residential accounts support up to 2 visits per week.",
+      },
+      { status: 400 }
+    );
   }
 
   const parsedPreferredDate = preferredDate ? parseDateOnly(preferredDate) : null;
@@ -126,23 +150,18 @@ export async function POST(request: Request) {
 
   const leadStartDate = getLeadStartDate(new Date(), MIN_BOOKING_LEAD_DAYS);
   const isUrgentRequest =
+    mode === "SINGLE" &&
     urgentOverride &&
     Boolean(parsedPreferredDate) &&
     parsedPreferredDate.getTime() < leadStartDate.getTime();
 
   const defaultTierId = await getDefaultServiceTierId();
   const checklist = await getServiceTierChecklist(defaultTierId);
-
   const baseNotes = `${reason}${description ? ` - ${description}` : ""}`;
-  const jobType = mode === "RECURRING" ? "ROUTINE" : "ON_DEMAND";
-  const recurringTag =
-    mode === "RECURRING"
-      ? `\n[Recurring: ${weeks} week(s), ${visitsPerWeek} visit(s)/week]`
-      : "";
 
-  let createdJobs: Array<{ id: string; scheduledDate: Date; status: string }> =
-    [];
-  let partialAutoSchedule = false;
+  let createdJobs: Array<{ id: string; scheduledDate: Date; status: string }> = [];
+  let createdPlanIds: string[] = [];
+  const partialAutoSchedule = false;
 
   if (isUrgentRequest) {
     const urgentDate = combineDateAndTime(
@@ -172,14 +191,12 @@ export async function POST(request: Request) {
     createdJobs = [pendingJob];
   } else {
     const preferredStartDateBase = parsedPreferredDate
-      ? new Date(
-          Math.max(parsedPreferredDate.getTime(), leadStartDate.getTime())
-        )
+      ? new Date(Math.max(parsedPreferredDate.getTime(), leadStartDate.getTime()))
       : new Date(leadStartDate);
     const preferredStartDate =
       startOfBusinessDay(preferredStartDateBase) ?? preferredStartDateBase;
 
-    const planningDays = Math.max(56, weeks * 18);
+    const planningDays = mode === "RECURRING" ? 140 : 56;
     const planningEnd =
       endOfBusinessDay(
         addBusinessDays(preferredStartDate, planningDays) ?? preferredStartDate
@@ -225,99 +242,202 @@ export async function POST(request: Request) {
     }
 
     const preferredDateKey = toDateKey(preferredStartDate);
-    const targetVisits = mode === "RECURRING" ? weeks * visitsPerWeek : 1;
-    const scheduledDates: Date[] = [];
-    const weekCounters = new Map<string, number>();
-    let dayIndex =
-      dayKeys.findIndex((key) => key >= preferredDateKey) === -1
-        ? 0
-        : dayKeys.findIndex((key) => key >= preferredDateKey);
+    const startIndex = Math.max(0, dayKeys.findIndex((key) => key >= preferredDateKey));
 
-    while (scheduledDates.length < targetVisits && dayIndex < dayKeys.length) {
-      const dayKey = dayKeys[dayIndex];
-      const dayDate = parseDateOnly(dayKey);
-      if (!dayDate) {
-        dayIndex += 1;
-        continue;
-      }
-
-      if (mode === "RECURRING") {
-        const weekKey = getWeekStartKey(dayDate);
-        const alreadyInWeek = weekCounters.get(weekKey) ?? 0;
-        if (alreadyInWeek >= visitsPerWeek) {
-          dayIndex += 1;
+    if (mode === "SINGLE") {
+      let reservedDate: Date | null = null;
+      for (let dayIndex = startIndex; dayIndex < dayKeys.length; dayIndex += 1) {
+        const dayKey = dayKeys[dayIndex];
+        const slotTime = reserveSlot(slotsByDay, dayKey, normalizedPreferredTime);
+        if (!slotTime) {
           continue;
         }
-      }
-
-      const slotTime = reserveSlot(slotsByDay, dayKey, normalizedPreferredTime);
-      if (!slotTime) {
-        dayIndex += 1;
-        continue;
-      }
-
-      const scheduledDate = combineDateAndTime(dayKey, slotTime);
-      scheduledDates.push(scheduledDate);
-
-      if (mode === "RECURRING") {
-        const weekKey = getWeekStartKey(dayDate);
-        weekCounters.set(weekKey, (weekCounters.get(weekKey) ?? 0) + 1);
-      }
-
-      if (mode === "SINGLE") {
+        reservedDate = combineDateAndTime(dayKey, slotTime);
         break;
       }
-      dayIndex += 1;
-    }
 
-    if (scheduledDates.length === 0) {
-      return NextResponse.json(
-        { error: "No availability found for the requested date/time." },
-        { status: 409 }
-      );
-    }
+      if (!reservedDate) {
+        return NextResponse.json(
+          { error: "No availability found for the requested date/time." },
+          { status: 409 }
+        );
+      }
 
-    partialAutoSchedule = scheduledDates.length < targetVisits;
-    const now = new Date();
-    createdJobs = await prisma.$transaction(
-      scheduledDates.map((scheduledDate) => {
-        const timeParts = getBusinessTimeParts(scheduledDate);
-        const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
-        return prisma.job.create({
+      const now = new Date();
+      createdJobs = await prisma.$transaction([
+        prisma.job.create({
           data: {
             customerId: customer.id,
             propertyId,
-            scheduledDate,
-            sortOrder,
-            status: "SCHEDULED",
-            type: jobType,
+            scheduledDate: reservedDate,
+            sortOrder:
+              ((getBusinessTimeParts(reservedDate)?.hour ?? 0) * 60) +
+              (getBusinessTimeParts(reservedDate)?.minute ?? 0),
+            status: reservedDate > (endOfBusinessDay(now) ?? now) ? "SCHEDULED" : "PENDING",
+            type: "ON_DEMAND",
             serviceTierId: defaultTierId,
             checklist,
-            notes: `${baseNotes}${recurringTag}`,
+            notes: baseNotes,
             requestedAt: now,
             requestedByUserId: session.sub,
           },
           select: { id: true, scheduledDate: true, status: true },
-        });
-      })
-    );
+        }),
+      ]);
+    } else {
+      if (customer.pauseServicesFrom) {
+        return NextResponse.json(
+          {
+            error:
+              "Recurring services are currently paused. Resume services from your profile before creating a recurring request.",
+          },
+          { status: 409 }
+        );
+      }
+
+      const weeklyAnchors: Array<{ dayKey: string; slotTime: string; scheduledDate: Date }> = [];
+      const pickedWeekdays = new Set<number>();
+
+      for (
+        let dayIndex = startIndex;
+        dayIndex < dayKeys.length && weeklyAnchors.length < visitsPerWeek;
+        dayIndex += 1
+      ) {
+        const dayKey = dayKeys[dayIndex];
+        const dayDate = parseDateOnly(dayKey);
+        if (!dayDate) {
+          continue;
+        }
+        const weekDay = dayDate.getUTCDay();
+        if (pickedWeekdays.has(weekDay)) {
+          continue;
+        }
+
+        const slotTime = reserveSlot(slotsByDay, dayKey, normalizedPreferredTime);
+        if (!slotTime) {
+          continue;
+        }
+
+        const scheduledDate = combineDateAndTime(dayKey, slotTime);
+        if (Number.isNaN(scheduledDate.getTime())) {
+          continue;
+        }
+
+        weeklyAnchors.push({ dayKey, slotTime, scheduledDate });
+        pickedWeekdays.add(weekDay);
+      }
+
+      if (weeklyAnchors.length < visitsPerWeek) {
+        return NextResponse.json(
+          {
+            error:
+              "Not enough availability to lock the requested recurring frequency. Try another start date or time.",
+          },
+          { status: 409 }
+        );
+      }
+
+      const now = new Date();
+      const endOfToday = endOfBusinessDay(now) ?? now;
+      const planNameBase = reason.trim().slice(0, 48) || "Recurring pool service";
+
+      const created = await prisma.$transaction(async (tx) => {
+        const planIds: string[] = [];
+        const jobs: Array<{ id: string; scheduledDate: Date; status: string }> = [];
+
+        for (let index = 0; index < weeklyAnchors.length; index += 1) {
+          const anchor = weeklyAnchors[index];
+          const planName =
+            weeklyAnchors.length === 1
+              ? `Recurring - ${planNameBase}`
+              : `Recurring ${index + 1} - ${planNameBase}`;
+          const sortOrder =
+            ((getBusinessTimeParts(anchor.scheduledDate)?.hour ?? 0) * 60) +
+            (getBusinessTimeParts(anchor.scheduledDate)?.minute ?? 0);
+
+          const plan = await tx.servicePlan.create({
+            data: {
+              customerId: customer.id,
+              propertyId,
+              name: planName,
+              frequency: "WEEKLY",
+              serviceType: "WEEKLY_CLEANING",
+              priority: "NORMAL",
+              serviceTierId: defaultTierId,
+              nextRunAt: anchor.scheduledDate,
+              preferredTime: anchor.slotTime,
+              checklist,
+              notes: `${baseNotes}\n[Auto recurring plan from customer request]`,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              customerId: true,
+              propertyId: true,
+              serviceType: true,
+              priority: true,
+              serviceTierId: true,
+              estimatedDurationMinutes: true,
+              nextRunAt: true,
+            },
+          });
+
+          const firstJob = await tx.job.create({
+            data: {
+              customerId: plan.customerId,
+              propertyId: plan.propertyId,
+              scheduledDate: plan.nextRunAt,
+              sortOrder,
+              status: plan.nextRunAt > endOfToday ? "SCHEDULED" : "PENDING",
+              type: "ROUTINE",
+              priority: plan.priority,
+              serviceTierId: plan.serviceTierId,
+              serviceType: plan.serviceType,
+              estimatedDurationMinutes: plan.estimatedDurationMinutes,
+              checklist,
+              notes: `${baseNotes}\n[Recurring schedule]`,
+              planId: plan.id,
+              requestedAt: now,
+              requestedByUserId: session.sub,
+            },
+            select: { id: true, scheduledDate: true, status: true },
+          });
+
+          await tx.servicePlan.update({
+            where: { id: plan.id },
+            data: { nextRunAt: addPlanFrequency(plan.nextRunAt, "WEEKLY") },
+          });
+
+          planIds.push(plan.id);
+          jobs.push(firstJob);
+        }
+
+        return { planIds, jobs };
+      });
+
+      createdPlanIds = created.planIds;
+      createdJobs = created.jobs;
+    }
   }
 
-  await createNotification({
-    customerId: customer.id,
-    recipientRole: "CUSTOMER",
-    eventType: "SERVICE_SCHEDULED",
-    severity: "INFO",
-    actorUserId: session.sub,
-    payload: {
-      jobIds: createdJobs.map((job) => job.id),
-      count: createdJobs.length,
-      mode,
-      reviewRequired: isUrgentRequest,
-      partial: partialAutoSchedule,
-      scheduledDates: createdJobs.map((job) => job.scheduledDate.toISOString()),
-    },
-  });
+  if (createdJobs.length > 0) {
+    for (const job of createdJobs) {
+      await createNotification({
+        customerId: customer.id,
+        recipientRole: "CUSTOMER",
+        eventType: "SERVICE_SCHEDULED",
+        severity: "INFO",
+        actorUserId: session.sub,
+        payload: {
+          jobId: job.id,
+          mode,
+          recurringPlanIds: createdPlanIds,
+          reviewRequired: isUrgentRequest,
+          partial: partialAutoSchedule,
+        },
+      });
+    }
+  }
 
   await createNotification({
     customerId: customer.id,
@@ -327,13 +447,13 @@ export async function POST(request: Request) {
     actorUserId: session.sub,
     payload: {
       jobIds: createdJobs.map((job) => job.id),
+      planIds: createdPlanIds,
       count: createdJobs.length,
       requestedAt: new Date().toISOString(),
       preferredDate: preferredDate ?? null,
       preferredTime: normalizedPreferredTime ?? null,
       reason,
       mode,
-      weeks: mode === "RECURRING" ? weeks : 1,
       visitsPerWeek: mode === "RECURRING" ? visitsPerWeek : 1,
       reviewRequired: isUrgentRequest,
       partial: partialAutoSchedule,
@@ -343,17 +463,19 @@ export async function POST(request: Request) {
   await logAuditEvent({
     userId: session.sub,
     action: "CUSTOMER_REQUEST_CREATED",
-    entity: "Job",
+    entity: mode === "RECURRING" ? "ServicePlan" : "Job",
     metadata: {
       customerId: customer.id,
       propertyId,
       jobIds: createdJobs.map((job) => job.id),
+      planIds: createdPlanIds,
       mode,
       reviewRequired: isUrgentRequest,
       partial: partialAutoSchedule,
       reason,
       preferredDate: preferredDate ?? null,
       preferredTime: normalizedPreferredTime ?? null,
+      visitsPerWeek: mode === "RECURRING" ? visitsPerWeek : 1,
     },
   });
 
@@ -361,7 +483,10 @@ export async function POST(request: Request) {
     ok: true,
     reviewRequired: isUrgentRequest,
     partial: partialAutoSchedule,
+    mode,
     createdCount: createdJobs.length,
+    createdPlanCount: createdPlanIds.length,
     jobIds: createdJobs.map((job) => job.id),
+    planIds: createdPlanIds,
   });
 }

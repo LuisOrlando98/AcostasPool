@@ -28,6 +28,7 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizePropertyAddress } from "@/lib/routing/address";
 import {
+  startOfBusinessDay,
   endOfBusinessDay,
   formatInBusinessTimeZone,
   getBusinessTimeParts,
@@ -99,6 +100,7 @@ async function updateCustomer(formData: FormData) {
   ).trim();
   const codigoPostal = String(formData.get("codigoPostal") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
+  const nextAccountStatus = estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
   const telefono = normalizeUsPhone(telefonoRaw);
   const telefonoSecundario = telefonoSecundarioRaw
@@ -120,7 +122,7 @@ async function updateCustomer(formData: FormData) {
 
   const existingCustomer = await prisma.customer.findUnique({
     where: { id: customerId },
-    select: { userId: true },
+    select: { userId: true, estadoCuenta: true },
   });
   if (!existingCustomer) {
     return;
@@ -146,10 +148,16 @@ async function updateCustomer(formData: FormData) {
       email,
       telefono,
       telefonoSecundario,
-      estadoCuenta: estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+      estadoCuenta: nextAccountStatus,
       idiomaPreferencia: idiomaPreferencia === "EN" ? "EN" : "ES",
       tipoCliente: tipoCliente === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL",
       allowWeekendBooking,
+      pauseServicesFrom:
+        nextAccountStatus === "INACTIVE"
+          ? startOfBusinessDay(new Date()) ?? new Date()
+          : existingCustomer.estadoCuenta === "INACTIVE"
+            ? null
+            : undefined,
       direccionLinea1: direccionLinea1 || null,
       direccionLinea2: direccionLinea2 || null,
       ciudad: ciudad || null,
@@ -167,9 +175,27 @@ async function updateCustomer(formData: FormData) {
         email,
         fullName,
         locale: customer.idiomaPreferencia,
-        isActive: customer.estadoCuenta === "ACTIVE",
+        isActive: nextAccountStatus === "ACTIVE",
       },
     });
+  }
+
+  if (nextAccountStatus === "INACTIVE") {
+    const pauseFrom = startOfBusinessDay(new Date()) ?? new Date();
+    await prisma.$transaction([
+      prisma.servicePlan.updateMany({
+        where: { customerId, isActive: true },
+        data: { isActive: false },
+      }),
+      prisma.job.deleteMany({
+        where: {
+          customerId,
+          planId: { not: null },
+          status: { in: ["SCHEDULED", "PENDING"] },
+          scheduledDate: { gte: pauseFrom },
+        },
+      }),
+    ]);
   }
 
   revalidatePath(`/admin/customers/${customerId}`);

@@ -28,6 +28,12 @@ type AvailabilityResponse = {
   availability: AvailabilityDay[];
 };
 
+type PropertiesResponse = {
+  properties: PropertyOption[];
+  customerType?: "RESIDENTIAL" | "COMMERCIAL";
+  pauseServicesFrom?: string | null;
+};
+
 function parseDateKey(value: string) {
   return parseBusinessDateInput(value);
 }
@@ -77,8 +83,11 @@ export default function ClientRequestPage() {
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [mode, setMode] = useState<"SINGLE" | "RECURRING">("SINGLE");
-  const [weeks, setWeeks] = useState(7);
-  const [visitsPerWeek, setVisitsPerWeek] = useState<1 | 2>(1);
+  const [visitsPerWeek, setVisitsPerWeek] = useState(1);
+  const [customerType, setCustomerType] = useState<"RESIDENTIAL" | "COMMERCIAL">(
+    "RESIDENTIAL"
+  );
+  const [pauseServicesFrom, setPauseServicesFrom] = useState<string | null>(null);
   const [urgentOverride, setUrgentOverride] = useState(false);
   const [availability, setAvailability] = useState<AvailabilityDay[]>([]);
   const [leadDays, setLeadDays] = useState(2);
@@ -118,12 +127,30 @@ export default function ClientRequestPage() {
 
       const propertiesData = (await propertiesRes
         .json()
-        .catch(() => ({ properties: [] }))) as { properties: PropertyOption[] };
+        .catch(
+          () =>
+            ({
+              properties: [],
+              customerType: "RESIDENTIAL",
+              pauseServicesFrom: null,
+            }) as PropertiesResponse
+        )) as PropertiesResponse;
 
       if (!cancelled) {
-        setProperties(propertiesData.properties);
-        if (propertiesData.properties.length > 0) {
-          setPropertyId(propertiesData.properties[0].id);
+        const nextProperties = Array.isArray(propertiesData.properties)
+          ? propertiesData.properties
+          : [];
+        setProperties(nextProperties);
+        setCustomerType(
+          propertiesData.customerType === "COMMERCIAL" ? "COMMERCIAL" : "RESIDENTIAL"
+        );
+        setPauseServicesFrom(
+          typeof propertiesData.pauseServicesFrom === "string"
+            ? propertiesData.pauseServicesFrom
+            : null
+        );
+        if (nextProperties.length > 0) {
+          setPropertyId(nextProperties[0].id);
         }
       }
 
@@ -262,6 +289,14 @@ export default function ClientRequestPage() {
   const resolvedReason = serviceOptions.includes(reason)
     ? reason
     : serviceOptions[0];
+  const maxRecurringVisits = customerType === "COMMERCIAL" ? 5 : 2;
+  const resolvedVisitsPerWeek =
+    visitsPerWeek > maxRecurringVisits ? maxRecurringVisits : visitsPerWeek;
+  const recurringVisitOptions = Array.from(
+    { length: maxRecurringVisits },
+    (_, index) => index + 1
+  );
+  const recurringPaused = Boolean(pauseServicesFrom);
 
   const resolvedPreferredTime =
     !urgentOverride && selectedDay
@@ -321,6 +356,12 @@ export default function ClientRequestPage() {
       return;
     }
 
+    if (mode === "RECURRING" && recurringPaused) {
+      setMessageTone("error");
+      setMessage(t("client.request.errors.recurringPaused"));
+      return;
+    }
+
     setLoading(true);
     setMessage(null);
 
@@ -334,8 +375,7 @@ export default function ClientRequestPage() {
         preferredTime: resolvedPreferredTime,
         description,
         mode,
-        weeks,
-        visitsPerWeek,
+        visitsPerWeek: resolvedVisitsPerWeek,
         urgentOverride,
       }),
     });
@@ -345,6 +385,8 @@ export default function ClientRequestPage() {
       reviewRequired?: boolean;
       partial?: boolean;
       createdCount?: number;
+      createdPlanCount?: number;
+      mode?: "SINGLE" | "RECURRING";
     };
 
     if (!res.ok) {
@@ -356,6 +398,11 @@ export default function ClientRequestPage() {
 
     const successCopy = data.reviewRequired
       ? t("client.request.successReview")
+      : mode === "RECURRING"
+        ? t("client.request.successRecurringConfigured", {
+            visits: String(resolvedVisitsPerWeek),
+            plans: String(data.createdPlanCount ?? 0),
+          })
       : data.partial
         ? t("client.request.successPartial", {
             count: String(data.createdCount ?? 0),
@@ -439,35 +486,38 @@ export default function ClientRequestPage() {
               {t("client.request.fields.visitsPerWeek")}
             </label>
             <select
-              value={visitsPerWeek}
-              onChange={(event) => setVisitsPerWeek(event.target.value === "2" ? 2 : 1)}
+              value={resolvedVisitsPerWeek}
+              onChange={(event) => {
+                const nextValue = Number(event.target.value);
+                setVisitsPerWeek(Number.isFinite(nextValue) ? nextValue : 1);
+              }}
               disabled={mode !== "RECURRING"}
               className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700 disabled:opacity-60"
             >
-              <option value={1}>{t("client.request.options.oncePerWeek")}</option>
-              <option value={2}>{t("client.request.options.twicePerWeek")}</option>
+              {recurringVisitOptions.map((value) => (
+                <option key={value} value={value}>
+                  {value === 1
+                    ? t("client.request.options.oncePerWeek")
+                    : value === 2
+                      ? t("client.request.options.twicePerWeek")
+                      : t("client.request.options.visitsPerWeekCount", {
+                          count: String(value),
+                        })}
+                </option>
+              ))}
             </select>
           </div>
 
           {mode === "RECURRING" ? (
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("client.request.fields.weeks")}
-              </label>
-              <select
-                value={weeks}
-                onChange={(event) => {
-                  const next = Number(event.target.value);
-                  setWeeks(Number.isFinite(next) ? next : 7);
-                }}
-                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
-              >
-                {Array.from({ length: 12 }, (_, index) => index + 1).map((value) => (
-                  <option key={value} value={value}>
-                    {t("client.request.options.weeksCount", { count: String(value) })}
-                  </option>
-                ))}
-              </select>
+            <div className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+              {customerType === "COMMERCIAL"
+                ? t("client.request.hints.recurringCommercial")
+                : t("client.request.hints.recurringResidential")}
+              {recurringPaused ? (
+                <p className="mt-1 font-semibold text-amber-700">
+                  {t("client.request.hints.recurringPaused")}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -724,7 +774,7 @@ export default function ClientRequestPage() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || (mode === "RECURRING" && recurringPaused)}
               className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-70"
             >
               {loading ? t("client.request.loading") : t("client.request.submit")}

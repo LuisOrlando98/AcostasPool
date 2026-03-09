@@ -7,6 +7,7 @@ import { AUTH_COOKIE_MAX_AGE, AUTH_COOKIE_NAME } from "@/lib/auth/config";
 import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { normalizeEmail } from "@/lib/auth/email";
+import { isDeveloperEmail } from "@/lib/auth/developer";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -77,18 +78,19 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+    const resolvedRole = isDeveloperEmail(user.email) ? "ADMIN" : user.role;
 
     const token = await signSessionToken({
       sub: user.id,
       email: user.email,
       name: user.fullName,
-      role: user.role,
+      role: resolvedRole,
       avatarUrl: user.avatarUrl,
     });
 
     const response = NextResponse.json({
       ok: true,
-      role: user.role,
+      role: resolvedRole,
       name: user.fullName,
     });
     response.headers.set("Cache-Control", "no-store");

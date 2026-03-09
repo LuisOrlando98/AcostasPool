@@ -151,6 +151,7 @@ model Customer {
   estadoCuenta  AccountStatus @default(ACTIVE)
   tipoCliente   CustomerType @default(RESIDENTIAL)
   allowWeekendBooking Boolean @default(false)
+  pauseServicesFrom DateTime?
   direccionLinea1 String?
   direccionLinea2 String?
   ciudad        String?

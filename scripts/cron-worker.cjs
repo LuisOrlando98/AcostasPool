@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const cron = require("node-cron");
 const nodemailer = require("nodemailer");
 const { DateTime } = require("luxon");
@@ -7,6 +8,7 @@ const prisma = new PrismaClient();
 
 const TZ = "America/New_York";
 const CUSTOMER_EVENTS = ["SERVICE_SCHEDULED", "SERVICE_RESCHEDULED", "JOB_COMPLETED"];
+const RECURRING_LOOKAHEAD_DAYS = 28;
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 const TEMPLATE_CACHE_MS = 60 * 1000;
 const SPANISH_HINT_PATTERN =
@@ -486,6 +488,30 @@ const formatDateTime = (date, locale = "EN") =>
     .setLocale(locale === "ES" ? "es" : "en")
     .toFormat(locale === "ES" ? "dd LLL yyyy hh:mm a" : "MMM dd, yyyy hh:mm a");
 
+const startOfBusinessDay = (value) =>
+  DateTime.fromJSDate(value, { zone: "utc" }).setZone(TZ).startOf("day").toUTC().toJSDate();
+
+const endOfBusinessDay = (value) =>
+  DateTime.fromJSDate(value, { zone: "utc" }).setZone(TZ).endOf("day").toUTC().toJSDate();
+
+const addPlanFrequency = (date, frequency) => {
+  const base = DateTime.fromJSDate(date, { zone: "utc" }).setZone(TZ);
+  switch (frequency) {
+    case "BIWEEKLY":
+      return base.plus({ weeks: 2 }).toUTC().toJSDate();
+    case "MONTHLY":
+      return base.plus({ months: 1 }).toUTC().toJSDate();
+    case "WEEKLY":
+    default:
+      return base.plus({ weeks: 1 }).toUTC().toJSDate();
+  }
+};
+
+const getSortOrder = (date) => {
+  const local = DateTime.fromJSDate(date, { zone: "utc" }).setZone(TZ);
+  return local.hour * 60 + local.minute;
+};
+
 const getCustomerName = (customer, locale = "ES") => {
   if (!customer) {
     return locale === "EN" ? "Customer" : "Cliente";
@@ -863,6 +889,143 @@ const sendChangeDigest = async (window) => {
   }
 };
 
+const processRecurringPlans = async () => {
+  const now = new Date();
+  const todayStart = startOfBusinessDay(now);
+  const todayEnd = endOfBusinessDay(now);
+  const horizonEnd = DateTime.fromJSDate(now, { zone: "utc" })
+    .setZone(TZ)
+    .plus({ days: RECURRING_LOOKAHEAD_DAYS })
+    .endOf("day")
+    .toUTC()
+    .toJSDate();
+
+  const serviceTiers = await prisma.serviceTier.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+    select: { id: true, checklist: true },
+  });
+  const serviceTierChecklist = new Map(
+    serviceTiers.map((tier) => [tier.id, tier.checklist])
+  );
+  const fallbackTierId = serviceTiers[0]?.id ?? null;
+
+  const plans = await prisma.servicePlan.findMany({
+    where: {
+      isActive: true,
+      customer: { estadoCuenta: "ACTIVE" },
+    },
+    select: {
+      id: true,
+      customerId: true,
+      propertyId: true,
+      technicianId: true,
+      serviceTierId: true,
+      serviceType: true,
+      priority: true,
+      nextRunAt: true,
+      frequency: true,
+      estimatedDurationMinutes: true,
+      checklist: true,
+      notes: true,
+      customer: {
+        select: {
+          pauseServicesFrom: true,
+        },
+      },
+    },
+  });
+
+  for (const plan of plans) {
+    let cursor = new Date(plan.nextRunAt);
+    let hasPlanAdvance = false;
+    const pauseFrom = plan.customer?.pauseServicesFrom ?? null;
+
+    while (cursor.getTime() < todayStart.getTime()) {
+      cursor = addPlanFrequency(cursor, plan.frequency);
+      hasPlanAdvance = true;
+    }
+
+    const existingJobs = await prisma.job.findMany({
+      where: {
+        planId: plan.id,
+        scheduledDate: {
+          gte: todayStart,
+          lte: horizonEnd,
+        },
+      },
+      select: { scheduledDate: true },
+    });
+    const existingByDate = new Set(
+      existingJobs.map((entry) => entry.scheduledDate.toISOString())
+    );
+
+    while (cursor.getTime() <= horizonEnd.getTime()) {
+      if (pauseFrom && cursor.getTime() >= pauseFrom.getTime()) {
+        break;
+      }
+
+      const cursorIso = cursor.toISOString();
+      if (!existingByDate.has(cursorIso)) {
+        const tierId = plan.serviceTierId || fallbackTierId;
+        const checklist =
+          (tierId ? serviceTierChecklist.get(tierId) : null) ?? plan.checklist ?? null;
+
+        const job = await prisma.job.create({
+          data: {
+            customerId: plan.customerId,
+            propertyId: plan.propertyId,
+            technicianId: plan.technicianId,
+            serviceTierId: tierId,
+            scheduledDate: cursor,
+            sortOrder: getSortOrder(cursor),
+            status: cursor.getTime() > todayEnd.getTime() ? "SCHEDULED" : "PENDING",
+            type: "ROUTINE",
+            priority: plan.priority,
+            serviceType: plan.serviceType,
+            estimatedDurationMinutes: plan.estimatedDurationMinutes,
+            checklist,
+            notes: plan.notes
+              ? `${plan.notes}\n[Auto generated recurring job]`
+              : "[Auto generated recurring job]",
+            planId: plan.id,
+            requestedAt: now,
+          },
+          select: { id: true },
+        });
+
+        await prisma.notification.create({
+          data: {
+            customerId: plan.customerId,
+            recipientRole: "CUSTOMER",
+            channel: "EMAIL",
+            eventType: "SERVICE_SCHEDULED",
+            severity: "INFO",
+            status: "QUEUED",
+            payload: {
+              jobId: job.id,
+              planId: plan.id,
+              automated: true,
+            },
+          },
+        });
+
+        existingByDate.add(cursorIso);
+      }
+
+      cursor = addPlanFrequency(cursor, plan.frequency);
+      hasPlanAdvance = true;
+    }
+
+    if (hasPlanAdvance && cursor.getTime() !== plan.nextRunAt.getTime()) {
+      await prisma.servicePlan.update({
+        where: { id: plan.id },
+        data: { nextRunAt: cursor },
+      });
+    }
+  }
+};
+
 const start = async () => {
   console.log(`[cron-worker] starting with TZ=${TZ}`);
   const runSafely = (label, task) =>
@@ -871,6 +1034,10 @@ const start = async () => {
     );
 
   cron.schedule("*/2 * * * *", () => runSafely("customer", processCustomerNotifications), {
+    timezone: TZ,
+  });
+
+  cron.schedule("*/10 * * * *", () => runSafely("recurring-plans", processRecurringPlans), {
     timezone: TZ,
   });
 
@@ -883,6 +1050,8 @@ const start = async () => {
   cron.schedule("0 21 * * *", () => runSafely("evening-digest", () => sendChangeDigest("EVENING")), {
     timezone: TZ,
   });
+
+  await runSafely("recurring-plans-initial", processRecurringPlans);
 };
 
 start().catch((error) => {

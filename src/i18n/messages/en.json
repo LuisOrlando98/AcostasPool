@@ -2081,6 +2081,7 @@
       "options": {
         "oncePerWeek": "1 visit / week",
         "twicePerWeek": "2 visits / week",
+        "visitsPerWeekCount": "{{count}} visits / week",
         "weeksCount": "{{count}} week(s)",
         "dayCapacity": "{{date}} · {{count}} slot(s)",
         "timeCapacity": "{{time}} · {{count}} slot(s)"
@@ -2092,11 +2093,18 @@
       "errors": {
         "property": "Select a property.",
         "availability": "Select date and time.",
+        "recurringPaused": "Recurring service is paused. Resume it in your profile before creating a recurring request.",
         "submit": "Unable to submit the request."
       },
       "successCount": "Request scheduled successfully. Visits created: {{count}}.",
+      "successRecurringConfigured": "Recurring service configured: {{visits}} visit(s) per week with {{plans}} active recurring plan(s).",
       "successReview": "Urgent request sent. Our team will review and confirm as soon as possible.",
       "successPartial": "Partial schedule created due limited availability. Visits created: {{count}}.",
+      "hints": {
+        "recurringResidential": "Recurring mode stays active indefinitely. Residential accounts support up to 2 visits per week.",
+        "recurringCommercial": "Recurring mode stays active indefinitely. Commercial accounts support up to 5 visits per week.",
+        "recurringPaused": "Your recurring service is currently paused from profile settings."
+      },
       "reasons": {
         "emergency": "Emergency / Pump",
         "quickCleaning": "Quick cleaning",
@@ -2159,6 +2167,19 @@
           "sent": "Password reset instructions were sent.",
           "error": "Unable to send password reset instructions."
         }
+      },
+      "serviceControl": {
+        "title": "Service control",
+        "subtitle": "Pause or resume recurring services from your customer portal.",
+        "statusActive": "Recurring service active",
+        "statusPaused": "Recurring service paused",
+        "pausedFrom": "Paused from {{date}} onward.",
+        "pauseButton": "Pause services",
+        "resumeButton": "Resume services",
+        "pausedOk": "Services paused from {{date}} onward.",
+        "resumedOk": "Recurring services resumed.",
+        "pauseError": "Unable to pause services from the selected date.",
+        "resumeError": "Unable to resume recurring services."
       },
       "property": {
         "pool": "Pool",

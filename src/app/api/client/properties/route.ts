@@ -39,10 +39,20 @@ export async function GET() {
   });
 
   if (!customer) {
-    return NextResponse.json({ properties: [] });
+    return NextResponse.json({
+      properties: [],
+      customerType: "RESIDENTIAL",
+      accountStatus: "ACTIVE",
+      pauseServicesFrom: null,
+    });
   }
 
-  return NextResponse.json({ properties: customer.properties });
+  return NextResponse.json({
+    properties: customer.properties,
+    customerType: customer.tipoCliente,
+    accountStatus: customer.estadoCuenta,
+    pauseServicesFrom: customer.pauseServicesFrom?.toISOString() ?? null,
+  });
 }
 
 export async function POST(request: Request) {

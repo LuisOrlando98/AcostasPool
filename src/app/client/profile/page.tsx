@@ -60,6 +60,7 @@ export default async function ClientProfilePage() {
     statusLabel,
     displayName: formatCustomerName(customer),
     email2faEnabled: Boolean(customer.user?.notificationPreferences?.[0]?.enabled),
+    pauseServicesFrom: customer.pauseServicesFrom?.toISOString() ?? null,
   };
 
   return (

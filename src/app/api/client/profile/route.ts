@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizeUsPhone } from "@/lib/phones";
 import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
+import { parseBusinessDateInput, startOfBusinessDay } from "@/lib/timezone";
 
 type Payload =
   | {
@@ -27,6 +28,11 @@ type Payload =
   | {
       kind: "security";
       email2faEnabled: boolean;
+    }
+  | {
+      kind: "serviceControl";
+      action: "PAUSE" | "RESUME";
+      pauseFrom?: string;
     };
 
 export async function PATCH(request: Request) {
@@ -145,6 +151,48 @@ export async function PATCH(request: Request) {
 
     revalidatePath("/client/profile");
     return NextResponse.json({ ok: true });
+  }
+
+  if (payload.kind === "serviceControl") {
+    if (payload.action === "PAUSE") {
+      const rawPauseFrom = String(payload.pauseFrom ?? "").trim();
+      const parsedPauseFrom = parseBusinessDateInput(rawPauseFrom);
+      if (!parsedPauseFrom) {
+        return NextResponse.json(
+          { error: "Invalid pause date" },
+          { status: 400 }
+        );
+      }
+      const pauseFrom = startOfBusinessDay(parsedPauseFrom) ?? parsedPauseFrom;
+      await prisma.$transaction([
+        prisma.customer.update({
+          where: { id: customer.id },
+          data: { pauseServicesFrom: pauseFrom },
+        }),
+        prisma.job.deleteMany({
+          where: {
+            customerId: customer.id,
+            planId: { not: null },
+            status: { in: ["SCHEDULED", "PENDING"] },
+            scheduledDate: { gte: pauseFrom },
+          },
+        }),
+      ]);
+      revalidatePath("/client/profile");
+      revalidatePath("/client");
+      return NextResponse.json({
+        ok: true,
+        pauseServicesFrom: pauseFrom.toISOString(),
+      });
+    }
+
+    await prisma.customer.update({
+      where: { id: customer.id },
+      data: { pauseServicesFrom: null },
+    });
+    revalidatePath("/client/profile");
+    revalidatePath("/client");
+    return NextResponse.json({ ok: true, pauseServicesFrom: null });
   }
 
   if (!customer.userId) {
