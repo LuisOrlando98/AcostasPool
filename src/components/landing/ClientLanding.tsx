@@ -173,8 +173,8 @@ const LANDING_COPY: Record<
   },
 };
 
-const PHONE_DISPLAY = "+1 (786) 519-5059";
-const PHONE_E164 = "+17865195059";
+const PHONE_DISPLAY = "+1 (786) 793-0081";
+const PHONE_E164 = "+17867930081";
 
 const HERO_IMAGE =
   "/landing/media/curated/images/pool-premium-residential-deck.jpg";
@@ -283,15 +283,16 @@ const SERVICE_PILLARS_COPY: Record<
       ],
     },
     {
-      title: "Equipment Repair",
-      subtitle: "Diagnosis and repair support for pumps, filters, heaters, and circulation systems.",
-      image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
+      title: "Pool Repair",
+      subtitle:
+        "Repair-focused service for pool body, finish, and circulation lines to restore safe, clean operation.",
+      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
       icon: "repair",
       points: [
-        "Leak and pressure diagnostics",
-        "Pump and motor troubleshooting",
-        "Filter and circulation repairs",
-        "Heater and control system review",
+        "Shell and crack condition assessment",
+        "Tile, grout, and coping repair planning",
+        "Leak isolation in plumbing and structure",
+        "Skimmer, return, and drain line corrections",
       ],
     },
   ],
@@ -335,15 +336,16 @@ const SERVICE_PILLARS_COPY: Record<
       ],
     },
     {
-      title: "Reparacion de equipos",
-      subtitle: "Diagnostico y soporte de reparacion para bombas, filtros, calentadores y circulacion.",
-      image: "/landing/media/curated/images/pool-equipment-filtration-room.jpg",
+      title: "Reparacion de piscina",
+      subtitle:
+        "Servicio enfocado en reparacion de estructura, acabados y lineas de circulacion para recuperar operacion segura.",
+      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
       icon: "repair",
       points: [
-        "Diagnostico de fugas y presion",
-        "Revision de bomba y motor",
-        "Reparacion de filtro y circulacion",
-        "Revision de calentador y controles",
+        "Evaluacion de casco y grietas",
+        "Plan de reparacion de azulejo, grout y coping",
+        "Aislamiento de fugas en tuberias y estructura",
+        "Correcciones en skimmer, retornos y drenajes",
       ],
     },
   ],
@@ -447,9 +449,9 @@ const REVIEWS_COPY: Record<
       author: "A. Patel",
       zone: "Doral",
       rating: 5,
-      plan: "Equipment Repair",
+      plan: "Pool Repair",
       quote:
-        "Excellent detail level. Our pool looks polished and equipment checks are always on point.",
+        "Excellent detail level. Our pool looks polished and they identified repair needs early.",
     },
   ],
   es: [
@@ -473,9 +475,9 @@ const REVIEWS_COPY: Record<
       author: "A. Patel",
       zone: "Doral",
       rating: 5,
-      plan: "Reparacion de equipos",
+      plan: "Reparacion de piscina",
       quote:
-        "Excelente nivel de detalle. Nuestra piscina se ve impecable y siempre revisan equipos a fondo.",
+        "Excelente nivel de detalle. Nuestra piscina se ve impecable y detectaron reparaciones a tiempo.",
     },
   ],
 };

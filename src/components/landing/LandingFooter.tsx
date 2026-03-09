@@ -26,8 +26,8 @@ type SocialItem = {
   href: string;
 };
 
-const PHONE_DISPLAY = "+1 (786) 519-5059";
-const PHONE_E164 = "+17865195059";
+const PHONE_DISPLAY = "+1 (786) 793-0081";
+const PHONE_E164 = "+17867930081";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 const FOOTER_COPY: Record<
@@ -77,7 +77,7 @@ const FOOTER_COPY: Record<
     gallery: "Gallery",
     weeklyCare: "One-Month Pool Cleaning",
     repairRecovery: "Regular Maintenance",
-    premiumStandard: "Equipment Repair",
+    premiumStandard: "Pool Repair",
     contactPage: "Contact page",
     legal: "Legal",
     legalCenter: "Legal center",
@@ -109,7 +109,7 @@ const FOOTER_COPY: Record<
     gallery: "Galeria",
     weeklyCare: "Limpieza de piscina por un mes",
     repairRecovery: "Mantenimiento regular",
-    premiumStandard: "Reparacion de equipos",
+    premiumStandard: "Reparacion de piscina",
     contactPage: "Pagina de contacto",
     legal: "Legal",
     legalCenter: "Centro legal",

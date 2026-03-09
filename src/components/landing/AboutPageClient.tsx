@@ -11,7 +11,7 @@ type SocialLinks = LandingSocialLinks;
 type PrincipleIconName = "shield" | "camera" | "route";
 type FlowIconName = "request" | "plan" | "deliver";
 
-const PHONE_E164 = "+17865195059";
+const PHONE_E164 = "+17867930081";
 
 const ABOUT_COPY: Record<
   LandingLocale,

@@ -47,12 +47,12 @@ const FORM_COPY: Record<
       frequency: "Frequency",
       notes: "Notes",
     },
-    notesPlaceholder: "Tell us your pool condition, goals, or equipment concerns.",
+    notesPlaceholder: "Tell us your pool condition, goals, or repair concerns.",
     serviceOptions: [
       { value: "One-Month Pool Cleaning", label: "One-Month Pool Cleaning" },
       { value: "Regular Maintenance", label: "Regular Maintenance" },
       { value: "Pool Cleaning + Leak Detection", label: "Pool Cleaning + Leak Detection" },
-      { value: "Equipment Repair", label: "Equipment Repair" },
+      { value: "Pool Repair", label: "Pool Repair" },
     ],
     frequencyOptions: [
       { value: "Weekly", label: "Weekly" },
@@ -81,7 +81,7 @@ const FORM_COPY: Record<
       frequency: "Frecuencia",
       notes: "Notas",
     },
-    notesPlaceholder: "Comparte condicion de la piscina, objetivos o preocupaciones de equipos.",
+    notesPlaceholder: "Comparte condicion de la piscina, objetivos o necesidades de reparacion.",
     serviceOptions: [
       { value: "One-Month Pool Cleaning", label: "Limpieza de piscina por un mes" },
       { value: "Regular Maintenance", label: "Mantenimiento regular" },
@@ -89,7 +89,7 @@ const FORM_COPY: Record<
         value: "Pool Cleaning + Leak Detection",
         label: "Limpieza de piscina y deteccion de fugas",
       },
-      { value: "Equipment Repair", label: "Reparacion de equipos" },
+      { value: "Pool Repair", label: "Reparacion de piscina" },
     ],
     frequencyOptions: [
       { value: "Weekly", label: "Semanal" },

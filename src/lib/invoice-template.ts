@@ -162,7 +162,7 @@ const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
   companyName: "ACOSTASPOOL",
   companyPhone: "+1 (305) 555-0199",
-  companyEmail: "support@acostaspool.com",
+  companyEmail: "contact@acostaspool.com",
   companyWebsite: "www.acostaspool.com",
   companyAddressLine1: "Miami, Florida",
   companyAddressLine2: "United States",

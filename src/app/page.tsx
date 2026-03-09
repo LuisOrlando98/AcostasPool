@@ -26,14 +26,14 @@ const localBusinessSchema = {
   "@type": "LocalBusiness",
   name: "AcostasPool",
   areaServed: ["Miami", "Kendall", "Doral", "Homestead", "Cutler Bay"],
-  telephone: "+1-786-519-5059",
+  telephone: "+1-786-793-0081",
   priceRange: "$$",
   description:
     "Professional pool maintenance, repairs, and water chemistry services.",
   serviceType: [
     "Weekly pool maintenance",
     "Water chemistry management",
-    "Pool equipment repairs",
+    "Pool repairs",
     "One-time pool cleanups",
   ],
 };

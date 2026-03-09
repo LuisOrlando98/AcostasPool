@@ -10,8 +10,8 @@ import CoverageMapCard from "@/components/landing/CoverageMapCard";
 
 type SocialLinks = LandingSocialLinks;
 
-const PHONE_DISPLAY = "+1 (786) 519-5059";
-const PHONE_E164 = "+17865195059";
+const PHONE_DISPLAY = "+1 (786) 793-0081";
+const PHONE_E164 = "+17867930081";
 const SUPPORT_EMAIL = "contact@acostaspool.com";
 
 const CONTACT_COPY: Record<
