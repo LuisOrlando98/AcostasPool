@@ -44,8 +44,10 @@ function getDecisionLabel(decision: "ACCEPT" | "DECLINE") {
     return {
       shortEs: "Aprobado",
       shortEn: "Approved",
-      detailEs: "Acepta proceder con la integracion Stripe propuesta.",
-      detailEn: "Approved to proceed with the proposed Stripe integration.",
+      detailEs:
+        "Acepta proceder con la integracion Stripe propuesta y autoriza a Wyxloop Corp a implementarla.",
+      detailEn:
+        "Approved to proceed with the proposed Stripe integration and authorizes Wyxloop Corp to implement it.",
     };
   }
   return {

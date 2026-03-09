@@ -337,7 +337,8 @@ export default function PublicProposalResponseForm({ token }: Props) {
           />
           <span>
             Estoy de acuerdo con los terminos de esta mejora e integracion
-            propuesta. (requerido para aprobacion)
+            propuesta, y autorizo a Wyxloop Corp a implementarla. (requerido
+            para aprobacion)
           </span>
         </label>
 
