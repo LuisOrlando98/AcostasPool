@@ -203,30 +203,6 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
-    label: t("nav.admin.serviceAgreement"),
-    href: "/admin/agreement-service",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className={iconClassName}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15 3.5v4h4M9 12h6M9 16h6"
-        />
-      </svg>
-    ),
-  },
-  {
     label: t("nav.admin.settings"),
     href: "/admin/settings",
     icon: (
@@ -641,6 +617,17 @@ export default function AppShell({
               <span className="sidebar-footer-version">AcostasPool v1.0</span>
               {canAccessHelpCenter ? (
                 <div className="flex flex-col items-end gap-1">
+                  <Link
+                    href="/admin/help"
+                    className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                  >
+                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
+                      ?
+                    </span>
+                    <span className="sidebar-footer-link-label">
+                      {t("nav.admin.helpCenter")}
+                    </span>
+                  </Link>
                   {canAccessServiceAgreement ? (
                     <Link
                       href="/admin/agreement-service"
@@ -669,17 +656,6 @@ export default function AppShell({
                       </span>
                     </Link>
                   ) : null}
-                  <Link
-                    href="/admin/help"
-                    className="sidebar-footer-link inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
-                  >
-                    <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
-                      ?
-                    </span>
-                    <span className="sidebar-footer-link-label">
-                      {t("nav.admin.helpCenter")}
-                    </span>
-                  </Link>
                 </div>
               ) : null}
             </div>
@@ -914,6 +890,16 @@ export default function AppShell({
                   <span>AcostasPool v1.0</span>
                   {canAccessHelpCenter ? (
                     <div className="flex flex-col items-end gap-1">
+                      <Link
+                        href="/admin/help"
+                        onClick={() => setMobileNavOpen(false)}
+                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
+                      >
+                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
+                          ?
+                        </span>
+                        <span>{t("nav.admin.helpCenter")}</span>
+                      </Link>
                       {canAccessServiceAgreement ? (
                         <Link
                           href="/admin/agreement-service"
@@ -941,16 +927,6 @@ export default function AppShell({
                           <span>{t("nav.admin.serviceAgreement")}</span>
                         </Link>
                       ) : null}
-                      <Link
-                        href="/admin/help"
-                        onClick={() => setMobileNavOpen(false)}
-                        className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-sky-100 transition hover:text-white"
-                      >
-                        <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-current text-[9px] leading-none">
-                          ?
-                        </span>
-                        <span>{t("nav.admin.helpCenter")}</span>
-                      </Link>
                     </div>
                   ) : null}
                 </div>
