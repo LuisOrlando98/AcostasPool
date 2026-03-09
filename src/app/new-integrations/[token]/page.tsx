@@ -34,49 +34,88 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const implementationItems = [
-  "Integracion completa de Stripe en la aplicacion (configuracion segura y entorno de produccion).",
-  "Apartado nuevo de Billing para cliente: metodo de pago, estado de membresia, historial de cobros y facturas.",
-  "Apartado nuevo de Accounting para administracion: suscripciones, transacciones, facturas, estados y control operativo.",
-  "Cobro automatico recurrente de membresia mensual a clientes finales (segun plan que ustedes definan).",
-  "Registro automatico de cada pago confirmado el mismo dia en el sistema.",
-  "Generacion y envio automatico de invoice al cliente final usando el mismo template actual de factura de AcostasPool.",
-  "Historial completo de transacciones e invoices para consulta y auditoria.",
-  "Manejo de intentos fallidos de cobro con estados claros (ejemplo: past_due) y acciones de recuperacion.",
-  "Notificaciones internas y al cliente para eventos importantes de facturacion.",
-  "Panel listo para crecer con reportes financieros y conciliacion.",
+  "Integracion completa de Stripe en la aplicacion, lista para operar en produccion.",
+  "Seccion Billing para cliente: metodo de pago, estado de membresia, historial de cobros e invoices.",
+  "Seccion Accounting para administracion: suscripciones, transacciones, facturas y control operativo.",
+  "Cobro automatico de membresias mensuales a clientes finales segun el plan definido por AcostasPool.",
+  "Registro automatico de pagos confirmados el mismo dia dentro del sistema.",
+  "Generacion y envio de invoice usando el mismo template actual de factura de AcostasPool.",
+  "Historial completo para consulta, auditoria y seguimiento por cliente.",
+  "Manejo de cobros fallidos con reintentos y estados claros (ejemplo: past_due).",
+  "Base preparada para reportes financieros y conciliacion futura.",
 ];
 
 const accountingSections = [
   {
     title: "Billing (portal del cliente)",
     points: [
-      "Plan de membresia activo y monto.",
-      "Proxima fecha de cobro.",
-      "Metodo de pago guardado.",
-      "Historial de transacciones.",
+      "Plan de membresia activo y monto mensual.",
+      "Proxima fecha de cobro automatica.",
+      "Metodo de pago guardado y actualizable.",
+      "Historial de transacciones por fecha.",
       "Historial de invoices en PDF.",
-      "Estado de cuenta (activo, pendiente, etc.).",
+      "Estado de cuenta (activo, pendiente, vencido).",
     ],
   },
   {
     title: "Accounting (panel administrativo)",
     points: [
-      "Resumen de suscripciones activas y pendientes.",
-      "Vista de cobros exitosos y fallidos.",
-      "Listado de invoices emitidos y pagados.",
+      "Resumen de suscripciones activas, pendientes y canceladas.",
+      "Vista de cobros exitosos, fallidos y en recuperacion.",
+      "Listado de invoices emitidos, enviados y pagados.",
       "Seguimiento de cuentas con pagos pendientes.",
       "Trazabilidad completa por cliente.",
-      "Base para reportes y exportaciones contables.",
+      "Base lista para reportes y exportaciones contables.",
     ],
   },
 ];
 
+const flowExamples = [
+  {
+    title: "Ejemplo 1: alta y primer cobro",
+    description: "Un cliente se registra hoy para su membresia mensual.",
+    steps: [
+      "El cliente autoriza su tarjeta en Billing.",
+      "Stripe procesa el primer cobro y confirma el pago.",
+      "La membresia queda activa ese mismo dia.",
+      "Se registra la transaccion y se envia invoice automatico con el template actual.",
+    ],
+  },
+  {
+    title: "Ejemplo 2: renovacion mensual automatica",
+    description: "Llega la fecha de renovacion del plan sin intervencion manual.",
+    steps: [
+      "Stripe ejecuta el cobro en la fecha configurada.",
+      "Si el pago entra, el estado sigue activo automaticamente.",
+      "El sistema guarda la transaccion en historial.",
+      "El cliente recibe su invoice del nuevo periodo.",
+    ],
+  },
+  {
+    title: "Ejemplo 3: pago fallido y recuperacion",
+    description: "La tarjeta falla por fondos o vencimiento.",
+    steps: [
+      "Stripe marca el cobro como fallido y notifica el evento.",
+      "La cuenta pasa a estado pendiente/past_due.",
+      "Se ejecutan reintentos segun la configuracion definida.",
+      "Cuando el cliente actualiza tarjeta y paga, todo queda regularizado y registrado.",
+    ],
+  },
+];
+
+const valuePoints = [
+  "Un solo ecosistema para cobrar, facturar y auditar.",
+  "Menos trabajo manual del equipo administrativo.",
+  "Mayor claridad para cliente final y para operacion interna.",
+];
+
 const deliveryItems = [
-  "Configuracion tecnica de Stripe para la operacion.",
+  "Configuracion de Stripe para operacion real (produccion).",
+  "Apertura y puesta en marcha de la cuenta Stripe incluida dentro del proyecto.",
   "Flujo completo de alta, cobro y renovacion de membresia.",
   "Registro automatico de pagos y facturas dentro de la aplicacion.",
   "Envio automatico de invoice con el template actual de AcostasPool.",
-  "Seccion Billing para cliente + seccion Accounting para admin.",
+  "Seccion Billing para cliente y seccion Accounting para administracion.",
   "Pruebas de flujo end-to-end antes de entrega final.",
 ];
 
@@ -92,14 +131,14 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
         <section className="overflow-hidden rounded-3xl border border-sky-200/70 bg-white shadow-[0_20px_60px_-30px_rgba(14,116,144,0.45)]">
           <div className="bg-[linear-gradient(120deg,#0c4a6e,#0e7490)] px-6 py-8 text-white sm:px-8">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-100">
-              AcostasPool · Documento Comercial
+              AcostasPool - Documento Comercial
             </p>
             <h1 className="mt-2 text-2xl font-semibold sm:text-3xl">
               Nueva Integracion Stripe para la Aplicacion
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-sky-50 sm:text-base">
-              Esta propuesta explica en lenguaje claro lo que se implementa, como funciona
-              el flujo de cobro y exactamente que obtiene tu empresa con esta integracion.
+              Esta propuesta explica, en lenguaje claro, que incluye la integracion, como
+              funciona el flujo de cobro y que obtiene tu empresa desde el primer dia.
             </p>
           </div>
 
@@ -113,8 +152,8 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
                 Pago unico (one-time payment) + impuestos aplicables.
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-700">
-                Este pago es por la integracion completa. No es una suscripcion mensual de
-                desarrollo.
+                Este pago incluye la integracion completa y tambien la apertura/configuracion
+                inicial de cuenta Stripe. No es una suscripcion mensual de desarrollo.
               </p>
             </article>
 
@@ -133,6 +172,22 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
         </section>
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">Resumen ejecutivo</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-700 sm:text-base">
+            El objetivo es centralizar cobros recurrentes, facturacion y control contable en
+            un flujo automatico y trazable. Stripe procesa el pago, la aplicacion guarda el
+            movimiento y el cliente recibe su invoice el mismo dia.
+          </p>
+          <ul className="mt-4 grid gap-3 text-sm leading-6 text-slate-700 sm:grid-cols-3 sm:text-base">
+            {valuePoints.map((point) => (
+              <li key={point} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                {point}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
             Que incluye esta integracion
           </h2>
@@ -148,16 +203,23 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-xl font-semibold text-slate-900 sm:text-2xl">
-            Como funciona el flujo de cobro
+            Ejemplos de flujo (casos reales)
           </h2>
-          <ol className="mt-4 space-y-3 text-sm leading-6 text-slate-700 sm:text-base">
-            <li>1. El cliente final registra/autoriza su metodo de pago en Billing.</li>
-            <li>2. Stripe procesa el cobro y confirma el resultado.</li>
-            <li>3. El pago se registra en la aplicacion el mismo dia automaticamente.</li>
-            <li>4. Se genera y envia invoice con el template actual de AcostasPool.</li>
-            <li>5. Todo queda guardado en historial de transacciones e invoices.</li>
-            <li>6. En renovaciones mensuales, Stripe cobra automaticamente segun el plan.</li>
-          </ol>
+          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+            {flowExamples.map((example) => (
+              <article key={example.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 className="text-base font-semibold text-slate-900">{example.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-700">{example.description}</p>
+                <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                  {example.steps.map((step, index) => (
+                    <li key={step}>
+                      {index + 1}. {step}
+                    </li>
+                  ))}
+                </ol>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
@@ -189,7 +251,8 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
                 Integracion
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                $750 USD pago unico + impuestos aplicables.
+                $750 USD pago unico + impuestos aplicables. Este monto incluye apertura y
+                configuracion inicial de cuenta Stripe.
               </p>
             </article>
             <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -203,8 +266,8 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
             </article>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-700">
-            Nota: no se contempla un cargo mensual fijo de Stripe por esta integracion.
-            Los costos recurrentes de Stripe vienen por transaccion procesada.
+            Nota: no se contempla un cargo mensual fijo de Stripe por esta configuracion.
+            El costo operativo de Stripe se descuenta por transaccion procesada.
           </p>
         </section>
 
@@ -236,4 +299,3 @@ export default async function StripeIntegrationProposalPage({ params }: PageProp
     </main>
   );
 }
-
