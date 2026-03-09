@@ -19,6 +19,18 @@ type CoverageArea = {
 
 const COVERAGE_AREAS: CoverageArea[] = [
   {
+    city: "Miami Gardens",
+    bounds: { north: 25.99, south: 25.88, west: -80.3, east: -80.18 },
+    center: { lat: 25.942, lng: -80.2456 },
+    zipCodes: ["33054", "33055", "33056"],
+  },
+  {
+    city: "Miramar",
+    bounds: { north: 26.05, south: 25.95, west: -80.38, east: -80.2 },
+    center: { lat: 25.9861, lng: -80.3036 },
+    zipCodes: ["33023", "33025", "33027", "33029"],
+  },
+  {
     city: "Miami",
     bounds: { north: 25.86, south: 25.7, west: -80.31, east: -80.11 },
     center: { lat: 25.7617, lng: -80.1918 },
@@ -71,7 +83,7 @@ const MAP_COPY: Record<
 > = {
   en: {
     title: "Service area map",
-    lead: "Select a city to center the map and view the ZIP codes we serve.",
+    lead: "Coverage reaches north to Miramar and Miami Gardens, then extends south across our service zone.",
     tabLabel: "Service cities",
     frameLabel: "Map centered on",
     iframeTitle: "South Florida service map",
@@ -81,7 +93,7 @@ const MAP_COPY: Record<
   },
   es: {
     title: "Mapa de cobertura",
-    lead: "Selecciona una ciudad para centrar el mapa y ver los codigos ZIP disponibles.",
+    lead: "La cobertura llega al norte hasta Miramar y Miami Gardens, y desde ahi atendemos todo hacia el sur.",
     tabLabel: "Ciudades de servicio",
     frameLabel: "Mapa centrado en",
     iframeTitle: "Mapa de servicio en South Florida",

@@ -41,7 +41,6 @@ type JobItem = {
     name?: string | null;
     address: string;
     poolType?: string | null;
-    waterType?: string | null;
     sanitizerType?: string | null;
     poolVolumeGallons?: number | null;
     filterType?: string | null;
@@ -91,7 +90,6 @@ type JobModalState = {
   propertyName: string;
   propertyAddress: string;
   propertyPoolType: string;
-  propertyWaterType: string;
   propertySanitizerType: string;
   propertyPoolVolume: string;
   propertyFilterType: string;
@@ -943,7 +941,6 @@ export default function RoutesCalendar({
       propertyName,
       propertyAddress: job.property.address,
       propertyPoolType: job.property.poolType ?? "",
-      propertyWaterType: job.property.waterType ?? "",
       propertySanitizerType: job.property.sanitizerType ?? "",
       propertyPoolVolume:
         job.property.poolVolumeGallons != null
@@ -3641,15 +3638,6 @@ export default function RoutesCalendar({
                       </p>
                       <p>
                         {jobModal.propertyFilterType ||
-                          t("common.labels.notAvailable")}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                        {t("admin.routes.labels.waterType")}
-                      </p>
-                      <p>
-                        {jobModal.propertyWaterType ||
                           t("common.labels.notAvailable")}
                       </p>
                     </div>

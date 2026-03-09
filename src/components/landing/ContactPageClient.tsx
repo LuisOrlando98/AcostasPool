@@ -79,7 +79,7 @@ const CONTACT_COPY: Record<
     hub: {
       title: "Reach us directly",
       lead:
-        "Choose your preferred channel or send your request using the form. We usually respond in less than 24 hours.",
+        "Choose your preferred channel or send your request using the form. We cover up to Miramar and Miami Gardens, then all areas south. We usually respond in less than 24 hours.",
       whatsAppLabel: "WhatsApp",
       whatsAppSub: "Start chat now",
       callLabel: "Call us",
@@ -125,7 +125,7 @@ const CONTACT_COPY: Record<
     hub: {
       title: "Contacto directo",
       lead:
-        "Elige tu canal preferido o envia tu solicitud con el formulario. Normalmente respondemos en menos de 24 horas.",
+        "Elige tu canal preferido o envia tu solicitud con el formulario. Cubrimos hasta Miramar y Miami Gardens, y todo hacia el sur. Normalmente respondemos en menos de 24 horas.",
       whatsAppLabel: "WhatsApp",
       whatsAppSub: "Iniciar chat",
       callLabel: "Llamanos",

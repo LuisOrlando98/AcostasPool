@@ -1,7 +1,7 @@
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
-export const TECH_DAILY_CAPACITY = 6;
-export const SLOT_INTERVAL_MINUTES = 60;
+export const TECH_DAILY_CAPACITY = 16;
+export const SLOT_INTERVAL_MINUTES = 30;
 export const SLOT_START_HOUR = 8;
 export const MIN_BOOKING_LEAD_DAYS = 2;
 export { BUSINESS_TIMEZONE };

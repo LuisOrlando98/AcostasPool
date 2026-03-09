@@ -1131,7 +1131,10 @@
             "altMaterial": "Material alternativo",
             "salt": "Sal",
             "chlorine": "Cloro",
-            "other": "Otro"
+            "other": "Otro",
+            "filterSand": "Arena",
+            "filterCartridge": "Cartucho",
+            "filterDE": "D.E."
           },
           "edit": {
             "summary": "Editar propiedad",

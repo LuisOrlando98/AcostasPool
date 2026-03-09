@@ -1131,7 +1131,10 @@
             "altMaterial": "Alternative material",
             "salt": "Salt",
             "chlorine": "Chlorine",
-            "other": "Other"
+            "other": "Other",
+            "filterSand": "Sand",
+            "filterCartridge": "Cartridge",
+            "filterDE": "D.E."
           },
           "edit": {
             "summary": "Edit property",

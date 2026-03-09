@@ -44,7 +44,6 @@ export default async function ClientPropertiesPage() {
     name: property.name ?? null,
     address: property.address,
     poolType: property.poolType ?? null,
-    waterType: property.waterType ?? null,
     sanitizerType: property.sanitizerType ?? null,
     filterType: property.filterType ?? null,
     poolVolumeGallons: property.poolVolumeGallons ?? null,

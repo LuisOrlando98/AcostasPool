@@ -41,7 +41,6 @@ async function createProperty(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const poolType = String(formData.get("poolType") ?? "").trim();
-  const waterType = String(formData.get("waterType") ?? "").trim();
   const volume = String(formData.get("poolVolumeGallons") ?? "").trim();
   const hasSpa = String(formData.get("hasSpa") ?? "no") === "yes";
   const sanitizerType = String(formData.get("sanitizerType") ?? "").trim();
@@ -60,7 +59,7 @@ async function createProperty(formData: FormData) {
       name: name || null,
       address: normalizedAddress,
       poolType: poolType || null,
-      waterType: waterType || null,
+      waterType: null,
       sanitizerType: sanitizerType || null,
       filterType: filterType || null,
       poolVolumeGallons: volume ? Number(volume) : null,
@@ -233,7 +232,6 @@ async function updateProperty(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
   const poolType = String(formData.get("poolType") ?? "").trim();
-  const waterType = String(formData.get("waterType") ?? "").trim();
   const volume = String(formData.get("poolVolumeGallons") ?? "").trim();
   const hasSpa = String(formData.get("hasSpa") ?? "no") === "yes";
   const sanitizerType = String(formData.get("sanitizerType") ?? "").trim();
@@ -252,7 +250,7 @@ async function updateProperty(formData: FormData) {
       name: name || null,
       address: normalizedAddress,
       poolType: poolType || null,
-      waterType: waterType || null,
+      waterType: null,
       sanitizerType: sanitizerType || null,
       filterType: filterType || null,
       poolVolumeGallons: volume ? Number(volume) : null,
@@ -717,7 +715,6 @@ export default async function CustomerDetailPage({
     poolType: property.poolType,
     sanitizerType: property.sanitizerType,
     poolVolumeGallons: property.poolVolumeGallons,
-    waterType: property.waterType,
     filterType: property.filterType,
     hasSpa: property.hasSpa,
     accessInfo: property.accessInfo,
@@ -1287,29 +1284,29 @@ export default async function CustomerDetailPage({
                 </select>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.waterType")}
-                </label>
-                <input
-                  name="waterType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder={t(
-                    "admin.customers.detail.properties.placeholders.waterType"
-                  )}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.filterType")}
-                </label>
-                <input
-                  name="filterType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  required
-                />
-              </div>
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t("admin.routes.labels.filterType")}
+              </label>
+              <select
+                name="filterType"
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                required
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  {t("admin.customers.detail.properties.options.select")}
+                </option>
+                <option value="Arena">
+                  {t("admin.customers.detail.properties.options.filterSand")}
+                </option>
+                <option value="Cartucho">
+                  {t("admin.customers.detail.properties.options.filterCartridge")}
+                </option>
+                <option value="D.E.">
+                  {t("admin.customers.detail.properties.options.filterDE")}
+                </option>
+              </select>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>

@@ -12,7 +12,6 @@ type PropertyRow = {
   poolType: string | null;
   sanitizerType: string | null;
   poolVolumeGallons: number | null;
-  waterType: string | null;
   filterType: string | null;
   hasSpa: boolean;
   accessInfo: string | null;
@@ -70,6 +69,11 @@ export default function AdminCustomerProperties({
     { value: "Sal", label: t("admin.customers.detail.properties.options.salt") },
     { value: "Cloro", label: t("admin.customers.detail.properties.options.chlorine") },
     { value: "Otro", label: t("admin.customers.detail.properties.options.other") },
+  ];
+  const filterOptions = [
+    { value: "Arena", label: t("admin.customers.detail.properties.options.filterSand") },
+    { value: "Cartucho", label: t("admin.customers.detail.properties.options.filterCartridge") },
+    { value: "D.E.", label: t("admin.customers.detail.properties.options.filterDE") },
   ];
 
   return (
@@ -300,7 +304,7 @@ export default function AdminCustomerProperties({
                     </div>
                   </div>
 
-                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="app-modal-field-label">
                         {t("admin.routes.labels.poolVolume")}
@@ -314,23 +318,22 @@ export default function AdminCustomerProperties({
                     </div>
                     <div>
                       <label className="app-modal-field-label">
-                        {t("admin.routes.labels.waterType")}
-                      </label>
-                      <input
-                        name="waterType"
-                        defaultValue={activeProperty.waterType ?? ""}
-                        className="app-input app-modal-input"
-                      />
-                    </div>
-                    <div>
-                      <label className="app-modal-field-label">
                         {t("admin.routes.labels.filterType")}
                       </label>
-                      <input
+                      <select
                         name="filterType"
                         defaultValue={activeProperty.filterType ?? ""}
-                        className="app-input app-modal-input"
-                      />
+                        className="app-input app-modal-input bg-white"
+                      >
+                        <option value="">
+                          {t("admin.customers.detail.properties.options.select")}
+                        </option>
+                        {filterOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 

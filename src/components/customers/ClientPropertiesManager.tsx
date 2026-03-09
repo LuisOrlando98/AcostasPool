@@ -11,7 +11,6 @@ export type ClientPropertyItem = {
   name: string | null;
   address: string;
   poolType: string | null;
-  waterType: string | null;
   sanitizerType: string | null;
   filterType: string | null;
   poolVolumeGallons: number | null;
@@ -37,7 +36,6 @@ type Draft = {
   name: string;
   address: string;
   poolType: string;
-  waterType: string;
   sanitizerType: string;
   filterType: string;
   poolVolumeGallons: string;
@@ -56,7 +54,6 @@ const emptyDraft: Draft = {
   name: "",
   address: "",
   poolType: "",
-  waterType: "",
   sanitizerType: "",
   filterType: "",
   poolVolumeGallons: "",
@@ -70,7 +67,6 @@ const toDraft = (p: ClientPropertyItem): Draft => ({
   name: p.name ?? "",
   address: p.address,
   poolType: p.poolType ?? "",
-  waterType: p.waterType ?? "",
   sanitizerType: p.sanitizerType ?? "",
   filterType: p.filterType ?? "",
   poolVolumeGallons: p.poolVolumeGallons !== null ? String(p.poolVolumeGallons) : "",
@@ -84,6 +80,11 @@ const show = (v: string | null | undefined) => (v && v.trim() ? v : "-");
 export default function ClientPropertiesManager({ initialProperties, initialJobs }: Props) {
   const router = useRouter();
   const { t, locale } = useI18n();
+  const filterTypeOptions = [
+    { value: "Arena", label: t("admin.customers.detail.properties.options.filterSand") },
+    { value: "Cartucho", label: t("admin.customers.detail.properties.options.filterCartridge") },
+    { value: "D.E.", label: t("admin.customers.detail.properties.options.filterDE") },
+  ];
   const [properties, setProperties] = useState(initialProperties);
   const [jobs, setJobs] = useState(initialJobs);
   const [mode, setMode] = useState<"create" | "edit">("create");
@@ -184,7 +185,6 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       name: draft.name.trim(),
       address: draft.address.trim(),
       poolType: draft.poolType.trim(),
-      waterType: draft.waterType.trim(),
       sanitizerType: draft.sanitizerType.trim(),
       filterType: draft.filterType.trim(),
       poolVolumeGallons: draft.poolVolumeGallons.trim(),
@@ -212,7 +212,6 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       name: data.property.name ?? null,
       address: data.property.address,
       poolType: data.property.poolType ?? null,
-      waterType: data.property.waterType ?? null,
       sanitizerType: data.property.sanitizerType ?? null,
       filterType: data.property.filterType ?? null,
       poolVolumeGallons: typeof data.property.poolVolumeGallons === "number" ? data.property.poolVolumeGallons : null,
@@ -361,19 +360,16 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                   <div className="mt-3 text-sm leading-6 text-slate-700">
                     <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span>{" "}
                     {show(p.poolType)}
-                    <span className="px-2 text-slate-300">•</span>
-                    <span className="font-semibold text-slate-900">{t("admin.routes.labels.waterType")}:</span>{" "}
-                    {show(p.waterType)}
-                    <span className="px-2 text-slate-300">•</span>
+                    <span className="px-2 text-slate-300">&middot;</span>
                     <span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span>{" "}
                     {show(p.filterType)}
-                    <span className="px-2 text-slate-300">•</span>
+                    <span className="px-2 text-slate-300">&middot;</span>
                     <span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span>{" "}
                     {show(p.sanitizerType)}
-                    <span className="px-2 text-slate-300">•</span>
+                    <span className="px-2 text-slate-300">&middot;</span>
                     <span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span>{" "}
                     {p.poolVolumeGallons ?? "-"}
-                    <span className="px-2 text-slate-300">•</span>
+                    <span className="px-2 text-slate-300">&middot;</span>
                     <span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span>{" "}
                     {p.hasSpa ? t("common.labels.yes") : t("common.labels.no")}
                   </div>
@@ -476,14 +472,21 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                 <input value={draft.address} onChange={(e) => setDraft((c) => ({ ...c, address: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" required />
               </div>
 
-              <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.waterType")}</label>
-                  <input value={draft.waterType} onChange={(e) => setDraft((c) => ({ ...c, waterType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
-                </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.filterType")}</label>
-                  <input value={draft.filterType} onChange={(e) => setDraft((c) => ({ ...c, filterType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
+                  <select
+                    value={draft.filterType}
+                    onChange={(e) => setDraft((c) => ({ ...c, filterType: e.target.value }))}
+                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                    {filterTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.sanitizerSystem")}</label>
@@ -549,7 +552,6 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                 <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.name")}:</span> {show(draft.name)}</p>
                 <p><span className="font-semibold text-slate-900">{t("address.line1")}:</span> {show(draft.address)}</p>
                 <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span> {show(draft.poolType)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.waterType")}:</span> {show(draft.waterType)}</p>
                 <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span> {show(draft.filterType)}</p>
                 <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span> {show(draft.sanitizerType)}</p>
                 <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span> {show(draft.poolVolumeGallons)}</p>
@@ -579,3 +581,4 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
     </div>
   );
 }
+
