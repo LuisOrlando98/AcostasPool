@@ -68,9 +68,6 @@ async function createProperty(formData: FormData) {
   if (
     !customerId ||
     !address ||
-    !poolType ||
-    !sanitizerType ||
-    !filterType ||
     !volume ||
     !accessLocationNotes ||
     !servicePaymentInfo
@@ -1480,7 +1477,6 @@ export default async function CustomerDetailPage({
                 <select
                   name="poolType"
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  required
                 >
                   <option value="">
                     {t("admin.customers.detail.properties.options.select")}
@@ -1506,7 +1502,6 @@ export default async function CustomerDetailPage({
                 <select
                   name="sanitizerType"
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  required
                 >
                   <option value="">
                     {t("admin.customers.detail.properties.options.select")}
@@ -1530,10 +1525,9 @@ export default async function CustomerDetailPage({
               <select
                 name="filterType"
                 className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                required
                 defaultValue=""
               >
-                <option value="" disabled>
+                <option value="">
                   {t("admin.customers.detail.properties.options.select")}
                 </option>
                 <option value="Arena">
