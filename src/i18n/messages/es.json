@@ -1436,6 +1436,37 @@
           "reviewSave": "Revisar cambios",
           "saving": "Guardando..."
         },
+        "filters": {
+          "open": "Abrir filtros",
+          "modalTitle": "Filtros de billing",
+          "modalSubtitle": "Filtra la tabla por cliente, tipo de pago, notas o criterio de orden.",
+          "activeCount": "{{count}} activos",
+          "customer": "Cliente",
+          "allCustomers": "Todos los clientes",
+          "paymentType": "Tipo de pago",
+          "allPaymentTypes": "Todos los tipos de pago",
+          "notes": "Notas",
+          "notesAll": "Con y sin notas",
+          "notesWith": "Solo con notas",
+          "notesWithout": "Solo sin notas",
+          "sort": "Ordenar por",
+          "apply": "Aplicar",
+          "reset": "Limpiar filtros"
+        },
+        "sort": {
+          "customer": "Cliente",
+          "property": "Propiedad",
+          "startDate": "Fecha de inicio del servicio",
+          "paymentDay": "Dia de pago",
+          "price": "Precio"
+        },
+        "pagination": {
+          "showing": "Mostrando {{from}}-{{to}} de {{total}}",
+          "page": "Pagina {{page}} de {{total}}",
+          "prev": "Anterior",
+          "next": "Siguiente",
+          "pageSize": "Filas por pagina"
+        },
         "confirm": {
           "kicker": "Confirmacion",
           "title": "Guardar cambios?",

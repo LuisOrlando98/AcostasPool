@@ -33,10 +33,28 @@ type BillingDraft = {
   paymentNotes: string;
 };
 
+type BillingFilterState = {
+  search: string;
+  customerId: string;
+  paymentType: string;
+  notes: "ALL" | "WITH" | "WITHOUT";
+  sort: "customer" | "property" | "startDate" | "paymentDay" | "price";
+};
+
 type AdminBillingTableProps = {
   rows: BillingRow[];
   updatePropertyBillingAction: (formData: FormData) => Promise<void>;
 };
+
+const DEFAULT_FILTERS: BillingFilterState = {
+  search: "",
+  customerId: "ALL",
+  paymentType: "ALL",
+  notes: "ALL",
+  sort: "customer",
+};
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function toDraft(row: BillingRow): BillingDraft {
   return {
@@ -54,27 +72,57 @@ function toDraft(row: BillingRow): BillingDraft {
   };
 }
 
+function buildPageItems(currentPage: number, totalPages: number) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items: Array<number | "ellipsis-start" | "ellipsis-end"> = [1];
+  const windowStart = Math.max(2, currentPage - 1);
+  const windowEnd = Math.min(totalPages - 1, currentPage + 1);
+
+  if (windowStart > 2) {
+    items.push("ellipsis-start");
+  }
+
+  for (let page = windowStart; page <= windowEnd; page += 1) {
+    items.push(page);
+  }
+
+  if (windowEnd < totalPages - 1) {
+    items.push("ellipsis-end");
+  }
+
+  items.push(totalPages);
+  return items;
+}
+
 export default function AdminBillingTable({
   rows,
   updatePropertyBillingAction,
 }: AdminBillingTableProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<BillingFilterState>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] =
+    useState<BillingFilterState>(DEFAULT_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [pageSize, setPageSize] = useState<number>(PAGE_SIZE_OPTIONS[0]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [editing, setEditing] = useState<BillingDraft | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!editing && !confirmOpen) {
+    if (!editing && !confirmOpen && !filtersOpen) {
       return;
     }
     const unlock = lockBodyScroll();
     return () => unlock();
-  }, [editing, confirmOpen]);
+  }, [editing, confirmOpen, filtersOpen]);
 
   useEffect(() => {
-    if (!editing && !confirmOpen) {
+    if (!editing && !confirmOpen && !filtersOpen) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -85,11 +133,17 @@ export default function AdminBillingTable({
         setConfirmOpen(false);
         return;
       }
-      setEditing(null);
+      if (editing) {
+        setEditing(null);
+        return;
+      }
+      if (filtersOpen) {
+        setFiltersOpen(false);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [confirmOpen, editing, isPending]);
+  }, [confirmOpen, editing, filtersOpen, isPending]);
 
   const currencyFormatter = useMemo(
     () =>
@@ -100,21 +154,33 @@ export default function AdminBillingTable({
     [locale]
   );
 
+  const customerOptions = useMemo(
+    () =>
+      [...new Map(rows.map((row) => [row.customerId, row.customerName])).entries()]
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [rows]
+  );
+
   const filteredRows = useMemo(() => {
-    const normalizedQuery = search.trim().toLowerCase();
-    const sorted = [...rows].sort((a, b) => {
-      const customerOrder = a.customerName.localeCompare(b.customerName);
-      if (customerOrder !== 0) {
-        return customerOrder;
+    const normalizedQuery = filters.search.trim().toLowerCase();
+
+    const nextRows = rows.filter((row) => {
+      if (filters.customerId !== "ALL" && row.customerId !== filters.customerId) {
+        return false;
       }
-      return a.propertyName.localeCompare(b.propertyName);
-    });
-
-    if (!normalizedQuery) {
-      return sorted;
-    }
-
-    return sorted.filter((row) => {
+      if (filters.paymentType !== "ALL" && row.paymentType !== filters.paymentType) {
+        return false;
+      }
+      if (filters.notes === "WITH" && !row.paymentNotes?.trim()) {
+        return false;
+      }
+      if (filters.notes === "WITHOUT" && row.paymentNotes?.trim()) {
+        return false;
+      }
+      if (!normalizedQuery) {
+        return true;
+      }
       const paymentTypeLabel = row.paymentType
         ? t(`admin.invoices.servicePayment.paymentTypes.${row.paymentType}`)
         : "";
@@ -133,7 +199,76 @@ export default function AdminBillingTable({
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [rows, search, t]);
+
+    return nextRows.sort((left, right) => {
+      switch (filters.sort) {
+        case "property": {
+          const propertyOrder = left.propertyName.localeCompare(right.propertyName);
+          if (propertyOrder !== 0) {
+            return propertyOrder;
+          }
+          return left.customerName.localeCompare(right.customerName);
+        }
+        case "startDate": {
+          const leftValue = left.serviceStartDate ? Date.parse(left.serviceStartDate) : -1;
+          const rightValue = right.serviceStartDate ? Date.parse(right.serviceStartDate) : -1;
+          if (leftValue !== rightValue) {
+            return rightValue - leftValue;
+          }
+          return left.customerName.localeCompare(right.customerName);
+        }
+        case "paymentDay": {
+          const leftValue = left.paymentDay ?? 99;
+          const rightValue = right.paymentDay ?? 99;
+          if (leftValue !== rightValue) {
+            return leftValue - rightValue;
+          }
+          return left.customerName.localeCompare(right.customerName);
+        }
+        case "price": {
+          const leftValue = left.servicePrice ?? -1;
+          const rightValue = right.servicePrice ?? -1;
+          if (leftValue !== rightValue) {
+            return rightValue - leftValue;
+          }
+          return left.customerName.localeCompare(right.customerName);
+        }
+        case "customer":
+        default: {
+          const customerOrder = left.customerName.localeCompare(right.customerName);
+          if (customerOrder !== 0) {
+            return customerOrder;
+          }
+          return left.propertyName.localeCompare(right.propertyName);
+        }
+      }
+    });
+  }, [filters, rows, t]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageItems = useMemo(
+    () => buildPageItems(safeCurrentPage, totalPages),
+    [safeCurrentPage, totalPages]
+  );
+  const paginatedRows = useMemo(() => {
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, pageSize, safeCurrentPage]);
+  const showingFrom =
+    filteredRows.length === 0 ? 0 : (safeCurrentPage - 1) * pageSize + 1;
+  const showingTo =
+    filteredRows.length === 0
+      ? 0
+      : Math.min(safeCurrentPage * pageSize, filteredRows.length);
+  const activeFilterCount = [
+    filters.search.trim().length > 0,
+    filters.customerId !== "ALL",
+    filters.paymentType !== "ALL",
+    filters.notes !== "ALL",
+    filters.sort !== DEFAULT_FILTERS.sort,
+  ].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
 
   const openEditor = (row: BillingRow) => {
     setConfirmOpen(false);
@@ -146,6 +281,24 @@ export default function AdminBillingTable({
     }
     setConfirmOpen(false);
     setEditing(null);
+  };
+
+  const openFiltersModal = () => {
+    setDraftFilters(filters);
+    setFiltersOpen(true);
+  };
+
+  const applyFilters = () => {
+    setFilters(draftFilters);
+    setCurrentPage(1);
+    setFiltersOpen(false);
+  };
+
+  const clearAllFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setDraftFilters(DEFAULT_FILTERS);
+    setCurrentPage(1);
+    setFiltersOpen(false);
   };
 
   const saveDraft = () => {
@@ -190,6 +343,214 @@ export default function AdminBillingTable({
       timeZone: "UTC",
     }).format(parsed);
   };
+
+  const filtersModal =
+    typeof document !== "undefined" && filtersOpen
+      ? createPortal(
+          <div className="app-modal-layer fixed inset-0 z-[2350] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
+              aria-label={t("common.actions.close")}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("admin.invoices.servicePayment.filters.modalTitle")}
+              className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            >
+              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+                <div className="app-modal-header">
+                  <div>
+                    <p className="app-modal-kicker">
+                      {t("admin.invoices.servicePayment.filters.open")}
+                    </p>
+                    <h3 className="app-modal-title">
+                      {t("admin.invoices.servicePayment.filters.modalTitle")}
+                    </h3>
+                    <p className="app-modal-subtitle">
+                      {t("admin.invoices.servicePayment.filters.modalSubtitle")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="app-modal-close"
+                    aria-label={t("common.actions.close")}
+                    title={t("common.actions.close")}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="h-4 w-4"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-4">
+                  <section className="app-modal-section">
+                    <p className="app-modal-section-title">
+                      {t("admin.invoices.servicePayment.filters.open")}
+                    </p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <label className="sm:col-span-2">
+                        <span className="app-modal-field-label">
+                          {t("common.actions.search")}
+                        </span>
+                        <input
+                          value={draftFilters.search}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              search: event.target.value,
+                            }))
+                          }
+                          placeholder={t("admin.invoices.servicePayment.searchPlaceholder")}
+                          className="app-modal-input app-input"
+                        />
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.customer")}
+                        </span>
+                        <select
+                          value={draftFilters.customerId}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              customerId: event.target.value,
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.invoices.servicePayment.filters.allCustomers")}
+                          </option>
+                          {customerOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.paymentType")}
+                        </span>
+                        <select
+                          value={draftFilters.paymentType}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              paymentType: event.target.value,
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.invoices.servicePayment.filters.allPaymentTypes")}
+                          </option>
+                          {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                            <option key={value} value={value}>
+                              {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.notes")}
+                        </span>
+                        <select
+                          value={draftFilters.notes}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              notes: event.target.value as BillingFilterState["notes"],
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.invoices.servicePayment.filters.notesAll")}
+                          </option>
+                          <option value="WITH">
+                            {t("admin.invoices.servicePayment.filters.notesWith")}
+                          </option>
+                          <option value="WITHOUT">
+                            {t("admin.invoices.servicePayment.filters.notesWithout")}
+                          </option>
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.sort")}
+                        </span>
+                        <select
+                          value={draftFilters.sort}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              sort: event.target.value as BillingFilterState["sort"],
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="customer">
+                            {t("admin.invoices.servicePayment.sort.customer")}
+                          </option>
+                          <option value="property">
+                            {t("admin.invoices.servicePayment.sort.property")}
+                          </option>
+                          <option value="startDate">
+                            {t("admin.invoices.servicePayment.sort.startDate")}
+                          </option>
+                          <option value="paymentDay">
+                            {t("admin.invoices.servicePayment.sort.paymentDay")}
+                          </option>
+                          <option value="price">
+                            {t("admin.invoices.servicePayment.sort.price")}
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                  </section>
+                </div>
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="ui-button-ghost px-3 py-2 text-xs font-semibold"
+                  >
+                    {t("admin.invoices.servicePayment.filters.reset")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(false)}
+                    className="ui-button-ghost px-3 py-2 text-xs font-semibold"
+                  >
+                    {t("common.actions.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyFilters}
+                    className="app-button-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+                  >
+                    {t("admin.invoices.servicePayment.filters.apply")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   const modal =
     typeof document !== "undefined" && editing
@@ -518,7 +879,7 @@ export default function AdminBillingTable({
   return (
     <>
       <section className="app-card p-6 shadow-contrast">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">
               {t("admin.invoices.servicePayment.title")}
@@ -526,31 +887,80 @@ export default function AdminBillingTable({
             <p className="text-sm text-slate-500">
               {t("admin.invoices.servicePayment.subtitle")}
             </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {t("admin.invoices.servicePayment.pagination.showing", {
+                from: showingFrom,
+                to: showingTo,
+                total: filteredRows.length,
+              })}
+            </p>
           </div>
-          <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-            {filteredRows.length}
-          </span>
-        </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-          <label className="ui-search flex items-center gap-2 px-3 py-2">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              className="ui-search-icon h-4 w-4"
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600">
+              <span>{t("admin.invoices.servicePayment.pagination.pageSize")}</span>
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent pr-1 text-xs text-slate-700 outline-none"
+              >
+                {PAGE_SIZE_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              onClick={openFiltersModal}
+              className="app-button-ghost relative inline-flex h-9 w-9 items-center justify-center rounded-full p-0"
+              aria-label={t("admin.invoices.servicePayment.filters.open")}
+              title={t("admin.invoices.servicePayment.filters.open")}
             >
-              <circle cx="11" cy="11" r="7" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M20 20l-3-3" />
-            </svg>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t("admin.invoices.servicePayment.searchPlaceholder")}
-              className="ui-search-input w-full"
-            />
-          </label>
+              {activeFilterCount > 0 ? (
+                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sky-500 sm:hidden" />
+              ) : null}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
+              </svg>
+              <span className="sr-only">
+                {t("admin.invoices.servicePayment.filters.open")}
+              </span>
+            </button>
+
+            {activeFilterCount > 0 ? (
+              <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+                {t("admin.invoices.servicePayment.filters.activeCount", {
+                  count: activeFilterCount,
+                })}
+              </span>
+            ) : null}
+
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="ui-button-ghost px-3 py-2 text-xs font-semibold"
+              >
+                {t("admin.invoices.servicePayment.filters.reset")}
+              </button>
+            ) : null}
+
+            <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+              {filteredRows.length}
+            </span>
+          </div>
         </div>
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
@@ -585,14 +995,14 @@ export default function AdminBillingTable({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
-                {filteredRows.length === 0 ? (
+                {paginatedRows.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
                       {t("admin.invoices.servicePayment.empty")}
                     </td>
                   </tr>
                 ) : (
-                  filteredRows.map((row) => (
+                  paginatedRows.map((row) => (
                     <tr key={row.propertyId} className="transition hover:bg-sky-50/40">
                       <td className="px-4 py-3.5 font-semibold text-slate-900">
                         {row.customerName}
@@ -655,7 +1065,82 @@ export default function AdminBillingTable({
             </table>
           </div>
         </div>
+
+        {filteredRows.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-3">
+              <span>
+                {t("admin.invoices.servicePayment.pagination.showing", {
+                  from: showingFrom,
+                  to: showingTo,
+                  total: filteredRows.length,
+                })}
+              </span>
+              <span>
+                {t("admin.invoices.servicePayment.pagination.page", {
+                  page: safeCurrentPage,
+                  total: totalPages,
+                })}
+              </span>
+            </div>
+
+            {totalPages > 1 ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
+                  className={`rounded-full border px-3 py-1.5 font-semibold ${
+                    safeCurrentPage === 1
+                      ? "border-slate-100 text-slate-300"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                  disabled={safeCurrentPage === 1}
+                >
+                  {t("admin.invoices.servicePayment.pagination.prev")}
+                </button>
+
+                {pageItems.map((item) =>
+                  typeof item === "number" ? (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setCurrentPage(item)}
+                      className={`rounded-full border px-3 py-1.5 font-semibold ${
+                        item === safeCurrentPage
+                          ? "border-slate-900 bg-slate-900 text-white"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                      aria-current={item === safeCurrentPage ? "page" : undefined}
+                    >
+                      {item}
+                    </button>
+                  ) : (
+                    <span key={item} className="px-2 py-1.5 text-slate-400">
+                      ...
+                    </span>
+                  )
+                )}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCurrentPage((current) => Math.min(totalPages, current + 1))
+                  }
+                  className={`rounded-full border px-3 py-1.5 font-semibold ${
+                    safeCurrentPage === totalPages
+                      ? "border-slate-100 text-slate-300"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                  disabled={safeCurrentPage === totalPages}
+                >
+                  {t("admin.invoices.servicePayment.pagination.next")}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
+      {filtersModal}
       {modal}
     </>
   );

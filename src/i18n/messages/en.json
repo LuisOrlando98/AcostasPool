@@ -1436,6 +1436,37 @@
           "reviewSave": "Review changes",
           "saving": "Saving..."
         },
+        "filters": {
+          "open": "Open filters",
+          "modalTitle": "Billing filters",
+          "modalSubtitle": "Filter the table by customer, payment type, notes, or sorting preference.",
+          "activeCount": "{{count}} active",
+          "customer": "Customer",
+          "allCustomers": "All customers",
+          "paymentType": "Payment type",
+          "allPaymentTypes": "All payment types",
+          "notes": "Notes",
+          "notesAll": "With and without notes",
+          "notesWith": "Only with notes",
+          "notesWithout": "Only without notes",
+          "sort": "Sort by",
+          "apply": "Apply",
+          "reset": "Clear filters"
+        },
+        "sort": {
+          "customer": "Customer",
+          "property": "Property",
+          "startDate": "Service start date",
+          "paymentDay": "Payment day",
+          "price": "Price"
+        },
+        "pagination": {
+          "showing": "Showing {{from}}-{{to}} of {{total}}",
+          "page": "Page {{page}} of {{total}}",
+          "prev": "Previous",
+          "next": "Next",
+          "pageSize": "Rows per page"
+        },
         "confirm": {
           "kicker": "Confirmation",
           "title": "Save changes?",
