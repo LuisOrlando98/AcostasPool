@@ -54,10 +54,27 @@ async function createProperty(formData: FormData) {
   const hasSpa = String(formData.get("hasSpa") ?? "no") === "yes";
   const sanitizerType = String(formData.get("sanitizerType") ?? "").trim();
   const filterType = String(formData.get("filterType") ?? "").trim();
-  const accessInfo = String(formData.get("accessInfo") ?? "").trim();
-  const locationNotes = String(formData.get("locationNotes") ?? "").trim();
+  const accessLocationNotes = String(
+    formData.get("accessLocationNotes") ?? ""
+  ).trim();
+  const servicePaymentInfo = parseServicePaymentInfoInput({
+    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
+    paymentDay: String(formData.get("paymentDay") ?? ""),
+    servicePrice: String(formData.get("servicePrice") ?? ""),
+    paymentType: String(formData.get("paymentType") ?? ""),
+    paymentNotes: String(formData.get("paymentNotes") ?? ""),
+  });
 
-  if (!customerId || !address || !poolType || !sanitizerType || !filterType || !volume || !accessInfo) {
+  if (
+    !customerId ||
+    !address ||
+    !poolType ||
+    !sanitizerType ||
+    !filterType ||
+    !volume ||
+    !accessLocationNotes ||
+    !servicePaymentInfo
+  ) {
     return;
   }
   const normalizedAddress = await normalizePropertyAddress(address);
@@ -73,12 +90,18 @@ async function createProperty(formData: FormData) {
       filterType: filterType || null,
       poolVolumeGallons: volume ? Number(volume) : null,
       hasSpa,
-      accessInfo: accessInfo || null,
-      locationNotes: locationNotes || null,
+      accessInfo: accessLocationNotes || null,
+      locationNotes: null,
+      serviceStartDate: servicePaymentInfo.serviceStartDate,
+      paymentDay: servicePaymentInfo.paymentDay,
+      servicePrice: servicePaymentInfo.servicePrice,
+      paymentType: servicePaymentInfo.paymentType,
+      paymentNotes: servicePaymentInfo.paymentNotes,
     },
   });
 
   revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/invoices");
 }
 async function updateCustomer(formData: FormData) {
   "use server";
@@ -108,16 +131,9 @@ async function updateCustomer(formData: FormData) {
   ).trim();
   const codigoPostal = String(formData.get("codigoPostal") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
-  const servicePaymentInfo = parseServicePaymentInfoInput({
-    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
-    paymentDay: String(formData.get("paymentDay") ?? ""),
-    servicePrice: String(formData.get("servicePrice") ?? ""),
-    paymentType: String(formData.get("paymentType") ?? ""),
-    paymentNotes: String(formData.get("paymentNotes") ?? ""),
-  });
   const nextAccountStatus = estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
-  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) : "";
+  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) ?? "" : "";
   const telefonoSecundario = telefonoSecundarioRaw
     ? normalizeUsPhone(telefonoSecundarioRaw)
     : null;
@@ -129,9 +145,6 @@ async function updateCustomer(formData: FormData) {
     return;
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
-    return;
-  }
-  if (!servicePaymentInfo) {
     return;
   }
 
@@ -197,11 +210,6 @@ async function updateCustomer(formData: FormData) {
       ciudad: ciudad || null,
       estadoProvincia: estadoProvincia || null,
       codigoPostal: codigoPostal || null,
-      serviceStartDate: servicePaymentInfo.serviceStartDate,
-      paymentDay: servicePaymentInfo.paymentDay,
-      servicePrice: servicePaymentInfo.servicePrice,
-      paymentType: servicePaymentInfo.paymentType,
-      paymentNotes: servicePaymentInfo.paymentNotes,
       notas: notas || null,
     },
   });
@@ -407,6 +415,7 @@ async function deleteProperty(formData: FormData) {
   });
 
   revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/invoices");
 }
 
 async function updateProperty(formData: FormData) {
@@ -422,10 +431,18 @@ async function updateProperty(formData: FormData) {
   const hasSpa = String(formData.get("hasSpa") ?? "no") === "yes";
   const sanitizerType = String(formData.get("sanitizerType") ?? "").trim();
   const filterType = String(formData.get("filterType") ?? "").trim();
-  const accessInfo = String(formData.get("accessInfo") ?? "").trim();
-  const locationNotes = String(formData.get("locationNotes") ?? "").trim();
+  const accessLocationNotes = String(
+    formData.get("accessLocationNotes") ?? ""
+  ).trim();
+  const servicePaymentInfo = parseServicePaymentInfoInput({
+    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
+    paymentDay: String(formData.get("paymentDay") ?? ""),
+    servicePrice: String(formData.get("servicePrice") ?? ""),
+    paymentType: String(formData.get("paymentType") ?? ""),
+    paymentNotes: String(formData.get("paymentNotes") ?? ""),
+  });
 
-  if (!propertyId || !customerId || !address) {
+  if (!propertyId || !customerId || !address || !servicePaymentInfo) {
     return;
   }
   const normalizedAddress = await normalizePropertyAddress(address);
@@ -441,12 +458,18 @@ async function updateProperty(formData: FormData) {
       filterType: filterType || null,
       poolVolumeGallons: volume ? Number(volume) : null,
       hasSpa,
-      accessInfo: accessInfo || null,
-      locationNotes: locationNotes || null,
+      accessInfo: accessLocationNotes || null,
+      locationNotes: null,
+      serviceStartDate: servicePaymentInfo.serviceStartDate,
+      paymentDay: servicePaymentInfo.paymentDay,
+      servicePrice: servicePaymentInfo.servicePrice,
+      paymentType: servicePaymentInfo.paymentType,
+      paymentNotes: servicePaymentInfo.paymentNotes,
     },
   });
 
   revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/invoices");
 }
 
 async function createJob(formData: FormData) {
@@ -861,12 +884,6 @@ export default async function CustomerDetailPage({
   const serviceTierMap = new Map(
     serviceTiers.map((tier) => [tier.id, tier.name])
   );
-  const paymentTypeLabels = Object.fromEntries(
-    SERVICE_PAYMENT_TYPE_VALUES.map((value) => [
-      value,
-      t(`admin.invoices.servicePayment.paymentTypes.${value}`),
-    ])
-  );
 
   const jobsRows = customer.jobs.map((job) => ({
     id: job.id,
@@ -909,8 +926,18 @@ export default async function CustomerDetailPage({
     poolVolumeGallons: property.poolVolumeGallons,
     filterType: property.filterType,
     hasSpa: property.hasSpa,
-    accessInfo: property.accessInfo,
-    locationNotes: property.locationNotes,
+    accessLocationNotes:
+      [property.accessInfo, property.locationNotes]
+        .filter((value) => Boolean(value?.trim()))
+        .join("\n\n") || null,
+    serviceStartDate: property.serviceStartDate
+      ? formatBusinessDateInput(property.serviceStartDate)
+      : null,
+    paymentDay: property.paymentDay,
+    servicePrice:
+      property.servicePrice !== null ? Number(property.servicePrice) : null,
+    paymentType: property.paymentType,
+    paymentNotes: property.paymentNotes,
   }));
   const invoicesRows = customer.invoices.map((invoice) => ({
     id: invoice.id,
@@ -926,31 +953,8 @@ export default async function CustomerDetailPage({
       : null,
     pdfUrl: invoice.pdfUrl,
   }));
-  const serviceStartDateLabel = customer.serviceStartDate
-    ? formatInBusinessTimeZone(customer.serviceStartDate, locale, {
-        dateStyle: "medium",
-      })
-    : t("common.labels.notAvailable");
-  const paymentDayLabel =
-    typeof customer.paymentDay === "number"
-      ? t("admin.invoices.servicePayment.dayOfMonth", {
-          day: String(customer.paymentDay),
-        })
-      : t("common.labels.notAvailable");
-  const servicePriceLabel =
-    customer.servicePrice !== null
-      ? new Intl.NumberFormat(locale, {
-          style: "currency",
-          currency: "USD",
-        }).format(Number(customer.servicePrice))
-      : t("common.labels.notAvailable");
   const customerEmailLabel = customer.email || t("common.labels.notAvailable");
   const hasCustomerEmail = Boolean(customer.email?.trim());
-  const paymentTypeLabel = customer.paymentType
-    ? paymentTypeLabels[customer.paymentType as keyof typeof paymentTypeLabels] ??
-      customer.paymentType
-    : t("common.labels.notAvailable");
-  const billingViewHref = "/admin/invoices?view=service-payment";
 
   return (
     <AppShell
@@ -1099,7 +1103,7 @@ export default async function CustomerDetailPage({
                 </form>
               </div>
 
-              <div className="mt-5 grid gap-4 xl:grid-cols-3">
+              <div className="mt-5 grid gap-4 xl:grid-cols-2">
                 <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -1170,70 +1174,6 @@ export default async function CustomerDetailPage({
                   </p>
                 </article>
 
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                        {t("admin.invoices.servicePayment.sectionTitle")}
-                      </p>
-                      <span className="mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                        {t("admin.invoices.servicePayment.adminBadge")}
-                      </span>
-                    </div>
-                    <label
-                      htmlFor="edit-customer"
-                      className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                    >
-                      {t("common.actions.edit")}
-                    </label>
-                  </div>
-
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        {t("admin.invoices.servicePayment.fields.serviceStartDate")}
-                      </p>
-                      <p className="mt-1 font-semibold text-slate-900">
-                        {serviceStartDateLabel}
-                      </p>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {t("admin.invoices.servicePayment.fields.paymentDay")}
-                        </p>
-                        <p className="mt-1 text-slate-700">{paymentDayLabel}</p>
-                      </div>
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          {t("admin.invoices.servicePayment.fields.servicePrice")}
-                        </p>
-                        <p className="mt-1 text-slate-700">{servicePriceLabel}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        {t("admin.invoices.servicePayment.fields.paymentType")}
-                      </p>
-                      <p className="mt-1 text-slate-700">{paymentTypeLabel}</p>
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        {t("admin.invoices.servicePayment.fields.paymentNotes")}
-                      </p>
-                      <p className="mt-1 whitespace-pre-wrap text-slate-700">
-                        {customer.paymentNotes?.trim() ||
-                          t("admin.invoices.servicePayment.emptyNotes")}
-                      </p>
-                    </div>
-                    <Link
-                      href={billingViewHref}
-                      className="inline-flex items-center text-xs font-semibold text-sky-700 underline"
-                    >
-                      {t("admin.invoices.servicePayment.actions.openTable")}
-                    </Link>
-                  </div>
-                </article>
               </div>
             </div>
           </div>
@@ -1451,102 +1391,6 @@ export default async function CustomerDetailPage({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-800">
-                      {t("admin.invoices.servicePayment.sectionTitle")}
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      {t("admin.invoices.servicePayment.adminOnly")}
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                    {t("admin.invoices.servicePayment.adminBadge")}
-                  </span>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.invoices.servicePayment.fields.serviceStartDate")}
-                    </label>
-                    <input
-                      type="date"
-                      name="serviceStartDate"
-                      defaultValue={formatBusinessDateInput(customer.serviceStartDate ?? "")}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.invoices.servicePayment.fields.paymentDay")}
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="31"
-                      name="paymentDay"
-                      defaultValue={customer.paymentDay ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")}
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.invoices.servicePayment.fields.servicePrice")}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      name="servicePrice"
-                      defaultValue={
-                        customer.servicePrice !== null
-                          ? Number(customer.servicePrice).toFixed(2)
-                          : ""
-                      }
-                      className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                      placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      {t("admin.invoices.servicePayment.fields.paymentType")}
-                    </label>
-                    <select
-                      name="paymentType"
-                      defaultValue={customer.paymentType ?? ""}
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                    >
-                      <option value="">
-                        {t("admin.invoices.servicePayment.placeholders.paymentType")}
-                      </option>
-                      {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
-                        <option key={value} value={value}>
-                          {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mt-3">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.servicePayment.fields.paymentNotes")}
-                  </label>
-                  <textarea
-                    name="paymentNotes"
-                    defaultValue={customer.paymentNotes ?? ""}
-                    className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")}
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   {t("common.labels.notes")}
@@ -1730,22 +1574,101 @@ export default async function CustomerDetailPage({
             </div>
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.customers.detail.properties.fields.accessInfo")}
+                {t("admin.customers.detail.properties.fields.accessLocationNotes")}
               </label>
               <textarea
-                name="accessInfo"
+                name="accessLocationNotes"
                 className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                placeholder={t("admin.customers.detail.properties.placeholders.accessLocationNotes")}
                 required
               />
             </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.customers.detail.properties.fields.locationNotes")}
-              </label>
-              <textarea
-                name="locationNotes"
-                className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-              />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    {t("admin.invoices.servicePayment.sectionTitle")}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {t("admin.invoices.servicePayment.adminOnly")}
+                  </p>
+                </div>
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                  {t("admin.invoices.servicePayment.adminBadge")}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.serviceStartDate")}
+                  </label>
+                  <input
+                    type="date"
+                    name="serviceStartDate"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.paymentDay")}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    name="paymentDay"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.servicePrice")}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    name="servicePrice"
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                    placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.paymentType")}
+                  </label>
+                  <select
+                    name="paymentType"
+                    defaultValue=""
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="">
+                      {t("admin.invoices.servicePayment.placeholders.paymentType")}
+                    </option>
+                    {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("admin.invoices.servicePayment.fields.paymentNotes")}
+                </label>
+                <textarea
+                  name="paymentNotes"
+                  className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                  placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")}
+                />
+              </div>
             </div>
             <FormSubmitButton
               idleLabel={t("admin.customers.detail.actions.saveProperty")}

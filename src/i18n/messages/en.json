@@ -1111,7 +1111,8 @@
             "sanitizerType": "System (salt/chlorine)",
             "spa": "Spa",
             "accessInfo": "Access / pets",
-            "locationNotes": "Location notes"
+            "locationNotes": "Location notes",
+            "accessLocationNotes": "Location access notes"
           },
           "placeholders": {
             "name": "Property name",
@@ -1123,7 +1124,8 @@
             "filterType": "Filter type",
             "sanitizerType": "System (salt/chlorine)",
             "accessInfo": "Access / pets / instructions",
-            "locationNotes": "Location notes"
+            "locationNotes": "Location notes",
+            "accessLocationNotes": "Access, pets, gate codes, parking, or location instructions"
           },
           "options": {
             "select": "Select",
@@ -1143,7 +1145,7 @@
             "sections": {
               "identity": "Property identity",
               "specs": "Pool specs",
-              "access": "Access and notes"
+              "access": "Access and location notes"
             },
             "danger": {
               "title": "Danger zone",
@@ -1390,23 +1392,24 @@
       },
       "servicePayment": {
         "title": "Service & Payment Info",
-        "subtitle": "Admin-only service start and payment details for each customer.",
+        "subtitle": "Admin-only service and payment details for each property.",
         "sectionTitle": "Service & Payment Info",
         "adminOnly": "Internal use only. This information is never shown in the customer portal.",
         "adminBadge": "Admin only",
-        "searchPlaceholder": "Search customer, payment type, notes...",
-        "empty": "No customers match the current search.",
+        "searchPlaceholder": "Search customer, property, payment type, notes...",
+        "empty": "No properties match the current search.",
         "emptyNotes": "No notes added.",
         "dayOfMonth": "Day {{day}}",
         "modalKicker": "Billing table",
-        "modalTitle": "Edit Service & Payment Info",
+        "modalTitle": "Edit Property Service & Payment Info",
         "fields": {
           "customer": "Customer",
+          "property": "Property",
           "serviceStartDate": "Service Start Date",
           "paymentDay": "Payment Day",
           "servicePrice": "Price",
           "paymentType": "Type of Payment",
-          "paymentNotes": "Notes"
+          "paymentNotes": "Payment Notes"
         },
         "placeholders": {
           "paymentDay": "1-31",
@@ -1420,6 +1423,7 @@
         },
         "table": {
           "customer": "Customer",
+          "property": "Property",
           "serviceStartDate": "Service Start Date",
           "paymentDay": "Payment Day",
           "price": "Price",
@@ -1435,7 +1439,7 @@
         "confirm": {
           "kicker": "Confirmation",
           "title": "Save changes?",
-          "subtitle": "Review the updated information for {{customer}} before saving.",
+          "subtitle": "Review the updated information for {{property}} under {{customer}} before saving.",
           "back": "Back",
           "confirm": "Save changes"
         }

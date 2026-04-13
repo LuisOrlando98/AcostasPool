@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import { useI18n } from "@/i18n/client";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
+import { SERVICE_PAYMENT_TYPE_VALUES } from "@/lib/customers/service-payment-info";
 
 type PropertyRow = {
   id: string;
@@ -14,8 +15,12 @@ type PropertyRow = {
   poolVolumeGallons: number | null;
   filterType: string | null;
   hasSpa: boolean;
-  accessInfo: string | null;
-  locationNotes: string | null;
+  accessLocationNotes: string | null;
+  serviceStartDate: string | null;
+  paymentDay: number | null;
+  servicePrice: number | null;
+  paymentType: string | null;
+  paymentNotes: string | null;
 };
 
 type AdminCustomerPropertiesProps = {
@@ -35,7 +40,7 @@ export default function AdminCustomerProperties({
   onUpdateProperty,
   onDeleteProperty,
 }: AdminCustomerPropertiesProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -52,9 +57,15 @@ export default function AdminCustomerProperties({
     [activePropertyId, rows]
   );
 
-  useEffect(() => {
+  const openPropertyEditor = (propertyId: string) => {
     setConfirmDelete(false);
-  }, [activePropertyId]);
+    setActivePropertyId(propertyId);
+  };
+
+  const closePropertyEditor = () => {
+    setConfirmDelete(false);
+    setActivePropertyId(null);
+  };
 
   const poolTypeOptions = [
     { value: "Concreto", label: t("admin.customers.detail.properties.options.concrete") },
@@ -75,6 +86,28 @@ export default function AdminCustomerProperties({
     { value: "Cartucho", label: t("admin.customers.detail.properties.options.filterCartridge") },
     { value: "D.E.", label: t("admin.customers.detail.properties.options.filterDE") },
   ];
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: "USD",
+      }),
+    [locale]
+  );
+
+  const formatServiceDate = (value: string | null) => {
+    if (!value) {
+      return t("common.labels.notAvailable");
+    }
+    const parsed = new Date(`${value}T12:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) {
+      return t("common.labels.notAvailable");
+    }
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "medium",
+      timeZone: "UTC",
+    }).format(parsed);
+  };
 
   return (
     <>
@@ -133,10 +166,38 @@ export default function AdminCustomerProperties({
                           ? `${property.poolVolumeGallons} gal`
                           : t("admin.customers.detail.properties.volumeFallback")}
                       </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        {t("admin.invoices.servicePayment.fields.serviceStartDate")}:
+                        {" "}
+                        {formatServiceDate(property.serviceStartDate)}
+                        {" | "}
+                        {t("admin.invoices.servicePayment.fields.paymentDay")}:
+                        {" "}
+                        {property.paymentDay
+                          ? t("admin.invoices.servicePayment.dayOfMonth", {
+                              day: String(property.paymentDay),
+                            })
+                          : t("common.labels.notAvailable")}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {t("admin.invoices.servicePayment.fields.servicePrice")}:
+                        {" "}
+                        {property.servicePrice === null
+                          ? t("common.labels.notAvailable")
+                          : currencyFormatter.format(property.servicePrice)}
+                        {" | "}
+                        {t("admin.invoices.servicePayment.fields.paymentType")}:
+                        {" "}
+                        {property.paymentType
+                          ? t(
+                              `admin.invoices.servicePayment.paymentTypes.${property.paymentType}`
+                            )
+                          : t("common.labels.notAvailable")}
+                      </p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setActivePropertyId(property.id)}
+                      onClick={() => openPropertyEditor(property.id)}
                       className="ui-button-ghost px-3 py-1.5 text-xs font-semibold"
                     >
                       {t("common.actions.edit")}
@@ -187,7 +248,7 @@ export default function AdminCustomerProperties({
             type="button"
             aria-label={t("common.actions.close")}
             className="app-modal-backdrop absolute inset-0"
-            onClick={() => setActivePropertyId(null)}
+            onClick={closePropertyEditor}
           />
           <div className="app-modal-card relative z-[1] w-full max-w-5xl overflow-hidden rounded-3xl border bg-white">
             <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
@@ -209,7 +270,7 @@ export default function AdminCustomerProperties({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setActivePropertyId(null)}
+                  onClick={closePropertyEditor}
                   className="app-modal-close"
                   aria-label={t("common.actions.close")}
                 >
@@ -359,24 +420,119 @@ export default function AdminCustomerProperties({
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="app-modal-field-label">
-                        {t("admin.customers.detail.properties.fields.accessInfo")}
+                        {t("admin.customers.detail.properties.fields.accessLocationNotes")}
                       </label>
                       <textarea
-                        name="accessInfo"
-                        defaultValue={activeProperty.accessInfo ?? ""}
+                        name="accessLocationNotes"
+                        defaultValue={activeProperty.accessLocationNotes ?? ""}
                         className="app-input app-modal-input app-modal-input-textarea"
+                        placeholder={t(
+                          "admin.customers.detail.properties.placeholders.accessLocationNotes"
+                        )}
+                      />
+                    </div>
+                  </div>
+                </section>
+
+                <section className="app-modal-section">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="app-modal-section-title">
+                        {t("admin.invoices.servicePayment.sectionTitle")}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {t("admin.invoices.servicePayment.adminOnly")}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                      {t("admin.invoices.servicePayment.adminBadge")}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.invoices.servicePayment.fields.serviceStartDate")}
+                      </label>
+                      <input
+                        type="date"
+                        name="serviceStartDate"
+                        defaultValue={activeProperty.serviceStartDate ?? ""}
+                        className="app-input app-modal-input"
                       />
                     </div>
                     <div>
                       <label className="app-modal-field-label">
-                        {t("admin.customers.detail.properties.fields.locationNotes")}
+                        {t("admin.invoices.servicePayment.fields.paymentDay")}
                       </label>
-                      <textarea
-                        name="locationNotes"
-                        defaultValue={activeProperty.locationNotes ?? ""}
-                        className="app-input app-modal-input app-modal-input-textarea"
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        name="paymentDay"
+                        defaultValue={activeProperty.paymentDay ?? ""}
+                        className="app-input app-modal-input"
+                        placeholder={t(
+                          "admin.invoices.servicePayment.placeholders.paymentDay"
+                        )}
                       />
                     </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.invoices.servicePayment.fields.servicePrice")}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        name="servicePrice"
+                        defaultValue={
+                          activeProperty.servicePrice !== null
+                            ? activeProperty.servicePrice.toFixed(2)
+                            : ""
+                        }
+                        className="app-input app-modal-input"
+                        placeholder={t(
+                          "admin.invoices.servicePayment.placeholders.servicePrice"
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <label className="app-modal-field-label">
+                        {t("admin.invoices.servicePayment.fields.paymentType")}
+                      </label>
+                      <select
+                        name="paymentType"
+                        defaultValue={activeProperty.paymentType ?? ""}
+                        className="app-input app-modal-input bg-white"
+                      >
+                        <option value="">
+                          {t("admin.invoices.servicePayment.placeholders.paymentType")}
+                        </option>
+                        {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                          <option key={value} value={value}>
+                            {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="app-modal-field-label">
+                      {t("admin.invoices.servicePayment.fields.paymentNotes")}
+                    </label>
+                    <textarea
+                      name="paymentNotes"
+                      defaultValue={activeProperty.paymentNotes ?? ""}
+                      className="app-input app-modal-input app-modal-input-textarea"
+                      placeholder={t(
+                        "admin.invoices.servicePayment.placeholders.paymentNotes"
+                      )}
+                    />
                   </div>
                 </section>
 

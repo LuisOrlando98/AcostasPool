@@ -9,7 +9,6 @@ import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
 import { normalizeEmail } from "@/lib/auth/email";
-import { parseServicePaymentInfoInput } from "@/lib/customers/service-payment-info";
 
 async function createCustomer(formData: FormData) {
   "use server";
@@ -38,16 +37,9 @@ async function createCustomer(formData: FormData) {
   ).trim();
   const codigoPostal = String(formData.get("codigoPostal") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
-  const servicePaymentInfo = parseServicePaymentInfoInput({
-    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
-    paymentDay: String(formData.get("paymentDay") ?? ""),
-    servicePrice: String(formData.get("servicePrice") ?? ""),
-    paymentType: String(formData.get("paymentType") ?? ""),
-    paymentNotes: String(formData.get("paymentNotes") ?? ""),
-  });
   const enviarInvitacion = Boolean(formData.get("enviarInvitacion"));
 
-  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) : "";
+  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) ?? "" : "";
   const telefonoSecundario = telefonoSecundarioRaw
     ? normalizeUsPhone(telefonoSecundarioRaw)
     : null;
@@ -59,9 +51,6 @@ async function createCustomer(formData: FormData) {
     return;
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
-    return;
-  }
-  if (!servicePaymentInfo) {
     return;
   }
 
@@ -106,11 +95,6 @@ async function createCustomer(formData: FormData) {
       ciudad: ciudad || null,
       estadoProvincia: estadoProvincia || null,
       codigoPostal: codigoPostal || null,
-      serviceStartDate: servicePaymentInfo.serviceStartDate,
-      paymentDay: servicePaymentInfo.paymentDay,
-      servicePrice: servicePaymentInfo.servicePrice,
-      paymentType: servicePaymentInfo.paymentType,
-      paymentNotes: servicePaymentInfo.paymentNotes,
       notas: notas || null,
     },
   });

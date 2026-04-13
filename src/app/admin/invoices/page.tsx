@@ -204,10 +204,11 @@ async function deleteInvoice(formData: FormData) {
   revalidatePath("/client/invoices");
 }
 
-async function updateCustomerBillingAction(formData: FormData) {
+async function updatePropertyBillingAction(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
 
+  const propertyId = String(formData.get("propertyId") ?? "").trim();
   const customerId = String(formData.get("customerId") ?? "").trim();
   const servicePaymentInfo = parseServicePaymentInfoInput({
     serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
@@ -217,12 +218,12 @@ async function updateCustomerBillingAction(formData: FormData) {
     paymentNotes: String(formData.get("paymentNotes") ?? ""),
   });
 
-  if (!customerId || !servicePaymentInfo) {
+  if (!propertyId || !servicePaymentInfo) {
     return;
   }
 
-  await prisma.customer.update({
-    where: { id: customerId },
+  await prisma.property.update({
+    where: { id: propertyId },
     data: {
       serviceStartDate: servicePaymentInfo.serviceStartDate,
       paymentDay: servicePaymentInfo.paymentDay,
@@ -233,7 +234,9 @@ async function updateCustomerBillingAction(formData: FormData) {
   });
 
   revalidatePath("/admin/invoices");
-  revalidatePath(`/admin/customers/${customerId}`);
+  if (customerId) {
+    revalidatePath(`/admin/customers/${customerId}`);
+  }
 }
 
 type InvoicesPageProps = {
@@ -269,11 +272,19 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       nombre: true,
       apellidos: true,
       email: true,
-      serviceStartDate: true,
-      paymentDay: true,
-      servicePrice: true,
-      paymentType: true,
-      paymentNotes: true,
+      properties: {
+        orderBy: [{ name: "asc" }, { address: "asc" }],
+        select: {
+          id: true,
+          name: true,
+          address: true,
+          serviceStartDate: true,
+          paymentDay: true,
+          servicePrice: true,
+          paymentType: true,
+          paymentNotes: true,
+        },
+      },
     },
   });
   const customerIds = new Set(customers.map((customer) => customer.id));
@@ -401,18 +412,23 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           }
         )
       : null;
-  const billingRows = customers.map((customer) => ({
-    customerId: customer.id,
-    customerName: formatCustomerName(customer),
-    serviceStartDate: customer.serviceStartDate
-      ? formatBusinessDateInput(customer.serviceStartDate)
-      : null,
-    paymentDay: customer.paymentDay,
-    servicePrice:
-      customer.servicePrice !== null ? Number(customer.servicePrice) : null,
-    paymentType: customer.paymentType,
-    paymentNotes: customer.paymentNotes,
-  }));
+  const billingRows = customers.flatMap((customer) =>
+    customer.properties.map((property) => ({
+      propertyId: property.id,
+      customerId: customer.id,
+      customerName: formatCustomerName(customer),
+      propertyName: property.name?.trim() || property.address.trim(),
+      propertyAddress: property.address,
+      serviceStartDate: property.serviceStartDate
+        ? formatBusinessDateInput(property.serviceStartDate)
+        : null,
+      paymentDay: property.paymentDay,
+      servicePrice:
+        property.servicePrice !== null ? Number(property.servicePrice) : null,
+      paymentType: property.paymentType,
+      paymentNotes: property.paymentNotes,
+    }))
+  );
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();
@@ -474,7 +490,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       {currentView === "service-payment" ? (
         <AdminBillingTable
           rows={billingRows}
-          updateCustomerBillingAction={updateCustomerBillingAction}
+          updatePropertyBillingAction={updatePropertyBillingAction}
         />
       ) : (
         <>

@@ -162,11 +162,6 @@ model Customer {
   ciudad        String?
   estadoProvincia String?
   codigoPostal  String?
-  serviceStartDate DateTime?
-  paymentDay    Int?
-  servicePrice  Decimal?      @db.Decimal(10, 2)
-  paymentType   String?
-  paymentNotes  String?
   notas         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -197,6 +192,11 @@ model Property {
   sanitizerType    String?
   accessInfo       String?
   locationNotes    String?
+  serviceStartDate DateTime?
+  paymentDay       Int?
+  servicePrice     Decimal? @db.Decimal(10, 2)
+  paymentType      String?
+  paymentNotes     String?
   equipmentDetails String?
   referencePhotos  Json?
   createdAt        DateTime @default(now())

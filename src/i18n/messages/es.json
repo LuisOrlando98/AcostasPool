@@ -1111,7 +1111,8 @@
             "sanitizerType": "Sistema (sal/cloro)",
             "spa": "Spa",
             "accessInfo": "Accesos / mascotas",
-            "locationNotes": "Notas de ubicacion"
+            "locationNotes": "Notas de ubicacion",
+            "accessLocationNotes": "Notas de acceso a la ubicacion"
           },
           "placeholders": {
             "name": "Nombre de la propiedad",
@@ -1123,7 +1124,8 @@
             "filterType": "Tipo de filtro",
             "sanitizerType": "Sistema (sal/cloro)",
             "accessInfo": "Accesos / mascotas / instrucciones",
-            "locationNotes": "Notas de ubicacion"
+            "locationNotes": "Notas de ubicacion",
+            "accessLocationNotes": "Accesos, mascotas, codigos, estacionamiento o instrucciones de ubicacion"
           },
           "options": {
             "select": "Selecciona",
@@ -1143,7 +1145,7 @@
             "sections": {
               "identity": "Identidad de propiedad",
               "specs": "Especificaciones de piscina",
-              "access": "Accesos y notas"
+              "access": "Acceso y ubicacion"
             },
             "danger": {
               "title": "Zona de eliminacion",
@@ -1390,23 +1392,24 @@
       },
       "servicePayment": {
         "title": "Informacion de Servicio y Pago",
-        "subtitle": "Datos internos de inicio de servicio y pago por cliente.",
+        "subtitle": "Datos internos de servicio y pago para cada propiedad.",
         "sectionTitle": "Informacion de Servicio y Pago",
         "adminOnly": "Solo para uso interno del administrador. Nunca se muestra en el portal del cliente.",
         "adminBadge": "Solo admin",
-        "searchPlaceholder": "Buscar cliente, tipo de pago, notas...",
-        "empty": "No hay clientes que coincidan con la busqueda actual.",
+        "searchPlaceholder": "Buscar cliente, propiedad, tipo de pago, notas...",
+        "empty": "No hay propiedades que coincidan con la busqueda actual.",
         "emptyNotes": "Sin notas registradas.",
         "dayOfMonth": "Dia {{day}}",
         "modalKicker": "Tabla de Billing",
-        "modalTitle": "Editar informacion de servicio y pago",
+        "modalTitle": "Editar informacion de servicio y pago de la propiedad",
         "fields": {
           "customer": "Cliente",
+          "property": "Propiedad",
           "serviceStartDate": "Fecha de inicio del servicio",
           "paymentDay": "Dia de pago",
           "servicePrice": "Precio",
           "paymentType": "Tipo de pago",
-          "paymentNotes": "Notas"
+          "paymentNotes": "Notas de pago"
         },
         "placeholders": {
           "paymentDay": "1-31",
@@ -1420,6 +1423,7 @@
         },
         "table": {
           "customer": "Cliente",
+          "property": "Propiedad",
           "serviceStartDate": "Fecha de inicio del servicio",
           "paymentDay": "Dia de pago",
           "price": "Precio",
@@ -1435,7 +1439,7 @@
         "confirm": {
           "kicker": "Confirmacion",
           "title": "Guardar cambios?",
-          "subtitle": "Revisa la informacion actualizada de {{customer}} antes de guardar.",
+          "subtitle": "Revisa la informacion actualizada de {{property}} para {{customer}} antes de guardar.",
           "back": "Volver",
           "confirm": "Guardar cambios"
         }

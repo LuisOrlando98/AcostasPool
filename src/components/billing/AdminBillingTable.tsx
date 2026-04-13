@@ -8,6 +8,9 @@ import { SERVICE_PAYMENT_TYPE_VALUES } from "@/lib/customers/service-payment-inf
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type BillingRow = {
+  propertyId: string;
+  propertyName: string;
+  propertyAddress: string;
   customerId: string;
   customerName: string;
   serviceStartDate: string | null;
@@ -18,6 +21,9 @@ type BillingRow = {
 };
 
 type BillingDraft = {
+  propertyId: string;
+  propertyName: string;
+  propertyAddress: string;
   customerId: string;
   customerName: string;
   serviceStartDate: string;
@@ -29,11 +35,14 @@ type BillingDraft = {
 
 type AdminBillingTableProps = {
   rows: BillingRow[];
-  updateCustomerBillingAction: (formData: FormData) => Promise<void>;
+  updatePropertyBillingAction: (formData: FormData) => Promise<void>;
 };
 
 function toDraft(row: BillingRow): BillingDraft {
   return {
+    propertyId: row.propertyId,
+    propertyName: row.propertyName,
+    propertyAddress: row.propertyAddress,
     customerId: row.customerId,
     customerName: row.customerName,
     serviceStartDate: row.serviceStartDate ?? "",
@@ -47,7 +56,7 @@ function toDraft(row: BillingRow): BillingDraft {
 
 export default function AdminBillingTable({
   rows,
-  updateCustomerBillingAction,
+  updatePropertyBillingAction,
 }: AdminBillingTableProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -93,18 +102,26 @@ export default function AdminBillingTable({
 
   const filteredRows = useMemo(() => {
     const normalizedQuery = search.trim().toLowerCase();
-    const sorted = [...rows].sort((a, b) =>
-      a.customerName.localeCompare(b.customerName)
-    );
+    const sorted = [...rows].sort((a, b) => {
+      const customerOrder = a.customerName.localeCompare(b.customerName);
+      if (customerOrder !== 0) {
+        return customerOrder;
+      }
+      return a.propertyName.localeCompare(b.propertyName);
+    });
+
     if (!normalizedQuery) {
       return sorted;
     }
+
     return sorted.filter((row) => {
       const paymentTypeLabel = row.paymentType
         ? t(`admin.invoices.servicePayment.paymentTypes.${row.paymentType}`)
         : "";
       const haystack = [
         row.customerName,
+        row.propertyName,
+        row.propertyAddress,
         row.serviceStartDate ?? "",
         row.paymentDay?.toString() ?? "",
         row.servicePrice?.toFixed(2) ?? "",
@@ -136,6 +153,7 @@ export default function AdminBillingTable({
       return;
     }
     const formData = new FormData();
+    formData.set("propertyId", editing.propertyId);
     formData.set("customerId", editing.customerId);
     formData.set("serviceStartDate", editing.serviceStartDate);
     formData.set("paymentDay", editing.paymentDay);
@@ -144,7 +162,7 @@ export default function AdminBillingTable({
     formData.set("paymentNotes", editing.paymentNotes);
 
     startTransition(async () => {
-      await updateCustomerBillingAction(formData);
+      await updatePropertyBillingAction(formData);
       setConfirmOpen(false);
       setEditing(null);
       router.refresh();
@@ -195,7 +213,16 @@ export default function AdminBillingTable({
                         {t("admin.invoices.servicePayment.modalTitle")}
                       </h2>
                       <p className="text-sm text-slate-500">
-                        {editing.customerName}
+                        {editing.propertyName}
+                      </p>
+                      {editing.propertyAddress.trim() &&
+                      editing.propertyAddress !== editing.propertyName ? (
+                        <p className="text-xs text-slate-400">
+                          {editing.propertyAddress}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-xs font-medium text-slate-500">
+                        {`${t("admin.invoices.servicePayment.fields.customer")}: ${editing.customerName}`}
                       </p>
                     </div>
                     <button
@@ -383,11 +410,28 @@ export default function AdminBillingTable({
                     <p className="mt-2 text-sm text-slate-500">
                       {t("admin.invoices.servicePayment.confirm.subtitle", {
                         customer: editing.customerName,
+                        property: editing.propertyName,
                       })}
                     </p>
 
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
                       <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {t("admin.invoices.servicePayment.fields.customer")}
+                          </p>
+                          <p className="mt-1 text-slate-900">
+                            {editing.customerName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            {t("admin.invoices.servicePayment.fields.property")}
+                          </p>
+                          <p className="mt-1 text-slate-900">
+                            {editing.propertyName}
+                          </p>
+                        </div>
                         <div>
                           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                             {t(
@@ -511,11 +555,14 @@ export default function AdminBillingTable({
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-sm">
+            <table className="w-full min-w-[1120px] text-left text-sm">
               <thead className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.14em] text-slate-100/85">
                 <tr>
                   <th className="px-4 py-3">
                     {t("admin.invoices.servicePayment.table.customer")}
+                  </th>
+                  <th className="px-4 py-3">
+                    {t("admin.invoices.servicePayment.table.property")}
                   </th>
                   <th className="px-4 py-3">
                     {t("admin.invoices.servicePayment.table.serviceStartDate")}
@@ -540,15 +587,26 @@ export default function AdminBillingTable({
               <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
                       {t("admin.invoices.servicePayment.empty")}
                     </td>
                   </tr>
                 ) : (
                   filteredRows.map((row) => (
-                    <tr key={row.customerId} className="transition hover:bg-sky-50/40">
+                    <tr key={row.propertyId} className="transition hover:bg-sky-50/40">
                       <td className="px-4 py-3.5 font-semibold text-slate-900">
                         {row.customerName}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="font-semibold text-slate-900">
+                          {row.propertyName}
+                        </p>
+                        {row.propertyAddress.trim() &&
+                        row.propertyAddress !== row.propertyName ? (
+                          <p className="max-w-[18rem] truncate text-xs text-slate-500">
+                            {row.propertyAddress}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3.5">
                         {formatServiceDate(row.serviceStartDate)}
