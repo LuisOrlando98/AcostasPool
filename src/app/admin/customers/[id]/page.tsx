@@ -268,8 +268,17 @@ async function deleteCustomer(formData: FormData) {
 
   const customerId = String(formData.get("customerId") ?? "");
   const confirmDelete = String(formData.get("confirmDelete") ?? "no");
+  const typedConfirmation = String(
+    formData.get("typedConfirmation") ?? ""
+  )
+    .trim()
+    .toLowerCase();
 
-  if (!customerId || confirmDelete !== "yes") {
+  if (
+    !customerId ||
+    confirmDelete !== "yes" ||
+    !["eliminar", "delete"].includes(typedConfirmation)
+  ) {
     return;
   }
 
@@ -1260,6 +1269,14 @@ export default async function CustomerDetailPage({
             onCreateJob={createJobFromPlan}
             actionTargetId="new-plan"
           />
+
+          <div className="flex justify-end">
+            <DeleteCustomerButton
+              customerId={customer.id}
+              deleteCustomerAction={deleteCustomer}
+              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+            />
+          </div>
         </div>
       </section>
 
@@ -1541,12 +1558,7 @@ export default async function CustomerDetailPage({
                 />
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <DeleteCustomerButton
-                  customerId={customer.id}
-                  deleteCustomerAction={deleteCustomer}
-                  className="inline-flex items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
-                />
+              <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-end">
                 <FormSubmitButton
                   idleLabel={t("admin.customers.detail.actions.saveChanges")}
                   pendingLabel={t("admin.customers.detail.actions.saving")}
