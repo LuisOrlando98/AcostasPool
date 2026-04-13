@@ -1,4 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
+import CustomerTransferPanel from "@/components/developer/CustomerTransferPanel";
 import { requireDeveloper } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
@@ -129,6 +130,8 @@ export default async function DeveloperPage() {
           </p>
         </a>
       </section>
+
+      <CustomerTransferPanel />
     </AppShell>
   );
 }

@@ -2023,6 +2023,44 @@
           "overdueInvoices": "Overdue invoices",
           "unreadAdmin": "Admin unread"
         }
+      },
+      "customerTransfer": {
+        "title": "Import / Export",
+        "subtitle": "Import and export customers from the developer account only using a single reference JSON format.",
+        "formatLabel": "Format",
+        "export": {
+          "kicker": "Export",
+          "title": "Download current customers",
+          "subtitle": "Generate a JSON file with all current customers and properties to use as the base example for imports.",
+          "action": "Download export"
+        },
+        "import": {
+          "kicker": "Import",
+          "title": "Import customers from JSON",
+          "subtitle": "Upload a file that matches the export format exactly to create new customers and properties.",
+          "fileLabel": "JSON file",
+          "fileHint": "If a customer already exists by sourceCustomerId or email, it is skipped. This import does not create new passwords.",
+          "action": "Import file",
+          "pending": "Importing..."
+        },
+        "summary": {
+          "title": "Import result",
+          "createdCustomers": "Customers created",
+          "skippedCustomers": "Customers skipped",
+          "createdProperties": "Properties created",
+          "skippedProperties": "Properties skipped",
+          "errors": "Errors"
+        },
+        "status": {
+          "success": "Import completed.",
+          "partial": "Import completed with notes.",
+          "error": "The file could not be processed."
+        },
+        "errors": {
+          "detailsTitle": "Details",
+          "invalidResponse": "The server response was invalid.",
+          "missingFile": "Select a JSON file before importing."
+        }
       }
     },
     "notifications": {

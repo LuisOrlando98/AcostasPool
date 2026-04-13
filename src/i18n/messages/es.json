@@ -2023,6 +2023,44 @@
           "overdueInvoices": "Facturas vencidas",
           "unreadAdmin": "Admin no leidas"
         }
+      },
+      "customerTransfer": {
+        "title": "Import / Export",
+        "subtitle": "Importa y exporta clientes solo desde la cuenta developer usando un JSON unico de referencia.",
+        "formatLabel": "Formato",
+        "export": {
+          "kicker": "Export",
+          "title": "Descargar clientes actuales",
+          "subtitle": "Genera un JSON con todos los clientes y sus propiedades para usarlo como ejemplo base del import.",
+          "action": "Descargar export"
+        },
+        "import": {
+          "kicker": "Import",
+          "title": "Importar clientes desde JSON",
+          "subtitle": "Sube un archivo con exactamente el mismo formato del export para crear clientes y propiedades nuevas.",
+          "fileLabel": "Archivo JSON",
+          "fileHint": "Si un cliente ya existe por sourceCustomerId o email, se omite. Este import no crea passwords nuevas.",
+          "action": "Importar archivo",
+          "pending": "Importando..."
+        },
+        "summary": {
+          "title": "Resultado del import",
+          "createdCustomers": "Clientes creados",
+          "skippedCustomers": "Clientes omitidos",
+          "createdProperties": "Propiedades creadas",
+          "skippedProperties": "Propiedades omitidas",
+          "errors": "Errores"
+        },
+        "status": {
+          "success": "Import completado.",
+          "partial": "Import completado con observaciones.",
+          "error": "No se pudo procesar el archivo."
+        },
+        "errors": {
+          "detailsTitle": "Detalles",
+          "invalidResponse": "La respuesta del servidor no fue valida.",
+          "missingFile": "Selecciona un archivo JSON antes de importar."
+        }
       }
     },
     "notifications": {
