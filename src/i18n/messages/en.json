@@ -154,7 +154,7 @@
       "calendar": "Calendar",
       "technicians": "Technicians",
       "customers": "Customers",
-      "invoices": "Invoices",
+      "invoices": "Billing",
       "reports": "Reports",
       "settings": "Settings",
       "routes": "Routes & Jobs",
@@ -1060,6 +1060,7 @@
           "saveProperty": "Save property",
           "createJob": "Create job",
           "createPlan": "Create recurring plan",
+          "deleteCustomer": "Delete customer",
           "saving": "Saving...",
           "pause": "Pause",
           "activate": "Activate"
@@ -1338,8 +1339,13 @@
       }
     },
     "invoices": {
-      "title": "Invoices",
-      "subtitle": "Billing, delivery, and payment status.",
+      "title": "Billing",
+      "subtitle": "Invoices, service billing details, and payment tracking.",
+      "views": {
+        "subtitle": "Switch between invoice management and the admin-only payment table.",
+        "invoices": "Invoices",
+        "servicePayment": "Service & Payment Info"
+      },
       "theme": {
         "standard": "Standard",
         "special": "Special",
@@ -1352,7 +1358,7 @@
         "overdue": "Overdue"
       },
       "list": {
-        "title": "Invoices",
+        "title": "Billing",
         "recentTitle": "Recent invoices",
         "count": "{{count}} invoices registered.",
         "showing": "Showing {{count}} of {{total}} invoices.",
@@ -1380,6 +1386,63 @@
       },
       "actions": {
         "new": "New invoice"
+      },
+      "servicePayment": {
+        "title": "Service & Payment Info",
+        "subtitle": "Admin-only service start and payment details for each customer.",
+        "sectionTitle": "Service & Payment Info",
+        "adminOnly": "Internal use only. This information is never shown in the customer portal.",
+        "adminBadge": "Admin only",
+        "searchPlaceholder": "Search customer, payment type, notes...",
+        "empty": "No customers match the current search.",
+        "emptyNotes": "No notes added.",
+        "dayOfMonth": "Day {{day}}",
+        "modalKicker": "Billing table",
+        "modalTitle": "Edit Service & Payment Info",
+        "fields": {
+          "customer": "Customer",
+          "serviceStartDate": "Service Start Date",
+          "paymentDay": "Payment Day",
+          "servicePrice": "Price",
+          "paymentType": "Type of Payment",
+          "paymentNotes": "Notes"
+        },
+        "placeholders": {
+          "paymentDay": "1-31",
+          "servicePrice": "0.00",
+          "paymentType": "Select a payment type",
+          "paymentNotes": "Internal notes for billing or service follow-up"
+        },
+        "paymentTypes": {
+          "AUTO_CARD": "Auto card",
+          "CARD": "Card",
+          "ACH": "ACH",
+          "ZELLE": "Zelle",
+          "CHECK": "Check",
+          "CASH": "Cash",
+          "OTHER": "Other"
+        },
+        "table": {
+          "customer": "Customer",
+          "serviceStartDate": "Service Start Date",
+          "paymentDay": "Payment Day",
+          "price": "Price",
+          "paymentType": "Type of Payment",
+          "notes": "Notes",
+          "actions": "Actions"
+        },
+        "actions": {
+          "openTable": "Open billing table",
+          "reviewSave": "Review changes",
+          "saving": "Saving..."
+        },
+        "confirm": {
+          "kicker": "Confirmation",
+          "title": "Save changes?",
+          "subtitle": "Review the updated information for {{customer}} before saving.",
+          "back": "Back",
+          "confirm": "Save changes"
+        }
       },
       "filters": {
         "open": "Open filters",
@@ -1443,7 +1506,7 @@
         "kicker": "Complete invoice editor",
         "notFoundTitle": "Invoice editor",
         "notFoundSubtitle": "Invoice not found",
-        "back": "Back to invoices",
+        "back": "Back to Billing",
         "defaults": {
           "service": "Service"
         },

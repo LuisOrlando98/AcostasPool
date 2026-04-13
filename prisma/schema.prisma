@@ -162,6 +162,11 @@ model Customer {
   ciudad        String?
   estadoProvincia String?
   codigoPostal  String?
+  serviceStartDate DateTime?
+  paymentDay    Int?
+  servicePrice  Decimal?      @db.Decimal(10, 2)
+  paymentType   String?
+  paymentNotes  String?
   notas         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

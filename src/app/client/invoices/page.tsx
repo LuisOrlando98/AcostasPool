@@ -12,7 +12,9 @@ export default async function ClientInvoicesPage() {
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
-    include: { invoices: { orderBy: { createdAt: "desc" } } },
+    select: {
+      invoices: { orderBy: { createdAt: "desc" } },
+    },
   });
 
   if (!customer) {

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import CustomersOverview from "@/components/customers/CustomersOverview";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useI18n } from "@/i18n/client";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { SERVICE_PAYMENT_TYPE_VALUES } from "@/lib/customers/service-payment-info";
 
 type CustomerRow = {
   id: string;
@@ -53,11 +54,10 @@ export default function CustomersClient({
 }: CustomersClientProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const paymentTypeOptions = SERVICE_PAYMENT_TYPE_VALUES.map((value) => ({
+    value,
+    label: t(`admin.invoices.servicePayment.paymentTypes.${value}`),
+  }));
 
   useEffect(() => {
     if (!open) {
@@ -82,12 +82,9 @@ export default function CustomersClient({
     };
   }, [open]);
 
-  const modal = useMemo(() => {
-    if (!open || !mounted) {
-      return null;
-    }
-
-    return createPortal(
+  const modal =
+    typeof document !== "undefined" && open
+      ? createPortal(
       <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
         <button
           type="button"
@@ -267,6 +264,91 @@ export default function CustomersClient({
                       </span>
                     </label>
                   </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-800">
+                          {t("admin.invoices.servicePayment.sectionTitle")}
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          {t("admin.invoices.servicePayment.adminOnly")}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                        {t("admin.invoices.servicePayment.adminBadge")}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.serviceStartDate")}
+                        </label>
+                        <input
+                          type="date"
+                          name="serviceStartDate"
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.paymentDay")}
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="31"
+                          name="paymentDay"
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.servicePrice")}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          name="servicePrice"
+                          className="app-input mt-2 w-full px-4 py-3 text-sm"
+                          placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.paymentType")}
+                        </label>
+                        <select
+                          name="paymentType"
+                          defaultValue=""
+                          className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                        >
+                          <option value="">
+                            {t("admin.invoices.servicePayment.placeholders.paymentType")}
+                          </option>
+                          {paymentTypeOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {t("admin.invoices.servicePayment.fields.paymentNotes")}
+                      </label>
+                      <textarea
+                        name="paymentNotes"
+                        className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
+                        placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -319,8 +401,8 @@ export default function CustomersClient({
         </div>
       </div>,
       document.body
-    );
-  }, [createCustomer, mounted, open]);
+    )
+      : null;
 
   return (
     <>

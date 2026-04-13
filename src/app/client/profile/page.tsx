@@ -11,7 +11,20 @@ export default async function ClientProfilePage() {
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
-    include: {
+    select: {
+      nombre: true,
+      apellidos: true,
+      email: true,
+      telefono: true,
+      telefonoSecundario: true,
+      idiomaPreferencia: true,
+      direccionLinea1: true,
+      direccionLinea2: true,
+      ciudad: true,
+      estadoProvincia: true,
+      codigoPostal: true,
+      estadoCuenta: true,
+      pauseServicesFrom: true,
       user: {
         select: {
           avatarUrl: true,

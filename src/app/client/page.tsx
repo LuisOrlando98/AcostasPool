@@ -13,7 +13,7 @@ export default async function ClientPage() {
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
-    include: {
+    select: {
       jobs: {
         orderBy: { scheduledDate: "desc" },
         include: { property: true, photos: true },

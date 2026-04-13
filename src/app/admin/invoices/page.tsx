@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
+import AdminBillingTable from "@/components/billing/AdminBillingTable";
 import Badge from "@/components/ui/Badge";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
 import NewInvoiceModal from "@/components/invoices/NewInvoiceModal";
@@ -17,8 +18,10 @@ import { getAssetUrl } from "@/lib/assets";
 import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { logAuditEvent } from "@/lib/audit/log";
+import { parseServicePaymentInfoInput } from "@/lib/customers/service-payment-info";
 import {
   endOfBusinessDay,
+  formatBusinessDateInput,
   formatInBusinessTimeZone,
   parseBusinessDateInput,
   startOfBusinessDay,
@@ -201,6 +204,38 @@ async function deleteInvoice(formData: FormData) {
   revalidatePath("/client/invoices");
 }
 
+async function updateCustomerBillingAction(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const customerId = String(formData.get("customerId") ?? "").trim();
+  const servicePaymentInfo = parseServicePaymentInfoInput({
+    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
+    paymentDay: String(formData.get("paymentDay") ?? ""),
+    servicePrice: String(formData.get("servicePrice") ?? ""),
+    paymentType: String(formData.get("paymentType") ?? ""),
+    paymentNotes: String(formData.get("paymentNotes") ?? ""),
+  });
+
+  if (!customerId || !servicePaymentInfo) {
+    return;
+  }
+
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: {
+      serviceStartDate: servicePaymentInfo.serviceStartDate,
+      paymentDay: servicePaymentInfo.paymentDay,
+      servicePrice: servicePaymentInfo.servicePrice,
+      paymentType: servicePaymentInfo.paymentType,
+      paymentNotes: servicePaymentInfo.paymentNotes,
+    },
+  });
+
+  revalidatePath("/admin/invoices");
+  revalidatePath(`/admin/customers/${customerId}`);
+}
+
 type InvoicesPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
@@ -216,6 +251,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     return Array.isArray(value) ? value[0] : value;
   };
   const pageParam = parseParam("page");
+  const rawView = (parseParam("view") ?? "").trim();
   const query = (parseParam("q") ?? "").trim();
   const customerFilter = (parseParam("customerId") ?? "").trim();
   const exactDateParam = (parseParam("date") ?? "").trim();
@@ -223,10 +259,22 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   const toDateParam = (parseParam("to") ?? "").trim();
   const requestedPage = Number(pageParam);
   const pageSize = 10;
+  const currentView =
+    rawView === "service-payment" ? "service-payment" : "invoices";
 
   const customers = await prisma.customer.findMany({
     orderBy: { nombre: "asc" },
-    select: { id: true, nombre: true, apellidos: true, email: true },
+    select: {
+      id: true,
+      nombre: true,
+      apellidos: true,
+      email: true,
+      serviceStartDate: true,
+      paymentDay: true,
+      servicePrice: true,
+      paymentType: true,
+      paymentNotes: true,
+    },
   });
   const customerIds = new Set(customers.map((customer) => customer.id));
 
@@ -353,6 +401,18 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           }
         )
       : null;
+  const billingRows = customers.map((customer) => ({
+    customerId: customer.id,
+    customerName: formatCustomerName(customer),
+    serviceStartDate: customer.serviceStartDate
+      ? formatBusinessDateInput(customer.serviceStartDate)
+      : null,
+    paymentDay: customer.paymentDay,
+    servicePrice:
+      customer.servicePrice !== null ? Number(customer.servicePrice) : null,
+    paymentType: customer.paymentType,
+    paymentNotes: customer.paymentNotes,
+  }));
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();
@@ -380,6 +440,44 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       subtitle={t("admin.invoices.subtitle")}
       role="ADMIN"
     >
+      <section className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">{t("admin.invoices.title")}</h2>
+          <p className="text-sm text-slate-500">
+            {t("admin.invoices.views.subtitle")}
+          </p>
+        </div>
+        <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+          <Link
+            href="/admin/invoices"
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+              currentView === "invoices"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {t("admin.invoices.views.invoices")}
+          </Link>
+          <Link
+            href="/admin/invoices?view=service-payment"
+            className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+              currentView === "service-payment"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {t("admin.invoices.views.servicePayment")}
+          </Link>
+        </div>
+      </section>
+
+      {currentView === "service-payment" ? (
+        <AdminBillingTable
+          rows={billingRows}
+          updateCustomerBillingAction={updateCustomerBillingAction}
+        />
+      ) : (
+        <>
       <input id="invoice-filters" type="checkbox" className="peer/invoice-filters hidden" />
       <section className="space-y-6">
         <div className="app-card p-6 shadow-contrast">
@@ -427,12 +525,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                 <span className="sr-only">{t("admin.invoices.filters.open")}</span>
               </label>
               {hasActiveFilters ? (
-                <a
+                <Link
                   href="/admin/invoices"
                   className="app-button-ghost px-3 py-2 text-xs font-semibold"
                 >
                   {t("admin.invoices.filters.reset")}
-                </a>
+                </Link>
               ) : null}
               <NewInvoiceModal
                 customers={customers.map((customer) => ({
@@ -741,12 +839,12 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
               </p>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <a
+                <Link
                   href="/admin/invoices"
                   className="app-button-ghost w-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
                 >
                   {t("admin.invoices.filters.reset")}
-                </a>
+                </Link>
                 <button
                   type="submit"
                   className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
@@ -758,6 +856,8 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           </div>
         </div>
       </div>
+        </>
+      )}
     </AppShell>
   );
 }

@@ -154,7 +154,7 @@
       "calendar": "Calendario",
       "technicians": "Tecnicos",
       "customers": "Clientes",
-      "invoices": "Facturas",
+      "invoices": "Billing",
       "reports": "Reportes",
       "settings": "Ajustes",
       "routes": "Rutas y trabajos",
@@ -1060,6 +1060,7 @@
           "saveProperty": "Guardar propiedad",
           "createJob": "Crear trabajo",
           "createPlan": "Crear plan recurrente",
+          "deleteCustomer": "Eliminar cliente",
           "saving": "Guardando...",
           "pause": "Pausar",
           "activate": "Activar"
@@ -1338,8 +1339,13 @@
       }
     },
     "invoices": {
-      "title": "Facturas",
-      "subtitle": "Facturacion, envio y estados de pago.",
+      "title": "Billing",
+      "subtitle": "Facturas, datos de servicio y seguimiento de pagos.",
+      "views": {
+        "subtitle": "Cambia entre la gestion de facturas y la tabla interna de pagos.",
+        "invoices": "Facturas",
+        "servicePayment": "Service & Payment Info"
+      },
       "theme": {
         "standard": "Normal",
         "special": "Especial",
@@ -1352,7 +1358,7 @@
         "overdue": "Vencida"
       },
       "list": {
-        "title": "Facturas",
+        "title": "Billing",
         "recentTitle": "Facturas recientes",
         "count": "{{count}} facturas registradas.",
         "showing": "Mostrando {{count}} de {{total}} facturas.",
@@ -1380,6 +1386,63 @@
       },
       "actions": {
         "new": "Nueva factura"
+      },
+      "servicePayment": {
+        "title": "Service & Payment Info",
+        "subtitle": "Datos internos de inicio de servicio y pago por cliente.",
+        "sectionTitle": "Service & Payment Info",
+        "adminOnly": "Solo para uso interno del administrador. Nunca se muestra en el portal del cliente.",
+        "adminBadge": "Solo admin",
+        "searchPlaceholder": "Buscar cliente, tipo de pago, notas...",
+        "empty": "No hay clientes que coincidan con la busqueda actual.",
+        "emptyNotes": "Sin notas registradas.",
+        "dayOfMonth": "Dia {{day}}",
+        "modalKicker": "Tabla de Billing",
+        "modalTitle": "Editar Service & Payment Info",
+        "fields": {
+          "customer": "Cliente",
+          "serviceStartDate": "Service Start Date",
+          "paymentDay": "Payment Day",
+          "servicePrice": "Price",
+          "paymentType": "Type of Payment",
+          "paymentNotes": "Notes"
+        },
+        "placeholders": {
+          "paymentDay": "1-31",
+          "servicePrice": "0.00",
+          "paymentType": "Selecciona un tipo de pago",
+          "paymentNotes": "Notas internas para billing o seguimiento del servicio"
+        },
+        "paymentTypes": {
+          "AUTO_CARD": "Tarjeta automatica",
+          "CARD": "Tarjeta",
+          "ACH": "ACH",
+          "ZELLE": "Zelle",
+          "CHECK": "Cheque",
+          "CASH": "Efectivo",
+          "OTHER": "Otro"
+        },
+        "table": {
+          "customer": "Customer",
+          "serviceStartDate": "Start Service Date",
+          "paymentDay": "Payment Day",
+          "price": "Price",
+          "paymentType": "Type of Payment",
+          "notes": "Notes",
+          "actions": "Acciones"
+        },
+        "actions": {
+          "openTable": "Abrir tabla de billing",
+          "reviewSave": "Revisar cambios",
+          "saving": "Guardando..."
+        },
+        "confirm": {
+          "kicker": "Confirmacion",
+          "title": "Guardar cambios?",
+          "subtitle": "Revisa la informacion actualizada de {{customer}} antes de guardar.",
+          "back": "Volver",
+          "confirm": "Guardar cambios"
+        }
       },
       "filters": {
         "open": "Abrir filtros",
@@ -1443,7 +1506,7 @@
         "kicker": "Editor completo de factura",
         "notFoundTitle": "Editor de factura",
         "notFoundSubtitle": "Factura no encontrada",
-        "back": "Volver a facturas",
+        "back": "Volver a Billing",
         "defaults": {
           "service": "Servicio"
         },

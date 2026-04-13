@@ -13,7 +13,7 @@ export default async function ClientPropertiesPage() {
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
-    include: {
+    select: {
       properties: {
         orderBy: [{ createdAt: "asc" }],
       },
