@@ -47,12 +47,15 @@ async function createCustomer(formData: FormData) {
   });
   const enviarInvitacion = Boolean(formData.get("enviarInvitacion"));
 
-  const telefono = normalizeUsPhone(telefonoRaw);
+  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) : "";
   const telefonoSecundario = telefonoSecundarioRaw
     ? normalizeUsPhone(telefonoSecundarioRaw)
     : null;
 
-  if (!nombre || !apellidos || !email || !telefono) {
+  if (!nombre) {
+    return;
+  }
+  if (telefonoRaw && !telefono) {
     return;
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
@@ -62,20 +65,22 @@ async function createCustomer(formData: FormData) {
     return;
   }
 
-  const existingUser = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
-    select: { id: true, role: true },
-  });
-  if (existingUser && existingUser.role !== "CUSTOMER") {
-    return;
-  }
-  if (existingUser) {
-    const linkedCustomer = await prisma.customer.findFirst({
-      where: { userId: existingUser.id },
-      select: { id: true },
+  if (email) {
+    const existingUser = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: { id: true, role: true },
     });
-    if (linkedCustomer) {
+    if (existingUser && existingUser.role !== "CUSTOMER") {
       return;
+    }
+    if (existingUser) {
+      const linkedCustomer = await prisma.customer.findFirst({
+        where: { userId: existingUser.id },
+        select: { id: true },
+      });
+      if (linkedCustomer) {
+        return;
+      }
     }
   }
 
@@ -110,7 +115,7 @@ async function createCustomer(formData: FormData) {
     },
   });
 
-  if (enviarInvitacion) {
+  if (enviarInvitacion && customer.email) {
     try {
       const result = await sendCustomerInvite(customer.id);
       if (!result.ok) {

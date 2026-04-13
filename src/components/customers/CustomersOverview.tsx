@@ -60,32 +60,16 @@ export default function CustomersOverview({
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const [search, setSearch] = useState(filters.query);
-  const [statusFilter, setStatusFilter] = useState(filters.status);
-  const [sortKey, setSortKey] = useState<SortKey>(filters.sort as SortKey);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const activeQuery = filters.query;
+  const activeStatus = filters.status;
+  const activeSort = filters.sort as SortKey;
   const [draftFilters, setDraftFilters] = useState<DraftFilters>({
-    query: filters.query,
-    status: filters.status,
-    sort: filters.sort as SortKey,
+    query: activeQuery,
+    status: activeStatus,
+    sort: activeSort,
   });
   const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    setSearch(filters.query);
-    setStatusFilter(filters.status);
-    setSortKey(filters.sort as SortKey);
-    setDraftFilters({
-      query: filters.query,
-      status: filters.status,
-      sort: filters.sort as SortKey,
-    });
-  }, [filters.query, filters.status, filters.sort]);
 
   useEffect(() => {
     if (!isFiltersOpen) {
@@ -115,9 +99,9 @@ export default function CustomersOverview({
     page?: number;
   }) => {
     const params = new URLSearchParams();
-    const nextQuery = next.query ?? search;
-    const nextStatus = next.status ?? statusFilter;
-    const nextSort = next.sort ?? sortKey;
+    const nextQuery = next.query ?? activeQuery;
+    const nextStatus = next.status ?? activeStatus;
+    const nextSort = next.sort ?? activeSort;
     const nextPage = next.page ?? pagination.page;
 
     if (nextQuery.trim()) {
@@ -138,17 +122,19 @@ export default function CustomersOverview({
   };
 
   const hasActiveFilters =
-    search.trim().length > 0 || statusFilter !== "ALL" || sortKey !== "name";
+    activeQuery.trim().length > 0 ||
+    activeStatus !== "ALL" ||
+    activeSort !== "name";
   const activeFilterCount =
-    (search.trim() ? 1 : 0) +
-    (statusFilter !== "ALL" ? 1 : 0) +
-    (sortKey !== "name" ? 1 : 0);
+    (activeQuery.trim() ? 1 : 0) +
+    (activeStatus !== "ALL" ? 1 : 0) +
+    (activeSort !== "name" ? 1 : 0);
 
   const openFiltersModal = () => {
     setDraftFilters({
-      query: search,
-      status: statusFilter,
-      sort: sortKey,
+      query: activeQuery,
+      status: activeStatus,
+      sort: activeSort,
     });
     setIsFiltersOpen(true);
   };
@@ -158,9 +144,6 @@ export default function CustomersOverview({
     const nextStatus = draftFilters.status || "ALL";
     const nextSort = draftFilters.sort || "name";
 
-    setSearch(nextQuery);
-    setStatusFilter(nextStatus);
-    setSortKey(nextSort);
     pushFilters({ query: nextQuery, status: nextStatus, sort: nextSort, page: 1 });
     setIsFiltersOpen(false);
   };
@@ -171,9 +154,6 @@ export default function CustomersOverview({
       status: "ALL",
       sort: "name",
     };
-    setSearch(reset.query);
-    setStatusFilter(reset.status);
-    setSortKey(reset.sort);
     setDraftFilters(reset);
     pushFilters({ query: reset.query, status: reset.status, sort: reset.sort, page: 1 });
   };
@@ -245,7 +225,7 @@ export default function CustomersOverview({
   );
 
   const filtersModal =
-    mounted && isFiltersOpen
+    typeof document !== "undefined" && isFiltersOpen
       ? createPortal(
           <div className="app-modal-layer fixed inset-0 z-[2400] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
             <button
@@ -490,8 +470,11 @@ export default function CustomersOverview({
                               <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={customer.name}>
                                 {customer.name}
                               </p>
-                              <p className="max-w-[12rem] truncate text-[11px] text-slate-400" title={customer.email}>
-                                {customer.email}
+                              <p
+                                className="max-w-[12rem] truncate text-[11px] text-slate-400"
+                                title={customer.email || t("common.labels.notAvailable")}
+                              >
+                                {customer.email || t("common.labels.notAvailable")}
                               </p>
                             </td>
                             <td className="px-4 py-3.5 text-[11px] text-slate-600">

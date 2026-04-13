@@ -117,12 +117,15 @@ async function updateCustomer(formData: FormData) {
   });
   const nextAccountStatus = estadoCuenta === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
-  const telefono = normalizeUsPhone(telefonoRaw);
+  const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) : "";
   const telefonoSecundario = telefonoSecundarioRaw
     ? normalizeUsPhone(telefonoSecundarioRaw)
     : null;
 
-  if (!customerId || !nombre || !apellidos || !email || !telefono) {
+  if (!customerId || !nombre) {
+    return;
+  }
+  if (telefonoRaw && !telefono) {
     return;
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
@@ -140,12 +143,19 @@ async function updateCustomer(formData: FormData) {
 
   const existingCustomer = await prisma.customer.findUnique({
     where: { id: customerId },
-    select: { userId: true, estadoCuenta: true },
+    select: {
+      userId: true,
+      email: true,
+      estadoCuenta: true,
+      user: {
+        select: { email: true },
+      },
+    },
   });
   if (!existingCustomer) {
     return;
   }
-  if (existingCustomer.userId) {
+  if (email && existingCustomer.userId) {
     const duplicate = await prisma.user.findFirst({
       where: {
         id: { not: existingCustomer.userId },
@@ -158,12 +168,18 @@ async function updateCustomer(formData: FormData) {
     }
   }
 
+  const resolvedEmail =
+    email ||
+    (existingCustomer.userId
+      ? existingCustomer.user?.email ?? existingCustomer.email ?? ""
+      : "");
+
   const customer = await prisma.customer.update({
     where: { id: customerId },
     data: {
       nombre,
       apellidos,
-      email,
+      email: resolvedEmail,
       telefono,
       telefonoSecundario,
       estadoCuenta: nextAccountStatus,
@@ -195,7 +211,7 @@ async function updateCustomer(formData: FormData) {
     await prisma.user.update({
       where: { id: customer.userId },
       data: {
-        email,
+        email: resolvedEmail,
         fullName,
         locale: customer.idiomaPreferencia,
         isActive: nextAccountStatus === "ACTIVE",
@@ -919,6 +935,8 @@ export default async function CustomerDetailPage({
           currency: "USD",
         }).format(Number(customer.servicePrice))
       : t("common.labels.notAvailable");
+  const customerEmailLabel = customer.email || t("common.labels.notAvailable");
+  const hasCustomerEmail = Boolean(customer.email?.trim());
   const paymentTypeLabel = customer.paymentType
     ? paymentTypeLabels[customer.paymentType as keyof typeof paymentTypeLabels] ??
       customer.paymentType
@@ -945,7 +963,7 @@ export default async function CustomerDetailPage({
                   {t("admin.customers.detail.kicker")}
                 </p>
                 <h2 className="text-2xl font-semibold">{customerName}</h2>
-                <p className="text-sm text-sky-100/80">{customer.email}</p>
+                <p className="text-sm text-sky-100/80">{customerEmailLabel}</p>
                 <p className="text-xs text-sky-100/60">
                   {formatUsPhone(customer.telefono) ||
                     t("admin.routes.labels.noPhone")}
@@ -1054,7 +1072,19 @@ export default async function CustomerDetailPage({
                 </div>
                 <form action={inviteCustomer}>
                   <input type="hidden" name="customerId" value={customer.id} />
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-slate-300">
+                  <button
+                    disabled={!hasCustomerEmail}
+                    title={
+                      hasCustomerEmail
+                        ? undefined
+                        : t("admin.customers.detail.actions.inviteNeedsEmail")
+                    }
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                      hasCustomerEmail
+                        ? "border-slate-200 text-slate-600 hover:border-slate-300"
+                        : "border-slate-100 text-slate-300"
+                    }`}
+                  >
                     {t("admin.customers.detail.actions.sendInvite")}
                   </button>
                 </form>
@@ -1074,7 +1104,7 @@ export default async function CustomerDetailPage({
                     </label>
                   </div>
                   <p className="mt-3 text-sm font-semibold text-slate-900">{customerName}</p>
-                  <p className="mt-1 text-xs text-slate-600">{customer.email}</p>
+                  <p className="mt-1 text-xs text-slate-600">{customerEmailLabel}</p>
                   <p className="text-xs text-slate-600">
                     {formatUsPhone(customer.telefono) || t("admin.routes.labels.noPhone")}
                   </p>
@@ -1290,7 +1320,6 @@ export default async function CustomerDetailPage({
                     name="apellidos"
                     defaultValue={customer.apellidos ?? ""}
                     className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    required
                   />
                 </div>
               </div>
@@ -1303,9 +1332,8 @@ export default async function CustomerDetailPage({
                   <input
                     name="email"
                     type="email"
-                    defaultValue={customer.email}
+                    defaultValue={customer.email ?? ""}
                     className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    required
                   />
                 </div>
                 <div>
@@ -1332,7 +1360,6 @@ export default async function CustomerDetailPage({
                     name="telefono"
                     defaultValue={formatUsPhone(customer.telefono) ?? ""}
                     className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    required
                   />
                 </div>
                 <div>

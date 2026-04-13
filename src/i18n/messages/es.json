@@ -1029,7 +1029,7 @@
           "type": "Tipo de cliente",
           "allowWeekendBooking": "Cliente especial: permitir citas sabado y domingo",
           "sendInvite": "Enviar invitacion por email ahora",
-          "inviteHint": "No se crea usuario de portal hasta que envies la invitacion."
+          "inviteHint": "No se crea usuario de portal hasta que envies la invitacion, y la invitacion requiere un email del cliente."
         },
         "placeholders": {
           "firstName": "Nombre",
@@ -1056,6 +1056,7 @@
           "scheduleJob": "Programar trabajo",
           "newPlan": "Nuevo plan",
           "sendInvite": "Enviar invitacion",
+          "inviteNeedsEmail": "Agrega un email antes de enviar la invitacion al portal.",
           "saveChanges": "Guardar cambios",
           "saveProperty": "Guardar propiedad",
           "createJob": "Crear trabajo",
@@ -1388,9 +1389,9 @@
         "new": "Nueva factura"
       },
       "servicePayment": {
-        "title": "Service & Payment Info",
+        "title": "Informacion de Servicio y Pago",
         "subtitle": "Datos internos de inicio de servicio y pago por cliente.",
-        "sectionTitle": "Service & Payment Info",
+        "sectionTitle": "Informacion de Servicio y Pago",
         "adminOnly": "Solo para uso interno del administrador. Nunca se muestra en el portal del cliente.",
         "adminBadge": "Solo admin",
         "searchPlaceholder": "Buscar cliente, tipo de pago, notas...",
@@ -1398,37 +1399,32 @@
         "emptyNotes": "Sin notas registradas.",
         "dayOfMonth": "Dia {{day}}",
         "modalKicker": "Tabla de Billing",
-        "modalTitle": "Editar Service & Payment Info",
+        "modalTitle": "Editar informacion de servicio y pago",
         "fields": {
           "customer": "Cliente",
-          "serviceStartDate": "Service Start Date",
-          "paymentDay": "Payment Day",
-          "servicePrice": "Price",
-          "paymentType": "Type of Payment",
-          "paymentNotes": "Notes"
+          "serviceStartDate": "Fecha de inicio del servicio",
+          "paymentDay": "Dia de pago",
+          "servicePrice": "Precio",
+          "paymentType": "Tipo de pago",
+          "paymentNotes": "Notas"
         },
         "placeholders": {
           "paymentDay": "1-31",
           "servicePrice": "0.00",
-          "paymentType": "Selecciona un tipo de pago",
+          "paymentType": "Selecciona una opcion",
           "paymentNotes": "Notas internas para billing o seguimiento del servicio"
         },
         "paymentTypes": {
-          "AUTO_CARD": "Tarjeta automatica",
-          "CARD": "Tarjeta",
-          "ACH": "ACH",
-          "ZELLE": "Zelle",
-          "CHECK": "Cheque",
-          "CASH": "Efectivo",
-          "OTHER": "Otro"
+          "TO_WORK": "X-Trabajar",
+          "WORKED": "Trabajado"
         },
         "table": {
-          "customer": "Customer",
-          "serviceStartDate": "Start Service Date",
-          "paymentDay": "Payment Day",
-          "price": "Price",
-          "paymentType": "Type of Payment",
-          "notes": "Notes",
+          "customer": "Cliente",
+          "serviceStartDate": "Fecha de inicio del servicio",
+          "paymentDay": "Dia de pago",
+          "price": "Precio",
+          "paymentType": "Tipo de pago",
+          "notes": "Notas",
           "actions": "Acciones"
         },
         "actions": {

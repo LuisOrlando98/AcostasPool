@@ -1029,7 +1029,7 @@
           "type": "Customer type",
           "allowWeekendBooking": "Special customer: allow Saturday and Sunday booking",
           "sendInvite": "Send email invitation now",
-          "inviteHint": "No portal user is created until you send an invitation."
+          "inviteHint": "No portal user is created until you send an invitation, and invitations require a customer email."
         },
         "placeholders": {
           "firstName": "First name",
@@ -1056,6 +1056,7 @@
           "scheduleJob": "Schedule job",
           "newPlan": "New plan",
           "sendInvite": "Send invite",
+          "inviteNeedsEmail": "Add an email before sending a portal invite.",
           "saveChanges": "Save changes",
           "saveProperty": "Save property",
           "createJob": "Create job",
@@ -1410,17 +1411,12 @@
         "placeholders": {
           "paymentDay": "1-31",
           "servicePrice": "0.00",
-          "paymentType": "Select a payment type",
+          "paymentType": "Select an option",
           "paymentNotes": "Internal notes for billing or service follow-up"
         },
         "paymentTypes": {
-          "AUTO_CARD": "Auto card",
-          "CARD": "Card",
-          "ACH": "ACH",
-          "ZELLE": "Zelle",
-          "CHECK": "Check",
-          "CASH": "Cash",
-          "OTHER": "Other"
+          "TO_WORK": "To Work",
+          "WORKED": "Worked"
         },
         "table": {
           "customer": "Customer",

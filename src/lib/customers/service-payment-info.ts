@@ -1,13 +1,8 @@
 import { parseBusinessDateInput, startOfBusinessDay } from "@/lib/timezone";
 
 export const SERVICE_PAYMENT_TYPE_VALUES = [
-  "AUTO_CARD",
-  "CARD",
-  "ACH",
-  "ZELLE",
-  "CHECK",
-  "CASH",
-  "OTHER",
+  "TO_WORK",
+  "WORKED",
 ] as const;
 
 export type ServicePaymentType = (typeof SERVICE_PAYMENT_TYPE_VALUES)[number];
@@ -24,14 +19,15 @@ export function normalizeServicePaymentType(
   value: string
 ): ServicePaymentType | null {
   const normalized = value.trim().toUpperCase().replace(/[\s/-]+/g, "_");
-  if (
-    SERVICE_PAYMENT_TYPE_VALUES.includes(
-      normalized as ServicePaymentType
-    )
-  ) {
-    return normalized as ServicePaymentType;
-  }
-  return null;
+  const aliases: Record<string, ServicePaymentType> = {
+    TO_WORK: "TO_WORK",
+    X_TRABAJAR: "TO_WORK",
+    POR_TRABAJAR: "TO_WORK",
+    WORKED: "WORKED",
+    TRABAJADO: "WORKED",
+  };
+
+  return aliases[normalized] ?? null;
 }
 
 export function parseServicePaymentInfoInput(input: {

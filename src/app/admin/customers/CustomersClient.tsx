@@ -158,7 +158,6 @@ export default function CustomersClient({
                           name="apellidos"
                           className="app-input mt-2 w-full px-4 py-3 text-sm"
                           placeholder={t("admin.customers.new.placeholders.lastName")}
-                          required
                         />
                       </div>
                     </div>
@@ -172,7 +171,6 @@ export default function CustomersClient({
                           type="email"
                           className="app-input mt-2 w-full px-4 py-3 text-sm"
                           placeholder={t("admin.customers.new.placeholders.email")}
-                          required
                         />
                       </div>
                       <div>
@@ -198,7 +196,6 @@ export default function CustomersClient({
                           name="telefono"
                           className="app-input mt-2 w-full px-4 py-3 text-sm"
                           placeholder={t("admin.customers.new.placeholders.phone")}
-                          required
                         />
                       </div>
                       <div>
