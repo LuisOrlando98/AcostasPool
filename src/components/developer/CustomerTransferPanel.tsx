@@ -150,12 +150,26 @@ export default function CustomerTransferPanel() {
           <p className="mt-2 text-sm text-slate-600">
             {t("admin.developer.customerTransfer.export.subtitle")}
           </p>
-          <a
-            href="/api/admin/developer/customers-transfer/export"
-            className="app-button-primary mt-4 inline-flex px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
-          >
-            {t("admin.developer.customerTransfer.export.action")}
-          </a>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <a
+              href="/api/admin/developer/customers-transfer/export?format=xlsx"
+              className="app-button-primary inline-flex px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
+            >
+              {t("admin.developer.customerTransfer.export.actionXlsx")}
+            </a>
+            <a
+              href="/api/admin/developer/customers-transfer/export?format=csv"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 transition hover:border-slate-300"
+            >
+              {t("admin.developer.customerTransfer.export.actionCsv")}
+            </a>
+            <a
+              href="/api/admin/developer/customers-transfer/export?format=json"
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-700 transition hover:border-slate-300"
+            >
+              {t("admin.developer.customerTransfer.export.actionJson")}
+            </a>
+          </div>
         </article>
 
         <article className="rounded-3xl border border-slate-200 bg-white p-5">
@@ -176,7 +190,7 @@ export default function CustomerTransferPanel() {
               </label>
               <input
                 type="file"
-                accept="application/json,.json"
+                accept="application/json,.json,text/csv,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx"
                 className="mt-2 block w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.14em] file:text-white"
                 onChange={(event) =>
                   setFile(event.target.files?.[0] ?? null)

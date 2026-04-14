@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
+import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
@@ -41,6 +42,11 @@ import {
   formatInBusinessTimeZone,
   getBusinessTimeParts,
 } from "@/lib/timezone";
+import { withFeedbackParam } from "@/lib/ui/action-feedback";
+
+function customerDetailFeedbackPath(customerId: string, feedback: string) {
+  return withFeedbackParam(`/admin/customers/${customerId}`, feedback);
+}
 
 async function createProperty(formData: FormData) {
   "use server";
@@ -98,6 +104,7 @@ async function createProperty(formData: FormData) {
 
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  redirect(customerDetailFeedbackPath(customerId, "property-created"));
 }
 async function updateCustomer(formData: FormData) {
   "use server";
@@ -243,6 +250,7 @@ async function updateCustomer(formData: FormData) {
 
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  redirect(customerDetailFeedbackPath(customerId, "customer-saved"));
 }
 
 async function inviteCustomer(formData: FormData) {
@@ -383,7 +391,7 @@ async function deleteCustomer(formData: FormData) {
   revalidatePath("/admin/invoices");
   revalidatePath("/admin/notifications");
   revalidatePath("/admin/reports");
-  redirect("/admin/customers");
+  redirect(withFeedbackParam("/admin/customers", "customer-deleted"));
 }
 
 async function deleteProperty(formData: FormData) {
@@ -412,6 +420,7 @@ async function deleteProperty(formData: FormData) {
 
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  redirect(customerDetailFeedbackPath(customerId, "property-deleted"));
 }
 
 async function updateProperty(formData: FormData) {
@@ -466,6 +475,7 @@ async function updateProperty(formData: FormData) {
 
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  redirect(customerDetailFeedbackPath(customerId, "property-saved"));
 }
 
 async function createJob(formData: FormData) {
@@ -571,6 +581,7 @@ async function createJob(formData: FormData) {
   });
 
   revalidatePath(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "job-created"));
 }
 
 async function createServicePlan(formData: FormData) {
@@ -642,6 +653,7 @@ async function createServicePlan(formData: FormData) {
   });
 
   revalidatePath(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "plan-created"));
 }
 
 async function toggleServicePlan(formData: FormData) {
@@ -759,19 +771,25 @@ async function createJobFromPlan(formData: FormData) {
 
   revalidatePath(`/admin/customers/${plan.customerId}`);
   revalidatePath("/admin/routes");
+  redirect(customerDetailFeedbackPath(plan.customerId, "job-created"));
 }
 
 export default async function CustomerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   await requireRole("ADMIN");
   const t = await getTranslations();
   const locale = await getRequestLocale();
 
   const resolvedParams = await resolveParams(params);
+  const resolvedSearchParams = await Promise.resolve(searchParams);
   const customerId = resolvedParams?.id;
+  const feedbackValue = resolvedSearchParams?.feedback;
+  const feedback = Array.isArray(feedbackValue) ? feedbackValue[0] : feedbackValue;
   if (!customerId) {
     return (
       <AppShell
@@ -959,6 +977,37 @@ export default async function CustomerDetailPage({
       role="ADMIN"
       wide
     >
+      {feedback === "customer-saved" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.saved")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "property-created" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.propertyCreated")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "property-saved" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.propertySaved")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "property-deleted" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.propertyDeleted")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "job-created" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.jobCreated")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "plan-created" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.planCreated")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : null}
       <input id="new-plan" type="checkbox" className="peer/plan hidden" />
       <input id="new-property" type="checkbox" className="peer/property hidden" />
       <input id="new-job" type="checkbox" className="peer/job hidden" />
@@ -1224,7 +1273,7 @@ export default async function CustomerDetailPage({
         />
         <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   {t("admin.customers.detail.sections.profileTitle")}
@@ -1402,6 +1451,7 @@ export default async function CustomerDetailPage({
                 <FormSubmitButton
                   idleLabel={t("admin.customers.detail.actions.saveChanges")}
                   pendingLabel={t("admin.customers.detail.actions.saving")}
+                  successLabel={t("common.feedback.saved")}
                 />
               </div>
             </form>
@@ -1415,7 +1465,7 @@ export default async function CustomerDetailPage({
         />
         <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   {t("admin.customers.detail.properties.modalKicker")}
@@ -1665,6 +1715,7 @@ export default async function CustomerDetailPage({
             <FormSubmitButton
               idleLabel={t("admin.customers.detail.actions.saveProperty")}
               pendingLabel={t("admin.customers.detail.actions.saving")}
+              successLabel={t("common.feedback.created")}
               className="w-full"
             />
             </form>
@@ -1679,7 +1730,7 @@ export default async function CustomerDetailPage({
         />
         <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   {t("admin.customers.detail.jobs.modalKicker")}
@@ -1853,6 +1904,7 @@ export default async function CustomerDetailPage({
             <FormSubmitButton
               idleLabel={t("admin.customers.detail.actions.createJob")}
               pendingLabel={t("admin.customers.detail.actions.saving")}
+              successLabel={t("common.feedback.created")}
               className="w-full"
             />
             </form>
@@ -1867,7 +1919,7 @@ export default async function CustomerDetailPage({
         />
         <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
           <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   {t("admin.customers.detail.plans.modalKicker")}
@@ -2055,6 +2107,7 @@ export default async function CustomerDetailPage({
             <FormSubmitButton
               idleLabel={t("admin.customers.detail.actions.createPlan")}
               pendingLabel={t("admin.customers.detail.actions.saving")}
+              successLabel={t("common.feedback.created")}
               className="w-full"
             />
             </form>

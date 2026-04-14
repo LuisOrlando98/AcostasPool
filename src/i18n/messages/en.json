@@ -1043,6 +1043,16 @@
           "creating": "Creating..."
         }
       },
+      "feedback": {
+        "created": "Customer saved successfully.",
+        "deleted": "Customer deleted successfully.",
+        "saved": "Customer changes saved.",
+        "propertyCreated": "Property created successfully.",
+        "propertySaved": "Property updated successfully.",
+        "propertyDeleted": "Property deleted successfully.",
+        "jobCreated": "Job created successfully.",
+        "planCreated": "Recurring plan created successfully."
+      },
       "detail": {
         "notFoundTitle": "Customer not found",
         "notFoundSubtitle": "Invalid ID.",
@@ -2026,19 +2036,22 @@
       },
       "customerTransfer": {
         "title": "Import / Export",
-        "subtitle": "Import and export customers from the developer account only using a single reference JSON format.",
+        "subtitle": "Import and export customers from the developer account only using a single reference format in JSON, CSV, or XLSX.",
         "formatLabel": "Format",
         "export": {
           "kicker": "Export",
           "title": "Download current customers",
-          "subtitle": "Generate a JSON file with all current customers and properties to use as the base example for imports.",
-          "action": "Download export"
+          "subtitle": "Generate a file with all current customers and properties to use as the base example for imports.",
+          "action": "Download export",
+          "actionXlsx": "Download XLSX",
+          "actionCsv": "Download CSV",
+          "actionJson": "Download JSON"
         },
         "import": {
           "kicker": "Import",
-          "title": "Import customers from JSON",
-          "subtitle": "Upload a file that matches the export format exactly to create new customers and properties.",
-          "fileLabel": "JSON file",
+          "title": "Import customers from export",
+          "subtitle": "Upload a file that matches the export format exactly in JSON, CSV, or XLSX to create new customers and properties.",
+          "fileLabel": "JSON, CSV, or XLSX file",
           "fileHint": "If a customer already exists by sourceCustomerId or email, it is skipped. This import does not create new passwords.",
           "action": "Import file",
           "pending": "Importing..."
@@ -2059,7 +2072,7 @@
         "errors": {
           "detailsTitle": "Details",
           "invalidResponse": "The server response was invalid.",
-          "missingFile": "Select a JSON file before importing."
+          "missingFile": "Select a JSON, CSV, or XLSX file before importing."
         }
       }
     },

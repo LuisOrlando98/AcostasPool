@@ -6,8 +6,13 @@ import {
   getCustomerTransferDisplayName,
   sanitizeImportedTransferCustomer,
 } from "@/lib/customers/transfer";
+import {
+  parseCustomerTransferCsv,
+  parseCustomerTransferTableMatrix,
+} from "@/lib/customers/transfer-table";
 import { logAuditEvent } from "@/lib/audit/log";
 import { formatCustomerName } from "@/lib/customers/format";
+import { parseWorkbookXlsx } from "@/lib/spreadsheets/xlsx";
 
 export const runtime = "nodejs";
 
@@ -23,15 +28,22 @@ function asErrorMessage(error: unknown) {
   return "Error inesperado durante el import.";
 }
 
-export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session || !session.isDeveloper) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+async function readImportPayload(
+  fileEntry: File | null,
+  payloadEntry: FormDataEntryValue | null
+) {
+  const fileName = fileEntry?.name.toLowerCase() ?? "";
+  const fileType = fileEntry?.type ?? "";
+  const isXlsx =
+    fileName.endsWith(".xlsx") ||
+    fileType ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const isCsv = fileName.endsWith(".csv") || fileType === "text/csv";
 
-  const formData = await request.formData();
-  const fileEntry = formData.get("file");
-  const payloadEntry = formData.get("payload");
+  if (fileEntry && isXlsx) {
+    const workbook = parseWorkbookXlsx(Buffer.from(await fileEntry.arrayBuffer()));
+    return parseCustomerTransferTableMatrix(workbook.headers, workbook.rows);
+  }
 
   const rawText =
     fileEntry instanceof File
@@ -41,23 +53,52 @@ export async function POST(request: Request) {
         : "";
 
   if (!rawText) {
-    return Response.json(
-      { error: "Debes subir un archivo JSON." },
-      { status: 400 }
-    );
+    throw new Error("Debes subir un archivo JSON, CSV o XLSX.");
+  }
+
+  if (fileEntry && isCsv) {
+    return parseCustomerTransferCsv(rawText);
   }
 
   let parsedJson: unknown;
   try {
     parsedJson = JSON.parse(rawText);
   } catch {
+    if (fileEntry && !fileName.endsWith(".json")) {
+      throw new Error(
+        "No se pudo identificar el formato del archivo. Usa JSON, CSV o XLSX."
+      );
+    }
+    throw new Error("El archivo no contiene JSON valido.");
+  }
+
+  return customerTransferPayloadSchema.parse(parsedJson);
+}
+
+export async function POST(request: Request) {
+  const session = await getSession();
+  if (!session || !session.isDeveloper) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const formData = await request.formData();
+  const fileEntry = formData.get("file");
+  const payloadEntry = formData.get("payload");
+  const file = fileEntry instanceof File ? fileEntry : null;
+  let payloadResult;
+  try {
+    payloadResult = customerTransferPayloadSchema.safeParse(
+      await readImportPayload(file, payloadEntry)
+    );
+  } catch (error) {
     return Response.json(
-      { error: "El archivo no contiene JSON valido." },
+      {
+        error: asErrorMessage(error),
+      },
       { status: 400 }
     );
   }
 
-  const payloadResult = customerTransferPayloadSchema.safeParse(parsedJson);
   if (!payloadResult.success) {
     return Response.json(
       {
@@ -248,7 +289,7 @@ export async function POST(request: Request) {
     action: "CUSTOMER_TRANSFER_IMPORTED",
     entity: "CustomerTransfer",
     metadata: {
-      fileName: fileEntry instanceof File ? fileEntry.name : null,
+      fileName: file?.name ?? null,
       ...summary,
     },
   });

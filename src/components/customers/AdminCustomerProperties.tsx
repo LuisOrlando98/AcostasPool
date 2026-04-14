@@ -31,7 +31,7 @@ type AdminCustomerPropertiesProps = {
   onDeleteProperty: (formData: FormData) => Promise<void>;
 };
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 6;
 
 export default function AdminCustomerProperties({
   customerId,

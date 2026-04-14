@@ -102,7 +102,7 @@ export default function DeleteCustomerButton({
             />
             <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-rose-200 bg-white shadow-2xl">
               <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="flex items-start justify-between gap-3">
+                <div className="app-modal-header flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">
                       {modalKicker}
@@ -117,7 +117,7 @@ export default function DeleteCustomerButton({
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                    className="app-modal-close"
                     aria-label={t("common.actions.close")}
                     title={t("common.actions.close")}
                   >

@@ -1,6 +1,8 @@
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import CustomersClient from "@/app/admin/customers/CustomersClient";
+import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
@@ -9,10 +11,20 @@ import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
 import { normalizeEmail } from "@/lib/auth/email";
+import {
+  resolveSafeReturnTo,
+  withFeedbackParam,
+} from "@/lib/ui/action-feedback";
 
 async function createCustomer(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
+
+  const returnTo = resolveSafeReturnTo(
+    formData.get("returnTo"),
+    "/admin/customers",
+    ["/admin/customers"]
+  );
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   const apellidos = String(formData.get("apellidos") ?? "").trim();
@@ -112,6 +124,7 @@ async function createCustomer(formData: FormData) {
 
   revalidatePath("/admin/customers");
   revalidatePath("/admin/invoices");
+  redirect(withFeedbackParam(returnTo, "customer-created"));
 }
 
 type CustomersPageProps = {
@@ -130,6 +143,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   const query = (parseParam("q") ?? "").trim();
   const rawStatus = parseParam("status") ?? "ALL";
   const rawSort = parseParam("sort") ?? "name";
+  const feedback = parseParam("feedback") ?? "";
   const status =
     rawStatus === "ACTIVE" || rawStatus === "INACTIVE" ? rawStatus : "ALL";
   const sort =
@@ -216,6 +230,17 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       subtitle={t("admin.customers.subtitle")}
       role="ADMIN"
     >
+      {feedback === "customer-created" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.created")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "customer-deleted" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.deleted")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : null}
       <CustomersClient
         rows={customers.map((customer) => ({
           id: customer.id,

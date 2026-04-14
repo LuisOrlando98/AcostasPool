@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
+import ModalPresenceManager from "@/components/ui/ModalPresenceManager";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
@@ -522,6 +523,7 @@ export default function AppShell({
       data-app-shell-role={role ?? "UNKNOWN"}
       className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--ink)]"
     >
+      <ModalPresenceManager />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.05),_transparent_42%)]" />
       <input
         id="sidebar-toggle"
@@ -662,7 +664,7 @@ export default function AppShell({
           </div>
         </aside>
 
-        <header className="app-shell-header border-b border-[var(--border)] bg-white/95 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 lg:col-start-2 lg:row-start-1">
+        <header className="app-shell-header sticky top-0 z-[950] border-b border-[var(--border)] bg-white/95 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 lg:col-start-2 lg:row-start-1">
           <div
             className={`app-content mx-auto flex h-20 w-full ${contentMaxWidth} items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6`}
           >
