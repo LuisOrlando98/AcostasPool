@@ -3030,266 +3030,266 @@ export default function RoutesCalendar({
           <div className="app-modal-backdrop absolute inset-0 bg-slate-900/60" />
           <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
             <div className="app-modal-scroll modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90vh] sm:p-6 sm:pr-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {t("admin.routes.actions.assignJobs")}
-                </p>
-                <h2 className="text-lg font-semibold">
-                  {(parseBusinessDateInput(selectedDate) ?? new Date(selectedDate)).toLocaleDateString(
-                    locale,
-                    { timeZone: BUSINESS_TIMEZONE }
-                  )}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
-                aria-label={t("common.actions.close")}
-                title={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
+              <div className="app-modal-header flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                    {t("admin.routes.actions.assignJobs")}
+                  </p>
+                  <h2 className="text-lg font-semibold">
+                    {(parseBusinessDateInput(selectedDate) ?? new Date(selectedDate)).toLocaleDateString(
+                      locale,
+                      { timeZone: BUSINESS_TIMEZONE }
+                    )}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(null)}
+                  className="app-modal-close"
+                  aria-label={t("common.actions.close")}
+                  title={t("common.actions.close")}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              {drafts.map((draft, index) => {
-                const customer = customers.find(
-                  (item) => item.id === draft.customerId
-                );
-                const properties = customer?.properties ?? [];
-                return (
-                  <div
-                    key={`draft-${index}`}
-                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4"
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {t("admin.routes.labels.jobNumber", {
-                          count: index + 1,
-                        })}
-                      </p>
-                      {drafts.length > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => removeDraft(index)}
-                          className="text-xs text-slate-500"
-                        >
-                          {t("common.actions.delete")}
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("admin.routes.labels.customer")}
-                        </label>
-                        <select
-                          value={draft.customerId}
-                          onChange={(event) =>
-                            handleCustomerChange(index, event.target.value)
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          {customers.map((customerItem) => (
-                            <option
-                              key={customerItem.id}
-                              value={customerItem.id}
-                            >
-                              {customerItem.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("admin.routes.labels.property")}
-                        </label>
-                        <select
-                          value={draft.propertyId}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              propertyId: event.target.value,
-                            })
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          {properties.length === 0 ? (
-                          <option value="">
-                            {t("admin.routes.labels.noProperties")}
-                          </option>
-                          ) : (
-                            properties.map((property) => (
-                              <option key={property.id} value={property.id}>
-                                {property.address}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("admin.routes.labels.time")}
-                        </label>
-                        <input
-                          value={draft.scheduledTime}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              scheduledTime: event.target.value,
-                            })
-                          }
-                          type="time"
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("jobs.detail.fields.tech")}
-                        </label>
-                        <select
-                          value={draft.technicianId}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              technicianId: event.target.value,
-                            })
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          <option value="">
-                            {t("admin.routes.labels.unassigned")}
-                          </option>
-                          {technicians.map((tech) => (
-                            <option key={tech.id} value={tech.id}>
-                              {tech.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("jobs.detail.fields.priority")}
-                        </label>
-                        <select
-                          value={draft.priority}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              priority: event.target.value,
-                            })
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          <option value="NORMAL">
-                            {t("jobs.priority.normal")}
-                          </option>
-                          <option value="URGENT">{t("jobs.priority.urgent")}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("jobs.detail.fields.serviceTier")}
-                        </label>
-                        <select
-                          value={draft.serviceTierId}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              serviceTierId: event.target.value,
-                            })
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          {tierOptions.map((tier) => (
-                            <option key={tier.id} value={tier.id}>
-                              {tier.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("jobs.detail.fields.serviceType")}
-                        </label>
-                        <select
-                          value={draft.serviceType}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              serviceType: event.target.value,
-                            })
-                          }
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        >
-                          {serviceTypeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.labelKey ? t(option.labelKey) : option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                          {t("admin.routes.labels.durationMinutes")}
-                        </label>
-                        <input
-                          value={draft.estimatedDuration}
-                          onChange={(event) =>
-                            updateDraft(index, {
-                              estimatedDuration: event.target.value,
-                            })
-                          }
-                          type="number"
-                          min="0"
-                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        {t("common.labels.notes")}
-                      </label>
-                      <textarea
-                        value={draft.notes}
-                        onChange={(event) =>
-                          updateDraft(index, { notes: event.target.value })
-                        }
-                        className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                  </svg>
+                </button>
+              </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={addDraft}
-                className="rounded-full border border-slate-200 px-4 py-2 text-xs text-slate-600"
-              >
-                {t("admin.routes.actions.addJob")}
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateJobs}
-                disabled={creating}
-                className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
-              >
-                {creating
-                  ? t("admin.routes.actions.creating")
-                  : t("admin.routes.actions.saveJobs")}
-              </button>
-            </div>
+              <div className="mt-5 space-y-4">
+                {drafts.map((draft, index) => {
+                  const customer = customers.find(
+                    (item) => item.id === draft.customerId
+                  );
+                  const properties = customer?.properties ?? [];
+                  return (
+                    <div
+                      key={`draft-${index}`}
+                      className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-slate-700">
+                          {t("admin.routes.labels.jobNumber", {
+                            count: index + 1,
+                          })}
+                        </p>
+                        {drafts.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => removeDraft(index)}
+                            className="text-xs text-slate-500"
+                          >
+                            {t("common.actions.delete")}
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("admin.routes.labels.customer")}
+                          </label>
+                          <select
+                            value={draft.customerId}
+                            onChange={(event) =>
+                              handleCustomerChange(index, event.target.value)
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            {customers.map((customerItem) => (
+                              <option
+                                key={customerItem.id}
+                                value={customerItem.id}
+                              >
+                                {customerItem.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("admin.routes.labels.property")}
+                          </label>
+                          <select
+                            value={draft.propertyId}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                propertyId: event.target.value,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            {properties.length === 0 ? (
+                              <option value="">
+                                {t("admin.routes.labels.noProperties")}
+                              </option>
+                            ) : (
+                              properties.map((property) => (
+                                <option key={property.id} value={property.id}>
+                                  {property.address}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("admin.routes.labels.time")}
+                          </label>
+                          <input
+                            value={draft.scheduledTime}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                scheduledTime: event.target.value,
+                              })
+                            }
+                            type="time"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("jobs.detail.fields.tech")}
+                          </label>
+                          <select
+                            value={draft.technicianId}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                technicianId: event.target.value,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            <option value="">
+                              {t("admin.routes.labels.unassigned")}
+                            </option>
+                            {technicians.map((tech) => (
+                              <option key={tech.id} value={tech.id}>
+                                {tech.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("jobs.detail.fields.priority")}
+                          </label>
+                          <select
+                            value={draft.priority}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                priority: event.target.value,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            <option value="NORMAL">
+                              {t("jobs.priority.normal")}
+                            </option>
+                            <option value="URGENT">{t("jobs.priority.urgent")}</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("jobs.detail.fields.serviceTier")}
+                          </label>
+                          <select
+                            value={draft.serviceTierId}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                serviceTierId: event.target.value,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            {tierOptions.map((tier) => (
+                              <option key={tier.id} value={tier.id}>
+                                {tier.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("jobs.detail.fields.serviceType")}
+                          </label>
+                          <select
+                            value={draft.serviceType}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                serviceType: event.target.value,
+                              })
+                            }
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          >
+                            {serviceTypeOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.labelKey ? t(option.labelKey) : option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            {t("admin.routes.labels.durationMinutes")}
+                          </label>
+                          <input
+                            value={draft.estimatedDuration}
+                            onChange={(event) =>
+                              updateDraft(index, {
+                                estimatedDuration: event.target.value,
+                              })
+                            }
+                            type="number"
+                            min="0"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("common.labels.notes")}
+                        </label>
+                        <textarea
+                          value={draft.notes}
+                          onChange={(event) =>
+                            updateDraft(index, { notes: event.target.value })
+                          }
+                          className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={addDraft}
+                  className="rounded-full border border-slate-200 px-4 py-2 text-xs text-slate-600"
+                >
+                  {t("admin.routes.actions.addJob")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateJobs}
+                  disabled={creating}
+                  className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
+                >
+                  {creating
+                    ? t("admin.routes.actions.creating")
+                    : t("admin.routes.actions.saveJobs")}
+                </button>
+              </div>
             </div>
           </div>
         </div>

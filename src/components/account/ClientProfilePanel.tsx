@@ -559,16 +559,41 @@ export default function ClientProfilePanel({ initialData }: Props) {
           />
           <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <h3 className="text-xl font-semibold text-slate-900">
-                {editor === "personal"
-                  ? t("client.profile.editor.personalTitle")
-                  : t("client.profile.editor.addressTitle")}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                {editor === "personal"
-                  ? t("client.profile.editor.personalSubtitle")
-                  : t("client.profile.editor.addressSubtitle")}
-              </p>
+              <div className="app-modal-header">
+                <div>
+                  <h3 className="text-xl font-semibold text-slate-900">
+                    {editor === "personal"
+                      ? t("client.profile.editor.personalTitle")
+                      : t("client.profile.editor.addressTitle")}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {editor === "personal"
+                      ? t("client.profile.editor.personalSubtitle")
+                      : t("client.profile.editor.addressSubtitle")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="app-modal-close"
+                  aria-label={t("common.actions.close")}
+                  title={t("common.actions.close")}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 6l12 12M18 6L6 18"
+                    />
+                  </svg>
+                </button>
+              </div>
 
               {editor === "personal" ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">

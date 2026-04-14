@@ -1948,6 +1948,16 @@ html[data-app-modal-open=""] {
   overscroll-behavior: none;
 }
 
+html[data-app-modal-open=""] .app-shell-header {
+  z-index: 0 !important;
+  pointer-events: none;
+}
+
+html[data-app-modal-open=""] main.app-content {
+  position: relative;
+  z-index: 1;
+}
+
 @media (max-width: 640px) {
   .app-modal-layer {
     padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem

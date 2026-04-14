@@ -629,7 +629,7 @@ export default function AdminNotificationsCenter({
           />
           <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-3">
+              <div className="app-modal-header flex items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">
                     {t("admin.notifications.filters.modalTitle")}
