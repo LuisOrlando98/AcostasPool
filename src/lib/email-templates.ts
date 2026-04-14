@@ -620,6 +620,36 @@ export function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function buildEmailButtonHtml(hrefToken: string, label: string, backgroundColor: string) {
+  return [
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;border-collapse:separate;">',
+    "<tr>",
+    `<td bgcolor="${backgroundColor}" style="border-radius:999px;background-color:${backgroundColor};text-align:center;">`,
+    `<a href="${hrefToken}" style="display:inline-block;padding:12px 20px;border-radius:999px;background-color:${backgroundColor};color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:1.2;">${escapeHtml(
+      label
+    )}</a>`,
+    "</td>",
+    "</tr>",
+    "</table>",
+  ].join("");
+}
+
+function getTemplateButtonHtml(templateId: EmailTemplateId, token: string) {
+  if (token === "{{invite_link}}") {
+    return buildEmailButtonHtml(
+      token,
+      templateId === "TECH_ACCOUNT_INVITE" ? "Complete account" : "Complete profile",
+      "#18b978"
+    );
+  }
+
+  if (token === "{{reset_link}}") {
+    return buildEmailButtonHtml(token, "Reset password", "#0ea5e9");
+  }
+
+  return "";
+}
+
 function buildEmailBodyBlocks(templateId: EmailTemplateId, text: string) {
   const rawLines = text.replace(/\r/g, "").split("\n");
   const blocks: string[] = [];
@@ -644,11 +674,9 @@ function buildEmailBodyBlocks(templateId: EmailTemplateId, text: string) {
       continue;
     }
 
-    if (trimmed === "{{invite_link}}") {
+    if (trimmed === "{{invite_link}}" || trimmed === "{{reset_link}}") {
       flushList();
-      blocks.push(
-        '<div style="margin:0 0 18px;"><a href="{{invite_link}}" style="display:inline-block;padding:11px 18px;border-radius:999px;background:linear-gradient(135deg,#0ea5e9,#22c55e);color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;">Complete profile</a></div>'
-      );
+      blocks.push(getTemplateButtonHtml(templateId, trimmed));
       continue;
     }
 
@@ -709,32 +737,57 @@ export function buildPremiumEmailTemplateHtml(
   const cookieUrl = `${appOrigin}/legal/cookie-notice`;
 
   return [
-    '<div style="margin:0;padding:26px;background:#edf2f7;font-family:Inter,Arial,sans-serif;">',
-    '<div style="max-width:680px;margin:0 auto;border:1px solid #d7e3f0;border-radius:20px;overflow:hidden;background:#ffffff;box-shadow:0 18px 36px rgba(15,23,42,0.12);">',
-    '<div style="padding:18px 22px;background:linear-gradient(140deg,#0b3b66,#0ea5e9);color:#ffffff;">',
-    '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#e8f7ff;">AcostasPool</p>',
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    "<body style=\"margin:0;padding:0;background-color:#edf2f7;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;\">",
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#edf2f7" style="width:100%;margin:0;padding:0;border-collapse:collapse;background-color:#edf2f7;">',
+    "<tr>",
+    '<td align="center" style="padding:24px 16px;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;border-collapse:separate;">',
+    "<tr>",
+    '<td style="border:1px solid #d7e3f0;border-radius:20px;background-color:#ffffff;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="width:100%;border-collapse:separate;background-color:#ffffff;border-radius:20px;">',
+    "<tr>",
+    '<td bgcolor="#0b4f7f" style="padding:18px 22px;background-color:#0b4f7f;background-image:linear-gradient(140deg,#0b3b66,#0ea5e9);border-radius:20px 20px 0 0;color:#ffffff;">',
+    '<p style="margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#e8f7ff;">ACOSTASPOOL</p>',
     `<h2 style="margin:8px 0 0;font-size:19px;line-height:1.3;font-weight:800;color:#ffffff;">${escapeHtml(
       meta.label
     )}</h2>`,
     `<p style="margin:8px 0 0;font-size:13px;line-height:1.45;color:#eaf7ff;">${escapeHtml(
       subject
     )}</p>`,
-    "</div>",
-    '<div style="padding:22px 22px 16px;">',
+    "</td>",
+    "</tr>",
+    "<tr>",
+    '<td style="padding:22px 22px 16px;background-color:#ffffff;color:#0f172a;font-family:Arial,\'Helvetica Neue\',Helvetica,sans-serif;">',
     bodyBlocks,
-    '<div style="margin-top:18px;padding:12px 14px;border:1px solid #d8e5f2;border-radius:12px;background:#f8fbff;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;border-collapse:separate;">',
+    "<tr>",
+    '<td bgcolor="#f8fbff" style="padding:12px 14px;border:1px solid #d8e5f2;border-radius:12px;background-color:#f8fbff;">',
     '<p style="margin:0 0 7px;color:#0f172a;font-size:12px;font-weight:700;">Need help?</p>',
     '<p style="margin:0;color:#475569;font-size:12px;line-height:1.55;">Reply to this email or contact <a href="mailto:contact@acostaspool.com" style="color:#0c4a6e;text-decoration:underline;">contact@acostaspool.com</a>.</p>',
-    "</div>",
-    "</div>",
-    '<div style="padding:12px 22px;border-top:1px solid #e2e8f0;background:#f8fafc;">',
+    "</td>",
+    "</tr>",
+    "</table>",
+    "</td>",
+    "</tr>",
+    "<tr>",
+    '<td bgcolor="#f8fafc" style="padding:12px 22px;border-top:1px solid #e2e8f0;background-color:#f8fafc;border-radius:0 0 20px 20px;">',
     `<p style="margin:0 0 6px;color:#475569;font-size:11px;line-height:1.5;">Legal: <a href="${legalCenterUrl}" style="color:#0c4a6e;text-decoration:underline;">Legal Center</a> | <a href="${privacyUrl}" style="color:#0c4a6e;text-decoration:underline;">Privacy Policy</a> | <a href="${termsUrl}" style="color:#0c4a6e;text-decoration:underline;">Terms of Service</a></p>`,
     `<p style="margin:0 0 7px;color:#64748b;font-size:10px;line-height:1.5;">More policies: <a href="${paymentUrl}" style="color:#0c4a6e;text-decoration:underline;">Payment and Cancellation</a> | <a href="${disclaimerUrl}" style="color:#0c4a6e;text-decoration:underline;">Disclaimer and Liability</a> | <a href="${cookieUrl}" style="color:#0c4a6e;text-decoration:underline;">Cookie Notice</a></p>`,
     '<p style="margin:0 0 4px;color:#0f172a;font-size:11px;line-height:1.45;font-weight:700;">Digitally signed by AcostasPool Operations Team</p>',
     '<p style="margin:0;color:#64748b;font-size:10px;line-height:1.45;">AcostasPool | Premium pool operations | contact@acostaspool.com</p>',
-    "</div>",
-    "</div>",
-    "</div>",
+    "</td>",
+    "</tr>",
+    "</table>",
+    "</td>",
+    "</tr>",
+    "</table>",
+    "</td>",
+    "</tr>",
+    "</table>",
+    "</body>",
+    "</html>",
   ].join("");
 }
 
