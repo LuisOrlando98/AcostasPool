@@ -20,6 +20,8 @@ export type AgreementPlanRow = {
   plan: string;
   year1: string;
   year2Plus: string;
+  year2PlusBadge?: string;
+  year2PlusSupportingText?: string;
   note?: string;
 };
 
@@ -299,12 +301,16 @@ export const SERVICE_AGREEMENT_PLAN_PRICING: AgreementPlanRow[] = [
   {
     plan: "Infraestructura (Obligatorio)",
     year1: "$49.99 / mes",
-    year2Plus: "$99.99 / mes",
+    year2Plus: "20% de descuento",
+    year2PlusBadge: "20% OFF",
+    year2PlusSupportingText: "Beneficio de renovacion desde el ano 2",
   },
   {
     plan: "Infraestructura + Mantenimiento (Plan Plus)",
     year1: "$105.99 / mes",
-    year2Plus: "$155.99 / mes",
+    year2Plus: "20% de descuento",
+    year2PlusBadge: "20% OFF",
+    year2PlusSupportingText: "Beneficio premium desde el ano 2",
   },
 ];
 

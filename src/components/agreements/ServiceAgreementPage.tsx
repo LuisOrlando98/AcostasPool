@@ -301,8 +301,22 @@ export default function ServiceAgreementPage({
                       {row.plan}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{row.year1}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      {row.year2Plus}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                            {row.year2PlusBadge ?? row.year2Plus}
+                          </span>
+                          <span className="text-sm font-semibold text-slate-800">
+                            {row.year2Plus}
+                          </span>
+                        </div>
+                        {row.year2PlusSupportingText ? (
+                          <span className="text-xs text-slate-500">
+                            {row.year2PlusSupportingText}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -216,7 +216,14 @@ function drawPricingTable(ctx: RenderContext) {
   let requiredHeight = headerHeight + 8;
   for (const row of SERVICE_AGREEMENT_PLAN_PRICING) {
     const planLines = wrapText(row.plan, col1Width - 10, ctx.regular, 9);
-    const rowHeight = Math.max(18, planLines.length * 11 + 6);
+    const priceLines = wrapText(row.year2Plus, col3Width - 12, ctx.bold, 9);
+    const supportLines = row.year2PlusSupportingText
+      ? wrapText(row.year2PlusSupportingText, col3Width - 12, ctx.regular, 7.4)
+      : [];
+    const rowHeight = Math.max(
+      18,
+      Math.max(planLines.length * 11 + 6, priceLines.length * 11 + supportLines.length * 9 + 8)
+    );
     requiredHeight += rowHeight;
   }
   ensureRoom(ctx, requiredHeight + 6);
@@ -261,7 +268,14 @@ function drawPricingTable(ctx: RenderContext) {
   for (let i = 0; i < SERVICE_AGREEMENT_PLAN_PRICING.length; i += 1) {
     const row = SERVICE_AGREEMENT_PLAN_PRICING[i];
     const planLines = wrapText(row.plan, col1Width - 10, ctx.regular, 9);
-    const rowHeight = Math.max(18, planLines.length * 11 + 6);
+    const priceLines = wrapText(row.year2Plus, col3Width - 12, ctx.bold, 9);
+    const supportLines = row.year2PlusSupportingText
+      ? wrapText(row.year2PlusSupportingText, col3Width - 12, ctx.regular, 7.4)
+      : [];
+    const rowHeight = Math.max(
+      18,
+      Math.max(planLines.length * 11 + 6, priceLines.length * 11 + supportLines.length * 9 + 8)
+    );
     const fillColor = i % 2 === 0 ? rgb(0.97, 0.98, 1) : rgb(0.94, 0.96, 0.99);
 
     ctx.page.drawRectangle({
@@ -291,13 +305,27 @@ function drawPricingTable(ctx: RenderContext) {
       size: 9,
       color: rgb(0.14, 0.18, 0.26),
     });
-    ctx.page.drawText(row.year2Plus, {
-      x: tableX + col1Width + col2Width + 6,
-      y: currentY - 12,
-      font: ctx.regular,
-      size: 9,
-      color: rgb(0.14, 0.18, 0.26),
-    });
+    let priceTextY = currentY - 12;
+    for (const line of priceLines) {
+      ctx.page.drawText(line, {
+        x: tableX + col1Width + col2Width + 6,
+        y: priceTextY,
+        font: ctx.bold,
+        size: 9,
+        color: rgb(0.02, 0.45, 0.23),
+      });
+      priceTextY -= 11;
+    }
+    for (const line of supportLines) {
+      ctx.page.drawText(line, {
+        x: tableX + col1Width + col2Width + 6,
+        y: priceTextY,
+        font: ctx.regular,
+        size: 7.4,
+        color: rgb(0.38, 0.46, 0.58),
+      });
+      priceTextY -= 9;
+    }
 
     ctx.page.drawLine({
       start: { x: tableX, y: currentY - rowHeight },
