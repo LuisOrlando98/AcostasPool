@@ -980,19 +980,46 @@
         "prev": "Anterior",
         "next": "Siguiente",
         "actions": {
-          "new": "Nuevo cliente"
+          "new": "Nuevo cliente",
+          "inviteAllInactive": "Mandar invitacion a todos",
+          "invitingAll": "Enviando invitaciones..."
         },
         "placeholders": {
           "search": "Nombre o email"
         },
         "filters": {
           "status": "Estado",
+          "portal": "Portal",
+          "portalAll": "Portal: todos",
+          "portalActive": "Portal activo",
+          "portalInactive": "Portal sin activar",
           "sort": "Orden",
           "open": "Abrir filtros",
           "modalTitle": "Filtros de clientes",
-          "modalSubtitle": "Filtra por nombre/email, estado y orden de listado.",
+          "modalSubtitle": "Filtra por nombre/email, estado, portal y orden de listado.",
           "apply": "Aplicar filtros",
           "activeCount": "{{count}} filtros activos"
+        },
+        "portal": {
+          "active": "Activo",
+          "inactive": "Sin activar"
+        },
+        "bulkInvite": {
+          "kicker": "Invitaciones masivas",
+          "title": "Enviando invitaciones",
+          "subtitle": "Se enviaran invitaciones a los clientes filtrados que todavia no tienen el portal activo.",
+          "loadingTargets": "Preparando la lista de clientes para invitar...",
+          "preparingCount": "Preparando...",
+          "progressCount": "{{completed}} / {{total}} enviados",
+          "sending": "Enviando invitaciones por email...",
+          "currentCustomer": "Enviando a {{name}}",
+          "sent": "Enviados",
+          "failed": "Fallidos",
+          "skipped": "Omitidos",
+          "finished": "Invitaciones enviadas correctamente.",
+          "finishedWithFailures": "El envio termino con algunos errores.",
+          "noEligible": "No hay clientes elegibles para invitar con los filtros actuales.",
+          "prepareError": "No se pudo preparar el envio masivo."
         },
         "sort": {
           "name": "Orden: Nombre",
@@ -1003,6 +1030,7 @@
           "customer": "Cliente",
           "phone": "Telefono",
           "address": "Direccion",
+          "portal": "Portal",
           "status": "Estado",
           "properties": "Propiedades",
           "jobs": "Trabajos",

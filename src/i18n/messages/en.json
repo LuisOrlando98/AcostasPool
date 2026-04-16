@@ -980,19 +980,46 @@
         "prev": "Previous",
         "next": "Next",
         "actions": {
-          "new": "New customer"
+          "new": "New customer",
+          "inviteAllInactive": "Send invite to all",
+          "invitingAll": "Sending invites..."
         },
         "placeholders": {
           "search": "Name or email"
         },
         "filters": {
           "status": "Status",
+          "portal": "Portal",
+          "portalAll": "Portal: all",
+          "portalActive": "Portal active",
+          "portalInactive": "Portal inactive",
           "sort": "Sort",
           "open": "Open filters",
           "modalTitle": "Customer filters",
-          "modalSubtitle": "Filter by name/email, account status, and list order.",
+          "modalSubtitle": "Filter by name/email, account status, portal, and list order.",
           "apply": "Apply filters",
           "activeCount": "{{count}} active filters"
+        },
+        "portal": {
+          "active": "Active",
+          "inactive": "Not active"
+        },
+        "bulkInvite": {
+          "kicker": "Bulk invites",
+          "title": "Sending invitations",
+          "subtitle": "Invitations will be sent to filtered customers who still do not have an active portal.",
+          "loadingTargets": "Preparing the customer list for invites...",
+          "preparingCount": "Preparing...",
+          "progressCount": "{{completed}} / {{total}} sent",
+          "sending": "Sending invitation emails...",
+          "currentCustomer": "Sending to {{name}}",
+          "sent": "Sent",
+          "failed": "Failed",
+          "skipped": "Skipped",
+          "finished": "Invitations sent successfully.",
+          "finishedWithFailures": "The send finished with some errors.",
+          "noEligible": "There are no eligible customers to invite with the current filters.",
+          "prepareError": "The bulk invite could not be prepared."
         },
         "sort": {
           "name": "Sort: Name",
@@ -1003,6 +1030,7 @@
           "customer": "Customer",
           "phone": "Phone",
           "address": "Address",
+          "portal": "Portal",
           "status": "Status",
           "properties": "Properties",
           "jobs": "Jobs",

@@ -14,6 +14,7 @@ type CustomerRow = {
   phone: string;
   address: string;
   propertyNames: string[];
+  portalStatus: "ACTIVE" | "INACTIVE";
   status: string;
   properties: number;
   jobs: number;
@@ -25,6 +26,7 @@ type SortKey = "name" | "jobs" | "properties";
 type DraftFilters = {
   query: string;
   status: string;
+  portal: string;
   sort: SortKey;
 };
 
@@ -35,6 +37,9 @@ export default function CustomersOverview({
   filters,
   createTargetId,
   onCreate,
+  showInviteAllInactive,
+  isBulkInviting,
+  onInviteAllInactive,
 }: {
   rows: CustomerRow[];
   summary: {
@@ -53,20 +58,26 @@ export default function CustomersOverview({
   filters: {
     query: string;
     status: string;
+    portal: string;
     sort: string;
   };
   createTargetId?: string;
   onCreate?: () => void;
+  showInviteAllInactive?: boolean;
+  isBulkInviting?: boolean;
+  onInviteAllInactive?: () => void;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const activeQuery = filters.query;
   const activeStatus = filters.status;
+  const activePortal = filters.portal;
   const activeSort = filters.sort as SortKey;
   const [draftFilters, setDraftFilters] = useState<DraftFilters>({
     query: activeQuery,
     status: activeStatus,
+    portal: activePortal,
     sort: activeSort,
   });
   const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
@@ -95,12 +106,14 @@ export default function CustomersOverview({
   const pushFilters = (next: {
     query?: string;
     status?: string;
+    portal?: string;
     sort?: string;
     page?: number;
   }) => {
     const params = new URLSearchParams();
     const nextQuery = next.query ?? activeQuery;
     const nextStatus = next.status ?? activeStatus;
+    const nextPortal = next.portal ?? activePortal;
     const nextSort = next.sort ?? activeSort;
     const nextPage = next.page ?? pagination.page;
 
@@ -109,6 +122,9 @@ export default function CustomersOverview({
     }
     if (nextStatus && nextStatus !== "ALL") {
       params.set("status", nextStatus);
+    }
+    if (nextPortal && nextPortal !== "ALL") {
+      params.set("portal", nextPortal);
     }
     if (nextSort && nextSort !== "name") {
       params.set("sort", nextSort);
@@ -124,16 +140,19 @@ export default function CustomersOverview({
   const hasActiveFilters =
     activeQuery.trim().length > 0 ||
     activeStatus !== "ALL" ||
+    activePortal !== "ALL" ||
     activeSort !== "name";
   const activeFilterCount =
     (activeQuery.trim() ? 1 : 0) +
     (activeStatus !== "ALL" ? 1 : 0) +
+    (activePortal !== "ALL" ? 1 : 0) +
     (activeSort !== "name" ? 1 : 0);
 
   const openFiltersModal = () => {
     setDraftFilters({
       query: activeQuery,
       status: activeStatus,
+      portal: activePortal,
       sort: activeSort,
     });
     setIsFiltersOpen(true);
@@ -142,9 +161,16 @@ export default function CustomersOverview({
   const applyFilters = () => {
     const nextQuery = draftFilters.query;
     const nextStatus = draftFilters.status || "ALL";
+    const nextPortal = draftFilters.portal || "ALL";
     const nextSort = draftFilters.sort || "name";
 
-    pushFilters({ query: nextQuery, status: nextStatus, sort: nextSort, page: 1 });
+    pushFilters({
+      query: nextQuery,
+      status: nextStatus,
+      portal: nextPortal,
+      sort: nextSort,
+      page: 1,
+    });
     setIsFiltersOpen(false);
   };
 
@@ -152,10 +178,17 @@ export default function CustomersOverview({
     const reset: DraftFilters = {
       query: "",
       status: "ALL",
+      portal: "ALL",
       sort: "name",
     };
     setDraftFilters(reset);
-    pushFilters({ query: reset.query, status: reset.status, sort: reset.sort, page: 1 });
+    pushFilters({
+      query: reset.query,
+      status: reset.status,
+      portal: reset.portal,
+      sort: reset.sort,
+      page: 1,
+    });
   };
 
   const createControl = onCreate ? (
@@ -315,6 +348,31 @@ export default function CustomersOverview({
                       </label>
                       <label>
                         <span className="app-modal-field-label">
+                          {t("admin.customers.overview.filters.portal")}
+                        </span>
+                        <select
+                          value={draftFilters.portal}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              portal: event.target.value,
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.customers.overview.filters.portalAll")}
+                          </option>
+                          <option value="ACTIVE">
+                            {t("admin.customers.overview.filters.portalActive")}
+                          </option>
+                          <option value="INACTIVE">
+                            {t("admin.customers.overview.filters.portalInactive")}
+                          </option>
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
                           {t("admin.customers.overview.filters.sort")}
                         </span>
                         <select
@@ -341,7 +399,14 @@ export default function CustomersOverview({
                 <div className="mt-5 flex flex-wrap justify-end gap-2">
                   <button
                     type="button"
-                    onClick={() => setDraftFilters({ query: "", status: "ALL", sort: "name" })}
+                    onClick={() =>
+                      setDraftFilters({
+                        query: "",
+                        status: "ALL",
+                        portal: "ALL",
+                        sort: "name",
+                      })
+                    }
                     className="ui-button-ghost px-3 py-2 text-xs font-semibold"
                   >
                     {clearFiltersLabel}
@@ -423,6 +488,23 @@ export default function CustomersOverview({
                 </button>
               ) : null}
 
+              {showInviteAllInactive && onInviteAllInactive ? (
+                <button
+                  type="button"
+                  onClick={onInviteAllInactive}
+                  disabled={Boolean(isBulkInviting)}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
+                    isBulkInviting
+                      ? "cursor-wait border border-amber-200 bg-amber-50 text-amber-700"
+                      : "border border-sky-200 bg-sky-50 text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                  }`}
+                >
+                  {isBulkInviting
+                    ? t("admin.customers.overview.actions.invitingAll")
+                    : t("admin.customers.overview.actions.inviteAllInactive")}
+                </button>
+              ) : null}
+
               {createControl}
             </div>
           </div>
@@ -437,16 +519,17 @@ export default function CustomersOverview({
             ) : (
               <div className="customers-table-shell ui-table-shell overflow-hidden">
                 <div className="customers-table-scroll overflow-x-auto">
-                  <table className="customers-table customers-overview-table w-full min-w-[1020px] table-fixed text-left text-xs text-slate-600 md:min-w-[1060px]">
+                  <table className="customers-table customers-overview-table w-full min-w-[1120px] table-fixed text-left text-xs text-slate-600 md:min-w-[1160px]">
                     <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[10px] uppercase tracking-[0.06em] text-slate-100/85 sm:text-[11px] sm:tracking-[0.12em]">
                       <tr>
-                        <th className="w-[18%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
-                        <th className="w-[14%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
-                        <th className="w-[22%] min-w-[11.5rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.address")}</th>
-                        <th className="w-[21%] min-w-[11rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.properties")}</th>
-                        <th className="w-[8%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.jobs")}</th>
-                        <th className="w-[8%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.invoices")}</th>
-                        <th className="w-[9%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.status")}</th>
+                        <th className="w-[17%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
+                        <th className="w-[13%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
+                        <th className="w-[20%] min-w-[11.5rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.address")}</th>
+                        <th className="w-[18%] min-w-[11rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.properties")}</th>
+                        <th className="w-[10%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.portal")}</th>
+                        <th className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.jobs")}</th>
+                        <th className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.invoices")}</th>
+                        <th className="w-[8%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.status")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -509,6 +592,19 @@ export default function CustomersOverview({
                               >
                                 {propertiesPreview || t("admin.routes.labels.noProperties")}
                               </p>
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              <span
+                                className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                                  customer.portalStatus === "ACTIVE"
+                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                    : "border-amber-200 bg-amber-50 text-amber-700"
+                                }`}
+                              >
+                                {customer.portalStatus === "ACTIVE"
+                                  ? t("admin.customers.overview.portal.active")
+                                  : t("admin.customers.overview.portal.inactive")}
+                              </span>
                             </td>
                             <td className="px-4 py-3.5 text-center text-[11px] font-semibold text-slate-600">
                               {customer.jobs}

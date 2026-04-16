@@ -7,6 +7,12 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { sendCustomerInvite } from "@/lib/customers/invite";
+import {
+  buildCustomerListWhere,
+  normalizeCustomerAccountFilter,
+  normalizeCustomerPortalFilter,
+} from "@/lib/customers/admin-filters";
+import { hasActiveCustomerPortal } from "@/lib/customers/portal-status";
 import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
@@ -142,30 +148,23 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   };
   const query = (parseParam("q") ?? "").trim();
   const rawStatus = parseParam("status") ?? "ALL";
+  const rawPortal = parseParam("portal") ?? "ALL";
   const rawSort = parseParam("sort") ?? "name";
   const feedback = parseParam("feedback") ?? "";
-  const status =
-    rawStatus === "ACTIVE" || rawStatus === "INACTIVE" ? rawStatus : "ALL";
+  const status = normalizeCustomerAccountFilter(rawStatus);
+  const portal = normalizeCustomerPortalFilter(rawPortal);
   const sort =
     rawSort === "jobs" || rawSort === "properties" ? rawSort : "name";
   const pageParam = parseParam("page");
   const requestedPage = Number(pageParam);
   const pageSize = 25;
+  const now = new Date();
 
-  const where: Prisma.CustomerWhereInput = {
-    ...(status === "ACTIVE" || status === "INACTIVE"
-      ? { estadoCuenta: status }
-      : {}),
-    ...(query
-      ? {
-          OR: [
-            { nombre: { contains: query, mode: "insensitive" } },
-            { apellidos: { contains: query, mode: "insensitive" } },
-            { email: { contains: query, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where: Prisma.CustomerWhereInput = buildCustomerListWhere({
+    query,
+    status,
+    portal,
+  });
 
   const orderBy: Prisma.CustomerOrderByWithRelationInput[] =
     sort === "jobs"
@@ -207,6 +206,17 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
             },
             orderBy: { createdAt: "asc" },
             take: 6,
+          },
+          user: {
+            select: {
+              passwordResetTokens: {
+                where: { purpose: "INVITE" },
+                select: {
+                  expiresAt: true,
+                  usedAt: true,
+                },
+              },
+            },
           },
           estadoCuenta: true,
           _count: {
@@ -251,6 +261,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           propertyNames: customer.properties
             .map((property) => property.name?.trim() || property.address?.trim() || "")
             .filter(Boolean),
+          portalStatus: hasActiveCustomerPortal(customer, now) ? "ACTIVE" : "INACTIVE",
           status: customer.estadoCuenta,
           properties: customer._count.properties,
           jobs: customer._count.jobs,
@@ -272,6 +283,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
         filters={{
           query,
           status,
+          portal,
           sort,
         }}
         createCustomer={createCustomer}
