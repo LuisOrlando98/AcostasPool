@@ -1102,7 +1102,9 @@
         "propertySaved": "Property updated successfully.",
         "propertyDeleted": "Property deleted successfully.",
         "jobCreated": "Job created successfully.",
-        "planCreated": "Recurring plan created successfully."
+        "planCreated": "Recurring plan created successfully.",
+        "planDeleted": "Recurring plan deleted.",
+        "propertyDeleteBlocked": "This property cannot be deleted because it has service history. Deactivate the customer instead."
       },
       "assignments": {
         "kicker": "Weekly routes",
@@ -1118,12 +1120,16 @@
           "routeGroups": "Route groups",
           "technicians": "{{count}} technician(s)"
         },
+        "actions": {
+          "reassign": "Save"
+        },
         "table": {
           "customer": "Customer",
           "property": "Property",
           "next": "Next service",
           "status": "Status",
-          "notes": "Notes"
+          "notes": "Notes",
+          "actions": "Technician"
         }
       },
       "detail": {

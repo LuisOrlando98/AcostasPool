@@ -26,7 +26,7 @@ type CustomerPlansTableProps = {
   rows: PlanRow[];
   onToggle: (formData: FormData) => Promise<void>;
   onDelete: (formData: FormData) => Promise<void>;
-  actionTargetId?: string;
+  actionSlot?: React.ReactNode;
 };
 
 const formatDate = (value: string, locale: string) =>
@@ -46,7 +46,7 @@ export default function CustomerPlansTable({
   rows,
   onToggle,
   onDelete,
-  actionTargetId,
+  actionSlot,
 }: CustomerPlansTableProps) {
   const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
@@ -140,14 +140,7 @@ export default function CustomerPlansTable({
           <span className="app-chip px-3 py-1 text-xs" data-tone="info">
             {t("admin.customers.plans.results", { count: filtered.length })}
           </span>
-          {actionTargetId ? (
-            <label
-              htmlFor={actionTargetId}
-              className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
-            >
-              {t("admin.customers.plans.actions.new")}
-            </label>
-          ) : null}
+          {actionSlot ?? null}
         </div>
       </div>
 
@@ -348,7 +341,7 @@ export default function CustomerPlansTable({
               disabled={currentPage <= 1}
               className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
             >
-              Prev
+              {t("admin.customers.list.prev")}
             </button>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
               {currentPage} / {totalPages}
@@ -361,7 +354,7 @@ export default function CustomerPlansTable({
               disabled={currentPage >= totalPages}
               className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
             >
-              Next
+              {t("admin.customers.list.next")}
             </button>
           </div>
         </div>

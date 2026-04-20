@@ -26,7 +26,7 @@ type PropertyRow = {
 type AdminCustomerPropertiesProps = {
   customerId: string;
   rows: PropertyRow[];
-  addPropertyTargetId: string;
+  addPropertySlot: React.ReactNode;
   onUpdateProperty: (formData: FormData) => Promise<void>;
   onDeleteProperty: (formData: FormData) => Promise<void>;
 };
@@ -36,7 +36,7 @@ const PAGE_SIZE = 6;
 export default function AdminCustomerProperties({
   customerId,
   rows,
-  addPropertyTargetId,
+  addPropertySlot,
   onUpdateProperty,
   onDeleteProperty,
 }: AdminCustomerPropertiesProps) {
@@ -121,12 +121,7 @@ export default function AdminCustomerProperties({
               {t("admin.customers.detail.sections.propertiesSubtitle")}
             </p>
           </div>
-          <label
-            htmlFor={addPropertyTargetId}
-            className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
-          >
-            {t("admin.customers.detail.actions.addProperty")}
-          </label>
+          {addPropertySlot}
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
@@ -224,7 +219,7 @@ export default function AdminCustomerProperties({
                 disabled={currentPage <= 1}
                 className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
               >
-                Prev
+                {t("admin.customers.list.prev")}
               </button>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 font-semibold text-slate-700">
                 {currentPage} / {totalPages}
@@ -235,7 +230,7 @@ export default function AdminCustomerProperties({
                 disabled={currentPage >= totalPages}
                 className="rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-600 disabled:opacity-50"
               >
-                Next
+                {t("admin.customers.list.next")}
               </button>
             </div>
           </div>

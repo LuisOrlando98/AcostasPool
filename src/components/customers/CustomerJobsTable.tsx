@@ -29,7 +29,7 @@ type JobRow = {
 
 type CustomerJobsTableProps = {
   rows: JobRow[];
-  actionTargetId?: string;
+  actionSlot?: React.ReactNode;
 };
 
 type JobsFilterState = {
@@ -77,7 +77,7 @@ const formatDateTime = (value: string, locale: string) =>
     timeStyle: "short",
   });
 
-export default function CustomerJobsTable({ rows, actionTargetId }: CustomerJobsTableProps) {
+export default function CustomerJobsTable({ rows, actionSlot }: CustomerJobsTableProps) {
   const { t, locale } = useI18n();
   const router = useRouter();
 
@@ -262,14 +262,7 @@ export default function CustomerJobsTable({ rows, actionTargetId }: CustomerJobs
               {t("admin.customers.jobs.filters.reset")}
             </button>
           ) : null}
-          {actionTargetId ? (
-            <label
-              htmlFor={actionTargetId}
-              className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
-            >
-              {t("admin.customers.jobs.actions.schedule")}
-            </label>
-          ) : null}
+          {actionSlot ?? null}
         </div>
       </div>
 

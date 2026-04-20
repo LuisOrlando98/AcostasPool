@@ -1102,7 +1102,9 @@
         "propertySaved": "Propiedad actualizada correctamente.",
         "propertyDeleted": "Propiedad eliminada correctamente.",
         "jobCreated": "Trabajo creado correctamente.",
-        "planCreated": "Plan recurrente creado correctamente."
+        "planCreated": "Plan recurrente creado correctamente.",
+        "planDeleted": "Plan recurrente eliminado.",
+        "propertyDeleteBlocked": "Esta propiedad no se puede eliminar porque tiene historial de servicios. Desactiva al cliente en su lugar."
       },
       "assignments": {
         "kicker": "Rutas semanales",
@@ -1118,12 +1120,16 @@
           "routeGroups": "Rutas identificadas",
           "technicians": "{{count}} tecnico(s)"
         },
+        "actions": {
+          "reassign": "Guardar"
+        },
         "table": {
           "customer": "Cliente",
           "property": "Propiedad",
           "next": "Proximo servicio",
           "status": "Estado",
-          "notes": "Notas"
+          "notes": "Notas",
+          "actions": "Tecnico"
         }
       },
       "detail": {

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
+import ModalSheetTrigger from "@/components/ui/ModalSheetTrigger";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
@@ -526,7 +527,7 @@ async function deleteProperty(formData: FormData) {
   });
 
   if (jobsCount > 0) {
-    return;
+    redirect(customerDetailFeedbackPath(customerId, "property-delete-blocked"));
   }
 
   await prisma.property.delete({
@@ -745,6 +746,20 @@ async function createServicePlan(formData: FormData) {
     return;
   }
 
+  const frequencyRaw = String(formData.get("frequency") ?? "WEEKLY");
+  const frequency = (["WEEKLY", "BIWEEKLY", "MONTHLY"] as const).includes(
+    frequencyRaw as "WEEKLY" | "BIWEEKLY" | "MONTHLY"
+  )
+    ? (frequencyRaw as "WEEKLY" | "BIWEEKLY" | "MONTHLY")
+    : "WEEKLY";
+
+  const serviceTypeRaw = String(formData.get("serviceType") ?? "WEEKLY_CLEANING");
+  const serviceType = (
+    ["WEEKLY_CLEANING", "FILTER_CHECK", "CHEM_BALANCE", "EQUIPMENT_CHECK"] as const
+  ).includes(serviceTypeRaw as "WEEKLY_CLEANING" | "FILTER_CHECK" | "CHEM_BALANCE" | "EQUIPMENT_CHECK")
+    ? (serviceTypeRaw as "WEEKLY_CLEANING" | "FILTER_CHECK" | "CHEM_BALANCE" | "EQUIPMENT_CHECK")
+    : "WEEKLY_CLEANING";
+
   const resolvedPlanTierId =
     serviceTierId ||
     (await getServiceTierIdByName("Standard", { activeOnly: true })) ||
@@ -757,9 +772,9 @@ async function createServicePlan(formData: FormData) {
       propertyId,
       technicianId: technicianId || null,
       name: selectedPlan.name,
-      frequency: "WEEKLY",
+      frequency,
       serviceTierId: resolvedPlanTierId,
-      serviceType: "WEEKLY_CLEANING",
+      serviceType,
       priority: "NORMAL",
       nextRunAt,
       preferredTime: null,
@@ -903,7 +918,7 @@ async function deleteServicePlan(formData: FormData) {
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/customers/assignments");
   revalidatePath("/admin/routes");
-  redirect(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "plan-deleted"));
 }
 
 async function createJobFromPlan(formData: FormData) {
@@ -1179,6 +1194,12 @@ export default async function CustomerDetailPage({
           message={t("admin.customers.feedback.propertyDeleted")}
           dismissLabel={t("common.actions.close")}
         />
+      ) : feedback === "property-delete-blocked" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.propertyDeleteBlocked")}
+          dismissLabel={t("common.actions.close")}
+          tone="warning"
+        />
       ) : feedback === "job-created" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.jobCreated")}
@@ -1189,10 +1210,12 @@ export default async function CustomerDetailPage({
           message={t("admin.customers.feedback.planCreated")}
           dismissLabel={t("common.actions.close")}
         />
+      ) : feedback === "plan-deleted" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.planDeleted")}
+          dismissLabel={t("common.actions.close")}
+        />
       ) : null}
-      <input id="new-plan" type="checkbox" className="peer/plan hidden" />
-      <input id="new-property" type="checkbox" className="peer/property hidden" />
-      <input id="new-job" type="checkbox" className="peer/job hidden" />
       <section className="customers-scope customers-detail space-y-5 sm:space-y-6">
         <div className="customers-detail-hero overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-6 py-6 text-white">
@@ -1224,24 +1247,275 @@ export default async function CustomerDetailPage({
                     ? t("common.status.active")
                     : t("common.status.inactive")}
                 </span>
-                <label
-                  htmlFor="new-property"
-                  className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                <ModalSheetTrigger
+                  buttonLabel={t("admin.customers.detail.actions.addProperty")}
+                  buttonClassName="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                  modalKicker={t("admin.customers.detail.properties.modalKicker")}
+                  modalTitle={t("admin.customers.detail.properties.modalTitle")}
+                  modalSubtitle={t("admin.customers.detail.properties.modalSubtitle")}
+                  closeLabel={t("common.actions.close")}
                 >
-                  {t("admin.customers.detail.actions.addProperty")}
-                </label>
-                <label
-                  htmlFor="new-job"
-                  className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                  <form action={createProperty} className="mt-5 space-y-4">
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.customers.detail.properties.fields.name")}
+                        </label>
+                        <input name="name" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.customers.detail.properties.placeholders.nameExample")} />
+                      </div>
+                      <AddressAutocompleteSingle name="address" label={t("admin.routes.labels.address")} placeholder={t("admin.customers.detail.properties.placeholders.address")} required />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolType")}</label>
+                        <select name="poolType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                          <option value="Concreto">{t("admin.customers.detail.properties.options.concrete")}</option>
+                          <option value="Fibra">{t("admin.customers.detail.properties.options.fiberglass")}</option>
+                          <option value="Vinilo">{t("admin.customers.detail.properties.options.vinyl")}</option>
+                          <option value="Material alternativo">{t("admin.customers.detail.properties.options.altMaterial")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.sanitizerType")}</label>
+                        <select name="sanitizerType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                          <option value="Sal">{t("admin.customers.detail.properties.options.salt")}</option>
+                          <option value="Cloro">{t("admin.customers.detail.properties.options.chlorine")}</option>
+                          <option value="Otro">{t("admin.customers.detail.properties.options.other")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.filterType")}</label>
+                      <select name="filterType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" defaultValue="">
+                        <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                        <option value="Arena">{t("admin.customers.detail.properties.options.filterSand")}</option>
+                        <option value="Cartucho">{t("admin.customers.detail.properties.options.filterCartridge")}</option>
+                        <option value="D.E.">{t("admin.customers.detail.properties.options.filterDE")}</option>
+                      </select>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolVolume")}</label>
+                        <input name="poolVolumeGallons" type="number" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.spa")}</label>
+                        <select name="hasSpa" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="no">{t("common.labels.no")}</option>
+                          <option value="yes">{t("common.labels.yes")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.accessLocationNotes")}</label>
+                      <textarea name="accessLocationNotes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.customers.detail.properties.placeholders.accessLocationNotes")} required />
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-800">{t("admin.invoices.servicePayment.sectionTitle")}</h3>
+                          <p className="text-xs text-slate-500">{t("admin.invoices.servicePayment.adminOnly")}</p>
+                        </div>
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">{t("admin.invoices.servicePayment.adminBadge")}</span>
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.serviceStartDate")}</label>
+                          <input type="date" name="serviceStartDate" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentDay")}</label>
+                          <input type="number" min="1" max="31" name="paymentDay" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")} />
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.servicePrice")}</label>
+                          <input type="number" min="0" step="0.01" name="servicePrice" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentType")}</label>
+                          <select name="paymentType" defaultValue="" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                            <option value="">{t("admin.invoices.servicePayment.placeholders.paymentType")}</option>
+                            {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                              <option key={value} value={value}>{t(`admin.invoices.servicePayment.paymentTypes.${value}`)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentNotes")}</label>
+                        <textarea name="paymentNotes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")} />
+                      </div>
+                    </div>
+                    <FormSubmitButton idleLabel={t("admin.customers.detail.actions.saveProperty")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                  </form>
+                </ModalSheetTrigger>
+                <ModalSheetTrigger
+                  buttonLabel={t("admin.customers.detail.actions.scheduleJob")}
+                  buttonClassName="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                  modalKicker={t("admin.customers.detail.jobs.modalKicker")}
+                  modalTitle={t("admin.customers.detail.jobs.modalTitle")}
+                  modalSubtitle={t("admin.customers.detail.jobs.modalSubtitle")}
+                  closeLabel={t("common.actions.close")}
                 >
-                  {t("admin.customers.detail.actions.scheduleJob")}
-                </label>
-                <label
-                  htmlFor="new-plan"
-                  className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                  <form action={createJob} className="mt-5 space-y-4">
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
+                      <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                        {customer.properties.length === 0 ? (
+                          <option value="">{t("admin.routes.labels.noProperties")}</option>
+                        ) : (
+                          customer.properties.map((property) => (
+                            <option key={property.id} value={property.id}>
+                              {property.name ? `${property.name} · ${property.address}` : property.address}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.date")}</label>
+                        <input name="scheduledDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.time")}</label>
+                        <input name="scheduledTime" type="time" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
+                        <select name="serviceTierId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          {tierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
+                        <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.priority")}</label>
+                        <select name="priority" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="NORMAL">{t("jobs.priority.normal")}</option>
+                          <option value="URGENT">{t("jobs.priority.urgent")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.durationMinutes")}</label>
+                        <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
+                        <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="">{t("admin.routes.labels.unassigned")}</option>
+                          {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.jobType")}</label>
+                      <select name="type" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <option value="ROUTINE">{t("jobs.type.routine")}</option>
+                        <option value="ON_DEMAND">{t("jobs.type.onDemand")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.labels.notes")}</label>
+                      <textarea name="notes" className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createJob")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                  </form>
+                </ModalSheetTrigger>
+                <ModalSheetTrigger
+                  buttonLabel={t("admin.customers.detail.actions.newPlan")}
+                  buttonClassName="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+                  modalKicker={t("admin.customers.detail.plans.modalKicker")}
+                  modalTitle={t("admin.customers.detail.plans.modalTitle")}
+                  modalSubtitle={t("admin.customers.detail.plans.modalSubtitle")}
+                  closeLabel={t("common.actions.close")}
                 >
-                  {t("admin.customers.detail.actions.newPlan")}
-                </label>
+                  <form action={createServicePlan} className="mt-5 space-y-4">
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.weeklyRoute")}</label>
+                        <select name="planTemplate" defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                          {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (<option key={planOption.value} value={planOption.value}>{t(planOption.labelKey)}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
+                        <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                          {customer.properties.length === 0 ? (
+                            <option value="">{t("admin.routes.labels.noProperties")}</option>
+                          ) : (
+                            customer.properties.map((property) => (
+                              <option key={property.id} value={property.id}>
+                                {property.name ? `${property.name} · ${property.address}` : property.address}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.frequency")}</label>
+                        <select name="frequency" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
+                          <option value="BIWEEKLY">{t("plans.frequency.biweekly")}</option>
+                          <option value="MONTHLY">{t("plans.frequency.monthly")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
+                        <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
+                        <select name="serviceTierId" defaultValue={recurringPlanDefaultTierId} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          {recurringPlanTierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
+                        <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                          <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
+                          {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.startDate")}</label>
+                        <input name="nextDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.duration")}</label>
+                        <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.notes")}</label>
+                      <textarea name="notes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                    <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createPlan")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                  </form>
+                </ModalSheetTrigger>
               </div>
             </div>
           </div>
@@ -1409,7 +1683,113 @@ export default async function CustomerDetailPage({
             <AdminCustomerProperties
               customerId={customer.id}
               rows={propertyRows}
-              addPropertyTargetId="new-property"
+              addPropertySlot={
+                <ModalSheetTrigger
+                  buttonLabel={t("admin.customers.detail.actions.addProperty")}
+                  buttonClassName="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                  modalKicker={t("admin.customers.detail.properties.modalKicker")}
+                  modalTitle={t("admin.customers.detail.properties.modalTitle")}
+                  modalSubtitle={t("admin.customers.detail.properties.modalSubtitle")}
+                  closeLabel={t("common.actions.close")}
+                >
+                  <form action={createProperty} className="mt-5 space-y-4">
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.name")}</label>
+                        <input name="name" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.customers.detail.properties.placeholders.nameExample")} />
+                      </div>
+                      <AddressAutocompleteSingle name="address" label={t("admin.routes.labels.address")} placeholder={t("admin.customers.detail.properties.placeholders.address")} required />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolType")}</label>
+                        <select name="poolType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                          <option value="Concreto">{t("admin.customers.detail.properties.options.concrete")}</option>
+                          <option value="Fibra">{t("admin.customers.detail.properties.options.fiberglass")}</option>
+                          <option value="Vinilo">{t("admin.customers.detail.properties.options.vinyl")}</option>
+                          <option value="Material alternativo">{t("admin.customers.detail.properties.options.altMaterial")}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.sanitizerType")}</label>
+                        <select name="sanitizerType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                          <option value="Sal">{t("admin.customers.detail.properties.options.salt")}</option>
+                          <option value="Cloro">{t("admin.customers.detail.properties.options.chlorine")}</option>
+                          <option value="Otro">{t("admin.customers.detail.properties.options.other")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.filterType")}</label>
+                      <select name="filterType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" defaultValue="">
+                        <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                        <option value="Arena">{t("admin.customers.detail.properties.options.filterSand")}</option>
+                        <option value="Cartucho">{t("admin.customers.detail.properties.options.filterCartridge")}</option>
+                        <option value="D.E.">{t("admin.customers.detail.properties.options.filterDE")}</option>
+                      </select>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolVolume")}</label>
+                        <input name="poolVolumeGallons" type="number" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.spa")}</label>
+                        <select name="hasSpa" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                          <option value="no">{t("common.labels.no")}</option>
+                          <option value="yes">{t("common.labels.yes")}</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.accessLocationNotes")}</label>
+                      <textarea name="accessLocationNotes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.customers.detail.properties.placeholders.accessLocationNotes")} required />
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-800">{t("admin.invoices.servicePayment.sectionTitle")}</h3>
+                          <p className="text-xs text-slate-500">{t("admin.invoices.servicePayment.adminOnly")}</p>
+                        </div>
+                        <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">{t("admin.invoices.servicePayment.adminBadge")}</span>
+                      </div>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.serviceStartDate")}</label>
+                          <input type="date" name="serviceStartDate" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentDay")}</label>
+                          <input type="number" min="1" max="31" name="paymentDay" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")} />
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.servicePrice")}</label>
+                          <input type="number" min="0" step="0.01" name="servicePrice" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentType")}</label>
+                          <select name="paymentType" defaultValue="" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                            <option value="">{t("admin.invoices.servicePayment.placeholders.paymentType")}</option>
+                            {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                              <option key={value} value={value}>{t(`admin.invoices.servicePayment.paymentTypes.${value}`)}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.invoices.servicePayment.fields.paymentNotes")}</label>
+                        <textarea name="paymentNotes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")} />
+                      </div>
+                    </div>
+                    <FormSubmitButton idleLabel={t("admin.customers.detail.actions.saveProperty")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                  </form>
+                </ModalSheetTrigger>
+              }
               onUpdateProperty={updateProperty}
               onDeleteProperty={deleteProperty}
             />
@@ -1427,14 +1807,178 @@ export default async function CustomerDetailPage({
         <div className="space-y-6">
           <CustomerJobsTable
             rows={jobsRows}
-            actionTargetId="new-job"
+            actionSlot={
+              <ModalSheetTrigger
+                buttonLabel={t("admin.customers.detail.actions.newJob")}
+                buttonClassName="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+                modalKicker={t("admin.customers.detail.jobs.modalKicker")}
+                modalTitle={t("admin.customers.detail.jobs.modalTitle")}
+                modalSubtitle={t("admin.customers.detail.jobs.modalSubtitle")}
+                closeLabel={t("common.actions.close")}
+              >
+                <form action={createJob} className="mt-5 space-y-4">
+                  <input type="hidden" name="customerId" value={customer.id} />
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
+                    <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                      {customer.properties.length === 0 ? (
+                        <option value="">{t("admin.routes.labels.noProperties")}</option>
+                      ) : (
+                        customer.properties.map((property) => (
+                          <option key={property.id} value={property.id}>
+                            {property.name ? `${property.name} · ${property.address}` : property.address}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.date")}</label>
+                      <input name="scheduledDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.time")}</label>
+                      <input name="scheduledTime" type="time" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
+                      <select name="serviceTierId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        {tierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
+                      <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.priority")}</label>
+                      <select name="priority" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <option value="NORMAL">{t("jobs.priority.normal")}</option>
+                        <option value="URGENT">{t("jobs.priority.urgent")}</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.durationMinutes")}</label>
+                      <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
+                      <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <option value="">{t("admin.routes.labels.unassigned")}</option>
+                        {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.jobType")}</label>
+                    <select name="type" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                      <option value="ROUTINE">{t("jobs.type.routine")}</option>
+                      <option value="ON_DEMAND">{t("jobs.type.onDemand")}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("common.labels.notes")}</label>
+                    <textarea name="notes" className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                  </div>
+                  <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createJob")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                </form>
+              </ModalSheetTrigger>
+            }
           />
 
           <CustomerPlansTable
             rows={plansRows}
             onToggle={toggleServicePlan}
             onDelete={deleteServicePlan}
-            actionTargetId="new-plan"
+            actionSlot={
+              <ModalSheetTrigger
+                buttonLabel={t("admin.customers.detail.actions.newPlan")}
+                buttonClassName="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+                modalKicker={t("admin.customers.detail.plans.modalKicker")}
+                modalTitle={t("admin.customers.detail.plans.modalTitle")}
+                modalSubtitle={t("admin.customers.detail.plans.modalSubtitle")}
+                closeLabel={t("common.actions.close")}
+              >
+                <form action={createServicePlan} className="mt-5 space-y-4">
+                  <input type="hidden" name="customerId" value={customer.id} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.weeklyRoute")}</label>
+                      <select name="planTemplate" defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                        {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (<option key={planOption.value} value={planOption.value}>{t(planOption.labelKey)}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
+                      <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                        {customer.properties.length === 0 ? (
+                          <option value="">{t("admin.routes.labels.noProperties")}</option>
+                        ) : (
+                          customer.properties.map((property) => (
+                            <option key={property.id} value={property.id}>
+                              {property.name ? `${property.name} · ${property.address}` : property.address}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.frequency")}</label>
+                      <select name="frequency" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
+                        <option value="BIWEEKLY">{t("plans.frequency.biweekly")}</option>
+                        <option value="MONTHLY">{t("plans.frequency.monthly")}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
+                      <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
+                      <select name="serviceTierId" defaultValue={recurringPlanDefaultTierId} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+                        {recurringPlanTierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
+                      <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
+                        <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
+                        {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.startDate")}</label>
+                      <input name="nextDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.duration")}</label>
+                      <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.notes")}</label>
+                    <textarea name="notes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
+                  </div>
+                  <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createPlan")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
+                </form>
+              </ModalSheetTrigger>
+            }
           />
 
           <div className="flex justify-end">
@@ -1636,618 +2180,6 @@ export default async function CustomerDetailPage({
                   successLabel={t("common.feedback.saved")}
                 />
               </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
-        <label
-          htmlFor="new-property"
-          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-        />
-        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {t("admin.customers.detail.properties.modalKicker")}
-                </p>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.customers.detail.properties.modalTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.properties.modalSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="new-property"
-                className="app-modal-close"
-                aria-label={t("common.actions.close")}
-                title={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                </svg>
-              </label>
-            </div>
-            <form action={createProperty} className="mt-5 space-y-4">
-            <input type="hidden" name="customerId" value={customer.id} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.properties.fields.name")}
-                </label>
-                <input
-                  name="name"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder={t(
-                    "admin.customers.detail.properties.placeholders.nameExample"
-                  )}
-                />
-              </div>
-              <AddressAutocompleteSingle
-                name="address"
-                label={t("admin.routes.labels.address")}
-                placeholder={t(
-                  "admin.customers.detail.properties.placeholders.address"
-                )}
-                required
-              />
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.poolType")}
-                </label>
-                <select
-                  name="poolType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">
-                    {t("admin.customers.detail.properties.options.select")}
-                  </option>
-                  <option value="Concreto">
-                    {t("admin.customers.detail.properties.options.concrete")}
-                  </option>
-                  <option value="Fibra">
-                    {t("admin.customers.detail.properties.options.fiberglass")}
-                  </option>
-                  <option value="Vinilo">
-                    {t("admin.customers.detail.properties.options.vinyl")}
-                  </option>
-                  <option value="Material alternativo">
-                    {t("admin.customers.detail.properties.options.altMaterial")}
-                  </option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.properties.fields.sanitizerType")}
-                </label>
-                <select
-                  name="sanitizerType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">
-                    {t("admin.customers.detail.properties.options.select")}
-                  </option>
-                  <option value="Sal">
-                    {t("admin.customers.detail.properties.options.salt")}
-                  </option>
-                  <option value="Cloro">
-                    {t("admin.customers.detail.properties.options.chlorine")}
-                  </option>
-                  <option value="Otro">
-                    {t("admin.customers.detail.properties.options.other")}
-                  </option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.routes.labels.filterType")}
-              </label>
-              <select
-                name="filterType"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                defaultValue=""
-              >
-                <option value="">
-                  {t("admin.customers.detail.properties.options.select")}
-                </option>
-                <option value="Arena">
-                  {t("admin.customers.detail.properties.options.filterSand")}
-                </option>
-                <option value="Cartucho">
-                  {t("admin.customers.detail.properties.options.filterCartridge")}
-                </option>
-                <option value="D.E.">
-                  {t("admin.customers.detail.properties.options.filterDE")}
-                </option>
-              </select>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.poolVolume")}
-                </label>
-                <input
-                  name="poolVolumeGallons"
-                  type="number"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.properties.fields.spa")}
-                </label>
-                <select
-                  name="hasSpa"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="no">{t("common.labels.no")}</option>
-                  <option value="yes">{t("common.labels.yes")}</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.customers.detail.properties.fields.accessLocationNotes")}
-              </label>
-              <textarea
-                name="accessLocationNotes"
-                className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                placeholder={t("admin.customers.detail.properties.placeholders.accessLocationNotes")}
-                required
-              />
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-800">
-                    {t("admin.invoices.servicePayment.sectionTitle")}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {t("admin.invoices.servicePayment.adminOnly")}
-                  </p>
-                </div>
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                  {t("admin.invoices.servicePayment.adminBadge")}
-                </span>
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.servicePayment.fields.serviceStartDate")}
-                  </label>
-                  <input
-                    type="date"
-                    name="serviceStartDate"
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.servicePayment.fields.paymentDay")}
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="31"
-                    name="paymentDay"
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    placeholder={t("admin.invoices.servicePayment.placeholders.paymentDay")}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.servicePayment.fields.servicePrice")}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    name="servicePrice"
-                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                    placeholder={t("admin.invoices.servicePayment.placeholders.servicePrice")}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.servicePayment.fields.paymentType")}
-                  </label>
-                  <select
-                    name="paymentType"
-                    defaultValue=""
-                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="">
-                      {t("admin.invoices.servicePayment.placeholders.paymentType")}
-                    </option>
-                    {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
-                      <option key={value} value={value}>
-                        {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.invoices.servicePayment.fields.paymentNotes")}
-                </label>
-                <textarea
-                  name="paymentNotes"
-                  className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder={t("admin.invoices.servicePayment.placeholders.paymentNotes")}
-                />
-              </div>
-            </div>
-            <FormSubmitButton
-              idleLabel={t("admin.customers.detail.actions.saveProperty")}
-              pendingLabel={t("admin.customers.detail.actions.saving")}
-              successLabel={t("common.feedback.created")}
-              className="w-full"
-            />
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/job:flex">
-        <label
-          htmlFor="new-job"
-          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-        />
-        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {t("admin.customers.detail.jobs.modalKicker")}
-                </p>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.customers.detail.jobs.modalTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.jobs.modalSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="new-job"
-                className="app-modal-close"
-                aria-label={t("common.actions.close")}
-                title={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                </svg>
-              </label>
-            </div>
-            <form action={createJob} className="mt-5 space-y-4">
-            <input type="hidden" name="customerId" value={customer.id} />
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.routes.labels.property")}
-              </label>
-              <select
-                name="propertyId"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                required
-              >
-                {customer.properties.length === 0 ? (
-                  <option value="">{t("admin.routes.labels.noProperties")}</option>
-                ) : (
-                  customer.properties.map((property) => (
-                    <option key={property.id} value={property.id}>
-                      {property.name
-                        ? `${property.name} · ${property.address}`
-                        : property.address}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.date")}
-                </label>
-                <input
-                  name="scheduledDate"
-                  type="date"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.time")}
-                </label>
-                <input
-                  name="scheduledTime"
-                  type="time"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                />
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.serviceTier")}
-                </label>
-                <select
-                  name="serviceTierId"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  {tierOptions.map((tier) => (
-                    <option key={tier.id} value={tier.id}>
-                      {tier.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.serviceType")}
-                </label>
-                <select
-                  name="serviceType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  {serviceTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.labelKey ? t(option.labelKey) : option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.priority")}
-                </label>
-                <select
-                  name="priority"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="NORMAL">{t("jobs.priority.normal")}</option>
-                  <option value="URGENT">{t("jobs.priority.urgent")}</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.durationMinutes")}
-                </label>
-                <input
-                  name="estimatedDuration"
-                  type="number"
-                  min="0"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder="60"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.tech")}
-                </label>
-                <select
-                  name="technicianId"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">{t("admin.routes.labels.unassigned")}</option>
-                  {technicians.map((tech) => (
-                    <option key={tech.id} value={tech.id}>
-                      {tech.user.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("jobs.detail.fields.jobType")}
-              </label>
-              <select
-                name="type"
-                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-              >
-                <option value="ROUTINE">{t("jobs.type.routine")}</option>
-                <option value="ON_DEMAND">{t("jobs.type.onDemand")}</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("common.labels.notes")}
-              </label>
-              <textarea
-                name="notes"
-                className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-              />
-            </div>
-            <FormSubmitButton
-              idleLabel={t("admin.customers.detail.actions.createJob")}
-              pendingLabel={t("admin.customers.detail.actions.saving")}
-              successLabel={t("common.feedback.created")}
-              className="w-full"
-            />
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/plan:flex">
-        <label
-          htmlFor="new-plan"
-          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-        />
-        <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {t("admin.customers.detail.plans.modalKicker")}
-                </p>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.customers.detail.plans.modalTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.customers.detail.plans.modalSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="new-plan"
-                className="app-modal-close"
-                aria-label={t("common.actions.close")}
-                title={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                </svg>
-              </label>
-            </div>
-            <form action={createServicePlan} className="mt-5 space-y-4">
-            <input type="hidden" name="customerId" value={customer.id} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.plans.fields.weeklyRoute")}
-                </label>
-                <select
-                  name="planTemplate"
-                  defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  required
-                >
-                  {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (
-                    <option key={planOption.value} value={planOption.value}>
-                      {t(planOption.labelKey)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.property")}
-                </label>
-                <select
-                  name="propertyId"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  required
-                >
-                  {customer.properties.length === 0 ? (
-                    <option value="">{t("admin.routes.labels.noProperties")}</option>
-                  ) : (
-                    customer.properties.map((property) => (
-                      <option key={property.id} value={property.id}>
-                        {property.name
-                          ? `${property.name} · ${property.address}`
-                          : property.address}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.serviceTier")}
-                </label>
-                <select
-                  name="serviceTierId"
-                  defaultValue={recurringPlanDefaultTierId}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  {recurringPlanTierOptions.map((tier) => (
-                    <option key={tier.id} value={tier.id}>
-                      {tier.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.tech")}
-                </label>
-                <select
-                  name="technicianId"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                  required
-                >
-                  <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
-                  {technicians.map((tech) => (
-                    <option key={tech.id} value={tech.id}>
-                      {tech.user.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.plans.fields.startDate")}
-                </label>
-                <input
-                  name="nextDate"
-                  type="date"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.duration")}
-                </label>
-                <input
-                  name="estimatedDuration"
-                  type="number"
-                  min="0"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder="60"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {t("admin.customers.detail.plans.fields.notes")}
-              </label>
-              <textarea
-                name="notes"
-                className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-              />
-            </div>
-            <FormSubmitButton
-              idleLabel={t("admin.customers.detail.actions.createPlan")}
-              pendingLabel={t("admin.customers.detail.actions.saving")}
-              successLabel={t("common.feedback.created")}
-              className="w-full"
-            />
             </form>
           </div>
         </div>

@@ -398,9 +398,7 @@ export default function RouteAssistant({
             <button
               type="button"
               onClick={requestPlans}
-              disabled={
-                loading || !date || !selectedPlanTemplate || !selectedTechnicianId
-              }
+              disabled={loading || !date}
               className="mt-4 w-full rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading

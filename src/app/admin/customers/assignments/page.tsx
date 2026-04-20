@@ -10,12 +10,14 @@ import {
 } from "@/lib/jobs/recurring-plan-templates";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { revalidatePath } from "next/cache";
 
 type AssignmentRow = {
   id: string;
   rawPlanName: string;
   localizedPlanName: string;
   routeGroupId: string;
+  technicianId: string | null;
   technicianName: string;
   customerName: string;
   propertyLabel: string;
@@ -33,37 +35,41 @@ export default async function CustomerAssignmentsPage() {
     GLOBAL_RECURRING_PLAN_OPTIONS.map((option, index) => [option.name, index])
   );
 
-  const plans = await prisma.servicePlan.findMany({
-    where: {
-      name: { in: globalPlanNames },
-    },
-    orderBy: [{ name: "asc" }, { nextRunAt: "asc" }],
-    select: {
-      id: true,
-      name: true,
-      nextRunAt: true,
-      isActive: true,
-      notes: true,
-      customer: {
-        select: {
-          nombre: true,
-          apellidos: true,
-        },
+  async function reassignTechnician(formData: FormData) {
+    "use server";
+    await requireRole("ADMIN");
+    const planId = String(formData.get("planId") ?? "").trim();
+    const technicianId = String(formData.get("technicianId") ?? "").trim();
+    if (!planId) return;
+    await prisma.servicePlan.update({
+      where: { id: planId },
+      data: { technicianId: technicianId || null },
+    });
+    revalidatePath("/admin/customers/assignments");
+    revalidatePath("/admin/routes");
+  }
+
+  const [plans, technicians] = await Promise.all([
+    prisma.servicePlan.findMany({
+      where: { name: { in: globalPlanNames } },
+      orderBy: [{ name: "asc" }, { nextRunAt: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        nextRunAt: true,
+        isActive: true,
+        notes: true,
+        customer: { select: { nombre: true, apellidos: true } },
+        property: { select: { name: true, address: true } },
+        technician: { select: { id: true, user: { select: { fullName: true } } } },
       },
-      property: {
-        select: {
-          name: true,
-          address: true,
-        },
-      },
-      technician: {
-        select: {
-          id: true,
-          user: { select: { fullName: true } },
-        },
-      },
-    },
-  });
+    }),
+    prisma.technician.findMany({
+      where: { isActive: true },
+      select: { id: true, user: { select: { fullName: true } } },
+      orderBy: { user: { fullName: "asc" } },
+    }),
+  ]);
 
   const assignmentRows: AssignmentRow[] = plans
     .map((plan) => {
@@ -77,6 +83,7 @@ export default async function CustomerAssignmentsPage() {
           planName: plan.name,
           technicianId: plan.technician?.id ?? null,
         }),
+        technicianId: plan.technician?.id ?? null,
         technicianName: plan.technician?.user.fullName ?? t("admin.customers.assignments.unassigned"),
         customerName: formatCustomerName(plan.customer),
         propertyLabel: plan.property.name
@@ -221,7 +228,7 @@ export default async function CustomerAssignmentsPage() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[920px] text-left text-xs text-slate-600">
+                <table className="w-full min-w-[1060px] text-left text-xs text-slate-600">
                   <thead className="border-b border-slate-200 bg-white text-[11px] uppercase tracking-[0.12em] text-slate-500">
                     <tr>
                       <th className="px-4 py-3">
@@ -239,11 +246,14 @@ export default async function CustomerAssignmentsPage() {
                       <th className="px-4 py-3">
                         {t("admin.customers.assignments.table.notes")}
                       </th>
+                      <th className="px-4 py-3 text-right">
+                        {t("admin.customers.assignments.table.actions")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {group.rows.map((row) => (
-                      <tr key={row.id}>
+                      <tr key={row.id} className="bg-white transition hover:bg-sky-50/40">
                         <td className="px-4 py-3 font-medium text-slate-800">
                           {row.customerName}
                         </td>
@@ -264,6 +274,29 @@ export default async function CustomerAssignmentsPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-500">
                           {row.notes || t("common.labels.notAvailable")}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <form action={reassignTechnician} className="flex items-center justify-end gap-2">
+                            <input type="hidden" name="planId" value={row.id} />
+                            <select
+                              name="technicianId"
+                              defaultValue={row.technicianId ?? ""}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700"
+                            >
+                              <option value="">{t("admin.customers.assignments.unassigned")}</option>
+                              {technicians.map((tech) => (
+                                <option key={tech.id} value={tech.id}>
+                                  {tech.user.fullName}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="submit"
+                              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                            >
+                              {t("admin.customers.assignments.actions.reassign")}
+                            </button>
+                          </form>
                         </td>
                       </tr>
                     ))}
