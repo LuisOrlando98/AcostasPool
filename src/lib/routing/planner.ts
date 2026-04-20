@@ -93,6 +93,12 @@ export type RouteAssistantPlan = {
   }>;
 };
 
+export const DEFAULT_ROUTE_ASSISTANT_STRATEGIES: RouteAssistantStrategy[] = [
+  "BALANCED",
+  "SHORT_DRIVE",
+  "KEEP_ASSIGNMENTS",
+];
+
 function toMinutesInBusinessTimezone(date: Date) {
   const parts = timePartsFormatter.formatToParts(date);
   const hourPart = parts.find((part) => part.type === "hour")?.value ?? "00";
@@ -175,12 +181,6 @@ function getLoadSpread(counts: number[]) {
 
 function sortByScheduledTime(a: RouteAssistantJob, b: RouteAssistantJob) {
   return a.scheduledDate.getTime() - b.scheduledDate.getTime();
-}
-
-function isSameAddress(fromAddress: string, toAddress: string) {
-  const normalize = (value: string) =>
-    value.trim().replace(/\s+/g, " ").toLowerCase();
-  return normalize(fromAddress) === normalize(toAddress);
 }
 
 function assignJobs(
@@ -559,27 +559,23 @@ export async function buildRouteAssistantPlans(input: {
   technicians: RouteAssistantTechnician[];
   originAddress?: string;
   originCoordinates?: GeoPoint | null;
+  strategies?: RouteAssistantStrategy[];
 }) {
   const {
     jobs,
     technicians,
     originAddress = DEFAULT_ROUTE_ORIGIN_ADDRESS,
     originCoordinates = null,
+    strategies = DEFAULT_ROUTE_ASSISTANT_STRATEGIES,
   } = input;
   if (jobs.length === 0 || technicians.length === 0) {
     return [] as RouteAssistantPlan[];
   }
 
-  const plans = await Promise.all([
-    buildPlan(jobs, technicians, "BALANCED", originAddress, originCoordinates),
-    buildPlan(jobs, technicians, "SHORT_DRIVE", originAddress, originCoordinates),
-    buildPlan(
-      jobs,
-      technicians,
-      "KEEP_ASSIGNMENTS",
-      originAddress,
-      originCoordinates
-    ),
-  ]);
+  const plans = await Promise.all(
+    strategies.map((strategy) =>
+      buildPlan(jobs, technicians, strategy, originAddress, originCoordinates)
+    )
+  );
   return plans;
 }

@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { revalidateTag, unstable_cache } from "next/cache";
 import {
   buildPremiumEmailTemplateHtml,
@@ -43,6 +43,9 @@ export type SiteLandingConfig = {
 };
 
 export type SiteInvoiceTemplateConfig = InvoiceTemplateConfig;
+export type RouteAssistantConfig = {
+  dailyAutoOptimizeEnabled: boolean;
+};
 
 const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   instagramUrl: null,
@@ -51,6 +54,10 @@ const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   xUrl: null,
   youtubeUrl: null,
   tiktokUrl: null,
+};
+
+const DEFAULT_ROUTE_ASSISTANT_CONFIG: RouteAssistantConfig = {
+  dailyAutoOptimizeEnabled: false,
 };
 
 const SITE_SETTINGS_TAG = "site-settings";
@@ -66,8 +73,30 @@ type SiteSettingsData = {
   landingPromoCopy?: Prisma.InputJsonValue | null;
   emailTemplates?: Prisma.InputJsonValue | null;
   invoiceTemplate?: Prisma.InputJsonValue | null;
+  routeAssistantConfig?: Prisma.InputJsonValue | null;
   complianceContent?: Prisma.InputJsonValue | null;
 };
+
+function toNullableJsonInput(value: Prisma.InputJsonValue | null | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+  return value === null ? Prisma.JsonNull : value;
+}
+
+function normalizeRouteAssistantConfig(
+  value: Prisma.JsonValue | null | undefined
+): RouteAssistantConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return DEFAULT_ROUTE_ASSISTANT_CONFIG;
+  }
+
+  const candidate = value as { dailyAutoOptimizeEnabled?: unknown };
+  return {
+    dailyAutoOptimizeEnabled:
+      candidate.dailyAutoOptimizeEnabled === true,
+  };
+}
 
 function normalizeUrl(value: string) {
   const trimmed = value.trim();
@@ -123,6 +152,7 @@ const getSiteSettingsCached = unstable_cache(
         landingPromoCopy: true,
         emailTemplates: true,
         invoiceTemplate: true,
+        routeAssistantConfig: true,
         complianceContent: true,
       },
     });
@@ -132,13 +162,22 @@ const getSiteSettingsCached = unstable_cache(
 );
 
 async function saveSiteSettings(data: SiteSettingsData) {
+  const normalizedData = {
+    ...data,
+    landingPromoCopy: toNullableJsonInput(data.landingPromoCopy),
+    emailTemplates: toNullableJsonInput(data.emailTemplates),
+    invoiceTemplate: toNullableJsonInput(data.invoiceTemplate),
+    routeAssistantConfig: toNullableJsonInput(data.routeAssistantConfig),
+    complianceContent: toNullableJsonInput(data.complianceContent),
+  };
+
   const saved = await prisma.siteSettings.upsert({
     where: { id: "default" },
     create: {
       id: "default",
-      ...data,
+      ...normalizedData,
     },
-    update: data,
+    update: normalizedData,
   });
 
   revalidateTag(SITE_SETTINGS_TAG, "max");
@@ -244,6 +283,20 @@ export async function saveInvoiceTemplateConfig(template: SiteInvoiceTemplateCon
   const normalized = normalizeInvoiceTemplateConfig(template);
   return saveSiteSettings({
     invoiceTemplate: normalized as Prisma.InputJsonValue,
+  });
+}
+
+export async function getRouteAssistantConfig(): Promise<RouteAssistantConfig> {
+  const settings = await getSiteSettingsCached();
+  return normalizeRouteAssistantConfig(settings?.routeAssistantConfig);
+}
+
+export async function saveRouteAssistantConfig(input: RouteAssistantConfig) {
+  const normalized = normalizeRouteAssistantConfig(
+    input as unknown as Prisma.JsonValue
+  );
+  return saveSiteSettings({
+    routeAssistantConfig: normalized as Prisma.InputJsonValue,
   });
 }
 

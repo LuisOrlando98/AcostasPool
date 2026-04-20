@@ -3,7 +3,14 @@ import RouteAssistant from "@/components/routes/RouteAssistant";
 import { requireRole } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/jobs/capacity";
+import {
+  getGlobalRecurringPlanByWeekday,
+  GLOBAL_RECURRING_PLAN_OPTIONS,
+} from "@/lib/jobs/recurring-plan-templates";
+import { getRouteAssistantConfig } from "@/lib/site-settings";
 import { getTranslations } from "@/i18n/server";
+import { DateTime } from "luxon";
+import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 type RouteAssistantPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -24,15 +31,24 @@ export default async function RouteAssistantPage({
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const dateRaw = resolvedSearchParams?.date;
   const dateParam = Array.isArray(dateRaw) ? dateRaw[0] : dateRaw;
+  const resolvedDate = resolveDate(dateParam);
+  const routeDateWeekday = DateTime.fromISO(resolvedDate, {
+    zone: BUSINESS_TIMEZONE,
+  }).weekday;
 
-  const technicians = await prisma.technician.findMany({
-    where: { user: { isActive: true } },
-    orderBy: { user: { fullName: "asc" } },
-    select: {
-      id: true,
-      user: { select: { fullName: true } },
-    },
-  });
+  const [technicians, routeAssistantConfig] = await Promise.all([
+    prisma.technician.findMany({
+      where: { user: { isActive: true } },
+      orderBy: { user: { fullName: "asc" } },
+      select: {
+        id: true,
+        user: { select: { fullName: true } },
+      },
+    }),
+    getRouteAssistantConfig(),
+  ]);
+  const initialPlanTemplate =
+    getGlobalRecurringPlanByWeekday(routeDateWeekday)?.value ?? null;
 
   return (
     <AppShell
@@ -43,7 +59,13 @@ export default async function RouteAssistantPage({
     >
       <div className="space-y-4">
         <RouteAssistant
-          initialDate={resolveDate(dateParam)}
+          initialDate={resolvedDate}
+          initialPlanTemplate={initialPlanTemplate}
+          autoOptimizeEnabled={routeAssistantConfig.dailyAutoOptimizeEnabled}
+          planOptions={GLOBAL_RECURRING_PLAN_OPTIONS.map((option) => ({
+            value: option.value,
+            label: t(option.labelKey),
+          }))}
           technicians={technicians.map((technician) => ({
             id: technician.id,
             name: technician.user.fullName,

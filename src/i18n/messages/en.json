@@ -626,12 +626,21 @@
         "subtitle": "Generate route proposals, compare them, apply one, and continue editing in calendar.",
         "fields": {
           "date": "Route date",
+          "plan": "Weekly plan",
+          "technician": "Technician",
           "addressFilter": "Address filter",
           "technicians": "Technicians in scope",
           "origin": "Route origin"
         },
         "placeholders": {
-          "addressFilter": "Filter by city, ZIP, street, or customer..."
+          "addressFilter": "Filter by city, ZIP, street, or customer...",
+          "plan": "Select a plan",
+          "technician": "Select a technician"
+        },
+        "automation": {
+          "title": "Automatic review",
+          "subtitle": "When enabled, every day at 7:00 AM the system reviews and reorders the route for that day's plan while keeping assignments in place.",
+          "checkmark": "Enable daily automatic review at 7:00 AM"
         },
         "rules": {
           "title": "Scheduling rules respected",
@@ -643,12 +652,16 @@
           "generate": "Generate proposals",
           "generating": "Generating...",
           "apply": "Apply selected proposal",
-          "applying": "Applying..."
+          "applying": "Applying...",
+          "savePreferences": "Save automation",
+          "savingPreferences": "Saving..."
         },
         "messages": {
           "failed": "Unable to generate route proposals.",
           "applyFailed": "Unable to apply selected proposal.",
-          "empty": "No route proposals were generated for the selected filters."
+          "empty": "No route proposals were generated for the selected filters.",
+          "preferencesSaved": "Route Assistant automation was updated.",
+          "preferencesFailed": "Unable to save Route Assistant automation."
         },
         "metrics": {
           "jobs": "Jobs in scope",

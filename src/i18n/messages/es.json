@@ -626,12 +626,21 @@
         "subtitle": "Genera propuestas de ruta, comparalas, aplica una y sigue editando en calendario.",
         "fields": {
           "date": "Fecha de ruta",
+          "plan": "Plan semanal",
+          "technician": "Tecnico",
           "addressFilter": "Filtro por direccion",
           "technicians": "Tecnicos incluidos",
           "origin": "Punto de partida"
         },
         "placeholders": {
-          "addressFilter": "Filtrar por ciudad, ZIP, calle o cliente..."
+          "addressFilter": "Filtrar por ciudad, ZIP, calle o cliente...",
+          "plan": "Selecciona un plan",
+          "technician": "Selecciona un tecnico"
+        },
+        "automation": {
+          "title": "Revision automatica",
+          "subtitle": "Si lo activas, todos los dias a las 7:00 AM se revisa y reordena la ruta del plan correspondiente al dia manteniendo las asignaciones.",
+          "checkmark": "Activar revision automatica diaria a las 7:00 AM"
         },
         "rules": {
           "title": "Reglas de agenda respetadas",
@@ -643,12 +652,16 @@
           "generate": "Generar propuestas",
           "generating": "Generando...",
           "apply": "Aplicar propuesta seleccionada",
-          "applying": "Aplicando..."
+          "applying": "Aplicando...",
+          "savePreferences": "Guardar automatizacion",
+          "savingPreferences": "Guardando..."
         },
         "messages": {
           "failed": "No se pudieron generar propuestas de ruta.",
           "applyFailed": "No se pudo aplicar la propuesta seleccionada.",
-          "empty": "No se generaron propuestas con los filtros seleccionados."
+          "empty": "No se generaron propuestas con los filtros seleccionados.",
+          "preferencesSaved": "La automatizacion del Route Assistant fue actualizada.",
+          "preferencesFailed": "No se pudo guardar la automatizacion del Route Assistant."
         },
         "metrics": {
           "jobs": "Trabajos en alcance",

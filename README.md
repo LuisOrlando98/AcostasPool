@@ -10,10 +10,12 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 2. Define estas variables en el servicio web:
    - `AUTH_SECRET`
    - `APP_URL`
+   - `CRON_SECRET`
    - `STORAGE_DRIVER` (`local` o `s3`)
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 3. Define estas variables en el worker (`acostaspool-cron-worker`):
    - `APP_URL`
+   - `CRON_SECRET`
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 4. Si activas S3, agrega:
    - `AWS_REGION`
@@ -43,6 +45,7 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 - `DATABASE_URL`
 - `AUTH_SECRET`
 - `APP_URL`
+- `CRON_SECRET`
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 - `GOOGLE_MAPS_SERVER_API_KEY`
 - `GOOGLE_MAPS_API_KEY` (alias opcional)

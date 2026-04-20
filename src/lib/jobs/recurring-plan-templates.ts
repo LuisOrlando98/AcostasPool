@@ -75,6 +75,13 @@ export function getGlobalRecurringPlan(
   );
 }
 
+export function getGlobalRecurringPlanByWeekday(weekday: number) {
+  return (
+    GLOBAL_RECURRING_PLAN_OPTIONS.find((option) => option.weekday === weekday) ??
+    null
+  );
+}
+
 export function getRecurringPlanLabelKey(name: string) {
   return globalRecurringPlanLabelsByName.get(name) ?? null;
 }

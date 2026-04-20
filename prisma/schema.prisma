@@ -497,6 +497,7 @@ model SiteSettings {
   landingPromoCopy Json?
   emailTemplates   Json?
   invoiceTemplate  Json?
+  routeAssistantConfig Json?
   complianceContent Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

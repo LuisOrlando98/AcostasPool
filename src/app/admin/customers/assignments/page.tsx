@@ -212,10 +212,7 @@ export default async function CustomerAssignmentsPage() {
                   </h3>
                 </div>
                 <div className="text-right">
-                  <p className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-800">
-                    {group.routeGroupId}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="text-xs text-slate-500">
                     {t("admin.customers.assignments.groupCount", {
                       count: group.rows.length,
                     })}

@@ -1026,6 +1026,39 @@ const processRecurringPlans = async () => {
   }
 };
 
+const triggerRouteAssistantAutoOptimize = async () => {
+  const appUrl = (process.env.APP_URL || "").trim().replace(/\/+$/, "");
+  const secret = (process.env.CRON_SECRET || "").trim();
+
+  if (!appUrl || !secret) {
+    console.warn("[cron-worker] route assistant auto optimize skipped: missing APP_URL or CRON_SECRET");
+    return;
+  }
+
+  const response = await fetch(
+    `${appUrl}/api/internal/routes/assistant/auto-optimize`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-cron-secret": secret,
+      },
+      body: JSON.stringify({}),
+    }
+  );
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(
+      data && typeof data.error === "string"
+        ? data.error
+        : `HTTP ${response.status}`
+    );
+  }
+
+  console.log("[cron-worker] route assistant auto optimize", data);
+};
+
 const start = async () => {
   console.log(`[cron-worker] starting with TZ=${TZ}`);
   const runSafely = (label, task) =>
@@ -1038,6 +1071,10 @@ const start = async () => {
   });
 
   cron.schedule("*/10 * * * *", () => runSafely("recurring-plans", processRecurringPlans), {
+    timezone: TZ,
+  });
+
+  cron.schedule("0 7 * * *", () => runSafely("route-assistant-auto", triggerRouteAssistantAutoOptimize), {
     timezone: TZ,
   });
 

@@ -8,11 +8,13 @@ import { parseDateOnly, toDateKey } from "@/lib/jobs/capacity";
 import {
   buildRecurringRouteGroupId,
   buildRecurringRouteGroupLabel,
+  getGlobalRecurringPlan,
   isGlobalRecurringPlanName,
 } from "@/lib/jobs/recurring-plan-templates";
 import { geocodeAddresses } from "@/lib/routing/geo";
 import {
   buildRouteAssistantPlans,
+  DEFAULT_ROUTE_ASSISTANT_STRATEGIES,
   DEFAULT_ROUTE_ORIGIN_ADDRESS,
 } from "@/lib/routing/planner";
 import {
@@ -27,8 +29,9 @@ const bodySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   ignoreDate: z.boolean().optional().default(false),
   technicianIds: z.array(z.string().min(1)).max(100).optional().default([]),
+  planTemplate: z.string().max(32).optional().nullable(),
   addressQuery: z.string().max(120).optional().default(""),
-  statuses: z.array(z.enum(statusValues)).optional().default(statusValues),
+  statuses: z.array(z.enum(statusValues)).optional().default([...statusValues]),
 });
 
 export async function POST(request: Request) {
@@ -42,11 +45,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request data" }, { status: 400 });
   }
 
-  const { date, ignoreDate, technicianIds, addressQuery, statuses } = parsed.data;
+  const { date, ignoreDate, technicianIds, planTemplate, addressQuery, statuses } =
+    parsed.data;
   const routeDate = parseDateOnly(date);
   if (!routeDate && !ignoreDate) {
     return NextResponse.json({ error: "Invalid date" }, { status: 400 });
   }
+  const selectedRecurringPlan =
+    typeof planTemplate === "string" && planTemplate.trim()
+      ? getGlobalRecurringPlan(planTemplate.trim())
+      : null;
 
   let scheduledDateFilter: { gte: Date; lte?: Date } | undefined;
   if (ignoreDate) {
@@ -130,12 +138,15 @@ export async function POST(request: Request) {
     : jobs.filter((job) => toDateKey(job.scheduledDate) === date);
   const filteredJobs = jobsForPlanning.filter((job) => {
     const effectiveTechnicianId = job.plan?.technicianId ?? job.technicianId ?? null;
-    if (
-      technicianIds.length > 0 &&
-      effectiveTechnicianId &&
-      !selectedTechnicianSet.has(effectiveTechnicianId)
-    ) {
+    if (selectedRecurringPlan && job.plan?.name !== selectedRecurringPlan.name) {
       return false;
+    }
+    if (
+      technicianIds.length > 0
+    ) {
+      if (!effectiveTechnicianId || !selectedTechnicianSet.has(effectiveTechnicianId)) {
+        return false;
+      }
     }
     if (normalizedQuery.length === 0) {
       return true;
@@ -190,6 +201,10 @@ export async function POST(request: Request) {
     technicians: techniciansData,
     originAddress: DEFAULT_ROUTE_ORIGIN_ADDRESS,
     originCoordinates,
+    strategies:
+      technicianIds.length === 1
+        ? ["SHORT_DRIVE"]
+        : DEFAULT_ROUTE_ASSISTANT_STRATEGIES,
   });
 
   return NextResponse.json({

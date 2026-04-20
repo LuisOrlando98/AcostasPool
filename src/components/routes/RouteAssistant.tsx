@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
+import { getGlobalRecurringPlan } from "@/lib/jobs/recurring-plan-templates";
+import { parseDateOnly, toDateKey } from "@/lib/jobs/capacity";
 
 type AssistantTechnician = {
   id: string;
@@ -64,6 +66,11 @@ type AssistantPlan = {
   }>;
 };
 
+type AssistantPlanOption = {
+  value: string;
+  label: string;
+};
+
 type AssistantResponse = {
   date: string;
   originAddress: string;
@@ -75,6 +82,9 @@ type AssistantResponse = {
 
 type RouteAssistantProps = {
   initialDate: string;
+  initialPlanTemplate: string | null;
+  autoOptimizeEnabled: boolean;
+  planOptions: AssistantPlanOption[];
   technicians: AssistantTechnician[];
 };
 
@@ -88,42 +98,63 @@ function formatMinutes(minutes: number) {
   return `${hours}h ${String(mins).padStart(2, "0")}m`;
 }
 
+function alignDateToSelectedPlan(dateKey: string, planTemplate: string) {
+  const selectedPlan = getGlobalRecurringPlan(planTemplate);
+  if (!selectedPlan) {
+    return dateKey;
+  }
+
+  const currentDate = parseDateOnly(dateKey);
+  if (!currentDate) {
+    return dateKey;
+  }
+
+  const currentWeekday = currentDate.getUTCDay();
+  const daysToAdd = (selectedPlan.weekday - currentWeekday + 7) % 7;
+  const nextDate = new Date(currentDate);
+  nextDate.setUTCDate(nextDate.getUTCDate() + daysToAdd);
+  return toDateKey(nextDate);
+}
+
 export default function RouteAssistant({
   initialDate,
+  initialPlanTemplate,
+  autoOptimizeEnabled,
+  planOptions,
   technicians,
 }: RouteAssistantProps) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const [date, setDate] = useState(initialDate);
-  const [ignoreDate, setIgnoreDate] = useState(false);
-  const [addressQuery, setAddressQuery] = useState("");
-  const [selectedTechnicians, setSelectedTechnicians] = useState<string[]>(
-    technicians.map((technician) => technician.id)
+  const [selectedPlanTemplate, setSelectedPlanTemplate] = useState(
+    initialPlanTemplate ?? ""
   );
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
+  const [addressQuery, setAddressQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [response, setResponse] = useState<AssistantResponse | null>(null);
+  const [autoOptimizeEnabledState, setAutoOptimizeEnabledState] =
+    useState(autoOptimizeEnabled);
   const [selectedStrategy, setSelectedStrategy] = useState<
     AssistantPlan["strategy"] | null
   >(null);
 
-  const hasAllTechniciansSelected =
-    selectedTechnicians.length === technicians.length;
   const selectedPlan = useMemo(
     () =>
       response?.plans.find((plan) => plan.strategy === selectedStrategy) ?? null,
     [response, selectedStrategy]
   );
 
-  const toggleTechnician = (technicianId: string) => {
-    setSelectedTechnicians((current) => {
-      if (current.includes(technicianId)) {
-        return current.filter((id) => id !== technicianId);
-      }
-      return [...current, technicianId];
-    });
+  const handlePlanTemplateChange = (value: string) => {
+    setSelectedPlanTemplate(value);
+    if (!value) {
+      return;
+    }
+    setDate((currentDate) => alignDateToSelectedPlan(currentDate, value));
   };
 
   const requestPlans = async () => {
@@ -133,9 +164,9 @@ export default function RouteAssistant({
     try {
       const payload = {
         date,
-        ignoreDate,
+        planTemplate: selectedPlanTemplate || null,
         addressQuery,
-        technicianIds: hasAllTechniciansSelected ? [] : selectedTechnicians,
+        technicianIds: selectedTechnicianId ? [selectedTechnicianId] : [],
       };
       const res = await fetch("/api/admin/routes/assistant/plan", {
         method: "POST",
@@ -169,6 +200,36 @@ export default function RouteAssistant({
       setErrorMessage(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const savePreferences = async () => {
+    setSavingPreferences(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      const res = await fetch("/api/admin/routes/assistant/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dailyAutoOptimizeEnabled: autoOptimizeEnabledState,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        throw new Error(
+          data?.error || t("admin.routes.assistant.messages.preferencesFailed")
+        );
+      }
+      setSuccessMessage(t("admin.routes.assistant.messages.preferencesSaved"));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t("admin.routes.assistant.messages.preferencesFailed");
+      setErrorMessage(message);
+    } finally {
+      setSavingPreferences(false);
     }
   };
 
@@ -235,9 +296,40 @@ export default function RouteAssistant({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  disabled={ignoreDate}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                 />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("admin.routes.assistant.fields.plan")}
+                <select
+                  value={selectedPlanTemplate}
+                  onChange={(event) => handlePlanTemplateChange(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                >
+                  <option value="">{t("admin.routes.assistant.placeholders.plan")}</option>
+                  {planOptions.map((planOption) => (
+                    <option key={planOption.value} value={planOption.value}>
+                      {planOption.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("admin.routes.assistant.fields.technician")}
+                <select
+                  value={selectedTechnicianId}
+                  onChange={(event) => setSelectedTechnicianId(event.target.value)}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                >
+                  <option value="">
+                    {t("admin.routes.assistant.placeholders.technician")}
+                  </option>
+                  {technicians.map((technician) => (
+                    <option key={technician.id} value={technician.id}>
+                      {technician.name}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {t("admin.routes.assistant.fields.addressFilter")}
@@ -258,40 +350,39 @@ export default function RouteAssistant({
                 {response?.originAddress ?? "10731 SW 147th Ct, Miami, FL 33196"}
               </p>
             </div>
-            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={ignoreDate}
-                onChange={(event) => setIgnoreDate(event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              <span>
-                {locale === "es"
-                  ? "Generar rutas sin fecha especifica (usar todos los trabajos pendientes)"
-                  : "Generate routes without specific date (use all pending jobs)"}
-              </span>
-            </label>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                {t("admin.routes.assistant.fields.technicians")}
-              </p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {technicians.map((technician) => (
-                  <label
-                    key={technician.id}
-                    className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedTechnicians.includes(technician.id)}
-                      onChange={() => toggleTechnician(technician.id)}
-                      className="h-4 w-4 rounded border-slate-300"
-                    />
-                    <span className="truncate">{technician.name}</span>
-                  </label>
-                ))}
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800">
+                    {t("admin.routes.assistant.automation.title")}
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-950">
+                    {t("admin.routes.assistant.automation.subtitle")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={savePreferences}
+                  disabled={savingPreferences}
+                  className="rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:border-emerald-400 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {savingPreferences
+                    ? t("admin.routes.assistant.actions.savingPreferences")
+                    : t("admin.routes.assistant.actions.savePreferences")}
+                </button>
               </div>
+              <label className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={autoOptimizeEnabledState}
+                  onChange={(event) =>
+                    setAutoOptimizeEnabledState(event.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                <span>{t("admin.routes.assistant.automation.checkmark")}</span>
+              </label>
             </div>
           </div>
 
@@ -307,7 +398,9 @@ export default function RouteAssistant({
             <button
               type="button"
               onClick={requestPlans}
-              disabled={loading || selectedTechnicians.length === 0 || !date}
+              disabled={
+                loading || !date || !selectedPlanTemplate || !selectedTechnicianId
+              }
               className="mt-4 w-full rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
@@ -464,18 +557,6 @@ export default function RouteAssistant({
                                 {route.routeGroupLabels.join(" | ")}
                               </p>
                             ) : null}
-                            {route.routeGroupIds.length > 0 ? (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {route.routeGroupIds.map((groupId) => (
-                                  <span
-                                    key={groupId}
-                                    className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-800"
-                                  >
-                                    {groupId}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : null}
                           </div>
                           <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                             <span>
@@ -548,9 +629,9 @@ export default function RouteAssistant({
                                     <p className="font-medium text-slate-700">
                                       {stop.planName ?? t("admin.routes.assistant.table.noPlan")}
                                     </p>
-                                    {stop.routeGroupId ? (
-                                      <p className="text-[10px] uppercase tracking-[0.08em] text-cyan-700">
-                                        {stop.routeGroupId}
+                                    {stop.routeGroupLabel ? (
+                                      <p className="text-[10px] text-cyan-700">
+                                        {stop.routeGroupLabel}
                                       </p>
                                     ) : null}
                                   </td>
