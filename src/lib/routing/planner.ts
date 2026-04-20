@@ -8,6 +8,8 @@ import {
 
 const DEFAULT_SERVICE_MINUTES = 60;
 const DEFAULT_DRIVE_MINUTES = 15;
+export const DEFAULT_ROUTE_ORIGIN_ADDRESS =
+  "10731 SW 147th Ct, Miami, FL 33196";
 
 const timePartsFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: BUSINESS_TIMEZONE,
@@ -23,6 +25,10 @@ export type RouteAssistantJob = {
   customerName: string;
   address: string;
   technicianId: string | null;
+  planName: string | null;
+  routeGroupId: string | null;
+  routeGroupLabel: string | null;
+  lockedTechnicianId: string | null;
   scheduledDate: Date;
   estimatedDurationMinutes: number | null;
   coordinates: GeoPoint | null;
@@ -37,6 +43,9 @@ export type RouteAssistantStopPlan = {
   jobId: string;
   customerName: string;
   address: string;
+  planName: string | null;
+  routeGroupId: string | null;
+  routeGroupLabel: string | null;
   technicianId: string;
   technicianName: string;
   order: number;
@@ -52,10 +61,17 @@ export type RouteAssistantStopPlan = {
 export type RouteAssistantTechnicianPlan = {
   technicianId: string;
   technicianName: string;
+  originAddress: string;
+  routeGroupIds: string[];
+  routeGroupLabels: string[];
   stops: RouteAssistantStopPlan[];
   totalDriveMinutes: number;
+  returnDriveMinutes: number;
   totalServiceMinutes: number;
   totalRouteMinutes: number;
+  returnDistanceMiles: number | null;
+  returnDriveSource?: TravelMetricSource;
+  estimatedReturnTime: string | null;
   conflicts: number;
 };
 
@@ -178,16 +194,22 @@ function assignJobs(
   }
 
   const pool: RouteAssistantJob[] = [];
-  if (strategy === "KEEP_ASSIGNMENTS") {
-    for (const job of [...jobs].sort(sortByScheduledTime)) {
-      if (job.technicianId && buckets.has(job.technicianId)) {
-        buckets.get(job.technicianId)?.push(job);
-      } else {
-        pool.push(job);
-      }
+  for (const job of [...jobs].sort(sortByScheduledTime)) {
+    const lockedTechnicianId =
+      job.lockedTechnicianId && buckets.has(job.lockedTechnicianId)
+        ? job.lockedTechnicianId
+        : null;
+
+    if (lockedTechnicianId) {
+      buckets.get(lockedTechnicianId)?.push(job);
+      continue;
     }
-  } else {
-    pool.push(...[...jobs].sort(sortByScheduledTime));
+
+    if (strategy === "KEEP_ASSIGNMENTS" && job.technicianId && buckets.has(job.technicianId)) {
+      buckets.get(job.technicianId)?.push(job);
+    } else {
+      pool.push(job);
+    }
   }
 
   for (const job of pool) {
@@ -220,70 +242,136 @@ function assignJobs(
   return buckets;
 }
 
-function orderByNearestNeighbor(stops: RouteAssistantJob[]) {
-  if (stops.length <= 2) {
-    return [...stops].sort(sortByScheduledTime);
+async function orderByOptimizedRoute(
+  stops: RouteAssistantJob[],
+  originAddress: string,
+  originCoordinates: GeoPoint | null
+) {
+  if (stops.length <= 1) {
+    return {
+      orderedStops: [...stops].sort(sortByScheduledTime),
+      pairMetrics: await getTravelMetricsForPairs(
+        stops.map((stop) => ({
+          fromAddress: originAddress,
+          toAddress: stop.address,
+          fromCoordinates: originCoordinates,
+          toCoordinates: stop.coordinates,
+        }))
+      ),
+    };
   }
+
+  const pairMetrics = await getTravelMetricsForPairs([
+    ...stops.map((stop) => ({
+      fromAddress: originAddress,
+      toAddress: stop.address,
+      fromCoordinates: originCoordinates,
+      toCoordinates: stop.coordinates,
+    })),
+    ...stops.flatMap((fromStop) =>
+      stops
+        .filter((toStop) => toStop.id !== fromStop.id)
+        .map((toStop) => ({
+          fromAddress: fromStop.address,
+          toAddress: toStop.address,
+          fromCoordinates: fromStop.coordinates,
+          toCoordinates: toStop.coordinates,
+        }))
+    ),
+    ...stops.map((stop) => ({
+      fromAddress: stop.address,
+      toAddress: originAddress,
+      fromCoordinates: stop.coordinates,
+      toCoordinates: originCoordinates,
+    })),
+  ]);
 
   const remaining = [...stops];
-  const seedIndex = remaining.reduce((bestIndex, current, index, list) => {
-    if (list[bestIndex] == null) {
-      return index;
-    }
-    return current.scheduledDate.getTime() < list[bestIndex].scheduledDate.getTime()
-      ? index
-      : bestIndex;
-  }, 0);
-
   const ordered: RouteAssistantJob[] = [];
-  const [seed] = remaining.splice(seedIndex, 1);
-  if (!seed) {
-    return stops;
-  }
-  ordered.push(seed);
+  const earliestScheduled = Math.min(
+    ...remaining.map((candidate) => toMinutesInBusinessTimezone(candidate.scheduledDate))
+  );
+  let cursorMinutes = Math.max(8 * 60, earliestScheduled - 20);
 
   while (remaining.length > 0) {
     const previous = ordered[ordered.length - 1] ?? null;
     let nextIndex = 0;
-    let bestDistance = Number.POSITIVE_INFINITY;
+    let bestScore = Number.POSITIVE_INFINITY;
 
     for (let index = 0; index < remaining.length; index += 1) {
       const candidate = remaining[index];
-      const distance = previous
-        ? isSameAddress(previous.address, candidate.address)
-          ? 0
-          : estimateDistanceMiles(previous.coordinates, candidate.coordinates) ?? 9999
-        : 9999;
-      if (distance < bestDistance) {
-        bestDistance = distance;
+      const fromAddress = previous?.address ?? originAddress;
+      const fromCoordinates = previous?.coordinates ?? originCoordinates;
+      const metric = pairMetrics.get(getAddressPairKey(fromAddress, candidate.address));
+      const driveMinutes =
+        metric?.durationMinutes ??
+        estimateDriveMinutes(fromCoordinates, candidate.coordinates);
+      const scheduledMinutes = toMinutesInBusinessTimezone(candidate.scheduledDate);
+      const arrivalMinutes = cursorMinutes + driveMinutes;
+      const serviceStartMinutes = Math.max(arrivalMinutes, scheduledMinutes);
+      const serviceMinutes = Math.max(
+        30,
+        candidate.estimatedDurationMinutes ?? DEFAULT_SERVICE_MINUTES
+      );
+      const returnMetric = pairMetrics.get(
+        getAddressPairKey(candidate.address, originAddress)
+      );
+      const returnDriveMinutes =
+        returnMetric?.durationMinutes ??
+        estimateDriveMinutes(candidate.coordinates, originCoordinates);
+      const latenessPenalty = Math.max(0, serviceStartMinutes - scheduledMinutes) * 2;
+      const waitPenalty = Math.max(0, scheduledMinutes - arrivalMinutes) * 0.1;
+      const durationPenalty = driveMinutes * 1.15;
+      const remainingCount = remaining.length;
+      const returnPenaltyWeight =
+        remainingCount <= 2 ? 0.8 : remainingCount <= 4 ? 0.45 : 0.2;
+      const score =
+        durationPenalty +
+        returnDriveMinutes * returnPenaltyWeight +
+        latenessPenalty +
+        waitPenalty +
+        serviceMinutes * 0.02;
+
+      if (score < bestScore) {
+        bestScore = score;
         nextIndex = index;
       }
     }
 
     const [next] = remaining.splice(nextIndex, 1);
     if (next) {
+      const fromAddress = ordered[ordered.length - 1]?.address ?? originAddress;
+      const fromCoordinates =
+        ordered[ordered.length - 1]?.coordinates ?? originCoordinates;
+      const metric = pairMetrics.get(getAddressPairKey(fromAddress, next.address));
+      const driveMinutes =
+        metric?.durationMinutes ??
+        estimateDriveMinutes(fromCoordinates, next.coordinates);
+      const scheduledMinutes = toMinutesInBusinessTimezone(next.scheduledDate);
+      const arrivalMinutes = cursorMinutes + driveMinutes;
+      const serviceStartMinutes = Math.max(arrivalMinutes, scheduledMinutes);
+      const serviceMinutes = Math.max(
+        30,
+        next.estimatedDurationMinutes ?? DEFAULT_SERVICE_MINUTES
+      );
+      cursorMinutes = serviceStartMinutes + serviceMinutes;
       ordered.push(next);
     }
   }
 
-  return ordered;
+  return { orderedStops: ordered, pairMetrics };
 }
 
 async function buildTechnicianPlan(
   technician: RouteAssistantTechnician,
-  assignedJobs: RouteAssistantJob[]
+  assignedJobs: RouteAssistantJob[],
+  originAddress: string,
+  originCoordinates: GeoPoint | null
 ): Promise<RouteAssistantTechnicianPlan> {
-  const orderedStops = orderByNearestNeighbor(assignedJobs);
-  const pairMetrics = await getTravelMetricsForPairs(
-    orderedStops.slice(1).map((current, index) => {
-      const previous = orderedStops[index];
-      return {
-        fromAddress: previous.address,
-        toAddress: current.address,
-        fromCoordinates: previous.coordinates,
-        toCoordinates: current.coordinates,
-      };
-    })
+  const { orderedStops, pairMetrics } = await orderByOptimizedRoute(
+    assignedJobs,
+    originAddress,
+    originCoordinates
   );
   const scheduledMinutes = orderedStops.map((job) =>
     toMinutesInBusinessTimezone(job.scheduledDate)
@@ -302,25 +390,27 @@ async function buildTechnicianPlan(
   for (let index = 0; index < orderedStops.length; index += 1) {
     const current = orderedStops[index];
     const previous = index > 0 ? orderedStops[index - 1] : null;
-    const travelMetric =
-      previous && current
-        ? pairMetrics.get(getAddressPairKey(previous.address, current.address))
-        : null;
+    const travelMetric = pairMetrics.get(
+      getAddressPairKey(previous?.address ?? originAddress, current.address)
+    );
     const driveMinutes =
-      index === 0
-        ? 0
-        : travelMetric?.durationMinutes ??
-          estimateDriveMinutes(previous?.coordinates ?? null, current.coordinates);
+      travelMetric?.durationMinutes ??
+      estimateDriveMinutes(
+        previous?.coordinates ?? originCoordinates,
+        current.coordinates
+      );
     const distanceMiles =
-      index === 0
-        ? null
-        : travelMetric?.distanceMiles ??
-          estimateDistanceMiles(previous?.coordinates ?? null, current.coordinates);
+      travelMetric?.distanceMiles ??
+      estimateDistanceMiles(
+        previous?.coordinates ?? originCoordinates,
+        current.coordinates
+      );
 
     cursorMinutes += driveMinutes;
     const arrival = cursorMinutes;
     const scheduled = toMinutesInBusinessTimezone(current.scheduledDate);
-    const delay = Math.max(0, arrival - scheduled);
+    const serviceStart = Math.max(arrival, scheduled);
+    const delay = Math.max(0, serviceStart - scheduled);
     if (delay > 25) {
       conflicts += 1;
     }
@@ -329,7 +419,7 @@ async function buildTechnicianPlan(
       30,
       current.estimatedDurationMinutes ?? DEFAULT_SERVICE_MINUTES
     );
-    cursorMinutes += serviceMinutes;
+    cursorMinutes = serviceStart + serviceMinutes;
 
     totalDriveMinutes += driveMinutes;
     totalServiceMinutes += serviceMinutes;
@@ -338,27 +428,68 @@ async function buildTechnicianPlan(
       jobId: current.id,
       customerName: current.customerName,
       address: current.address,
+      planName: current.planName,
+      routeGroupId: current.routeGroupId,
+      routeGroupLabel: current.routeGroupLabel,
       technicianId: technician.id,
       technicianName: technician.name,
       order: index + 1,
       scheduledTime: minutesToTimeValue(scheduled),
-      estimatedArrivalTime: minutesToTimeValue(arrival),
+      estimatedArrivalTime: minutesToTimeValue(serviceStart),
       estimatedDriveMinutesFromPrevious: driveMinutes,
       estimatedServiceMinutes: serviceMinutes,
       distanceMilesFromPrevious:
         distanceMiles == null ? null : Number(distanceMiles.toFixed(2)),
       delayMinutes: delay > 0 ? delay : null,
-      driveSource: index === 0 ? undefined : travelMetric?.source ?? "ESTIMATED",
+      driveSource: travelMetric?.source ?? "ESTIMATED",
     });
   }
+
+  const lastStop = orderedStops[orderedStops.length - 1] ?? null;
+  const returnMetric = lastStop
+    ? pairMetrics.get(getAddressPairKey(lastStop.address, originAddress))
+    : null;
+  const returnDriveMinutes = lastStop
+    ? returnMetric?.durationMinutes ??
+      estimateDriveMinutes(lastStop.coordinates, originCoordinates)
+    : 0;
+  const returnDistanceMiles = lastStop
+    ? returnMetric?.distanceMiles ??
+      estimateDistanceMiles(lastStop.coordinates, originCoordinates)
+    : null;
+  const estimatedReturnTime =
+    lastStop && returnDriveMinutes >= 0
+      ? minutesToTimeValue(cursorMinutes + returnDriveMinutes)
+      : null;
+  totalDriveMinutes += returnDriveMinutes;
 
   return {
     technicianId: technician.id,
     technicianName: technician.name,
+    originAddress,
+    routeGroupIds: Array.from(
+      new Set(
+        stops
+          .map((stop) => stop.routeGroupId)
+          .filter((value): value is string => Boolean(value))
+      )
+    ),
+    routeGroupLabels: Array.from(
+      new Set(
+        stops
+          .map((stop) => stop.routeGroupLabel)
+          .filter((value): value is string => Boolean(value))
+      )
+    ),
     stops,
     totalDriveMinutes,
+    returnDriveMinutes,
     totalServiceMinutes,
     totalRouteMinutes: totalDriveMinutes + totalServiceMinutes,
+    returnDistanceMiles:
+      returnDistanceMiles == null ? null : Number(returnDistanceMiles.toFixed(2)),
+    returnDriveSource: returnMetric?.source ?? (lastStop ? "ESTIMATED" : undefined),
+    estimatedReturnTime,
     conflicts,
   };
 }
@@ -366,15 +497,22 @@ async function buildTechnicianPlan(
 async function buildPlan(
   jobs: RouteAssistantJob[],
   technicians: RouteAssistantTechnician[],
-  strategy: RouteAssistantStrategy
+  strategy: RouteAssistantStrategy,
+  originAddress: string,
+  originCoordinates: GeoPoint | null
 ): Promise<RouteAssistantPlan> {
   const assignments = assignJobs(jobs, technicians, strategy);
 
   const routes = (
     await Promise.all(
       technicians.map((technician) => {
-      const assignedJobs = assignments.get(technician.id) ?? [];
-      return buildTechnicianPlan(technician, assignedJobs);
+        const assignedJobs = assignments.get(technician.id) ?? [];
+        return buildTechnicianPlan(
+          technician,
+          assignedJobs,
+          originAddress,
+          originCoordinates
+        );
       })
     )
   ).filter((route) => route.stops.length > 0);
@@ -419,16 +557,29 @@ async function buildPlan(
 export async function buildRouteAssistantPlans(input: {
   jobs: RouteAssistantJob[];
   technicians: RouteAssistantTechnician[];
+  originAddress?: string;
+  originCoordinates?: GeoPoint | null;
 }) {
-  const { jobs, technicians } = input;
+  const {
+    jobs,
+    technicians,
+    originAddress = DEFAULT_ROUTE_ORIGIN_ADDRESS,
+    originCoordinates = null,
+  } = input;
   if (jobs.length === 0 || technicians.length === 0) {
     return [] as RouteAssistantPlan[];
   }
 
   const plans = await Promise.all([
-    buildPlan(jobs, technicians, "BALANCED"),
-    buildPlan(jobs, technicians, "SHORT_DRIVE"),
-    buildPlan(jobs, technicians, "KEEP_ASSIGNMENTS"),
+    buildPlan(jobs, technicians, "BALANCED", originAddress, originCoordinates),
+    buildPlan(jobs, technicians, "SHORT_DRIVE", originAddress, originCoordinates),
+    buildPlan(
+      jobs,
+      technicians,
+      "KEEP_ASSIGNMENTS",
+      originAddress,
+      originCoordinates
+    ),
   ]);
   return plans;
 }

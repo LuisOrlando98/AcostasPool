@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import CustomersClient from "@/app/admin/customers/CustomersClient";
 import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
+import CustomersSectionTabs from "@/components/customers/CustomersSectionTabs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
@@ -240,6 +241,9 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       subtitle={t("admin.customers.subtitle")}
       role="ADMIN"
     >
+      <div className="mb-4 flex justify-end">
+        <CustomersSectionTabs />
+      </div>
       {feedback === "customer-created" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.created")}

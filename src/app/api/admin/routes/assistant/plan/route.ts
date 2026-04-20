@@ -5,8 +5,16 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { formatCustomerName } from "@/lib/customers/format";
 import { parseDateOnly, toDateKey } from "@/lib/jobs/capacity";
+import {
+  buildRecurringRouteGroupId,
+  buildRecurringRouteGroupLabel,
+  isGlobalRecurringPlanName,
+} from "@/lib/jobs/recurring-plan-templates";
 import { geocodeAddresses } from "@/lib/routing/geo";
-import { buildRouteAssistantPlans } from "@/lib/routing/planner";
+import {
+  buildRouteAssistantPlans,
+  DEFAULT_ROUTE_ORIGIN_ADDRESS,
+} from "@/lib/routing/planner";
 import {
   addBusinessDays,
   endOfBusinessDay,
@@ -89,6 +97,13 @@ export async function POST(request: Request) {
             address: true,
           },
         },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            technicianId: true,
+          },
+        },
       },
     }),
   ]);
@@ -100,6 +115,7 @@ export async function POST(request: Request) {
   if (techniciansData.length === 0) {
     return NextResponse.json({
       date,
+      originAddress: DEFAULT_ROUTE_ORIGIN_ADDRESS,
       technicians: [],
       jobsCount: 0,
       unresolvedGeocodes: 0,
@@ -108,10 +124,19 @@ export async function POST(request: Request) {
   }
 
   const normalizedQuery = addressQuery.trim().toLowerCase();
+  const selectedTechnicianSet = new Set(techniciansData.map((technician) => technician.id));
   const jobsForPlanning = ignoreDate
     ? jobs
     : jobs.filter((job) => toDateKey(job.scheduledDate) === date);
   const filteredJobs = jobsForPlanning.filter((job) => {
+    const effectiveTechnicianId = job.plan?.technicianId ?? job.technicianId ?? null;
+    if (
+      technicianIds.length > 0 &&
+      effectiveTechnicianId &&
+      !selectedTechnicianSet.has(effectiveTechnicianId)
+    ) {
+      return false;
+    }
     if (normalizedQuery.length === 0) {
       return true;
     }
@@ -122,14 +147,39 @@ export async function POST(request: Request) {
   });
 
   const geocoded = await geocodeAddresses(
-    filteredJobs.map((job) => job.property.address)
+    [
+      DEFAULT_ROUTE_ORIGIN_ADDRESS,
+      ...filteredJobs.map((job) => job.property.address),
+    ]
   );
+  const originCoordinates = geocoded.get(DEFAULT_ROUTE_ORIGIN_ADDRESS) ?? null;
 
   const plannedJobs = filteredJobs.map((job) => ({
     id: job.id,
     customerName: formatCustomerName(job.customer),
     address: job.property.address,
     technicianId: job.technicianId,
+    planName: job.plan?.name ?? null,
+    routeGroupId: job.plan?.name
+      ? buildRecurringRouteGroupId({
+          planName: job.plan.name,
+          technicianId: job.plan.technicianId ?? job.technicianId,
+        })
+      : null,
+    routeGroupLabel: job.plan?.name
+      ? buildRecurringRouteGroupLabel({
+          planName: job.plan.name,
+          technicianName:
+            techniciansData.find(
+              (technician) =>
+                technician.id === (job.plan?.technicianId ?? job.technicianId)
+            )?.name ?? null,
+        })
+      : null,
+    lockedTechnicianId:
+      job.plan?.name && isGlobalRecurringPlanName(job.plan.name)
+        ? (job.plan.technicianId ?? job.technicianId ?? null)
+        : null,
     scheduledDate: job.scheduledDate,
     estimatedDurationMinutes: job.estimatedDurationMinutes,
     coordinates: geocoded.get(job.property.address) ?? null,
@@ -138,10 +188,13 @@ export async function POST(request: Request) {
   const plans = await buildRouteAssistantPlans({
     jobs: plannedJobs,
     technicians: techniciansData,
+    originAddress: DEFAULT_ROUTE_ORIGIN_ADDRESS,
+    originCoordinates,
   });
 
   return NextResponse.json({
     date,
+    originAddress: DEFAULT_ROUTE_ORIGIN_ADDRESS,
     technicians: techniciansData,
     jobsCount: plannedJobs.length,
     unresolvedGeocodes: plannedJobs.filter((job) => !job.coordinates).length,

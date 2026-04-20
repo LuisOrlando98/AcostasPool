@@ -627,7 +627,8 @@
         "fields": {
           "date": "Route date",
           "addressFilter": "Address filter",
-          "technicians": "Technicians in scope"
+          "technicians": "Technicians in scope",
+          "origin": "Route origin"
         },
         "placeholders": {
           "addressFilter": "Filter by city, ZIP, street, or customer..."
@@ -671,18 +672,23 @@
         "summary": {
           "stops": "{{count}} stops",
           "drive": "Drive: {{value}}",
+          "return": "Return: {{value}}",
           "service": "Service: {{value}}",
           "conflicts": "Conflicts: {{count}}",
           "livePairs": "Live traffic pairs: {{count}}",
           "estimatedPairs": "Estimated pairs: {{count}}",
-          "sameAddressPairs": "Same address pairs: {{count}}"
+          "sameAddressPairs": "Same address pairs: {{count}}",
+          "routeFlow": "Start from {{origin}} and return to base around {{eta}} with {{drive}}."
         },
         "table": {
           "customer": "Customer",
+          "plan": "Plan",
           "address": "Address",
           "drive": "Drive from prev.",
           "eta": "ETA",
           "scheduled": "Scheduled",
+          "noPlan": "No plan",
+          "fromBase": "Base: {{value}}",
           "liveTraffic": "Live",
           "estimated": "Estimated",
           "sameAddress": "Same address"
@@ -959,6 +965,10 @@
     "customers": {
       "title": "Customers",
       "subtitle": "Profiles, properties, and history.",
+      "tabs": {
+        "overview": "Customers",
+        "assignments": "Weekly routes"
+      },
       "types": {
         "residential": "Residential",
         "commercial": "Commercial"
@@ -1081,6 +1091,28 @@
         "jobCreated": "Job created successfully.",
         "planCreated": "Recurring plan created successfully."
       },
+      "assignments": {
+        "kicker": "Weekly routes",
+        "title": "Technician assignments",
+        "subtitle": "Group customers by weekly route and technician so each operating route stays clearly identified.",
+        "results": "{{count}} assignments",
+        "empty": "No assignments were found for the weekly routes.",
+        "unassigned": "Unassigned",
+        "groupCount": "{{count}} customer(s)",
+        "cards": {
+          "assignments": "Assignments",
+          "active": "Active",
+          "routeGroups": "Route groups",
+          "technicians": "{{count}} technician(s)"
+        },
+        "table": {
+          "customer": "Customer",
+          "property": "Property",
+          "next": "Next service",
+          "status": "Status",
+          "notes": "Notes"
+        }
+      },
       "detail": {
         "notFoundTitle": "Customer not found",
         "notFoundSubtitle": "Invalid ID.",
@@ -1200,15 +1232,26 @@
           "paused": "Paused",
           "modalKicker": "New plan",
           "modalTitle": "Recurring plan",
-          "modalSubtitle": "Generate automatic jobs with checklists by service type.",
+          "modalSubtitle": "Assign a weekly route to the customer and bind it to a technician. Appointments created from the portal or app are saved as Custom Service.",
           "fields": {
             "name": "Plan name",
             "frequency": "Frequency",
             "nextDate": "Next date",
+            "startDate": "Plan start date",
+            "weeklyRoute": "Weekly route",
             "notes": "Plan notes"
           },
+          "globalOptions": {
+            "monday": "Monday plan",
+            "tuesday": "Tuesday plan",
+            "wednesday": "Wednesday plan",
+            "thursday": "Thursday plan",
+            "friday": "Friday plan",
+            "saturday": "Saturday plan"
+          },
           "placeholders": {
-            "name": "Primary weekly plan"
+            "name": "Primary weekly plan",
+            "selectTechnician": "Select a technician"
           }
         },
         "jobs": {

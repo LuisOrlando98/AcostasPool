@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
+import { getRecurringPlanLabelKey } from "@/lib/jobs/recurring-plan-templates";
 import {
   formatBusinessDateInput,
   formatInBusinessTimeZone,
@@ -66,6 +67,11 @@ export default function CustomerPlansTable({
     return t("plans.frequency.weekly");
   };
 
+  const getPlanDisplayName = (name: string) => {
+    const labelKey = getRecurringPlanLabelKey(name);
+    return labelKey ? t(labelKey) : name;
+  };
+
   const technicianOptions = useMemo(() => {
     const names = rows.map((row) => row.technicianName).filter(Boolean);
     return Array.from(new Set(names));
@@ -73,6 +79,11 @@ export default function CustomerPlansTable({
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
+    const getLocalizedPlanName = (name: string) => {
+      const labelKey = getRecurringPlanLabelKey(name);
+      return labelKey ? t(labelKey) : name;
+    };
+
     return rows.filter((row) => {
       if (statusFilter !== "ALL") {
         const active = row.isActive ? "ACTIVE" : "PAUSED";
@@ -90,14 +101,23 @@ export default function CustomerPlansTable({
         return false;
       }
       if (query) {
-        const haystack = `${row.name} ${row.propertyAddress} ${row.technicianName}`.toLowerCase();
+        const haystack =
+          `${getLocalizedPlanName(row.name)} ${row.propertyAddress} ${row.technicianName}`.toLowerCase();
         if (!haystack.includes(query)) {
           return false;
         }
       }
       return true;
     });
-  }, [rows, statusFilter, frequencyFilter, serviceFilter, techFilter, search]);
+  }, [
+    rows,
+    statusFilter,
+    frequencyFilter,
+    serviceFilter,
+    techFilter,
+    search,
+    t,
+  ]);
 
   useEffect(() => {
     setPage(1);
@@ -218,13 +238,15 @@ export default function CustomerPlansTable({
               ) : (
                 pagedRows.map((plan) => {
                   const nextDate = toDateInput(plan.nextRunAt);
-                  const nextTime =
-                    plan.preferredTime || formatTime(plan.nextRunAt, locale);
+                  const displayName = getPlanDisplayName(plan.name);
+                  const nextTime = plan.preferredTime
+                    ? formatTime(plan.nextRunAt, locale)
+                    : "";
                   return (
                     <tr key={plan.id} className="bg-white transition hover:bg-sky-50/40">
                       <td className="px-3 py-3">
-                        <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={plan.name}>
-                          {plan.name}
+                        <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={displayName}>
+                          {displayName}
                         </p>
                         {plan.serviceTierName ? (
                           <p
@@ -249,7 +271,8 @@ export default function CustomerPlansTable({
                         {frequencyLabel(plan.frequency)}
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
-                        {formatDate(plan.nextRunAt, locale)} | {nextTime}
+                        {formatDate(plan.nextRunAt, locale)}
+                        {nextTime ? ` | ${nextTime}` : ""}
                       </td>
                       <td className="px-3 py-3 text-[11px] text-slate-500">
                         <p

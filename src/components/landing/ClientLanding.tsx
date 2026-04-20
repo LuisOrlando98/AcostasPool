@@ -943,7 +943,7 @@ export default function ClientLanding({
 
               <div className="lp-stats">
                 <div>
-                  <strong>&lt;24h</strong>
+                  <strong>&lt;12h</strong>
                   <span>{copy.hero.responseTime}</span>
                 </div>
                 <div>

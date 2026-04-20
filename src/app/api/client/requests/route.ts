@@ -9,6 +9,7 @@ import {
   getServiceTierChecklist,
 } from "@/lib/service-tiers";
 import { addPlanFrequency, combineDateAndTime } from "@/lib/jobs/scheduling";
+import { CUSTOM_SERVICE_PLAN_NAME } from "@/lib/jobs/recurring-plan-templates";
 import {
   MIN_BOOKING_LEAD_DAYS,
   buildAvailabilityDays,
@@ -339,18 +340,12 @@ export async function POST(request: Request) {
 
       const now = new Date();
       const endOfToday = endOfBusinessDay(now) ?? now;
-      const planNameBase = reason.trim().slice(0, 48) || "Recurring pool service";
-
       const created = await prisma.$transaction(async (tx) => {
         const planIds: string[] = [];
         const jobs: Array<{ id: string; scheduledDate: Date; status: string }> = [];
 
         for (let index = 0; index < weeklyAnchors.length; index += 1) {
           const anchor = weeklyAnchors[index];
-          const planName =
-            weeklyAnchors.length === 1
-              ? `Recurring - ${planNameBase}`
-              : `Recurring ${index + 1} - ${planNameBase}`;
           const sortOrder =
             ((getBusinessTimeParts(anchor.scheduledDate)?.hour ?? 0) * 60) +
             (getBusinessTimeParts(anchor.scheduledDate)?.minute ?? 0);
@@ -359,7 +354,7 @@ export async function POST(request: Request) {
             data: {
               customerId: customer.id,
               propertyId,
-              name: planName,
+              name: CUSTOM_SERVICE_PLAN_NAME,
               frequency: "WEEKLY",
               serviceType: "WEEKLY_CLEANING",
               priority: "NORMAL",

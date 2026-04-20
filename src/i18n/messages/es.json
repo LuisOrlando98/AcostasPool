@@ -627,7 +627,8 @@
         "fields": {
           "date": "Fecha de ruta",
           "addressFilter": "Filtro por direccion",
-          "technicians": "Tecnicos incluidos"
+          "technicians": "Tecnicos incluidos",
+          "origin": "Punto de partida"
         },
         "placeholders": {
           "addressFilter": "Filtrar por ciudad, ZIP, calle o cliente..."
@@ -671,18 +672,23 @@
         "summary": {
           "stops": "{{count}} paradas",
           "drive": "Traslado: {{value}}",
+          "return": "Regreso: {{value}}",
           "service": "Servicio: {{value}}",
           "conflicts": "Conflictos: {{count}}",
           "livePairs": "Tramos con trafico real: {{count}}",
           "estimatedPairs": "Tramos estimados: {{count}}",
-          "sameAddressPairs": "Tramos misma direccion: {{count}}"
+          "sameAddressPairs": "Tramos misma direccion: {{count}}",
+          "routeFlow": "Salida desde {{origin}} y regreso a base estimado a las {{eta}} con {{drive}}."
         },
         "table": {
           "customer": "Cliente",
+          "plan": "Plan",
           "address": "Direccion",
           "drive": "Traslado desde anterior",
           "eta": "Llegada estimada",
           "scheduled": "Programado",
+          "noPlan": "Sin plan",
+          "fromBase": "Base: {{value}}",
           "liveTraffic": "En vivo",
           "estimated": "Estimado",
           "sameAddress": "Misma direccion"
@@ -959,6 +965,10 @@
     "customers": {
       "title": "Clientes",
       "subtitle": "Perfiles completos, propiedades e historial.",
+      "tabs": {
+        "overview": "Clientes",
+        "assignments": "Rutas semanales"
+      },
       "types": {
         "residential": "Residencial",
         "commercial": "Comercial"
@@ -1081,6 +1091,28 @@
         "jobCreated": "Trabajo creado correctamente.",
         "planCreated": "Plan recurrente creado correctamente."
       },
+      "assignments": {
+        "kicker": "Rutas semanales",
+        "title": "Asignaciones por tecnico",
+        "subtitle": "Agrupa clientes por ruta semanal y tecnico para identificar cada recorrido operativo.",
+        "results": "{{count}} asignaciones",
+        "empty": "No hay asignaciones para las rutas semanales.",
+        "unassigned": "Sin tecnico",
+        "groupCount": "{{count}} cliente(s)",
+        "cards": {
+          "assignments": "Asignaciones",
+          "active": "Activas",
+          "routeGroups": "Rutas identificadas",
+          "technicians": "{{count}} tecnico(s)"
+        },
+        "table": {
+          "customer": "Cliente",
+          "property": "Propiedad",
+          "next": "Proximo servicio",
+          "status": "Estado",
+          "notes": "Notas"
+        }
+      },
       "detail": {
         "notFoundTitle": "Cliente no encontrado",
         "notFoundSubtitle": "ID invalido.",
@@ -1200,15 +1232,26 @@
           "paused": "Pausado",
           "modalKicker": "Nuevo plan",
           "modalTitle": "Plan recurrente",
-          "modalSubtitle": "Genera trabajos automaticos con checklist por tipo de servicio.",
+          "modalSubtitle": "Asigna una ruta semanal al cliente y vinculala a un tecnico. Las citas creadas desde el portal o la app quedan como Custom Service.",
           "fields": {
             "name": "Nombre del plan",
             "frequency": "Frecuencia",
             "nextDate": "Proxima fecha",
+            "startDate": "Fecha de inicio del plan",
+            "weeklyRoute": "Ruta semanal",
             "notes": "Notas del plan"
           },
+          "globalOptions": {
+            "monday": "Plan de lunes",
+            "tuesday": "Plan de martes",
+            "wednesday": "Plan de miercoles",
+            "thursday": "Plan de jueves",
+            "friday": "Plan de viernes",
+            "saturday": "Plan de sabado"
+          },
           "placeholders": {
-            "name": "Plan semanal principal"
+            "name": "Plan semanal principal",
+            "selectTechnician": "Selecciona un tecnico"
           }
         },
         "jobs": {

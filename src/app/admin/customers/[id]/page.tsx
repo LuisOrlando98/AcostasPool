@@ -18,6 +18,12 @@ import { resolveParams } from "@/lib/utils/params";
 import { addPlanFrequency, combineDateAndTime } from "@/lib/jobs/scheduling";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import {
+  GLOBAL_RECURRING_PLAN_OPTIONS,
+  DEFAULT_GLOBAL_PLAN_TIME,
+  getGlobalRecurringPlan,
+  resolveGlobalPlanStartDate,
+} from "@/lib/jobs/recurring-plan-templates";
+import {
   getDefaultServiceTierId,
   getServiceTierChecklist,
   getServiceTiers,
@@ -590,20 +596,16 @@ async function createServicePlan(formData: FormData) {
 
   const customerId = String(formData.get("customerId"));
   const propertyId = String(formData.get("propertyId"));
+  const planTemplate = String(formData.get("planTemplate") ?? "MONDAY");
   const technicianId = String(formData.get("technicianId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
-  const frequencyRaw = String(formData.get("frequency") ?? "WEEKLY");
-  const serviceType = String(formData.get("serviceType") ?? "WEEKLY_CLEANING");
   const serviceTierId = String(formData.get("serviceTierId") ?? "").trim();
-  const priority = String(formData.get("priority") ?? "NORMAL");
   const nextDateRaw = String(formData.get("nextDate") ?? "");
-  const nextTime = String(formData.get("nextTime") ?? "09:00");
   const estimatedDurationRaw = String(
     formData.get("estimatedDuration") ?? ""
   );
   const notes = String(formData.get("notes") ?? "").trim();
 
-  if (!customerId || !propertyId || !name || !nextDateRaw) {
+  if (!customerId || !propertyId || !technicianId || !nextDateRaw) {
     return;
   }
   const property = await prisma.property.findUnique({
@@ -614,17 +616,25 @@ async function createServicePlan(formData: FormData) {
     return;
   }
 
-  const frequency =
-    frequencyRaw === "BIWEEKLY"
-      ? "BIWEEKLY"
-      : frequencyRaw === "MONTHLY"
-        ? "MONTHLY"
-        : "WEEKLY";
-
-  const nextRunAt = combineDateAndTime(nextDateRaw, nextTime || "09:00");
+  const selectedPlan =
+    getGlobalRecurringPlan(planTemplate) ?? GLOBAL_RECURRING_PLAN_OPTIONS[0];
+  const nextRunAt = resolveGlobalPlanStartDate(
+    nextDateRaw,
+    selectedPlan.value,
+    DEFAULT_GLOBAL_PLAN_TIME
+  );
+  if (Number.isNaN(nextRunAt.getTime())) {
+    return;
+  }
   const estimatedDurationMinutes = estimatedDurationRaw
     ? Number(estimatedDurationRaw)
     : null;
+  if (
+    estimatedDurationMinutes !== null &&
+    (!Number.isFinite(estimatedDurationMinutes) || estimatedDurationMinutes < 0)
+  ) {
+    return;
+  }
 
   const resolvedPlanTierId =
     serviceTierId || (await getDefaultServiceTierId());
@@ -634,18 +644,13 @@ async function createServicePlan(formData: FormData) {
       customerId,
       propertyId,
       technicianId: technicianId || null,
-      name,
-      frequency,
+      name: selectedPlan.name,
+      frequency: "WEEKLY",
       serviceTierId: resolvedPlanTierId,
-      serviceType:
-        serviceType === "FILTER_CHECK" ||
-        serviceType === "CHEM_BALANCE" ||
-        serviceType === "EQUIPMENT_CHECK"
-          ? serviceType
-        : "WEEKLY_CLEANING",
-      priority: priority === "URGENT" ? "URGENT" : "NORMAL",
+      serviceType: "WEEKLY_CLEANING",
+      priority: "NORMAL",
       nextRunAt,
-      preferredTime: nextTime || null,
+      preferredTime: null,
       estimatedDurationMinutes,
       checklist: await getServiceTierChecklist(resolvedPlanTierId),
       notes: notes || null,
@@ -1952,15 +1957,21 @@ export default async function CustomerDetailPage({
             <input type="hidden" name="customerId" value={customer.id} />
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.plans.fields.name")}
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {t("admin.customers.detail.plans.fields.weeklyRoute")}
                 </label>
-                <input
-                  name="name"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
-                  placeholder={t("admin.customers.detail.plans.placeholders.name")}
+                <select
+                  name="planTemplate"
+                  defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value}
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                   required
-                />
+                >
+                  {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (
+                    <option key={planOption.value} value={planOption.value}>
+                      {t(planOption.labelKey)}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -1985,20 +1996,7 @@ export default async function CustomerDetailPage({
                 </select>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.plans.fields.frequency")}
-                </label>
-                <select
-                  name="frequency"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
-                  <option value="BIWEEKLY">{t("plans.frequency.biweekly")}</option>
-                  <option value="MONTHLY">{t("plans.frequency.monthly")}</option>
-                </select>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   {t("jobs.detail.fields.serviceTier")}
@@ -2016,42 +2014,14 @@ export default async function CustomerDetailPage({
               </div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.serviceType")}
-                </label>
-                <select
-                  name="serviceType"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  {serviceTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.labelKey ? t(option.labelKey) : option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("jobs.detail.fields.priority")}
-                </label>
-                <select
-                  name="priority"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
-                >
-                  <option value="NORMAL">{t("jobs.priority.normal")}</option>
-                  <option value="URGENT">{t("jobs.priority.urgent")}</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                   {t("jobs.detail.fields.tech")}
                 </label>
                 <select
                   name="technicianId"
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  required
                 >
-                  <option value="">{t("admin.routes.labels.unassigned")}</option>
+                  <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
                   {technicians.map((tech) => (
                     <option key={tech.id} value={tech.id}>
                       {tech.user.fullName}
@@ -2060,26 +2030,16 @@ export default async function CustomerDetailPage({
                 </select>
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.customers.detail.plans.fields.nextDate")}
+                  {t("admin.customers.detail.plans.fields.startDate")}
                 </label>
                 <input
                   name="nextDate"
                   type="date"
                   className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
                   required
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.routes.labels.time")}
-                </label>
-                <input
-                  name="nextTime"
-                  type="time"
-                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
                 />
               </div>
               <div>

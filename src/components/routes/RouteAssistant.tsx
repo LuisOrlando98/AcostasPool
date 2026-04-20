@@ -14,6 +14,9 @@ type AssistantStop = {
   jobId: string;
   customerName: string;
   address: string;
+  planName: string | null;
+  routeGroupId: string | null;
+  routeGroupLabel: string | null;
   technicianId: string;
   technicianName: string;
   order: number;
@@ -29,10 +32,17 @@ type AssistantStop = {
 type AssistantRoute = {
   technicianId: string;
   technicianName: string;
+  originAddress: string;
+  routeGroupIds: string[];
+  routeGroupLabels: string[];
   stops: AssistantStop[];
   totalDriveMinutes: number;
+  returnDriveMinutes: number;
   totalServiceMinutes: number;
   totalRouteMinutes: number;
+  returnDistanceMiles: number | null;
+  returnDriveSource?: "LIVE_TRAFFIC" | "ESTIMATED" | "SAME_ADDRESS";
+  estimatedReturnTime: string | null;
   conflicts: number;
 };
 
@@ -56,6 +66,7 @@ type AssistantPlan = {
 
 type AssistantResponse = {
   date: string;
+  originAddress: string;
   technicians: AssistantTechnician[];
   jobsCount: number;
   unresolvedGeocodes: number;
@@ -238,6 +249,14 @@ export default function RouteAssistant({
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                 />
               </label>
+            </div>
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50/70 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-800">
+                {t("admin.routes.assistant.fields.origin")}
+              </p>
+              <p className="mt-1 text-sm font-medium text-cyan-950">
+                {response?.originAddress ?? "10731 SW 147th Ct, Miami, FL 33196"}
+              </p>
             </div>
             <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
               <input
@@ -436,9 +455,28 @@ export default function RouteAssistant({
                         className="overflow-hidden rounded-2xl border border-slate-200"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 px-4 py-3">
-                          <p className="text-sm font-semibold text-slate-900">
-                            {route.technicianName}
-                          </p>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {route.technicianName}
+                            </p>
+                            {route.routeGroupLabels.length > 0 ? (
+                              <p className="mt-1 text-xs text-slate-500">
+                                {route.routeGroupLabels.join(" | ")}
+                              </p>
+                            ) : null}
+                            {route.routeGroupIds.length > 0 ? (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {route.routeGroupIds.map((groupId) => (
+                                  <span
+                                    key={groupId}
+                                    className="rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-800"
+                                  >
+                                    {groupId}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
                           <div className="flex flex-wrap gap-2 text-xs text-slate-500">
                             <span>
                               {t("admin.routes.assistant.summary.stops", {
@@ -451,19 +489,39 @@ export default function RouteAssistant({
                               })}
                             </span>
                             <span>
+                              {t("admin.routes.assistant.summary.return", {
+                                value: formatMinutes(route.returnDriveMinutes),
+                              })}
+                            </span>
+                            <span>
                               {t("admin.routes.assistant.summary.service", {
                                 value: formatMinutes(route.totalServiceMinutes),
                               })}
                             </span>
                           </div>
                         </div>
+                        <div className="border-b border-slate-200 bg-cyan-50/70 px-4 py-2 text-xs text-cyan-900">
+                          {t("admin.routes.assistant.summary.routeFlow", {
+                            origin: route.originAddress,
+                            eta: route.estimatedReturnTime ?? "--:--",
+                            drive:
+                              `${route.returnDriveMinutes}m${
+                                route.returnDistanceMiles != null
+                                  ? ` (${route.returnDistanceMiles} mi)`
+                                  : ""
+                              }`,
+                          })}
+                        </div>
                         <div className="customers-table-scroll overflow-x-auto">
-                          <table className="customers-table min-w-[860px] w-full text-xs text-slate-600">
+                          <table className="customers-table min-w-[1060px] w-full text-xs text-slate-600">
                             <thead>
                               <tr className="border-b border-slate-200 bg-white text-slate-500">
                                 <th className="px-3 py-2 text-left">#</th>
                                 <th className="px-3 py-2 text-left">
                                   {t("admin.routes.assistant.table.customer")}
+                                </th>
+                                <th className="px-3 py-2 text-left">
+                                  {t("admin.routes.assistant.table.plan")}
                                 </th>
                                 <th className="px-3 py-2 text-left">
                                   {t("admin.routes.assistant.table.address")}
@@ -486,10 +544,26 @@ export default function RouteAssistant({
                                     {stop.order}
                                   </td>
                                   <td className="px-3 py-2 text-slate-700">{stop.customerName}</td>
+                                  <td className="px-3 py-2 text-slate-600">
+                                    <p className="font-medium text-slate-700">
+                                      {stop.planName ?? t("admin.routes.assistant.table.noPlan")}
+                                    </p>
+                                    {stop.routeGroupId ? (
+                                      <p className="text-[10px] uppercase tracking-[0.08em] text-cyan-700">
+                                        {stop.routeGroupId}
+                                      </p>
+                                    ) : null}
+                                  </td>
                                   <td className="px-3 py-2 text-slate-600">{stop.address}</td>
                                   <td className="px-3 py-2 text-slate-600">
                                     {stop.order === 1
-                                      ? "-"
+                                      ? t("admin.routes.assistant.table.fromBase", {
+                                          value: `${stop.estimatedDriveMinutesFromPrevious}m${
+                                            stop.distanceMilesFromPrevious != null
+                                              ? ` (${stop.distanceMilesFromPrevious} mi)`
+                                              : ""
+                                          }`,
+                                        })
                                       : `${stop.estimatedDriveMinutesFromPrevious}m${
                                           stop.distanceMilesFromPrevious != null
                                             ? ` (${stop.distanceMilesFromPrevious} mi)`
