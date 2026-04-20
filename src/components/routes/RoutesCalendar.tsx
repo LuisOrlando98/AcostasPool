@@ -4,6 +4,10 @@ import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DateTime } from "luxon";
+import {
+  CUSTOM_SERVICE_PLAN_NAME,
+  getRecurringPlanLabelKey,
+} from "@/lib/jobs/recurring-plan-templates";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
@@ -24,6 +28,7 @@ import {
 type JobItem = {
   id: string;
   scheduledDate: string;
+  entryKind: "job";
   status: string;
   type: string;
   priority: string;
@@ -32,6 +37,9 @@ type JobItem = {
   estimatedDurationMinutes: number | null;
   technicianId: string | null;
   sortOrder?: number | null;
+  planId?: string | null;
+  planName?: string | null;
+  showScheduledTime: boolean;
   notes?: string | null;
   checklist?: { label?: string; completed?: boolean }[] | null;
   photos: { id: string; url: string; takenAt: string }[];
@@ -50,6 +58,42 @@ type JobItem = {
   };
   technician: { id: string; name: string } | null;
 };
+
+type PlanOccurrence = {
+  id: string;
+  scheduledDate: string;
+  entryKind: "plan";
+  status: string;
+  type: string;
+  priority: string;
+  serviceTierId: string | null;
+  serviceType: string;
+  estimatedDurationMinutes: number | null;
+  technicianId: string | null;
+  sortOrder?: number | null;
+  planId: string;
+  planName: string;
+  showScheduledTime: boolean;
+  notes?: string | null;
+  checklist?: { label?: string; completed?: boolean }[] | null;
+  photos: { id: string; url: string; takenAt: string }[];
+  customer: { id: string; name: string; email?: string | null; phone?: string | null };
+  property: {
+    id: string;
+    name?: string | null;
+    address: string;
+    poolType?: string | null;
+    sanitizerType?: string | null;
+    poolVolumeGallons?: number | null;
+    filterType?: string | null;
+    accessInfo?: string | null;
+    locationNotes?: string | null;
+    hasSpa?: boolean | null;
+  };
+  technician: { id: string; name: string } | null;
+};
+
+type CalendarItem = JobItem | PlanOccurrence;
 
 type Technician = {
   id: string;
@@ -137,6 +181,7 @@ type ScheduledFiltersState = {
 
 type RoutesCalendarProps = {
   jobs: JobItem[];
+  planOccurrences: PlanOccurrence[];
   technicians: Technician[];
   customers: Customer[];
   serviceTiers: ServiceTier[];
@@ -254,6 +299,7 @@ const toRgba = (hex: string, alpha: number) => {
 
 export default function RoutesCalendar({
   jobs,
+  planOccurrences,
   technicians,
   customers,
   serviceTiers,
@@ -330,6 +376,16 @@ export default function RoutesCalendar({
     [serviceTiers]
   );
   const tierOptions = activeServiceTiers.length > 0 ? activeServiceTiers : serviceTiers;
+  const getPlanDisplayName = (planName?: string | null) => {
+    if (!planName) {
+      return "";
+    }
+    if (planName === CUSTOM_SERVICE_PLAN_NAME) {
+      return CUSTOM_SERVICE_PLAN_NAME;
+    }
+    const labelKey = getRecurringPlanLabelKey(planName);
+    return labelKey ? t(labelKey) : planName;
+  };
 
   useEffect(() => {
     const highlight = searchParams.get("highlight");
@@ -472,7 +528,7 @@ export default function RoutesCalendar({
   }
 
   const jobsByDate = useMemo(() => {
-    const map = new Map<string, JobItem[]>();
+    const map = new Map<string, CalendarItem[]>();
     for (const job of jobsState) {
       const date = new Date(job.scheduledDate);
       const key = toDateKey(date);
@@ -480,10 +536,17 @@ export default function RoutesCalendar({
       list.push(job);
       map.set(key, list);
     }
+    for (const plan of planOccurrences) {
+      const date = new Date(plan.scheduledDate);
+      const key = toDateKey(date);
+      const list = map.get(key) ?? [];
+      list.push(plan);
+      map.set(key, list);
+    }
     return map;
-  }, [jobsState]);
+  }, [jobsState, planOccurrences]);
 
-  const sortJobsForDay = (list: JobItem[]) => {
+  const sortJobsForDay = (list: CalendarItem[]) => {
     return sortJobsChronologically(list);
   };
 
@@ -610,6 +673,7 @@ export default function RoutesCalendar({
   });
 
   const statusOrder = [
+    "PLANNED",
     "SCHEDULED",
     "PENDING",
     "ON_THE_WAY",
@@ -621,6 +685,10 @@ export default function RoutesCalendar({
     string,
     { label: string; className: string }
   > = {
+    PLANNED: {
+      label: locale === "es" ? "Planificado" : "Planned",
+      className: "border-violet-200 bg-violet-50 text-violet-700",
+    },
     SCHEDULED: {
       label: t("jobs.status.scheduled"),
       className: "border-sky-200 bg-sky-50 text-sky-700",
@@ -1771,19 +1839,21 @@ export default function RoutesCalendar({
                     <div className="pointer-events-none absolute inset-1 rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50/40" />
                   ) : null}
                   {jobsForDay.map((job) => {
+                    const isPlanEntry = job.entryKind === "plan";
                     const isHighlighted = highlightJobId === job.id;
-                    const isSelected = selectedJobId === job.id;
+                    const isSelected = !isPlanEntry && selectedJobId === job.id;
                     const isDropTarget =
+                      !isPlanEntry &&
                       dragOverTarget?.jobId === job.id &&
                       draggingJobId !== job.id;
                     const dropPosition = dragOverTarget?.position;
-                    const timeLabel = new Date(
-                      job.scheduledDate
-                    ).toLocaleTimeString(locale, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: BUSINESS_TIMEZONE,
-                    });
+                    const timeLabel = job.showScheduledTime
+                      ? new Date(job.scheduledDate).toLocaleTimeString(locale, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: BUSINESS_TIMEZONE,
+                        })
+                      : "";
                     const serviceOption = serviceTypeOptions.find(
                       (option) => option.value === job.serviceType
                     );
@@ -1793,6 +1863,10 @@ export default function RoutesCalendar({
                     const tierLabel = job.serviceTierId
                       ? serviceTiersById.get(job.serviceTierId)?.name ?? null
                       : null;
+                    const planLabel = getPlanDisplayName(job.planName);
+                    const secondaryLabel = isPlanEntry
+                      ? [planLabel, tierLabel ?? serviceLabel].filter(Boolean).join(" - ")
+                      : `${tierLabel ? `${tierLabel} - ` : ""}${serviceLabel}`;
                     const techInfo = job.technicianId
                       ? techniciansById.get(job.technicianId)
                       : null;
@@ -1826,8 +1900,11 @@ export default function RoutesCalendar({
                     return (
                       <div
                         key={job.id}
-                        draggable={editMode}
+                        draggable={editMode && !isPlanEntry}
                         onDragStart={(event) => {
+                          if (isPlanEntry) {
+                            return;
+                          }
                           event.dataTransfer.setData("text/plain", job.id);
                           event.dataTransfer.effectAllowed = "move";
                           setDraggingJobId(job.id);
@@ -1837,7 +1914,7 @@ export default function RoutesCalendar({
                           setDragOverTarget(null);
                         }}
                         onDragOver={(event) => {
-                          if (!editMode || job.id === draggingJobId) {
+                          if (!editMode || isPlanEntry || job.id === draggingJobId) {
                             return;
                           }
                           event.preventDefault();
@@ -1859,7 +1936,7 @@ export default function RoutesCalendar({
                           });
                         }}
                         onDrop={(event) => {
-                          if (!editMode) {
+                          if (!editMode || isPlanEntry) {
                             return;
                           }
                           event.preventDefault();
@@ -1874,16 +1951,23 @@ export default function RoutesCalendar({
                         }}
                         onClick={(event) => {
                           event.stopPropagation();
+                          if (isPlanEntry) {
+                            return;
+                          }
                           if (editMode) {
                             setSelectedJobId((current) =>
                               current === job.id ? null : job.id
                             );
                             return;
                           }
-                          openJobModal(job);
+                          openJobModal(job as JobItem);
                         }}
                         className={`relative block rounded-2xl border px-2.5 py-2.5 text-[9px] transition xl:px-3 xl:py-3 xl:text-[10px] ${
-                          editMode ? "cursor-move" : "cursor-pointer"
+                          isPlanEntry
+                            ? "cursor-default"
+                            : editMode
+                              ? "cursor-move"
+                              : "cursor-pointer"
                         } ${isSelected ? "ring-2 ring-rose-400" : isHighlighted ? "ring-2 ring-sky-400" : ""} ${
                           isDropTarget
                             ? "outline outline-2 outline-sky-300 outline-offset-2"
@@ -1911,30 +1995,31 @@ export default function RoutesCalendar({
                               {job.customer.name}
                             </div>
                             <div className="text-[10px] text-slate-500">
-                              {tierLabel ? `${tierLabel} - ` : ""}
-                              {serviceLabel}
+                              {secondaryLabel}
                             </div>
                           </div>
-                          <span
-                            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold text-slate-600"
-                            title={t("admin.routes.labels.scheduledTime")}
-                          >
-                            <svg
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.6"
-                              className="h-2.5 w-2.5"
+                          {timeLabel ? (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold text-slate-600"
+                              title={t("admin.routes.labels.scheduledTime")}
                             >
-                              <circle cx="12" cy="12" r="8" />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M12 7.5V12l3 2"
-                              />
-                            </svg>
-                            {timeLabel}
-                          </span>
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                                className="h-2.5 w-2.5"
+                              >
+                                <circle cx="12" cy="12" r="8" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  d="M12 7.5V12l3 2"
+                                />
+                              </svg>
+                              {timeLabel}
+                            </span>
+                          ) : null}
                         </div>
                         <div className="mt-2 flex items-center gap-1 text-[10px] text-slate-500">
                           <svg
@@ -1968,39 +2053,53 @@ export default function RoutesCalendar({
                         <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-slate-600">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500">
-                              {job.type === "ON_DEMAND"
-                                ? t("jobs.type.onDemand")
-                                : t("jobs.type.routine")}
+                              {isPlanEntry
+                                ? planLabel || t("client.request.modes.recurring")
+                                : job.type === "ON_DEMAND"
+                                  ? t("jobs.type.onDemand")
+                                  : t("jobs.type.routine")}
                             </span>
-                            {job.priority === "URGENT" ? (
+                            {!isPlanEntry && job.priority === "URGENT" ? (
                               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
                                 {t("jobs.priority.urgent")}
                               </span>
                             ) : null}
                           </div>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setActiveTechJobId(job.id);
-                            }}
-                            className={`inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold transition ${techTone} hover:border-slate-300 hover:bg-slate-50 hover:ring-2 hover:ring-sky-100`}
-                            title={
-                              editMode
-                                ? t("admin.routes.actions.assignTechnician")
-                                : "Activar editar para asignar"
-                            }
-                          >
-                            <span
-                              className="h-1.5 w-1.5 rounded-full"
-                              style={techDotStyle}
-                            />
-                            <span className="truncate whitespace-nowrap">
-                              {job.technician?.name ?? t("jobs.detail.noTech")}
+                          {isPlanEntry ? (
+                            <span className="inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={techDotStyle}
+                              />
+                              <span className="truncate whitespace-nowrap">
+                                {job.technician?.name ?? t("jobs.detail.noTech")}
+                              </span>
                             </span>
-                          </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setActiveTechJobId(job.id);
+                              }}
+                              className={`inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold transition ${techTone} hover:border-slate-300 hover:bg-slate-50 hover:ring-2 hover:ring-sky-100`}
+                              title={
+                                editMode
+                                  ? t("admin.routes.actions.assignTechnician")
+                                  : "Activar editar para asignar"
+                              }
+                            >
+                              <span
+                                className="h-1.5 w-1.5 rounded-full"
+                                style={techDotStyle}
+                              />
+                              <span className="truncate whitespace-nowrap">
+                                {job.technician?.name ?? t("jobs.detail.noTech")}
+                              </span>
+                            </button>
+                          )}
                         </div>
-                        {activeTechJobId === job.id ? (
+                        {!isPlanEntry && activeTechJobId === job.id ? (
                           <div
                             className="mt-2 rounded-lg border border-slate-200 bg-white p-2"
                             onClick={(event) => event.stopPropagation()}
@@ -2108,11 +2207,13 @@ export default function RoutesCalendar({
                     month: "short",
                     timeZone: BUSINESS_TIMEZONE,
                   });
-                  const timeLabel = scheduled.toLocaleTimeString(locale, {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: BUSINESS_TIMEZONE,
-                  });
+                  const timeLabel = job.showScheduledTime
+                    ? scheduled.toLocaleTimeString(locale, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        timeZone: BUSINESS_TIMEZONE,
+                      })
+                    : "";
                   const propertyName =
                     job.property.name?.trim() ||
                     job.property.address.split(",")[0]?.trim() ||
@@ -2186,7 +2287,9 @@ export default function RoutesCalendar({
                           <p className="text-sm font-semibold leading-tight text-slate-900">
                             {dateLabel}
                           </p>
-                          <p className="text-[10px] text-slate-500">{timeLabel}</p>
+                          {timeLabel ? (
+                            <p className="text-[10px] text-slate-500">{timeLabel}</p>
+                          ) : null}
                         </div>
                       </div>
 
@@ -2319,11 +2422,13 @@ export default function RoutesCalendar({
                       month: "short",
                       timeZone: BUSINESS_TIMEZONE,
                     });
-                    const timeLabel = scheduled.toLocaleTimeString(locale, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      timeZone: BUSINESS_TIMEZONE,
-                    });
+                    const timeLabel = job.showScheduledTime
+                      ? scheduled.toLocaleTimeString(locale, {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: BUSINESS_TIMEZONE,
+                        })
+                      : "";
                     const propertyName =
                       job.property.name?.trim() ||
                       job.property.address.split(",")[0]?.trim() ||
@@ -2446,7 +2551,9 @@ export default function RoutesCalendar({
                             <div className="font-semibold text-slate-900">
                               {dateLabel}
                             </div>
-                            <div className="text-[10px]">{timeLabel}</div>
+                            {timeLabel ? (
+                              <div className="text-[10px]">{timeLabel}</div>
+                            ) : null}
                           </div>
                         </td>
                         <td className={`${cellPadding} align-top`}>
@@ -2845,6 +2952,7 @@ export default function RoutesCalendar({
                   ) : (
                     <div className="space-y-3">
                       {mobileDayJobs.map((job) => {
+                        const isPlanEntry = job.entryKind === "plan";
                         const serviceOption = serviceTypeOptions.find(
                           (option) => option.value === job.serviceType
                         );
@@ -2854,14 +2962,14 @@ export default function RoutesCalendar({
                         const tierLabel = job.serviceTierId
                           ? serviceTiersById.get(job.serviceTierId)?.name ?? null
                           : null;
-                        const timeLabel = new Date(job.scheduledDate).toLocaleTimeString(
-                          locale,
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            timeZone: BUSINESS_TIMEZONE,
-                          }
-                        );
+                        const timeLabel = job.showScheduledTime
+                          ? new Date(job.scheduledDate).toLocaleTimeString(locale, {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: BUSINESS_TIMEZONE,
+                            })
+                          : "";
+                        const planLabel = getPlanDisplayName(job.planName);
                         const statusInfo =
                           statusMeta[job.status] ??
                           ({
@@ -2875,7 +2983,7 @@ export default function RoutesCalendar({
                             className: "border-slate-200 bg-slate-50 text-slate-600",
                           } as const);
 
-                        return editMode ? (
+                        return editMode && !isPlanEntry ? (
                           <div
                             key={`mobile-day-job-${job.id}`}
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3"
@@ -2889,9 +2997,11 @@ export default function RoutesCalendar({
                                   {job.property.address}
                                 </p>
                               </div>
-                              <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                                {timeLabel}
-                              </span>
+                              {timeLabel ? (
+                                <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                                  {timeLabel}
+                                </span>
+                              ) : null}
                             </div>
                             <p className="mt-2 text-xs text-slate-600">
                               {tierLabel ? `${tierLabel} - ` : ""}
@@ -2951,13 +3061,49 @@ export default function RoutesCalendar({
                               </button>
                             </div>
                           </div>
+                        ) : isPlanEntry ? (
+                          <div
+                            key={`mobile-day-plan-${job.id}`}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-slate-900">
+                                  {job.customer.name}
+                                </p>
+                                <p className="mt-0.5 truncate text-xs text-slate-500">
+                                  {job.property.address}
+                                </p>
+                              </div>
+                              {timeLabel ? (
+                                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                                  {timeLabel}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {[planLabel, tierLabel ?? serviceLabel]
+                                .filter(Boolean)
+                                .join(" - ")}
+                            </p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                              >
+                                {statusInfo.label}
+                              </span>
+                              <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {planLabel || t("client.request.modes.recurring")}
+                              </span>
+                            </div>
+                          </div>
                         ) : (
                           <button
                             key={`mobile-day-job-${job.id}`}
                             type="button"
                             onClick={() => {
                               setMobileDayKey(null);
-                              openJobModal(job);
+                              openJobModal(job as JobItem);
                             }}
                             className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50/30"
                           >
@@ -2970,9 +3116,11 @@ export default function RoutesCalendar({
                                   {job.property.address}
                                 </p>
                               </div>
-                              <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
-                                {timeLabel}
-                              </span>
+                              {timeLabel ? (
+                                <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                                  {timeLabel}
+                                </span>
+                              ) : null}
                             </div>
                             <p className="mt-2 text-xs text-slate-600">
                               {tierLabel ? `${tierLabel} - ` : ""}

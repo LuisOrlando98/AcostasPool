@@ -4,10 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
 import { getRecurringPlanLabelKey } from "@/lib/jobs/recurring-plan-templates";
-import {
-  formatBusinessDateInput,
-  formatInBusinessTimeZone,
-} from "@/lib/timezone";
+import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type PlanRow = {
   id: string;
@@ -28,7 +25,7 @@ type PlanRow = {
 type CustomerPlansTableProps = {
   rows: PlanRow[];
   onToggle: (formData: FormData) => Promise<void>;
-  onCreateJob: (formData: FormData) => Promise<void>;
+  onDelete: (formData: FormData) => Promise<void>;
   actionTargetId?: string;
 };
 
@@ -43,14 +40,12 @@ const formatTime = (value: string, locale: string) =>
     minute: "2-digit",
   });
 
-const toDateInput = (value: string) => formatBusinessDateInput(value);
-
 const PAGE_SIZE = 8;
 
 export default function CustomerPlansTable({
   rows,
   onToggle,
-  onCreateJob,
+  onDelete,
   actionTargetId,
 }: CustomerPlansTableProps) {
   const { t, locale } = useI18n();
@@ -237,7 +232,6 @@ export default function CustomerPlansTable({
                 </tr>
               ) : (
                 pagedRows.map((plan) => {
-                  const nextDate = toDateInput(plan.nextRunAt);
                   const displayName = getPlanDisplayName(plan.name);
                   const nextTime = plan.preferredTime
                     ? formatTime(plan.nextRunAt, locale)
@@ -299,27 +293,6 @@ export default function CustomerPlansTable({
                       </td>
                       <td className="px-3 py-3 text-right">
                         <div className="flex flex-wrap items-center justify-end gap-2">
-                          <form
-                            action={onCreateJob}
-                            className="flex flex-wrap items-center gap-2"
-                          >
-                            <input type="hidden" name="planId" value={plan.id} />
-                            <input
-                              name="scheduledDate"
-                              type="date"
-                              defaultValue={nextDate}
-                              className="ui-mini-input px-2 py-1 text-[11px]"
-                            />
-                            <input
-                              name="scheduledTime"
-                              type="time"
-                              defaultValue={nextTime}
-                              className="ui-mini-input px-2 py-1 text-[11px]"
-                            />
-                            <button className="ui-button px-3 py-1 text-[11px] font-semibold">
-                              {t("admin.customers.plans.actions.createJob")}
-                            </button>
-                          </form>
                           <form action={onToggle}>
                             <input type="hidden" name="planId" value={plan.id} />
                             <input
@@ -336,6 +309,17 @@ export default function CustomerPlansTable({
                               {plan.isActive
                                 ? t("admin.customers.plans.actions.pause")
                                 : t("admin.customers.plans.actions.activate")}
+                            </button>
+                          </form>
+                          <form action={onDelete}>
+                            <input type="hidden" name="planId" value={plan.id} />
+                            <input
+                              type="hidden"
+                              name="customerId"
+                              value={plan.customerId}
+                            />
+                            <button className="ui-button-ghost border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-700 hover:border-rose-300 hover:bg-rose-50">
+                              {t("common.actions.delete")}
                             </button>
                           </form>
                         </div>

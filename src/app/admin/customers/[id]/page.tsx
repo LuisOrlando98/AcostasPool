@@ -25,6 +25,7 @@ import {
 } from "@/lib/jobs/recurring-plan-templates";
 import {
   getDefaultServiceTierId,
+  getServiceTierIdByName,
   getServiceTierChecklist,
   getServiceTiers,
 } from "@/lib/service-tiers";
@@ -52,6 +53,114 @@ import { withFeedbackParam } from "@/lib/ui/action-feedback";
 
 function customerDetailFeedbackPath(customerId: string, feedback: string) {
   return withFeedbackParam(`/admin/customers/${customerId}`, feedback);
+}
+
+async function materializeServicePlanJob(
+  planId: string,
+  options?: {
+    scheduledDate?: Date;
+    advancePlan?: boolean;
+  }
+) {
+  const plan = await prisma.servicePlan.findUnique({
+    where: { id: planId },
+    include: { customer: true, property: true },
+  });
+
+  if (!plan || !plan.isActive) {
+    return null;
+  }
+
+  let scheduledDate = options?.scheduledDate ?? plan.nextRunAt;
+  if (!options?.scheduledDate) {
+    const todayStart = startOfBusinessDay(new Date()) ?? new Date();
+    while (scheduledDate < todayStart) {
+      scheduledDate = addPlanFrequency(scheduledDate, plan.frequency);
+    }
+  }
+  if (Number.isNaN(scheduledDate.getTime())) {
+    return null;
+  }
+
+  const existingJob = await prisma.job.findFirst({
+    where: {
+      planId: plan.id,
+      scheduledDate,
+    },
+    select: { id: true },
+  });
+  if (existingJob) {
+    return null;
+  }
+
+  const timeParts = getBusinessTimeParts(scheduledDate);
+  const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
+  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
+  const status = scheduledDate > endOfToday ? "SCHEDULED" : "PENDING";
+  const planTierId = plan.serviceTierId || (await getDefaultServiceTierId());
+  const planChecklist = await getServiceTierChecklist(planTierId);
+
+  const job = await prisma.job.create({
+    data: {
+      customerId: plan.customerId,
+      propertyId: plan.propertyId,
+      technicianId: plan.technicianId,
+      scheduledDate,
+      sortOrder,
+      status,
+      type: "ROUTINE",
+      priority: plan.priority,
+      serviceTierId: planTierId,
+      serviceType: plan.serviceType,
+      estimatedDurationMinutes: plan.estimatedDurationMinutes,
+      checklist: planChecklist,
+      planId: plan.id,
+    },
+    include: { customer: true, property: true },
+  });
+
+  if (options?.advancePlan) {
+    await prisma.servicePlan.update({
+      where: { id: plan.id },
+      data: { nextRunAt: addPlanFrequency(scheduledDate, plan.frequency) },
+    });
+  }
+
+  if (job.technicianId) {
+    const { start, end } = getRouteDayRange(job.scheduledDate);
+    const existingCount = await prisma.job.count({
+      where: {
+        technicianId: job.technicianId,
+        scheduledDate: { gte: start, lte: end },
+        NOT: { id: job.id },
+      },
+    });
+    await queueTechDigestItem({
+      technicianId: job.technicianId,
+      jobId: job.id,
+      routeDate: job.scheduledDate,
+      changeType: existingCount === 0 ? "ROUTE_ASSIGNED" : "JOB_ASSIGNED",
+      payload: {
+        scheduledDate: job.scheduledDate.toISOString(),
+        customerName: formatCustomerName(job.customer),
+        address: job.property.address,
+      },
+    });
+  }
+
+  await createNotification({
+    customerId: plan.customerId,
+    recipientRole: "CUSTOMER",
+    eventType: "SERVICE_SCHEDULED",
+    severity: "INFO",
+    payload: {
+      jobId: job.id,
+      technicianId: job.technicianId,
+      scheduledDate: job.scheduledDate.toISOString(),
+    },
+  });
+
+  return job;
 }
 
 async function createProperty(formData: FormData) {
@@ -637,9 +746,12 @@ async function createServicePlan(formData: FormData) {
   }
 
   const resolvedPlanTierId =
-    serviceTierId || (await getDefaultServiceTierId());
+    serviceTierId ||
+    (await getServiceTierIdByName("Standard", { activeOnly: true })) ||
+    (await getServiceTierIdByName("Standard")) ||
+    (await getDefaultServiceTierId());
 
-  await prisma.servicePlan.create({
+  const createdPlan = await prisma.servicePlan.create({
     data: {
       customerId,
       propertyId,
@@ -655,9 +767,14 @@ async function createServicePlan(formData: FormData) {
       checklist: await getServiceTierChecklist(resolvedPlanTierId),
       notes: notes || null,
     },
+    select: { id: true },
   });
 
+  await materializeServicePlanJob(createdPlan.id, { advancePlan: true });
+
   revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/customers/assignments");
+  revalidatePath("/admin/routes");
   redirect(customerDetailFeedbackPath(customerId, "plan-created"));
 }
 
@@ -678,7 +795,115 @@ async function toggleServicePlan(formData: FormData) {
     data: { isActive },
   });
 
+  const todayStart = startOfBusinessDay(new Date()) ?? new Date();
+  if (!isActive) {
+    const futureJobs = await prisma.job.findMany({
+      where: {
+        planId,
+        scheduledDate: { gte: todayStart },
+        status: { in: ["SCHEDULED", "PENDING", "ON_THE_WAY"] },
+      },
+      select: { id: true },
+    });
+    const futureJobIds = futureJobs.map((job) => job.id);
+    if (futureJobIds.length > 0) {
+      await prisma.$transaction(async (tx) => {
+        await tx.jobPhoto.deleteMany({
+          where: { jobId: { in: futureJobIds } },
+        });
+        await tx.techDigestItem.deleteMany({
+          where: { jobId: { in: futureJobIds } },
+        });
+        await tx.emailLog.deleteMany({
+          where: { jobId: { in: futureJobIds } },
+        });
+        await tx.invoice.updateMany({
+          where: { jobId: { in: futureJobIds } },
+          data: { jobId: null },
+        });
+        await tx.job.deleteMany({
+          where: { id: { in: futureJobIds } },
+        });
+      });
+    }
+  } else {
+    const futureJobCount = await prisma.job.count({
+      where: {
+        planId,
+        scheduledDate: { gte: todayStart },
+        status: { in: ["SCHEDULED", "PENDING", "ON_THE_WAY"] },
+      },
+    });
+    if (futureJobCount === 0) {
+      await materializeServicePlanJob(planId, { advancePlan: true });
+    }
+  }
+
   revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/customers/assignments");
+  revalidatePath("/admin/routes");
+}
+
+async function deleteServicePlan(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const planId = String(formData.get("planId") ?? "");
+  const customerId = String(formData.get("customerId") ?? "");
+
+  if (!planId || !customerId) {
+    return;
+  }
+
+  const plan = await prisma.servicePlan.findUnique({
+    where: { id: planId },
+    select: { id: true, customerId: true },
+  });
+
+  if (!plan || plan.customerId !== customerId) {
+    return;
+  }
+
+  const todayStart = startOfBusinessDay(new Date()) ?? new Date();
+  const futureJobs = await prisma.job.findMany({
+    where: {
+      planId,
+      scheduledDate: { gte: todayStart },
+      status: { in: ["SCHEDULED", "PENDING", "ON_THE_WAY"] },
+    },
+    select: { id: true },
+  });
+  const futureJobIds = futureJobs.map((job) => job.id);
+
+  await prisma.$transaction(async (tx) => {
+    if (futureJobIds.length > 0) {
+      await tx.jobPhoto.deleteMany({
+        where: { jobId: { in: futureJobIds } },
+      });
+      await tx.techDigestItem.deleteMany({
+        where: { jobId: { in: futureJobIds } },
+      });
+      await tx.emailLog.deleteMany({
+        where: { jobId: { in: futureJobIds } },
+      });
+      await tx.invoice.updateMany({
+        where: { jobId: { in: futureJobIds } },
+        data: { jobId: null },
+      });
+      await tx.job.deleteMany({
+        where: { id: { in: futureJobIds } },
+      });
+    }
+
+    await tx.servicePlan.delete({
+      where: { id: planId },
+    });
+  });
+
+  revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/customers/assignments");
+  revalidatePath("/admin/routes");
+  redirect(`/admin/customers/${customerId}`);
 }
 
 async function createJobFromPlan(formData: FormData) {
@@ -707,71 +932,9 @@ async function createJobFromPlan(formData: FormData) {
         scheduledTime || plan.preferredTime || "09:00"
       )
     : plan.nextRunAt;
-  const timePartsPlan = getBusinessTimeParts(scheduledDate);
-  const sortOrderPlan = (timePartsPlan?.hour ?? 0) * 60 + (timePartsPlan?.minute ?? 0);
-  const endOfToday = endOfBusinessDay(new Date()) ?? new Date();
-  const status = scheduledDate > endOfToday ? "SCHEDULED" : "PENDING";
-
-  const planTierId =
-    plan.serviceTierId || (await getDefaultServiceTierId());
-  const planChecklist = await getServiceTierChecklist(planTierId);
-
-  const job = await prisma.job.create({
-    data: {
-      customerId: plan.customerId,
-      propertyId: plan.propertyId,
-      technicianId: plan.technicianId,
-      scheduledDate,
-      sortOrder: sortOrderPlan,
-      status,
-      type: "ROUTINE",
-      priority: plan.priority,
-      serviceTierId: planTierId,
-      serviceType: plan.serviceType,
-      estimatedDurationMinutes: plan.estimatedDurationMinutes,
-      checklist: planChecklist,
-      planId: plan.id,
-    },
-    include: { customer: true, property: true },
-  });
-
-  if (job.technicianId) {
-    const { start, end } = getRouteDayRange(job.scheduledDate);
-    const existingCount = await prisma.job.count({
-      where: {
-        technicianId: job.technicianId,
-        scheduledDate: { gte: start, lte: end },
-        NOT: { id: job.id },
-      },
-    });
-    await queueTechDigestItem({
-      technicianId: job.technicianId,
-      jobId: job.id,
-      routeDate: job.scheduledDate,
-      changeType: existingCount === 0 ? "ROUTE_ASSIGNED" : "JOB_ASSIGNED",
-      payload: {
-        scheduledDate: job.scheduledDate.toISOString(),
-        customerName: formatCustomerName(job.customer),
-        address: job.property.address,
-      },
-    });
-  }
-
-  await createNotification({
-    customerId: plan.customerId,
-    recipientRole: "CUSTOMER",
-    eventType: "SERVICE_SCHEDULED",
-    severity: "INFO",
-    payload: {
-      jobId: job.id,
-      technicianId: job.technicianId,
-      scheduledDate: job.scheduledDate.toISOString(),
-    },
-  });
-
-  await prisma.servicePlan.update({
-    where: { id: plan.id },
-    data: { nextRunAt: addPlanFrequency(scheduledDate, plan.frequency) },
+  await materializeServicePlanJob(plan.id, {
+    scheduledDate,
+    advancePlan: true,
   });
 
   revalidatePath(`/admin/customers/${plan.customerId}`);
@@ -900,6 +1063,20 @@ export default async function CustomerDetailPage({
   const activeServiceTiers = serviceTiers.filter((tier) => tier.isActive);
   const tierOptions =
     activeServiceTiers.length > 0 ? activeServiceTiers : serviceTiers;
+  const recurringPlanTierOptions = [...tierOptions].sort((left, right) => {
+    const leftIsStandard = left.name.trim().toLowerCase() === "standard";
+    const rightIsStandard = right.name.trim().toLowerCase() === "standard";
+
+    if (leftIsStandard === rightIsStandard) {
+      return 0;
+    }
+
+    return leftIsStandard ? -1 : 1;
+  });
+  const recurringPlanDefaultTierId =
+    recurringPlanTierOptions.find(
+      (tier) => tier.name.trim().toLowerCase() === "standard"
+    )?.id ?? recurringPlanTierOptions[0]?.id;
   const serviceTierMap = new Map(
     serviceTiers.map((tier) => [tier.id, tier.name])
   );
@@ -1256,7 +1433,7 @@ export default async function CustomerDetailPage({
           <CustomerPlansTable
             rows={plansRows}
             onToggle={toggleServicePlan}
-            onCreateJob={createJobFromPlan}
+            onDelete={deleteServicePlan}
             actionTargetId="new-plan"
           />
 
@@ -1290,7 +1467,7 @@ export default async function CustomerDetailPage({
               </div>
               <label
                 htmlFor="edit-customer"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                className="app-modal-close"
                 aria-label={t("common.actions.close")}
                 title={t("common.actions.close")}
               >
@@ -1484,7 +1661,7 @@ export default async function CustomerDetailPage({
               </div>
               <label
                 htmlFor="new-property"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                className="app-modal-close"
                 aria-label={t("common.actions.close")}
                 title={t("common.actions.close")}
               >
@@ -1749,7 +1926,7 @@ export default async function CustomerDetailPage({
               </div>
               <label
                 htmlFor="new-job"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                className="app-modal-close"
                 aria-label={t("common.actions.close")}
                 title={t("common.actions.close")}
               >
@@ -1938,7 +2115,7 @@ export default async function CustomerDetailPage({
               </div>
               <label
                 htmlFor="new-plan"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                className="app-modal-close"
                 aria-label={t("common.actions.close")}
                 title={t("common.actions.close")}
               >
@@ -2003,9 +2180,10 @@ export default async function CustomerDetailPage({
                 </label>
                 <select
                   name="serviceTierId"
+                  defaultValue={recurringPlanDefaultTierId}
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                 >
-                  {tierOptions.map((tier) => (
+                  {recurringPlanTierOptions.map((tier) => (
                     <option key={tier.id} value={tier.id}>
                       {tier.name}
                     </option>

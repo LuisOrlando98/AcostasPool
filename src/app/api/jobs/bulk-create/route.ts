@@ -59,6 +59,7 @@ export async function POST(request: Request) {
   const created: Array<{
     id: string;
     scheduledDate: string;
+    entryKind: "job";
     status: string;
     type: string;
     priority: string;
@@ -67,6 +68,9 @@ export async function POST(request: Request) {
     estimatedDurationMinutes: number | null;
     technicianId: string | null;
     sortOrder?: number | null;
+    planId?: string | null;
+    planName?: string | null;
+    showScheduledTime: boolean;
     notes?: string | null;
     checklist?: { label?: string; completed?: boolean }[] | null;
     customer: {
@@ -205,6 +209,7 @@ export async function POST(request: Request) {
     created.push({
       id: job.id,
       scheduledDate: job.scheduledDate.toISOString(),
+      entryKind: "job",
       status: job.status,
       type: job.type,
       priority: job.priority,
@@ -213,6 +218,9 @@ export async function POST(request: Request) {
       estimatedDurationMinutes: job.estimatedDurationMinutes,
       technicianId: job.technicianId,
       sortOrder: job.sortOrder,
+      planId: job.planId ?? null,
+      planName: null,
+      showScheduledTime: false,
       notes: job.notes ?? null,
       checklist: Array.isArray(job.checklist)
         ? (job.checklist as Array<{ label?: string; completed?: boolean }>)

@@ -5,11 +5,17 @@ import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
 import { getServiceTiers } from "@/lib/service-tiers";
+import { addPlanFrequency } from "@/lib/jobs/scheduling";
+import { CUSTOM_SERVICE_PLAN_NAME } from "@/lib/jobs/recurring-plan-templates";
 import { DateTime } from "luxon";
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 function toMonthKey(value: Date) {
   return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM");
+}
+
+function toBusinessDateKey(value: Date) {
+  return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM-dd");
 }
 
 function resolveMonthStart(rawMonth?: string) {
@@ -57,7 +63,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
   const nextMonthStart = nextMonthStartEt.toUTC().toJSDate();
   const nextMonthEnd = nextMonthEndEt.toUTC().toJSDate();
 
-  const [jobs, technicians, customers, serviceTiers, nextMonthJobsCount] =
+  const [jobs, plans, technicians, customers, serviceTiers, nextMonthJobsCount] =
     await Promise.all([
     prisma.job.findMany({
       where: {
@@ -78,9 +84,64 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
         estimatedDurationMinutes: true,
         technicianId: true,
         sortOrder: true,
+        planId: true,
         notes: true,
         checklist: true,
         photos: { select: { id: true, url: true, takenAt: true } },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            email: true,
+            telefono: true,
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            poolType: true,
+            sanitizerType: true,
+            poolVolumeGallons: true,
+            filterType: true,
+            accessInfo: true,
+            locationNotes: true,
+            hasSpa: true,
+          },
+        },
+        technician: { select: { id: true, user: { select: { fullName: true } } } },
+      },
+    }),
+    prisma.servicePlan.findMany({
+      where: {
+        isActive: true,
+        nextRunAt: {
+          lte: calendarEnd,
+        },
+      },
+      orderBy: [{ nextRunAt: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        customerId: true,
+        propertyId: true,
+        technicianId: true,
+        serviceTierId: true,
+        name: true,
+        frequency: true,
+        serviceType: true,
+        priority: true,
+        nextRunAt: true,
+        preferredTime: true,
+        estimatedDurationMinutes: true,
+        notes: true,
         customer: {
           select: {
             id: true,
@@ -143,6 +204,10 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
     estimatedDurationMinutes: job.estimatedDurationMinutes,
     technicianId: job.technicianId,
     sortOrder: job.sortOrder,
+    planId: job.planId,
+    planName: job.plan?.name ?? null,
+    entryKind: "job" as const,
+    showScheduledTime: job.plan?.name === CUSTOM_SERVICE_PLAN_NAME,
     notes: job.notes,
     checklist: Array.isArray(job.checklist)
       ? (job.checklist as Array<{ label?: string; completed?: boolean }>)
@@ -174,6 +239,118 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       ? { id: job.technician.id, name: job.technician.user.fullName }
       : null,
   }));
+
+  const existingPlannedJobKeys = new Set(
+    jobs
+      .filter((job) => Boolean(job.planId))
+      .map((job) => `${job.planId}:${toBusinessDateKey(job.scheduledDate)}`)
+  );
+  const calendarStartEt = DateTime.fromJSDate(calendarStart).setZone(BUSINESS_TIMEZONE);
+  const calendarEndEt = DateTime.fromJSDate(calendarEnd).setZone(BUSINESS_TIMEZONE);
+
+  const planOccurrencesData = plans.flatMap((plan) => {
+    const occurrences: Array<{
+      id: string;
+      scheduledDate: string;
+      entryKind: "plan";
+      status: string;
+      type: string;
+      priority: string;
+      serviceTierId: string | null;
+      serviceType: string;
+      estimatedDurationMinutes: number | null;
+      technicianId: string | null;
+      sortOrder: number | null;
+      planId: string;
+      planName: string;
+      showScheduledTime: boolean;
+      notes: string | null;
+      checklist: null;
+      photos: [];
+      customer: { id: string; name: string; email?: string | null; phone?: string | null };
+      property: {
+        id: string;
+        name?: string | null;
+        address: string;
+        poolType?: string | null;
+        sanitizerType?: string | null;
+        poolVolumeGallons?: number | null;
+        filterType?: string | null;
+        accessInfo?: string | null;
+        locationNotes?: string | null;
+        hasSpa?: boolean | null;
+      };
+      technician: { id: string; name: string } | null;
+    }> = [];
+
+    let occurrence = DateTime.fromJSDate(plan.nextRunAt).setZone(BUSINESS_TIMEZONE);
+    let guard = 0;
+    while (occurrence < calendarStartEt && guard < 260) {
+      occurrence = DateTime.fromJSDate(
+        addPlanFrequency(occurrence.toUTC().toJSDate(), plan.frequency)
+      ).setZone(BUSINESS_TIMEZONE);
+      guard += 1;
+    }
+
+    while (occurrence <= calendarEndEt && guard < 320) {
+      const occurrenceDate = occurrence.toUTC().toJSDate();
+      const occurrenceKey = `${plan.id}:${toBusinessDateKey(occurrenceDate)}`;
+      if (!existingPlannedJobKeys.has(occurrenceKey)) {
+        const hour = occurrence.hour ?? 0;
+        const minute = occurrence.minute ?? 0;
+        occurrences.push({
+          id: `plan-${plan.id}-${occurrence.toFormat("yyyy-MM-dd")}`,
+          scheduledDate: occurrenceDate.toISOString(),
+          entryKind: "plan",
+          status: "SCHEDULED",
+          type: "ROUTINE",
+          priority: plan.priority,
+          serviceTierId: plan.serviceTierId,
+          serviceType: plan.serviceType,
+          estimatedDurationMinutes: plan.estimatedDurationMinutes,
+          technicianId: plan.technicianId,
+          sortOrder:
+            plan.name === CUSTOM_SERVICE_PLAN_NAME
+              ? hour * 60 + minute
+              : null,
+          planId: plan.id,
+          planName: plan.name,
+          showScheduledTime: plan.name === CUSTOM_SERVICE_PLAN_NAME,
+          notes: plan.notes,
+          checklist: null,
+          photos: [],
+          customer: {
+            id: plan.customer.id,
+            name: formatCustomerName(plan.customer),
+            email: plan.customer.email,
+            phone: plan.customer.telefono,
+          },
+          property: {
+            id: plan.property.id,
+            name: plan.property.name,
+            address: plan.property.address,
+            poolType: plan.property.poolType,
+            sanitizerType: plan.property.sanitizerType,
+            poolVolumeGallons: plan.property.poolVolumeGallons,
+            filterType: plan.property.filterType,
+            accessInfo: plan.property.accessInfo,
+            locationNotes: plan.property.locationNotes,
+            hasSpa: plan.property.hasSpa,
+          },
+          technician: plan.technician
+            ? { id: plan.technician.id, name: plan.technician.user.fullName }
+            : null,
+        });
+      }
+
+      occurrence = DateTime.fromJSDate(
+        addPlanFrequency(occurrenceDate, plan.frequency)
+      ).setZone(BUSINESS_TIMEZONE);
+      guard += 1;
+    }
+
+    return occurrences;
+  });
 
   const techniciansData = technicians.map((tech) => ({
     id: tech.id,
@@ -217,6 +394,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       <div className="space-y-4">
         <RoutesCalendar
           jobs={jobsData}
+          planOccurrences={planOccurrencesData}
           technicians={techniciansData}
           customers={customersData}
           serviceTiers={serviceTiersData}

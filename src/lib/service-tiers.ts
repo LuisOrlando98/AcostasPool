@@ -61,6 +61,28 @@ export async function getServiceTiers() {
   });
 }
 
+export async function getServiceTierIdByName(
+  name: string,
+  options?: { activeOnly?: boolean }
+) {
+  const normalizedName = name.trim().toLowerCase();
+  if (!normalizedName) {
+    return null;
+  }
+
+  await ensureServiceTiers();
+  const tiers = await prisma.serviceTier.findMany({
+    where: options?.activeOnly ? { isActive: true } : undefined,
+    orderBy: { createdAt: "asc" },
+    select: { id: true, name: true },
+  });
+
+  const match = tiers.find(
+    (tier) => tier.name.trim().toLowerCase() === normalizedName
+  );
+  return match?.id ?? null;
+}
+
 export async function getDefaultServiceTierId() {
   await ensureServiceTiers();
   const tier =
