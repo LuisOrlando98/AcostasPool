@@ -1263,6 +1263,8 @@
             "nextDate": "Next date",
             "startDate": "Plan start date",
             "weeklyRoute": "Weekly route",
+            "weeklyRouteDay1": "Route — day 1",
+            "weeklyRouteDay2": "Route — day 2",
             "notes": "Plan notes"
           },
           "globalOptions": {

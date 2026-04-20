@@ -13,6 +13,7 @@ import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
 import CustomerPlansTable from "@/components/customers/CustomerPlansTable";
 import CustomerRepositoryExplorer from "@/components/customers/CustomerRepositoryExplorer";
 import DeleteCustomerButton from "@/components/customers/DeleteCustomerButton";
+import NewPlanForm from "@/components/customers/NewPlanForm";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
@@ -707,6 +708,7 @@ async function createServicePlan(formData: FormData) {
   const customerId = String(formData.get("customerId"));
   const propertyId = String(formData.get("propertyId"));
   const planTemplate = String(formData.get("planTemplate") ?? "MONDAY");
+  const planTemplate2 = String(formData.get("planTemplate2") ?? "").trim();
   const technicianId = String(formData.get("technicianId") ?? "");
   const serviceTierId = String(formData.get("serviceTierId") ?? "").trim();
   const nextDateRaw = String(formData.get("nextDate") ?? "");
@@ -753,39 +755,58 @@ async function createServicePlan(formData: FormData) {
     ? (frequencyRaw as "WEEKLY" | "BIWEEKLY" | "MONTHLY")
     : "WEEKLY";
 
-  const serviceTypeRaw = String(formData.get("serviceType") ?? "WEEKLY_CLEANING");
-  const serviceType = (
-    ["WEEKLY_CLEANING", "FILTER_CHECK", "CHEM_BALANCE", "EQUIPMENT_CHECK"] as const
-  ).includes(serviceTypeRaw as "WEEKLY_CLEANING" | "FILTER_CHECK" | "CHEM_BALANCE" | "EQUIPMENT_CHECK")
-    ? (serviceTypeRaw as "WEEKLY_CLEANING" | "FILTER_CHECK" | "CHEM_BALANCE" | "EQUIPMENT_CHECK")
-    : "WEEKLY_CLEANING";
-
   const resolvedPlanTierId =
     serviceTierId ||
     (await getServiceTierIdByName("Standard", { activeOnly: true })) ||
     (await getServiceTierIdByName("Standard")) ||
     (await getDefaultServiceTierId());
 
-  const createdPlan = await prisma.servicePlan.create({
-    data: {
-      customerId,
-      propertyId,
-      technicianId: technicianId || null,
-      name: selectedPlan.name,
-      frequency,
-      serviceTierId: resolvedPlanTierId,
-      serviceType,
-      priority: "NORMAL",
-      nextRunAt,
-      preferredTime: null,
-      estimatedDurationMinutes,
-      checklist: await getServiceTierChecklist(resolvedPlanTierId),
-      notes: notes || null,
-    },
-    select: { id: true },
-  });
+  const checklist = await getServiceTierChecklist(resolvedPlanTierId);
+  const planBase = {
+    customerId,
+    propertyId,
+    technicianId: technicianId || null,
+    frequency: "WEEKLY" as const,
+    serviceTierId: resolvedPlanTierId,
+    serviceType: "WEEKLY_CLEANING" as const,
+    priority: "NORMAL" as const,
+    preferredTime: null,
+    estimatedDurationMinutes,
+    checklist,
+    notes: notes || null,
+  };
 
-  await materializeServicePlanJob(createdPlan.id, { advancePlan: true });
+  if (frequency === "BIWEEKLY" && planTemplate2) {
+    const selectedPlan2 = getGlobalRecurringPlan(planTemplate2) ?? selectedPlan;
+    const nextRunAt2 = resolveGlobalPlanStartDate(
+      nextDateRaw,
+      selectedPlan2.value,
+      DEFAULT_GLOBAL_PLAN_TIME
+    );
+
+    const [plan1, plan2] = await Promise.all([
+      prisma.servicePlan.create({
+        data: { ...planBase, name: selectedPlan.name, nextRunAt },
+        select: { id: true },
+      }),
+      prisma.servicePlan.create({
+        data: { ...planBase, name: selectedPlan2.name, nextRunAt: nextRunAt2 },
+        select: { id: true },
+      }),
+    ]);
+
+    await Promise.all([
+      materializeServicePlanJob(plan1.id, { advancePlan: true }),
+      materializeServicePlanJob(plan2.id, { advancePlan: true }),
+    ]);
+  } else {
+    const storedFrequency = frequency === "BIWEEKLY" ? "WEEKLY" : frequency;
+    const createdPlan = await prisma.servicePlan.create({
+      data: { ...planBase, name: selectedPlan.name, nextRunAt, frequency: storedFrequency },
+      select: { id: true },
+    });
+    await materializeServicePlanJob(createdPlan.id, { advancePlan: true });
+  }
 
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/customers/assignments");
@@ -1444,77 +1465,14 @@ export default async function CustomerDetailPage({
                   modalSubtitle={t("admin.customers.detail.plans.modalSubtitle")}
                   closeLabel={t("common.actions.close")}
                 >
-                  <form action={createServicePlan} className="mt-5 space-y-4">
-                    <input type="hidden" name="customerId" value={customer.id} />
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.weeklyRoute")}</label>
-                        <select name="planTemplate" defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                          {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (<option key={planOption.value} value={planOption.value}>{t(planOption.labelKey)}</option>))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
-                        <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                          {customer.properties.length === 0 ? (
-                            <option value="">{t("admin.routes.labels.noProperties")}</option>
-                          ) : (
-                            customer.properties.map((property) => (
-                              <option key={property.id} value={property.id}>
-                                {property.name ? `${property.name} · ${property.address}` : property.address}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.frequency")}</label>
-                        <select name="frequency" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                          <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
-                          <option value="BIWEEKLY">{t("plans.frequency.biweekly")}</option>
-                          <option value="MONTHLY">{t("plans.frequency.monthly")}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
-                        <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                          {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
-                        <select name="serviceTierId" defaultValue={recurringPlanDefaultTierId} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                          {recurringPlanTierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
-                        <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                          <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
-                          {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.startDate")}</label>
-                        <input name="nextDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.duration")}</label>
-                        <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.notes")}</label>
-                      <textarea name="notes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
-                    </div>
-                    <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createPlan")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
-                  </form>
+                  <NewPlanForm
+                    customerId={customer.id}
+                    properties={customer.properties}
+                    technicians={technicians}
+                    tierOptions={recurringPlanTierOptions}
+                    defaultTierId={recurringPlanDefaultTierId}
+                    createAction={createServicePlan}
+                  />
                 </ModalSheetTrigger>
               </div>
             </div>
@@ -1906,77 +1864,14 @@ export default async function CustomerDetailPage({
                 modalSubtitle={t("admin.customers.detail.plans.modalSubtitle")}
                 closeLabel={t("common.actions.close")}
               >
-                <form action={createServicePlan} className="mt-5 space-y-4">
-                  <input type="hidden" name="customerId" value={customer.id} />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.weeklyRoute")}</label>
-                      <select name="planTemplate" defaultValue={GLOBAL_RECURRING_PLAN_OPTIONS[0]?.value} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                        {GLOBAL_RECURRING_PLAN_OPTIONS.map((planOption) => (<option key={planOption.value} value={planOption.value}>{t(planOption.labelKey)}</option>))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.property")}</label>
-                      <select name="propertyId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                        {customer.properties.length === 0 ? (
-                          <option value="">{t("admin.routes.labels.noProperties")}</option>
-                        ) : (
-                          customer.properties.map((property) => (
-                            <option key={property.id} value={property.id}>
-                              {property.name ? `${property.name} · ${property.address}` : property.address}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.frequency")}</label>
-                      <select name="frequency" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                        <option value="WEEKLY">{t("plans.frequency.weekly")}</option>
-                        <option value="BIWEEKLY">{t("plans.frequency.biweekly")}</option>
-                        <option value="MONTHLY">{t("plans.frequency.monthly")}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceType")}</label>
-                      <select name="serviceType" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                        {serviceTypeOptions.map((option) => (<option key={option.value} value={option.value}>{option.labelKey ? t(option.labelKey) : option.label}</option>))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.serviceTier")}</label>
-                      <select name="serviceTierId" defaultValue={recurringPlanDefaultTierId} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                        {recurringPlanTierOptions.map((tier) => (<option key={tier.id} value={tier.id}>{tier.name}</option>))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.tech")}</label>
-                      <select name="technicianId" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm" required>
-                        <option value="">{t("admin.customers.detail.plans.placeholders.selectTechnician")}</option>
-                        {technicians.map((tech) => (<option key={tech.id} value={tech.id}>{tech.user.fullName}</option>))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.startDate")}</label>
-                      <input name="nextDate" type="date" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" required />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("jobs.detail.fields.duration")}</label>
-                      <input name="estimatedDuration" type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" placeholder="60" />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.plans.fields.notes")}</label>
-                    <textarea name="notes" className="mt-2 min-h-[90px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm" />
-                  </div>
-                  <FormSubmitButton idleLabel={t("admin.customers.detail.actions.createPlan")} pendingLabel={t("admin.customers.detail.actions.saving")} successLabel={t("common.feedback.created")} className="w-full" />
-                </form>
+                <NewPlanForm
+                  customerId={customer.id}
+                  properties={customer.properties}
+                  technicians={technicians}
+                  tierOptions={recurringPlanTierOptions}
+                  defaultTierId={recurringPlanDefaultTierId}
+                  createAction={createServicePlan}
+                />
               </ModalSheetTrigger>
             }
           />
