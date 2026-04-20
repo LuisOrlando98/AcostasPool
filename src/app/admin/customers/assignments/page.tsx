@@ -65,7 +65,7 @@ export default async function CustomerAssignmentsPage() {
       },
     }),
     prisma.technician.findMany({
-      where: { isActive: true },
+      where: { user: { isActive: true } },
       select: { id: true, user: { select: { fullName: true } } },
       orderBy: { user: { fullName: "asc" } },
     }),

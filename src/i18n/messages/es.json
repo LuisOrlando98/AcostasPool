@@ -694,7 +694,8 @@
           "livePairs": "Tramos con trafico real: {{count}}",
           "estimatedPairs": "Tramos estimados: {{count}}",
           "sameAddressPairs": "Tramos misma direccion: {{count}}",
-          "routeFlow": "Salida desde {{origin}} y regreso a base estimado a las {{eta}} con {{drive}}."
+          "routeFlow": "Salida desde {{origin}} y regreso a base estimado a las {{eta}} con {{drive}}.",
+          "loadSpread": "Distribución: {{value}}%"
         },
         "table": {
           "customer": "Cliente",
