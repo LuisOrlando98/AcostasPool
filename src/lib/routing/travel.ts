@@ -97,15 +97,8 @@ const estimateMetric = (pair: AddressPairInput): TravelMetric => {
   };
 };
 
-const getGoogleApiKey = () => {
-  if (process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_SERVER_API_KEY.trim();
-  }
-  if (process.env.GOOGLE_MAPS_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_API_KEY.trim();
-  }
-  return "";
-};
+const getGoogleApiKey = () =>
+  process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim() ?? "";
 
 async function getGooglePairMetric(
   pair: AddressPairInput,
@@ -114,8 +107,6 @@ async function getGooglePairMetric(
   const params = new URLSearchParams({
     origins: pair.fromAddress,
     destinations: pair.toAddress,
-    departure_time: "now",
-    traffic_model: "best_guess",
     units: "imperial",
     region: "us",
     key: apiKey,
@@ -137,7 +128,6 @@ async function getGooglePairMetric(
             status?: string;
             distance?: { value?: number };
             duration?: { value?: number };
-            duration_in_traffic?: { value?: number };
           }>;
         }>;
       }
@@ -148,8 +138,7 @@ async function getGooglePairMetric(
     return null;
   }
 
-  const durationSeconds =
-    element.duration_in_traffic?.value ?? element.duration?.value;
+  const durationSeconds = element.duration?.value;
   if (!Number.isFinite(durationSeconds)) {
     return null;
   }

@@ -86,11 +86,7 @@ async function geocodeWithNominatim(address: string) {
 }
 
 async function geocodeSingle(address: string) {
-  const key = process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim()
-    ? process.env.GOOGLE_MAPS_SERVER_API_KEY
-    : process.env.GOOGLE_MAPS_API_KEY?.trim()
-      ? process.env.GOOGLE_MAPS_API_KEY
-      : "";
+  const key = process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim() ?? "";
 
   if (key) {
     const googlePoint = await geocodeWithGoogle(address, key);
