@@ -268,6 +268,7 @@ export async function POST(request: Request) {
       host,
       port,
       secure: port === 465,
+      requireTLS: port !== 465,
       auth: { user: smtpUser, pass: smtpPass },
     });
 

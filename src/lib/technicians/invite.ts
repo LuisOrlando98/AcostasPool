@@ -114,6 +114,7 @@ export async function sendTechnicianInvite(technicianId: string): Promise<Invite
     host,
     port,
     secure: port === 465,
+    requireTLS: port !== 465,
     auth: { user: smtpUser, pass },
   });
 

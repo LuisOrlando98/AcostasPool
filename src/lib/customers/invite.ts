@@ -153,6 +153,7 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     host,
     port,
     secure: port === 465,
+    requireTLS: port !== 465,
     auth: { user: smtpUser, pass },
   });
 

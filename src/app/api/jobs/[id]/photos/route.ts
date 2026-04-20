@@ -107,7 +107,8 @@ async function sendCompletedJobEmailNow(input: {
     const transporter = nodemailer.createTransport({
       host,
       port,
-      secure: false,
+      secure: port === 465,
+      requireTLS: port !== 465,
       auth: { user, pass },
     });
 
