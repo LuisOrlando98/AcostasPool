@@ -7,6 +7,7 @@ import {
   getGlobalRecurringPlanByWeekday,
   GLOBAL_RECURRING_PLAN_OPTIONS,
 } from "@/lib/jobs/recurring-plan-templates";
+import { DEFAULT_ROUTE_ORIGIN_ADDRESS } from "@/lib/routing/planner";
 import { getRouteAssistantConfig } from "@/lib/site-settings";
 import { getTranslations } from "@/i18n/server";
 import { DateTime } from "luxon";
@@ -61,7 +62,7 @@ export default async function RouteAssistantPage({
         <RouteAssistant
           initialDate={resolvedDate}
           initialPlanTemplate={initialPlanTemplate}
-          autoOptimizeEnabled={routeAssistantConfig.dailyAutoOptimizeEnabled}
+          originAddress={DEFAULT_ROUTE_ORIGIN_ADDRESS}
           planOptions={GLOBAL_RECURRING_PLAN_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey),

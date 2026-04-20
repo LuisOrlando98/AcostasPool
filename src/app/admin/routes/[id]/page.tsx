@@ -86,17 +86,12 @@ async function deleteJob(formData: FormData) {
     return;
   }
 
-  await prisma.invoice.updateMany({
-    where: { jobId },
-    data: { jobId: null },
-  });
-
-  await prisma.jobPhoto.deleteMany({
-    where: { jobId },
-  });
-
-  await prisma.job.delete({
-    where: { id: jobId },
+  await prisma.$transaction(async (tx) => {
+    await tx.techDigestItem.deleteMany({ where: { jobId } });
+    await tx.emailLog.deleteMany({ where: { jobId } });
+    await tx.invoice.updateMany({ where: { jobId }, data: { jobId: null } });
+    await tx.jobPhoto.deleteMany({ where: { jobId } });
+    await tx.job.delete({ where: { id: jobId } });
   });
 
   revalidatePath("/admin/routes");

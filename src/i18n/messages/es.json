@@ -700,6 +700,7 @@
           "drive": "Traslado desde anterior",
           "eta": "Llegada estimada",
           "scheduled": "Programado",
+          "service": "Servicio",
           "noPlan": "Sin plan",
           "fromBase": "Base: {{value}}",
           "liveTraffic": "En vivo",

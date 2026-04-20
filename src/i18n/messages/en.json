@@ -691,7 +691,8 @@
           "livePairs": "Live traffic pairs: {{count}}",
           "estimatedPairs": "Estimated pairs: {{count}}",
           "sameAddressPairs": "Same address pairs: {{count}}",
-          "routeFlow": "Start from {{origin}} and return to base around {{eta}} with {{drive}}."
+          "routeFlow": "Start from {{origin}} and return to base around {{eta}} with {{drive}}.",
+          "loadSpread": "Load spread: {{value}}%"
         },
         "table": {
           "customer": "Customer",
@@ -700,6 +701,7 @@
           "drive": "Drive from prev.",
           "eta": "ETA",
           "scheduled": "Scheduled",
+          "service": "Service",
           "noPlan": "No plan",
           "fromBase": "Base: {{value}}",
           "liveTraffic": "Live",
