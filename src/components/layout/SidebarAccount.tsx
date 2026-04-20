@@ -1,45 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
-
-type UserInfo = {
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl?: string | null;
-  isDeveloper?: boolean;
-};
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function SidebarAccount() {
   const { t } = useI18n();
-  const [user, setUser] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      const res = await fetch("/api/auth/me");
-      const data = await res.json().catch(() => ({ user: null }));
-      setUser(data.user ?? null);
-    };
-    load();
-  }, []);
+  const { user } = useCurrentUser();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((part) => part[0])
-        .join("")
-        .slice(0, 2)
-        .toUpperCase()
+    ? user.name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
     : "AP";
   const isAdmin = user?.role === "ADMIN";
   const accountHref = user?.role === "CUSTOMER" ? "/client/profile" : "/account";
 
   const handleLogout = async () => {
-    setLoading(true);
+    if (loggingOut) return;
+    setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/login";
   };
@@ -49,42 +29,22 @@ export default function SidebarAccount() {
       <div className="sidebar-account-header">
         <span className="sidebar-account-avatar">
           {user?.avatarUrl ? (
-            <img
-              src={getAssetUrl(user.avatarUrl)}
-              alt="Avatar"
-              className="h-full w-full object-cover"
-            />
+            <img src={getAssetUrl(user.avatarUrl)} alt="Avatar" className="h-full w-full object-cover" />
           ) : (
             initials
           )}
         </span>
         <div className="sidebar-account-text">
-          <p className="sidebar-account-name">
-            {user?.name ?? t("userMenu.fallbackUser")}
-          </p>
+          <p className="sidebar-account-name">{user?.name ?? t("userMenu.fallbackUser")}</p>
           <p className="sidebar-account-email">{user?.email ?? ""}</p>
         </div>
       </div>
       <div className="sidebar-account-actions">
         <a href={accountHref} className="sidebar-account-link">
           <span className="sidebar-account-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6.5 18c0-2.6 2.6-4.5 5.5-4.5S17.5 15.4 17.5 18"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8.5 9.5a3.5 3.5 0 117 0 3.5 3.5 0 00-7 0z"
-              />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 18c0-2.6 2.6-4.5 5.5-4.5S17.5 15.4 17.5 18" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 9.5a3.5 3.5 0 117 0 3.5 3.5 0 00-7 0z" />
             </svg>
           </span>
           <span className="sidebar-account-label">{t("userMenu.account")}</span>
@@ -92,18 +52,8 @@ export default function SidebarAccount() {
         {isAdmin ? (
           <a href="/account/updates" className="sidebar-account-link">
             <span className="sidebar-account-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 7h16M4 12h10M4 17h6"
-                />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 12h10M4 17h6" />
               </svg>
             </span>
             <span className="sidebar-account-label">{t("userMenu.updates")}</span>
@@ -113,18 +63,8 @@ export default function SidebarAccount() {
         {user?.isDeveloper ? (
           <a href="/admin/developer" className="sidebar-account-link">
             <span className="sidebar-account-icon" aria-hidden="true">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-4 w-4"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 7h8M8 12h8M8 17h8M4 7h.01M4 12h.01M4 17h.01"
-                />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h8M8 12h8M8 17h8M4 7h.01M4 12h.01M4 17h.01" />
               </svg>
             </span>
             <span className="sidebar-account-label">{t("userMenu.developer")}</span>
@@ -133,31 +73,17 @@ export default function SidebarAccount() {
         <button
           type="button"
           onClick={handleLogout}
-          disabled={loading}
+          disabled={loggingOut}
           className="sidebar-account-link sidebar-account-danger"
         >
           <span className="sidebar-account-icon" aria-hidden="true">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              className="h-4 w-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 8V6.5A2.5 2.5 0 0111.5 4h6A2.5 2.5 0 0120 6.5v11A2.5 2.5 0 0117.5 20h-6A2.5 2.5 0 019 17.5V16"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 12H4m0 0l3-3m-3 3l3 3"
-              />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 8V6.5A2.5 2.5 0 0111.5 4h6A2.5 2.5 0 0120 6.5v11A2.5 2.5 0 0117.5 20h-6A2.5 2.5 0 019 17.5V16" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 12H4m0 0l3-3m-3 3l3 3" />
             </svg>
           </span>
           <span className="sidebar-account-label">
-            {loading ? t("userMenu.signingOut") : t("userMenu.signOut")}
+            {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
           </span>
         </button>
       </div>

@@ -56,8 +56,7 @@
       "en": "Ingles",
       "es": "Espanol"
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Plataforma de Operaciones",
     "nav": {
@@ -81,7 +80,7 @@
     "hero": {
       "kicker": "Operacion premium para piscinas",
       "title": "Controla cada ruta con claridad, confianza y evidencia.",
-    "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
+      "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
       "primaryCta": "Abrir panel admin",
       "secondaryCta": "Explorar portal cliente",
       "badge1": "Rutas optimizadas",
@@ -112,7 +111,7 @@
       },
       "billing": {
         "title": "Facturacion inteligente",
-      "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
+        "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
       },
       "clients": {
         "title": "Experiencia del cliente",
@@ -146,8 +145,7 @@
       "value4": "Operacion centrada en el cliente",
       "note": "Combinamos experiencia de campo con sistemas modernos para resultados medibles."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
@@ -159,7 +157,12 @@
       "settings": "Ajustes",
       "routes": "Rutas y trabajos",
       "serviceAgreement": "Acuerdo de servicio",
-      "helpCenter": "Ayuda"
+      "helpCenter": "Ayuda",
+      "sections": {
+        "operations": "Operaciones",
+        "finance": "Finanzas",
+        "config": "Configuración"
+      }
     },
     "tech": {
       "route": "Mi ruta",

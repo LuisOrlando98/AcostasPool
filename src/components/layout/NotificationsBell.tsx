@@ -21,6 +21,7 @@ import {
   formatInBusinessTimeZone,
   startOfBusinessDay,
 } from "@/lib/timezone";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type NotificationItem = {
   id: string;
@@ -110,10 +111,11 @@ function BellIcon() {
 
 export default function NotificationsBell() {
   const { t, locale } = useI18n();
+  const { user } = useCurrentUser();
+  const userId = user?.id ?? null;
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -248,18 +250,10 @@ export default function NotificationsBell() {
           // Ignore cache write failures.
         }
       }
-
-      if (!userId) {
-        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-        const meData = await meRes.json().catch(() => ({ user: null }));
-        if (meData?.user?.id) {
-          setUserId(meData.user.id);
-        }
-      }
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   const updatePanelPlacement = useCallback(() => {
     if (!canUseDom || !bellButtonRef.current) {

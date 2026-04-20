@@ -56,8 +56,7 @@
       "en": "English",
       "es": "Spanish"
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Pool Operations Platform",
     "nav": {
@@ -146,8 +145,7 @@
       "value4": "Client-first operations",
       "note": "We blend field expertise with modern systems to deliver measurable results."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
@@ -159,7 +157,12 @@
       "settings": "Settings",
       "routes": "Routes & Jobs",
       "serviceAgreement": "Service Agreement",
-      "helpCenter": "Help"
+      "helpCenter": "Help",
+      "sections": {
+        "operations": "Operations",
+        "finance": "Finance",
+        "config": "Settings"
+      }
     },
     "tech": {
       "route": "My Route",
@@ -2025,13 +2028,13 @@
           "active": "Active",
           "inactive": "Inactive"
         },
-      "actions": {
-        "add": "Add tier",
-        "showInactive": "Show inactive",
-        "hideInactive": "Hide inactive",
-        "saving": "Saving...",
-        "deactivate": "Deactivate"
-      },
+        "actions": {
+          "add": "Add tier",
+          "showInactive": "Show inactive",
+          "hideInactive": "Hide inactive",
+          "saving": "Saving...",
+          "deactivate": "Deactivate"
+        },
         "errors": {
           "load": "Unable to load service tiers.",
           "save": "Unable to save the service tier.",
