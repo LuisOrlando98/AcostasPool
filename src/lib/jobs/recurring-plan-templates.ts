@@ -92,14 +92,12 @@ export function buildRecurringRouteGroupId(input: {
   technicianId?: string | null;
 }) {
   const planKey = getGlobalRecurringPlanKeyByName(input.planName);
-  const normalizedPlanKey =
-    planKey ??
-    input.planName
-      .trim()
-      .replace(/[^a-zA-Z0-9]+/g, "_")
-      .replace(/^_+|_+$/g, "")
-      .toUpperCase() ||
-    "PLAN";
+  const fallbackPlanKey = input.planName
+    .trim()
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+  const normalizedPlanKey = planKey ?? (fallbackPlanKey || "PLAN");
   const technicianKey = input.technicianId?.trim() || "UNASSIGNED";
   return `${normalizedPlanKey}::${technicianKey}`;
 }
