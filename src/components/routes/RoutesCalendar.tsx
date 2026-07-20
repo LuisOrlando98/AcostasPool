@@ -529,7 +529,19 @@ export default function RoutesCalendar({
 
   const jobsByDate = useMemo(() => {
     const map = new Map<string, CalendarItem[]>();
+    const matchesTechFilter = (technicianId: string | null) => {
+      if (techFilter === "ALL") {
+        return true;
+      }
+      if (techFilter === "UNASSIGNED") {
+        return !technicianId;
+      }
+      return technicianId === techFilter;
+    };
     for (const job of jobsState) {
+      if (!matchesTechFilter(job.technicianId)) {
+        continue;
+      }
       const date = new Date(job.scheduledDate);
       const key = toDateKey(date);
       const list = map.get(key) ?? [];
@@ -537,6 +549,9 @@ export default function RoutesCalendar({
       map.set(key, list);
     }
     for (const plan of planOccurrences) {
+      if (!matchesTechFilter(plan.technicianId)) {
+        continue;
+      }
       const date = new Date(plan.scheduledDate);
       const key = toDateKey(date);
       const list = map.get(key) ?? [];
@@ -544,7 +559,7 @@ export default function RoutesCalendar({
       map.set(key, list);
     }
     return map;
-  }, [jobsState, planOccurrences]);
+  }, [jobsState, planOccurrences, techFilter]);
 
   const sortJobsForDay = (list: CalendarItem[]) => {
     return sortJobsChronologically(list);
@@ -1519,6 +1534,27 @@ export default function RoutesCalendar({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={techFilter}
+                onChange={(event) => setTechFilter(event.target.value)}
+                className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 focus:border-sky-300 focus:outline-none sm:h-10 sm:rounded-xl sm:px-3 sm:text-xs"
+                aria-label={
+                  locale === "es" ? "Filtrar por tecnico" : "Filter by technician"
+                }
+                title={locale === "es" ? "Filtrar por tecnico" : "Filter by technician"}
+              >
+                <option value="ALL">
+                  {locale === "es" ? "Todos los tecnicos" : "All technicians"}
+                </option>
+                <option value="UNASSIGNED">
+                  {locale === "es" ? "Sin tecnico" : "Unassigned"}
+                </option>
+                {technicians.map((tech) => (
+                  <option key={tech.id} value={tech.id}>
+                    {tech.name}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={toggleEditMode}

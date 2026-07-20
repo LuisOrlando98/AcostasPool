@@ -1080,7 +1080,9 @@
           "type": "Customer type",
           "allowWeekendBooking": "Special customer: allow Saturday and Sunday booking",
           "sendInvite": "Send email invitation now",
-          "inviteHint": "No portal user is created until you send an invitation, and invitations require a customer email."
+          "inviteHint": "No portal user is created until you send an invitation, and invitations require a customer email.",
+          "sameAddressProperty": "This customer's main property is at the same address as the customer",
+          "sameAddressPropertyHint": "Creating the customer will automatically create their first property at this same address. Uncheck this box if you want to add the property manually afterward."
         },
         "placeholders": {
           "firstName": "First name",

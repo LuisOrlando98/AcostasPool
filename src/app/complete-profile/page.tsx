@@ -341,6 +341,7 @@ export default function CompleteProfilePage() {
                       name="nombre"
                       defaultValue={profile.nombre}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      autoComplete="given-name"
                       required
                     />
                   </div>
@@ -352,6 +353,7 @@ export default function CompleteProfilePage() {
                       name="apellidos"
                       defaultValue={profile.apellidos}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      autoComplete="family-name"
                       required
                     />
                   </div>
@@ -362,7 +364,12 @@ export default function CompleteProfilePage() {
                     <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                       {t("common.labels.email")}
                     </label>
-                    <input value={profile.email} readOnly className="app-input mt-2 w-full bg-slate-100 px-4 py-3 text-sm text-slate-600" />
+                    <input
+                      value={profile.email}
+                      readOnly
+                      autoComplete="off"
+                      className="app-input mt-2 w-full bg-slate-100 px-4 py-3 text-sm text-slate-600"
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -388,6 +395,7 @@ export default function CompleteProfilePage() {
                       name="telefono"
                       defaultValue={profile.telefono}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      autoComplete="tel"
                       required
                     />
                   </div>
@@ -400,6 +408,7 @@ export default function CompleteProfilePage() {
                         name="telefonoSecundario"
                         defaultValue={profile.telefonoSecundario}
                         className="app-input mt-2 w-full px-4 py-3 text-sm"
+                        autoComplete="tel"
                       />
                     </div>
                   ) : null}
@@ -432,6 +441,7 @@ export default function CompleteProfilePage() {
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
@@ -444,6 +454,7 @@ export default function CompleteProfilePage() {
                       value={confirm}
                       onChange={(event) => setConfirm(event.target.value)}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
+                      autoComplete="new-password"
                       required
                     />
                   </div>

@@ -466,6 +466,20 @@ export default function CustomersClient({
                       <div className="mt-4">
                         <AddressAutocomplete />
                       </div>
+                      <label className="mt-3 flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                        <input
+                          type="checkbox"
+                          name="propiedadMismaDireccion"
+                          className="mt-0.5 h-4 w-4"
+                          defaultChecked
+                        />
+                        <span>
+                          {t("admin.customers.new.fields.sameAddressProperty")}
+                        </span>
+                      </label>
+                      <p className="mt-2 text-[11px] text-slate-500">
+                        {t("admin.customers.new.fields.sameAddressPropertyHint")}
+                      </p>
                     </div>
 
                     <div>

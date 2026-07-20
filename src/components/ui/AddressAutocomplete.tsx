@@ -236,6 +236,7 @@ export default function AddressAutocomplete({
           onChange={(event) => setLine2(event.target.value)}
           className={`mt-2 w-full px-4 py-3 text-sm ${inputClass}`}
           placeholder={t("address.placeholders.line2")}
+          autoComplete="address-line2"
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
@@ -249,6 +250,7 @@ export default function AddressAutocomplete({
             onChange={(event) => setCity(event.target.value)}
             className={`mt-2 w-full px-4 py-3 text-sm ${inputClass}`}
             placeholder={t("address.placeholders.city")}
+            autoComplete="address-level2"
           />
         </div>
         <div>
@@ -273,6 +275,7 @@ export default function AddressAutocomplete({
             onChange={(event) => setState(event.target.value)}
             className={`mt-2 w-full px-4 py-3 text-sm ${inputClass}`}
             placeholder={t("address.placeholders.state")}
+            autoComplete="address-level1"
           />
         </div>
         <div>
@@ -285,6 +288,7 @@ export default function AddressAutocomplete({
             onChange={(event) => setPostalCode(event.target.value)}
             className={`mt-2 w-full px-4 py-3 text-sm ${inputClass}`}
             placeholder={t("address.placeholders.postal")}
+            autoComplete="postal-code"
           />
         </div>
       </div>

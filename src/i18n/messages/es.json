@@ -1080,7 +1080,9 @@
           "type": "Tipo de cliente",
           "allowWeekendBooking": "Cliente especial: permitir citas sabado y domingo",
           "sendInvite": "Enviar invitacion por email ahora",
-          "inviteHint": "No se crea usuario de portal hasta que envies la invitacion, y la invitacion requiere un email del cliente."
+          "inviteHint": "No se crea usuario de portal hasta que envies la invitacion, y la invitacion requiere un email del cliente.",
+          "sameAddressProperty": "Este cliente tiene la propiedad principal en la misma direccion del cliente",
+          "sameAddressPropertyHint": "Al crear el cliente se creara automaticamente su primera propiedad con esta misma direccion. Desmarca esta casilla si quieres agregar la propiedad manualmente despues."
         },
         "placeholders": {
           "firstName": "Nombre",

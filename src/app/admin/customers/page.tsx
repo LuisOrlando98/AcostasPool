@@ -57,6 +57,7 @@ async function createCustomer(formData: FormData) {
   const codigoPostal = String(formData.get("codigoPostal") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
   const enviarInvitacion = Boolean(formData.get("enviarInvitacion"));
+  const propiedadMismaDireccion = formData.get("propiedadMismaDireccion") === "on";
 
   const telefono = telefonoRaw ? normalizeUsPhone(telefonoRaw) ?? "" : "";
   const telefonoSecundario = telefonoSecundarioRaw
@@ -117,6 +118,15 @@ async function createCustomer(formData: FormData) {
       notas: notas || null,
     },
   });
+
+  if (propiedadMismaDireccion && customer.direccionLinea1) {
+    await prisma.property.create({
+      data: {
+        customerId: customer.id,
+        address: formatCustomerAddress(customer),
+      },
+    });
+  }
 
   if (enviarInvitacion && customer.email) {
     try {
