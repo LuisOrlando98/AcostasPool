@@ -411,6 +411,7 @@ export default function AppShell({
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
+  const isClientApp = role === "CUSTOMER";
   const [loggingOut, setLoggingOut] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
@@ -518,6 +519,97 @@ export default function AppShell({
     window.location.href = "/login";
   };
 
+  const renderClientNavExtras = (variant: "desktop" | "mobile") => {
+    if (!isClientApp) {
+      return null;
+    }
+    const iconWrapClass =
+      variant === "desktop"
+        ? "nav-icon sidebar-icon flex h-10 w-10 shrink-0 items-center justify-center transition"
+        : "nav-icon sidebar-icon flex h-9 w-9 shrink-0 items-center justify-center transition";
+    const labelClass =
+      variant === "desktop"
+        ? "nav-label max-w-[12rem] overflow-hidden whitespace-nowrap transition-all duration-300"
+        : "truncate font-medium";
+    const itemPaddingClass = variant === "desktop" ? "px-4 py-2.5" : "px-3 py-2.5";
+    const sectionPaddingClass = variant === "desktop" ? "px-4" : "px-3";
+    return (
+      <>
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          title={t("nav.client.website")}
+          onClick={
+            variant === "mobile" ? () => setMobileNavOpen(false) : undefined
+          }
+          className={`nav-item sidebar-item group relative flex items-center gap-3 ${itemPaddingClass}`}
+        >
+          <span className={iconWrapClass}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className={iconClassName}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14 4h6v6M20 4l-9 9"
+              />
+            </svg>
+          </span>
+          <span className={labelClass}>{t("nav.client.website")}</span>
+        </a>
+
+        <div className={`nav-section-divider ${sectionPaddingClass} pb-1 pt-4`}>
+          <span
+            className={`${variant === "desktop" ? "nav-label" : ""} block overflow-hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--sidebar-muted)] transition-all duration-300`}
+          >
+            {t("nav.client.otherServices")}
+          </span>
+        </div>
+        <div className={sectionPaddingClass}>
+          <button
+            type="button"
+            disabled
+            className="sidebar-account-link w-full cursor-not-allowed justify-start"
+          >
+            <span className="sidebar-account-icon" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.5 12a7.5 7.5 0 1015 0 7.5 7.5 0 00-15 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 7.5v4.5l3 2"
+                />
+              </svg>
+            </span>
+            <span className="sidebar-account-label">
+              {t("nav.client.comingSoon")}
+            </span>
+          </button>
+        </div>
+      </>
+    );
+  };
+
   return (
     <div
       data-app-shell-role={role ?? "UNKNOWN"}
@@ -610,6 +702,7 @@ export default function AppShell({
                 </Link>
               );
             })}
+            {renderClientNavExtras("desktop")}
           </nav>
           <div className="sidebar-account relative z-10 px-5 pb-5 pt-4">
             <SidebarAccount />
@@ -798,6 +891,7 @@ export default function AppShell({
                     </Link>
                   );
                 })}
+                {renderClientNavExtras("mobile")}
               </nav>
 
               <div className="mobile-sidebar-actions relative z-10 border-t border-[var(--sidebar-border)] px-3 py-3">

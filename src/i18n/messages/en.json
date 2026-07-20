@@ -171,7 +171,10 @@
       "request": "Request Service",
       "invoices": "Invoices",
       "profile": "Profile",
-      "properties": "My properties"
+      "properties": "My properties",
+      "website": "Visit our website",
+      "otherServices": "Other services",
+      "comingSoon": "Coming soon"
     },
     "account": "My account"
   },
