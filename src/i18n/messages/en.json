@@ -1103,6 +1103,7 @@
         "created": "Customer saved successfully.",
         "deleted": "Customer deleted successfully.",
         "saved": "Customer changes saved.",
+        "financialsSaved": "Financial information saved.",
         "propertyCreated": "Property created successfully.",
         "propertySaved": "Property updated successfully.",
         "propertyDeleted": "Property deleted successfully.",
@@ -1171,6 +1172,8 @@
           "addressLabel": "Address",
           "propertiesTitle": "Properties",
           "propertiesSubtitle": "Full pool details for each site.",
+          "financialsTitle": "Financial information",
+          "financialsSubtitle": "Plan, price, and payment method for this customer.",
           "plansTitle": "Recurring plans",
           "plansSubtitle": "Weekly, biweekly, or monthly plans.",
           "jobsTitle": "Jobs"
@@ -1233,6 +1236,7 @@
             "sections": {
               "identity": "Property identity",
               "specs": "Pool specs",
+              "equipment": "Equipment",
               "access": "Access and location notes"
             },
             "danger": {
@@ -1241,8 +1245,56 @@
               "confirm": "Confirm deletion"
             }
           },
+          "equipment": {
+            "filter": "Filter",
+            "pump": "Water pump",
+            "brand": "Brand",
+            "model": "Model",
+            "horsepower": "Horsepower (HP)",
+            "brandPlaceholder": "Ex: Pentair, Hayward",
+            "modelPlaceholder": "Ex: Clean & Clear 150",
+            "horsepowerPlaceholder": "Ex: 1.5 HP"
+          },
+          "condition": {
+            "sectionTitle": "Pool condition",
+            "sectionHint": "Mark the state of each component: red (broken), yellow (bad), green (good).",
+            "notes": "Pool quality notes",
+            "notesPlaceholder": "Observations about the pool's overall condition",
+            "items": {
+              "pump": "Pump",
+              "filter": "Filter",
+              "heater": "Heater",
+              "skimmer": "Skimmer",
+              "ladder": "Ladder / handrails",
+              "lighting": "Lighting",
+              "tileLiner": "Tile / liner",
+              "deckCover": "Deck / cover"
+            },
+            "status": {
+              "BROKEN": "Broken",
+              "BAD": "Bad",
+              "GOOD": "Good"
+            }
+          },
           "spaNo": "Spa: No",
           "spaYes": "Spa: Yes"
+        },
+        "financials": {
+          "fields": {
+            "plan": "Contracted package / plan",
+            "paymentMethod": "Payment method"
+          },
+          "paymentMethods": {
+            "CASH": "Cash",
+            "ZELLE": "Zelle",
+            "CARD": "Card",
+            "CHECK": "Check",
+            "TRANSFER": "Bank transfer",
+            "OTHER": "Other"
+          },
+          "primaryPropertyHint": "Price and payment date shown are for the primary property: {{address}}.",
+          "multiPropertyHint": "This customer has multiple properties; the price and payment date shown here are for their primary property. Adjust the rest from each property in the Properties section.",
+          "noPropertyHint": "Add a property to record price and payment date."
         },
         "plans": {
           "empty": "No active recurring plans.",

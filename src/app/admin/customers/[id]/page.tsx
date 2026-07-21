@@ -7,6 +7,7 @@ import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
+import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import CustomerInvoicesTable from "@/components/customers/CustomerInvoicesTable";
 import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
 import CustomerPlansTable from "@/components/customers/CustomerPlansTable";
@@ -42,6 +43,14 @@ import {
   parseServicePaymentInfoInput,
   SERVICE_PAYMENT_TYPE_VALUES,
 } from "@/lib/customers/service-payment-info";
+import {
+  normalizePaymentMethod,
+  PAYMENT_METHOD_VALUES,
+} from "@/lib/customers/financial-info";
+import {
+  parsePoolConditionInput,
+  readPoolCondition,
+} from "@/lib/customers/pool-condition";
 import {
   startOfBusinessDay,
   endOfBusinessDay,
@@ -368,6 +377,66 @@ async function updateCustomer(formData: FormData) {
   redirect(customerDetailFeedbackPath(customerId, "customer-saved"));
 }
 
+async function updateCustomerFinancials(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const customerId = String(formData.get("customerId") ?? "");
+  if (!customerId) {
+    return;
+  }
+
+  const contractedServiceTierId = String(
+    formData.get("contractedServiceTierId") ?? ""
+  ).trim();
+  const paymentMethodRaw = String(formData.get("paymentMethod") ?? "").trim();
+  const paymentMethod = paymentMethodRaw
+    ? normalizePaymentMethod(paymentMethodRaw)
+    : null;
+  if (paymentMethodRaw && !paymentMethod) {
+    return;
+  }
+
+  const primaryPropertyId = String(
+    formData.get("primaryPropertyId") ?? ""
+  ).trim();
+  const servicePaymentInfo = parseServicePaymentInfoInput({
+    serviceStartDate: String(formData.get("serviceStartDate") ?? ""),
+    paymentDay: String(formData.get("paymentDay") ?? ""),
+    servicePrice: String(formData.get("servicePrice") ?? ""),
+    paymentType: String(formData.get("paymentType") ?? ""),
+    paymentNotes: String(formData.get("paymentNotes") ?? ""),
+  });
+  if (!servicePaymentInfo) {
+    return;
+  }
+
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: {
+      contractedServiceTierId: contractedServiceTierId || null,
+      paymentMethod,
+    },
+  });
+
+  if (primaryPropertyId) {
+    await prisma.property.update({
+      where: { id: primaryPropertyId },
+      data: {
+        serviceStartDate: servicePaymentInfo.serviceStartDate,
+        paymentDay: servicePaymentInfo.paymentDay,
+        servicePrice: servicePaymentInfo.servicePrice,
+        paymentType: servicePaymentInfo.paymentType,
+        paymentNotes: servicePaymentInfo.paymentNotes,
+      },
+    });
+  }
+
+  revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/invoices");
+  redirect(customerDetailFeedbackPath(customerId, "customer-financials-saved"));
+}
+
 async function inviteCustomer(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
@@ -561,6 +630,16 @@ async function updateProperty(formData: FormData) {
     paymentType: String(formData.get("paymentType") ?? ""),
     paymentNotes: String(formData.get("paymentNotes") ?? ""),
   });
+  const filterBrand = String(formData.get("filterBrand") ?? "").trim();
+  const filterModel = String(formData.get("filterModel") ?? "").trim();
+  const pumpBrand = String(formData.get("pumpBrand") ?? "").trim();
+  const pumpHorsepower = String(formData.get("pumpHorsepower") ?? "").trim();
+  const poolConditionNotes = String(
+    formData.get("poolConditionNotes") ?? ""
+  ).trim();
+  const poolCondition = parsePoolConditionInput((key) =>
+    formData.get(key) ? String(formData.get(key)) : null
+  );
 
   if (!propertyId || !customerId || !address || !servicePaymentInfo) {
     return;
@@ -585,6 +664,12 @@ async function updateProperty(formData: FormData) {
       servicePrice: servicePaymentInfo.servicePrice,
       paymentType: servicePaymentInfo.paymentType,
       paymentNotes: servicePaymentInfo.paymentNotes,
+      filterBrand: filterBrand || null,
+      filterModel: filterModel || null,
+      pumpBrand: pumpBrand || null,
+      pumpHorsepower: pumpHorsepower || null,
+      poolCondition,
+      poolConditionNotes: poolConditionNotes || null,
     },
   });
 
@@ -992,6 +1077,7 @@ export default async function CustomerDetailPage({
         },
       },
       properties: true,
+      contractedServiceTier: { select: { id: true, name: true } },
       jobs: {
         orderBy: { scheduledDate: "desc" },
         include: {
@@ -1134,7 +1220,14 @@ export default async function CustomerDetailPage({
       property.servicePrice !== null ? Number(property.servicePrice) : null,
     paymentType: property.paymentType,
     paymentNotes: property.paymentNotes,
+    filterBrand: property.filterBrand,
+    filterModel: property.filterModel,
+    pumpBrand: property.pumpBrand,
+    pumpHorsepower: property.pumpHorsepower,
+    poolCondition: readPoolCondition(property.poolCondition),
+    poolConditionNotes: property.poolConditionNotes,
   }));
+  const primaryProperty = customer.properties[0] ?? null;
   const invoicesRows = customer.invoices.map((invoice) => ({
     id: invoice.id,
     number: invoice.number,
@@ -1151,6 +1244,10 @@ export default async function CustomerDetailPage({
   }));
   const customerEmailLabel = customer.email || t("common.labels.notAvailable");
   const hasCustomerEmail = Boolean(customer.email?.trim());
+  const currencyFormatter = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+  });
 
   return (
     <AppShell
@@ -1162,6 +1259,11 @@ export default async function CustomerDetailPage({
       {feedback === "customer-saved" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.saved")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "customer-financials-saved" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.financialsSaved")}
           dismissLabel={t("common.actions.close")}
         />
       ) : feedback === "property-created" ? (
@@ -1295,21 +1397,20 @@ export default async function CustomerDetailPage({
 
         <div className="customers-detail-grid grid gap-5 sm:gap-6 2xl:grid-cols-2">
           <div className="min-w-0">
-            <div className="customers-panel ui-panel h-full p-4 sm:p-6 lg:min-h-[360px]">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold">
-                    {t("admin.customers.detail.sections.profileTitle")}
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    {t("admin.customers.detail.sections.profileSubtitle")}
-                  </p>
+            <CollapsibleSection
+              className="h-full lg:min-h-[360px]"
+              title={t("admin.customers.detail.sections.profileTitle")}
+              subtitle={
+                <>
+                  {t("admin.customers.detail.sections.profileSubtitle")}{" "}
                   <span
                     className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}
                   >
                     {portalStatusLabel}
                   </span>
-                </div>
+                </>
+              }
+              headerExtra={
                 <form action={inviteCustomer}>
                   <input type="hidden" name="customerId" value={customer.id} />
                   <button
@@ -1328,9 +1429,9 @@ export default async function CustomerDetailPage({
                     {t("admin.customers.detail.actions.sendInvite")}
                   </button>
                 </form>
-              </div>
-
-              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              }
+            >
+              <div className="grid gap-4 xl:grid-cols-2">
                 <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -1402,7 +1503,85 @@ export default async function CustomerDetailPage({
                 </article>
 
               </div>
-            </div>
+            </CollapsibleSection>
+          </div>
+
+          <div className="min-w-0">
+            <CollapsibleSection
+              className="h-full lg:min-h-[360px]"
+              title={t("admin.customers.detail.sections.financialsTitle")}
+              subtitle={t("admin.customers.detail.sections.financialsSubtitle")}
+              headerExtra={
+                <label
+                  htmlFor="edit-customer-financials"
+                  className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                >
+                  {t("common.actions.edit")}
+                </label>
+              }
+            >
+              <div className="grid gap-4 xl:grid-cols-2">
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.detail.financials.fields.plan")}
+                  </p>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">
+                    {customer.contractedServiceTier?.name ??
+                      t("common.labels.notAvailable")}
+                  </p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.detail.financials.fields.paymentMethod")}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {customer.paymentMethod
+                      ? t(
+                          `admin.customers.detail.financials.paymentMethods.${customer.paymentMethod}`
+                        )
+                      : t("common.labels.notAvailable")}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.servicePrice")}
+                  </p>
+                  <p className="mt-3 text-sm font-semibold text-slate-900">
+                    {primaryProperty?.servicePrice != null
+                      ? currencyFormatter.format(Number(primaryProperty.servicePrice))
+                      : t("common.labels.notAvailable")}
+                  </p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.paymentDay")}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {primaryProperty?.paymentDay
+                      ? t("admin.invoices.servicePayment.dayOfMonth", {
+                          day: String(primaryProperty.paymentDay),
+                        })
+                      : t("common.labels.notAvailable")}
+                  </p>
+                  <p className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.invoices.servicePayment.fields.paymentType")}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-700">
+                    {primaryProperty?.paymentType
+                      ? t(
+                          `admin.invoices.servicePayment.paymentTypes.${primaryProperty.paymentType}`
+                        )
+                      : t("common.labels.notAvailable")}
+                  </p>
+                </article>
+              </div>
+              {customer.properties.length > 1 ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  {t("admin.customers.detail.financials.multiPropertyHint")}
+                </p>
+              ) : null}
+              {customer.properties.length === 0 ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  {t("admin.customers.detail.financials.noPropertyHint")}
+                </p>
+              ) : null}
+            </CollapsibleSection>
           </div>
 
           <div className="min-w-0">
@@ -1640,6 +1819,200 @@ export default async function CustomerDetailPage({
           </div>
         </div>
       </div>
+
+      <input
+        id="edit-customer-financials"
+        type="checkbox"
+        className="peer/financials hidden"
+      />
+      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/financials:flex">
+        <label
+          htmlFor="edit-customer-financials"
+          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
+        />
+        <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  {t("admin.customers.detail.sections.financialsTitle")}
+                </p>
+                <h2 className="text-lg font-semibold">
+                  {t("admin.customers.detail.actions.saveChanges")}
+                </h2>
+                <p className="text-sm text-slate-500">{customerName}</p>
+              </div>
+              <label
+                htmlFor="edit-customer-financials"
+                className="app-modal-close"
+                aria-label={t("common.actions.close")}
+                title={t("common.actions.close")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                </svg>
+              </label>
+            </div>
+            <form action={updateCustomerFinancials} className="mt-5 space-y-5">
+              <input type="hidden" name="customerId" value={customer.id} />
+              <input
+                type="hidden"
+                name="primaryPropertyId"
+                value={primaryProperty?.id ?? ""}
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.detail.financials.fields.plan")}
+                  </label>
+                  <select
+                    name="contractedServiceTierId"
+                    defaultValue={customer.contractedServiceTierId ?? ""}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="">{t("common.labels.notAvailable")}</option>
+                    {tierOptions.map((tier) => (
+                      <option key={tier.id} value={tier.id}>
+                        {tier.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.detail.financials.fields.paymentMethod")}
+                  </label>
+                  <select
+                    name="paymentMethod"
+                    defaultValue={customer.paymentMethod ?? ""}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="">{t("common.labels.notAvailable")}</option>
+                    {PAYMENT_METHOD_VALUES.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`admin.customers.detail.financials.paymentMethods.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <p className="text-sm font-semibold text-slate-800">
+                  {t("admin.invoices.servicePayment.sectionTitle")}
+                </p>
+                {primaryProperty ? (
+                  <>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {t("admin.customers.detail.financials.primaryPropertyHint", {
+                        address: primaryProperty.address,
+                      })}
+                    </p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.serviceStartDate")}
+                        </label>
+                        <input
+                          type="date"
+                          name="serviceStartDate"
+                          defaultValue={
+                            primaryProperty.serviceStartDate
+                              ? formatBusinessDateInput(primaryProperty.serviceStartDate)
+                              : ""
+                          }
+                          className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.paymentDay")}
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="31"
+                          name="paymentDay"
+                          defaultValue={primaryProperty.paymentDay ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.servicePrice")}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          name="servicePrice"
+                          defaultValue={
+                            primaryProperty.servicePrice !== null
+                              ? Number(primaryProperty.servicePrice).toFixed(2)
+                              : ""
+                          }
+                          className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          {t("admin.invoices.servicePayment.fields.paymentType")}
+                        </label>
+                        <select
+                          name="paymentType"
+                          defaultValue={primaryProperty.paymentType ?? ""}
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
+                        >
+                          <option value="">
+                            {t("admin.invoices.servicePayment.placeholders.paymentType")}
+                          </option>
+                          {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
+                            <option key={value} value={value}>
+                              {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {t("admin.invoices.servicePayment.fields.paymentNotes")}
+                      </label>
+                      <textarea
+                        name="paymentNotes"
+                        defaultValue={primaryProperty.paymentNotes ?? ""}
+                        className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t("admin.customers.detail.financials.noPropertyHint")}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-end">
+                <FormSubmitButton
+                  idleLabel={t("admin.customers.detail.actions.saveChanges")}
+                  pendingLabel={t("admin.customers.detail.actions.saving")}
+                  successLabel={t("common.feedback.saved")}
+                />
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/property:flex">
         <label
           htmlFor="new-property"

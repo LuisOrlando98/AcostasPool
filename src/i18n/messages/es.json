@@ -1103,6 +1103,7 @@
         "created": "Cliente guardado correctamente.",
         "deleted": "Cliente eliminado correctamente.",
         "saved": "Cambios del cliente guardados.",
+        "financialsSaved": "Informacion financiera guardada.",
         "propertyCreated": "Propiedad creada correctamente.",
         "propertySaved": "Propiedad actualizada correctamente.",
         "propertyDeleted": "Propiedad eliminada correctamente.",
@@ -1171,6 +1172,8 @@
           "addressLabel": "Direccion",
           "propertiesTitle": "Propiedades",
           "propertiesSubtitle": "Datos completos de cada piscina.",
+          "financialsTitle": "Informacion financiera",
+          "financialsSubtitle": "Plan, precio y forma de pago del cliente.",
           "plansTitle": "Planes recurrentes",
           "plansSubtitle": "Planes semanales, bisemanales o mensuales.",
           "jobsTitle": "Trabajos"
@@ -1233,6 +1236,7 @@
             "sections": {
               "identity": "Identidad de propiedad",
               "specs": "Especificaciones de piscina",
+              "equipment": "Equipo",
               "access": "Acceso y ubicacion"
             },
             "danger": {
@@ -1241,8 +1245,56 @@
               "confirm": "Confirmar eliminacion"
             }
           },
+          "equipment": {
+            "filter": "Filtro",
+            "pump": "Bomba de agua",
+            "brand": "Marca",
+            "model": "Modelo",
+            "horsepower": "Caballaje (HP)",
+            "brandPlaceholder": "Ej: Pentair, Hayward",
+            "modelPlaceholder": "Ej: Clean & Clear 150",
+            "horsepowerPlaceholder": "Ej: 1.5 HP"
+          },
+          "condition": {
+            "sectionTitle": "Condicion de la piscina",
+            "sectionHint": "Marca el estado de cada componente: rojo (roto), amarillo (malo), verde (bueno).",
+            "notes": "Notas de calidad de la piscina",
+            "notesPlaceholder": "Observaciones sobre el estado general de la piscina",
+            "items": {
+              "pump": "Bomba",
+              "filter": "Filtro",
+              "heater": "Calentador",
+              "skimmer": "Skimmer",
+              "ladder": "Escalera / barandas",
+              "lighting": "Iluminacion",
+              "tileLiner": "Revestimiento / loza",
+              "deckCover": "Cubierta / deck"
+            },
+            "status": {
+              "BROKEN": "Roto",
+              "BAD": "Malo",
+              "GOOD": "Bueno"
+            }
+          },
           "spaNo": "Spa: No",
           "spaYes": "Spa: Si"
+        },
+        "financials": {
+          "fields": {
+            "plan": "Paquete / plan contratado",
+            "paymentMethod": "Metodo de pago"
+          },
+          "paymentMethods": {
+            "CASH": "Efectivo",
+            "ZELLE": "Zelle",
+            "CARD": "Tarjeta",
+            "CHECK": "Cheque",
+            "TRANSFER": "Transferencia",
+            "OTHER": "Otro"
+          },
+          "primaryPropertyHint": "Precio y fecha de pago de la propiedad principal: {{address}}.",
+          "multiPropertyHint": "Este cliente tiene varias propiedades; el precio y la fecha de pago mostrados aqui son los de su propiedad principal. Ajusta el resto desde cada propiedad en la seccion de Propiedades.",
+          "noPropertyHint": "Agrega una propiedad para registrar precio y fecha de pago."
         },
         "plans": {
           "empty": "No hay planes recurrentes activos.",

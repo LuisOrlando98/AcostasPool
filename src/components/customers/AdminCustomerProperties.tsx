@@ -5,6 +5,12 @@ import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle
 import { useI18n } from "@/i18n/client";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { SERVICE_PAYMENT_TYPE_VALUES } from "@/lib/customers/service-payment-info";
+import {
+  POOL_CONDITION_ITEM_KEYS,
+  POOL_CONDITION_STATUS_VALUES,
+  type PoolConditionEntry,
+  type PoolConditionStatus,
+} from "@/lib/customers/pool-condition";
 
 type PropertyRow = {
   id: string;
@@ -21,6 +27,36 @@ type PropertyRow = {
   servicePrice: number | null;
   paymentType: string | null;
   paymentNotes: string | null;
+  filterBrand: string | null;
+  filterModel: string | null;
+  pumpBrand: string | null;
+  pumpHorsepower: string | null;
+  poolCondition: PoolConditionEntry[];
+  poolConditionNotes: string | null;
+};
+
+const CONDITION_STATUS_STYLES: Record<
+  PoolConditionStatus,
+  { idle: string; peerChecked: string; solid: string }
+> = {
+  BROKEN: {
+    idle: "border-rose-300 bg-rose-50",
+    peerChecked:
+      "peer-checked:border-rose-600 peer-checked:bg-rose-500 peer-checked:ring-2 peer-checked:ring-rose-200",
+    solid: "border-rose-600 bg-rose-500",
+  },
+  BAD: {
+    idle: "border-amber-300 bg-amber-50",
+    peerChecked:
+      "peer-checked:border-amber-500 peer-checked:bg-amber-400 peer-checked:ring-2 peer-checked:ring-amber-200",
+    solid: "border-amber-500 bg-amber-400",
+  },
+  GOOD: {
+    idle: "border-emerald-300 bg-emerald-50",
+    peerChecked:
+      "peer-checked:border-emerald-600 peer-checked:bg-emerald-500 peer-checked:ring-2 peer-checked:ring-emerald-200",
+    solid: "border-emerald-600 bg-emerald-500",
+  },
 };
 
 type AdminCustomerPropertiesProps = {
@@ -44,6 +80,12 @@ export default function AdminCustomerProperties({
   const [page, setPage] = useState(1);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [listOpen, setListOpen] = useState(true);
+
+  const conditionLabel = (key: (typeof POOL_CONDITION_ITEM_KEYS)[number]) =>
+    t(`admin.customers.detail.properties.condition.items.${key}`);
+  const conditionStatusLabel = (status: PoolConditionStatus) =>
+    t(`admin.customers.detail.properties.condition.status.${status}`);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -113,23 +155,47 @@ export default function AdminCustomerProperties({
     <>
       <section className="customers-panel ui-panel flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[360px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {t("admin.customers.detail.sections.propertiesTitle")}
-            </h2>
-            <p className="text-sm text-slate-500">
-              {t("admin.customers.detail.sections.propertiesSubtitle")}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setListOpen((value) => !value)}
+            aria-expanded={listOpen}
+            className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          >
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 transition-transform duration-200 ${
+                listOpen ? "" : "-rotate-90"
+              }`}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-3.5 w-3.5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+              </svg>
+            </span>
+            <span className="min-w-0">
+              <span className="block text-lg font-semibold">
+                {t("admin.customers.detail.sections.propertiesTitle")}
+              </span>
+              <span className="block text-sm text-slate-500">
+                {t("admin.customers.detail.sections.propertiesSubtitle")}
+              </span>
+            </span>
+          </button>
           <label
             htmlFor={addPropertyTargetId}
-            className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+            className="app-button-primary shrink-0 cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
           >
             {t("admin.customers.detail.actions.addProperty")}
           </label>
         </div>
 
-        <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+        <div
+          className={`mt-4 min-h-0 flex-1 overflow-y-auto pr-1 ${listOpen ? "" : "hidden"}`}
+        >
           {pagedRows.length === 0 ? (
             <p className="text-sm text-slate-500">
               {t("admin.customers.detail.properties.empty")}
@@ -194,6 +260,32 @@ export default function AdminCustomerProperties({
                             )
                           : t("common.labels.notAvailable")}
                       </p>
+                      {property.filterBrand || property.filterModel || property.pumpBrand || property.pumpHorsepower ? (
+                        <p className="mt-1 text-xs text-slate-500">
+                          {property.filterBrand || property.filterModel
+                            ? `${t("admin.customers.detail.properties.equipment.filter")}: ${[property.filterBrand, property.filterModel].filter(Boolean).join(" ")}`
+                            : null}
+                          {(property.filterBrand || property.filterModel) && (property.pumpBrand || property.pumpHorsepower)
+                            ? " | "
+                            : null}
+                          {property.pumpBrand || property.pumpHorsepower
+                            ? `${t("admin.customers.detail.properties.equipment.pump")}: ${[property.pumpBrand, property.pumpHorsepower].filter(Boolean).join(" ")}`
+                            : null}
+                        </p>
+                      ) : null}
+                      {property.poolCondition.some((entry) => entry.status) ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {property.poolCondition
+                            .filter((entry) => entry.status)
+                            .map((entry) => (
+                              <span
+                                key={entry.key}
+                                title={`${conditionLabel(entry.key)}: ${conditionStatusLabel(entry.status as PoolConditionStatus)}`}
+                                className={`h-2.5 w-2.5 rounded-full border ${CONDITION_STATUS_STYLES[entry.status as PoolConditionStatus].solid}`}
+                              />
+                            ))}
+                        </div>
+                      ) : null}
                     </div>
                     <button
                       type="button"
@@ -209,7 +301,7 @@ export default function AdminCustomerProperties({
           )}
         </div>
 
-        {rows.length > 0 ? (
+        {rows.length > 0 && listOpen ? (
           <div className="sticky bottom-0 z-[1] mt-4 flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-white pt-3 text-xs text-slate-500">
             <span>
               {`${(currentPage - 1) * PAGE_SIZE + 1}-${Math.min(
@@ -415,6 +507,80 @@ export default function AdminCustomerProperties({
 
                 <section className="app-modal-section">
                   <p className="app-modal-section-title">
+                    {t("admin.customers.detail.properties.edit.sections.equipment")}
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("admin.customers.detail.properties.equipment.filter")}
+                      </p>
+                      <div className="mt-2 grid gap-2">
+                        <div>
+                          <label className="app-modal-field-label">
+                            {t("admin.customers.detail.properties.equipment.brand")}
+                          </label>
+                          <input
+                            name="filterBrand"
+                            defaultValue={activeProperty.filterBrand ?? ""}
+                            className="app-input app-modal-input"
+                            placeholder={t(
+                              "admin.customers.detail.properties.equipment.brandPlaceholder"
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="app-modal-field-label">
+                            {t("admin.customers.detail.properties.equipment.model")}
+                          </label>
+                          <input
+                            name="filterModel"
+                            defaultValue={activeProperty.filterModel ?? ""}
+                            className="app-input app-modal-input"
+                            placeholder={t(
+                              "admin.customers.detail.properties.equipment.modelPlaceholder"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        {t("admin.customers.detail.properties.equipment.pump")}
+                      </p>
+                      <div className="mt-2 grid gap-2">
+                        <div>
+                          <label className="app-modal-field-label">
+                            {t("admin.customers.detail.properties.equipment.brand")}
+                          </label>
+                          <input
+                            name="pumpBrand"
+                            defaultValue={activeProperty.pumpBrand ?? ""}
+                            className="app-input app-modal-input"
+                            placeholder={t(
+                              "admin.customers.detail.properties.equipment.brandPlaceholder"
+                            )}
+                          />
+                        </div>
+                        <div>
+                          <label className="app-modal-field-label">
+                            {t("admin.customers.detail.properties.equipment.horsepower")}
+                          </label>
+                          <input
+                            name="pumpHorsepower"
+                            defaultValue={activeProperty.pumpHorsepower ?? ""}
+                            className="app-input app-modal-input"
+                            placeholder={t(
+                              "admin.customers.detail.properties.equipment.horsepowerPlaceholder"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="app-modal-section">
+                  <p className="app-modal-section-title">
                     {t("admin.customers.detail.properties.edit.sections.access")}
                   </p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -431,6 +597,65 @@ export default function AdminCustomerProperties({
                         )}
                       />
                     </div>
+                  </div>
+                </section>
+
+                <section className="app-modal-section">
+                  <p className="app-modal-section-title">
+                    {t("admin.customers.detail.properties.condition.sectionTitle")}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {t("admin.customers.detail.properties.condition.sectionHint")}
+                  </p>
+                  <div className="mt-3 grid gap-2">
+                    {POOL_CONDITION_ITEM_KEYS.map((key) => {
+                      const currentStatus =
+                        activeProperty.poolCondition.find((entry) => entry.key === key)
+                          ?.status ?? null;
+                      return (
+                        <div
+                          key={key}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                        >
+                          <span className="text-sm text-slate-700">
+                            {conditionLabel(key)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {POOL_CONDITION_STATUS_VALUES.map((status) => (
+                              <label
+                                key={status}
+                                className="cursor-pointer"
+                                title={conditionStatusLabel(status)}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`condition_${key}`}
+                                  value={status}
+                                  defaultChecked={currentStatus === status}
+                                  className="peer sr-only"
+                                />
+                                <span
+                                  className={`block h-6 w-6 rounded-full border-2 transition ${CONDITION_STATUS_STYLES[status].idle} ${CONDITION_STATUS_STYLES[status].peerChecked}`}
+                                />
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3">
+                    <label className="app-modal-field-label">
+                      {t("admin.customers.detail.properties.condition.notes")}
+                    </label>
+                    <textarea
+                      name="poolConditionNotes"
+                      defaultValue={activeProperty.poolConditionNotes ?? ""}
+                      className="app-input app-modal-input app-modal-input-textarea"
+                      placeholder={t(
+                        "admin.customers.detail.properties.condition.notesPlaceholder"
+                      )}
+                    />
                   </div>
                 </section>
 

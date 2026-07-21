@@ -163,10 +163,13 @@ model Customer {
   estadoProvincia String?
   codigoPostal  String?
   notas         String?
+  contractedServiceTierId String?
+  paymentMethod String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   user          User?          @relation(fields: [userId], references: [id])
+  contractedServiceTier ServiceTier? @relation(fields: [contractedServiceTierId], references: [id])
   properties    Property[]
   jobs          Job[]
   invoices      Invoice[]
@@ -199,6 +202,12 @@ model Property {
   paymentNotes     String?
   equipmentDetails String?
   referencePhotos  Json?
+  filterBrand      String?
+  filterModel      String?
+  pumpBrand        String?
+  pumpHorsepower   String?
+  poolCondition    Json?
+  poolConditionNotes String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -259,6 +268,7 @@ model Job {
 
     jobs  Job[]
     plans ServicePlan[]
+    contractedByCustomers Customer[]
 
     @@unique([name])
   }
