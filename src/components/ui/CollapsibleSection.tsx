@@ -27,7 +27,7 @@ export default function CollapsibleSection({
     <section
       className={`customers-panel ui-panel p-4 sm:p-6 ${open ? className : ""}`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-h-[40px] flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}

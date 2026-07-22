@@ -1400,18 +1400,14 @@ export default async function CustomerDetailPage({
             <CollapsibleSection
               className="h-full lg:min-h-[360px]"
               title={t("admin.customers.detail.sections.profileTitle")}
-              subtitle={
-                <>
-                  {t("admin.customers.detail.sections.profileSubtitle")}{" "}
+              subtitle={t("admin.customers.detail.sections.profileSubtitle")}
+              headerExtra={
+                <div className="flex flex-wrap items-center gap-2">
                   <span
-                    className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}
+                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${portalStatusClass}`}
                   >
                     {portalStatusLabel}
                   </span>
-                </>
-              }
-              headerExtra={
-                <div className="flex flex-wrap items-center gap-2">
                   <label
                     htmlFor="edit-customer"
                     className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"

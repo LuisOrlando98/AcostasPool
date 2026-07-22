@@ -158,7 +158,7 @@ export default function AdminCustomerProperties({
           listOpen ? "flex h-full flex-col lg:min-h-[360px]" : ""
         }`}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-h-[40px] flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setListOpen((value) => !value)}
