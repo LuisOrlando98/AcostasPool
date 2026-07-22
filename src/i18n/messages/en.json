@@ -1268,6 +1268,7 @@
               "pump": "Pump",
               "filter": "Filter",
               "heater": "Heater",
+              "skimmer": "Skimmer",
               "ladder": "Ladder / handrails",
               "lighting": "Lighting",
               "tileLiner": "Tile / liner",
