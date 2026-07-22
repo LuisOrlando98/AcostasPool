@@ -1188,6 +1188,10 @@
           "noAddress": "Sin direccion registrada.",
           "noWeekends": "Sin fines de semana"
         },
+        "profileFields": {
+          "name": "Nombre",
+          "weekends": "Fines de semana"
+        },
         "properties": {
           "empty": "No hay propiedades registradas.",
           "nameFallback": "Propiedad",
@@ -1264,7 +1268,6 @@
               "pump": "Bomba",
               "filter": "Filtro",
               "heater": "Calentador",
-              "skimmer": "Skimmer",
               "ladder": "Escalera / barandas",
               "lighting": "Iluminacion",
               "tileLiner": "Revestimiento / loza",
@@ -2144,7 +2147,19 @@
           "kicker": "Infraestructura",
           "title": "DB health endpoint",
           "subtitle": "Solo developer: estado de conectividad de base de datos."
+        },
+        "serviceContract": {
+          "kicker": "Contratos",
+          "title": "Contrato de servicio",
+          "subtitle": "Genera un borrador de contrato en PDF por cliente, con logo y datos financieros."
         }
+      },
+      "serviceContract": {
+        "title": "Contrato de servicio",
+        "subtitle": "Borrador interno para revisar el formato del contrato con logo y datos del cliente.",
+        "draftNotice": "Herramienta temporal solo para el desarrollador. El PDF generado es un borrador y requiere revision legal antes de usarse con clientes reales.",
+        "selectCustomer": "Cliente",
+        "generate": "Generar PDF"
       },
       "audit": {
         "title": "Audit log",

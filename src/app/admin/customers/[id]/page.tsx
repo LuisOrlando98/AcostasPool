@@ -1411,98 +1411,120 @@ export default async function CustomerDetailPage({
                 </>
               }
               headerExtra={
-                <form action={inviteCustomer}>
-                  <input type="hidden" name="customerId" value={customer.id} />
-                  <button
-                    disabled={!hasCustomerEmail}
-                    title={
-                      hasCustomerEmail
-                        ? undefined
-                        : t("admin.customers.detail.actions.inviteNeedsEmail")
-                    }
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                      hasCustomerEmail
-                        ? "border-slate-200 text-slate-600 hover:border-slate-300"
-                        : "border-slate-100 text-slate-300"
-                    }`}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor="edit-customer"
+                    className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
                   >
-                    {t("admin.customers.detail.actions.sendInvite")}
-                  </button>
-                </form>
+                    {t("common.actions.edit")}
+                  </label>
+                  <form action={inviteCustomer}>
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <button
+                      disabled={!hasCustomerEmail}
+                      title={
+                        hasCustomerEmail
+                          ? undefined
+                          : t("admin.customers.detail.actions.inviteNeedsEmail")
+                      }
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                        hasCustomerEmail
+                          ? "border-slate-200 text-slate-600 hover:border-slate-300"
+                          : "border-slate-100 text-slate-300"
+                      }`}
+                    >
+                      {t("admin.customers.detail.actions.sendInvite")}
+                    </button>
+                  </form>
+                </div>
               }
             >
-              <div className="grid gap-4 xl:grid-cols-2">
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      {t("admin.customers.detail.sections.profileLabel")}
-                    </p>
-                    <label
-                      htmlFor="edit-customer"
-                      className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                    >
-                      {t("common.actions.edit")}
-                    </label>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">{customerName}</p>
-                  <p className="mt-1 text-xs text-slate-600">{customerEmailLabel}</p>
-                  <p className="text-xs text-slate-600">
+              <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.detail.profileFields.name")}
+                  </dt>
+                  <dd className="mt-1 text-sm font-semibold text-slate-900">{customerName}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("common.labels.email")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">{customerEmailLabel}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("common.labels.phone")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">
                     {formatUsPhone(customer.telefono) || t("admin.routes.labels.noPhone")}
-                  </p>
-                  {customer.telefonoSecundario ? (
-                    <p className="text-xs text-slate-500">
-                      {t("admin.customers.detail.labels.altPhone")}:{" "}
+                  </dd>
+                </div>
+                {customer.telefonoSecundario ? (
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                      {t("common.labels.phoneSecondary")}
+                    </dt>
+                    <dd className="mt-1 text-sm text-slate-700">
                       {formatUsPhone(customer.telefonoSecundario)}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 text-xs text-slate-500">
+                    </dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.new.fields.type")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">
                     {customer.tipoCliente === "COMMERCIAL"
                       ? t("admin.customers.types.commercial")
                       : t("admin.customers.types.residential")}
-                    {" | "}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("common.labels.language")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">
                     {customer.idiomaPreferencia === "EN"
                       ? t("common.language.en")
                       : t("common.language.es")}
-                  </p>
-                </article>
-
-                <article className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      {t("admin.customers.detail.sections.addressLabel")}
-                    </p>
-                    <label
-                      htmlFor="edit-customer"
-                      className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                    >
-                      {t("common.actions.edit")}
-                    </label>
-                  </div>
-                  {customer.direccionLinea1 ? (
-                    <>
-                      <p className="mt-3 text-sm font-semibold text-slate-900">
-                        {customer.direccionLinea1}
-                      </p>
-                      {customer.direccionLinea2 ? (
-                        <p className="text-sm text-slate-700">{customer.direccionLinea2}</p>
-                      ) : null}
-                      <p className="text-sm text-slate-700">
-                        {[customer.ciudad, customer.estadoProvincia, customer.codigoPostal]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-3 text-sm text-slate-500">{t("admin.customers.detail.labels.noAddress")}</p>
-                  )}
-                  <p className="mt-2 text-xs text-slate-500">
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.detail.profileFields.weekends")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">
                     {customer.allowWeekendBooking
                       ? t("admin.customers.new.fields.allowWeekendBooking")
                       : t("admin.customers.detail.labels.noWeekends")}
-                  </p>
-                </article>
-
-              </div>
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {t("admin.customers.detail.sections.addressLabel")}
+                  </dt>
+                  <dd className="mt-1 text-sm text-slate-700">
+                    {customer.direccionLinea1 ? (
+                      <>
+                        <p className="font-semibold text-slate-900">
+                          {customer.direccionLinea1}
+                        </p>
+                        {customer.direccionLinea2 ? <p>{customer.direccionLinea2}</p> : null}
+                        <p>
+                          {[customer.ciudad, customer.estadoProvincia, customer.codigoPostal]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-slate-500">
+                        {t("admin.customers.detail.labels.noAddress")}
+                      </p>
+                    )}
+                  </dd>
+                </div>
+              </dl>
             </CollapsibleSection>
           </div>
 
@@ -1584,7 +1606,7 @@ export default async function CustomerDetailPage({
             </CollapsibleSection>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 2xl:col-span-2">
             <AdminCustomerProperties
               customerId={customer.id}
               rows={propertyRows}

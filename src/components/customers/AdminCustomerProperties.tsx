@@ -80,7 +80,7 @@ export default function AdminCustomerProperties({
   const [page, setPage] = useState(1);
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [listOpen, setListOpen] = useState(true);
+  const [listOpen, setListOpen] = useState(false);
 
   const conditionLabel = (key: (typeof POOL_CONDITION_ITEM_KEYS)[number]) =>
     t(`admin.customers.detail.properties.condition.items.${key}`);
@@ -153,7 +153,11 @@ export default function AdminCustomerProperties({
 
   return (
     <>
-      <section className="customers-panel ui-panel flex h-full min-w-0 flex-col overflow-hidden p-4 sm:p-6 lg:min-h-[360px]">
+      <section
+        className={`customers-panel ui-panel min-w-0 overflow-hidden p-4 sm:p-6 ${
+          listOpen ? "flex h-full flex-col lg:min-h-[360px]" : ""
+        }`}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"

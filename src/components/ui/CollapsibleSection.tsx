@@ -16,7 +16,7 @@ export default function CollapsibleSection({
   title,
   subtitle,
   headerExtra,
-  defaultOpen = true,
+  defaultOpen = false,
   className = "",
   bodyClassName = "",
   children,
@@ -24,7 +24,9 @@ export default function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className={`customers-panel ui-panel p-4 sm:p-6 ${className}`}>
+    <section
+      className={`customers-panel ui-panel p-4 sm:p-6 ${open ? className : ""}`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"

@@ -1,0 +1,377 @@
+import fs from "fs/promises";
+import path from "path";
+import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb } from "pdf-lib";
+import type { InvoiceTemplateConfig } from "@/lib/invoice-template";
+
+const PAGE_WIDTH = 595.28; // A4 portrait
+const PAGE_HEIGHT = 841.89;
+const MARGIN_X = 46;
+const TOP_HEADER_HEIGHT = 78;
+const START_Y = PAGE_HEIGHT - TOP_HEADER_HEIGHT - 24;
+const BOTTOM_SAFE = 56;
+
+export type ServiceContractPdfInput = {
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  customerAddress: string | null;
+  propertyAddress: string | null;
+  poolType: string | null;
+  planName: string | null;
+  servicePrice: number | null;
+  paymentDayLabel: string | null;
+  paymentTypeLabel: string | null;
+  paymentMethodLabel: string | null;
+  serviceStartDateLabel: string | null;
+  company: InvoiceTemplateConfig;
+  generatedAt: string;
+};
+
+type RenderContext = {
+  doc: PDFDocument;
+  regular: PDFFont;
+  bold: PDFFont;
+  logo: PDFImage | null;
+  page: PDFPage | null;
+  y: number;
+  pageNumber: number;
+  headerLabel: string;
+  generatedAt: string;
+};
+
+function wrapText(text: string, maxWidth: number, font: PDFFont, size: number) {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return [""];
+  }
+  const lines: string[] = [];
+  let line = words[0];
+  for (let i = 1; i < words.length; i += 1) {
+    const candidate = `${line} ${words[i]}`;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+    lines.push(line);
+    line = words[i];
+  }
+  lines.push(line);
+  return lines;
+}
+
+function drawHeader(ctx: RenderContext) {
+  const { page, bold, regular, pageNumber, generatedAt, logo, headerLabel } = ctx;
+  if (!page) {
+    return;
+  }
+  page.drawRectangle({
+    x: 0,
+    y: PAGE_HEIGHT - TOP_HEADER_HEIGHT,
+    width: PAGE_WIDTH,
+    height: TOP_HEADER_HEIGHT,
+    color: rgb(0.05, 0.11, 0.24),
+  });
+
+  let textX = MARGIN_X;
+  if (logo) {
+    const logoHeight = 34;
+    const logoWidth = (logo.width / logo.height) * logoHeight;
+    page.drawImage(logo, {
+      x: MARGIN_X,
+      y: PAGE_HEIGHT - TOP_HEADER_HEIGHT / 2 - logoHeight / 2,
+      width: logoWidth,
+      height: logoHeight,
+    });
+    textX = MARGIN_X + logoWidth + 12;
+  }
+
+  page.drawText(headerLabel, {
+    x: textX,
+    y: PAGE_HEIGHT - 32,
+    font: bold,
+    size: 12,
+    color: rgb(0.92, 0.96, 1),
+  });
+  page.drawText(generatedAt, {
+    x: textX,
+    y: PAGE_HEIGHT - 48,
+    font: regular,
+    size: 8.5,
+    color: rgb(0.74, 0.83, 0.94),
+  });
+
+  const pageLabel = `Pag ${pageNumber}`;
+  const labelWidth = regular.widthOfTextAtSize(pageLabel, 9);
+  page.drawText(pageLabel, {
+    x: PAGE_WIDTH - MARGIN_X - labelWidth,
+    y: PAGE_HEIGHT - 40,
+    font: regular,
+    size: 9,
+    color: rgb(0.84, 0.9, 0.98),
+  });
+}
+
+function createPage(ctx: RenderContext) {
+  ctx.page = ctx.doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+  ctx.pageNumber += 1;
+  ctx.y = START_Y;
+  drawHeader(ctx);
+}
+
+function ensureRoom(ctx: RenderContext, requiredHeight: number) {
+  if (ctx.y - requiredHeight < BOTTOM_SAFE) {
+    createPage(ctx);
+  }
+}
+
+function drawTitle(ctx: RenderContext, text: string) {
+  ensureRoom(ctx, 40);
+  if (!ctx.page) {
+    return;
+  }
+  ctx.page.drawText(text, {
+    x: MARGIN_X,
+    y: ctx.y,
+    font: ctx.bold,
+    size: 18,
+    color: rgb(0.06, 0.14, 0.29),
+  });
+  ctx.y -= 26;
+}
+
+function drawSectionHeading(ctx: RenderContext, text: string) {
+  ensureRoom(ctx, 28);
+  if (!ctx.page) {
+    return;
+  }
+  ctx.page.drawRectangle({
+    x: MARGIN_X,
+    y: ctx.y - 10,
+    width: PAGE_WIDTH - MARGIN_X * 2,
+    height: 18,
+    color: rgb(0.9, 0.95, 1),
+  });
+  ctx.page.drawText(text, {
+    x: MARGIN_X + 8,
+    y: ctx.y - 4,
+    font: ctx.bold,
+    size: 10,
+    color: rgb(0.05, 0.24, 0.46),
+  });
+  ctx.y -= 24;
+}
+
+function drawParagraph(ctx: RenderContext, text: string, size = 9.8, tone: "body" | "muted" = "body") {
+  const width = PAGE_WIDTH - MARGIN_X * 2;
+  const lines = wrapText(text, width, ctx.regular, size);
+  ensureRoom(ctx, lines.length * 12 + 6);
+  if (!ctx.page) {
+    return;
+  }
+  for (const line of lines) {
+    ctx.page.drawText(line, {
+      x: MARGIN_X,
+      y: ctx.y,
+      font: ctx.regular,
+      size,
+      color: tone === "muted" ? rgb(0.38, 0.46, 0.58) : rgb(0.14, 0.18, 0.26),
+    });
+    ctx.y -= 12;
+  }
+  ctx.y -= 4;
+}
+
+function drawBullet(ctx: RenderContext, text: string) {
+  const bulletX = MARGIN_X + 2;
+  const textX = MARGIN_X + 14;
+  const width = PAGE_WIDTH - textX - MARGIN_X;
+  const lines = wrapText(text, width, ctx.regular, 9.6);
+  ensureRoom(ctx, lines.length * 12 + 4);
+  if (!ctx.page) {
+    return;
+  }
+  ctx.page.drawCircle({
+    x: bulletX + 3,
+    y: ctx.y + 4,
+    size: 1.8,
+    color: rgb(0.06, 0.32, 0.62),
+  });
+  for (let i = 0; i < lines.length; i += 1) {
+    ctx.page.drawText(lines[i], {
+      x: textX,
+      y: ctx.y,
+      font: ctx.regular,
+      size: 9.6,
+      color: rgb(0.14, 0.18, 0.26),
+    });
+    ctx.y -= 12;
+  }
+  ctx.y -= 2;
+}
+
+function drawFieldRow(ctx: RenderContext, label: string, value: string) {
+  ensureRoom(ctx, 14);
+  if (!ctx.page) {
+    return;
+  }
+  ctx.page.drawText(label, {
+    x: MARGIN_X,
+    y: ctx.y,
+    font: ctx.bold,
+    size: 9.4,
+    color: rgb(0.28, 0.36, 0.5),
+  });
+  ctx.page.drawText(value || "N/A", {
+    x: MARGIN_X + 150,
+    y: ctx.y,
+    font: ctx.regular,
+    size: 9.4,
+    color: rgb(0.14, 0.18, 0.26),
+  });
+  ctx.y -= 15;
+}
+
+async function loadLogoImage(doc: PDFDocument): Promise<PDFImage | null> {
+  try {
+    const logoPath = path.join(process.cwd(), "public", "newlogo.png");
+    const bytes = await fs.readFile(logoPath);
+    return await doc.embedPng(bytes);
+  } catch (error) {
+    console.error("service-contract-pdf: could not embed logo", error);
+    return null;
+  }
+}
+
+export async function buildServiceContractPdfBytes(
+  input: ServiceContractPdfInput
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const regular = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
+  const logo = await loadLogoImage(doc);
+
+  const ctx: RenderContext = {
+    doc,
+    regular,
+    bold,
+    logo,
+    page: null,
+    y: START_Y,
+    pageNumber: 0,
+    headerLabel: `${input.company.companyName} | CONTRATO DE SERVICIO`,
+    generatedAt: input.generatedAt,
+  };
+
+  createPage(ctx);
+
+  drawTitle(ctx, "Contrato de Servicio de Mantenimiento de Piscina");
+  drawParagraph(
+    ctx,
+    `Documento generado el ${input.generatedAt}. Este contrato es un borrador de trabajo y debe ser revisado por asesoria legal antes de usarse como documento vinculante.`,
+    9,
+    "muted"
+  );
+
+  drawSectionHeading(ctx, "Partes del contrato");
+  drawFieldRow(ctx, "Empresa:", input.company.companyName);
+  drawFieldRow(
+    ctx,
+    "Direccion:",
+    [input.company.companyAddressLine1, input.company.companyAddressLine2]
+      .filter(Boolean)
+      .join(", ")
+  );
+  drawFieldRow(ctx, "Contacto:", [input.company.companyEmail, input.company.companyPhone].filter(Boolean).join(" | "));
+  ctx.y -= 4;
+  drawFieldRow(ctx, "Cliente:", input.customerName);
+  drawFieldRow(ctx, "Correo:", input.customerEmail ?? "N/A");
+  drawFieldRow(ctx, "Telefono:", input.customerPhone ?? "N/A");
+  drawFieldRow(ctx, "Direccion del cliente:", input.customerAddress ?? "N/A");
+
+  drawSectionHeading(ctx, "Propiedad y alcance del servicio");
+  drawFieldRow(ctx, "Direccion de la propiedad:", input.propertyAddress ?? "N/A");
+  drawFieldRow(ctx, "Tipo de piscina:", input.poolType ?? "N/A");
+  drawFieldRow(ctx, "Paquete / plan contratado:", input.planName ?? "N/A");
+  drawParagraph(
+    ctx,
+    "El servicio incluye limpieza y mantenimiento rutinario de la piscina segun el paquete contratado, balance quimico del agua, revision de equipo principal (bomba, filtro) y reporte de condicion tras cada visita.",
+    9.4
+  );
+
+  drawSectionHeading(ctx, "Condiciones de pago");
+  drawFieldRow(
+    ctx,
+    "Monto del servicio:",
+    input.servicePrice != null ? `$${input.servicePrice.toFixed(2)} USD / mes` : "N/A"
+  );
+  drawFieldRow(ctx, "Fecha de inicio:", input.serviceStartDateLabel ?? "N/A");
+  drawFieldRow(ctx, "Dia de pago:", input.paymentDayLabel ?? "N/A");
+  drawFieldRow(ctx, "Metodo de pago:", input.paymentMethodLabel ?? "N/A");
+  drawFieldRow(ctx, "Plazo de pago:", input.paymentTypeLabel ?? "N/A");
+  drawParagraph(
+    ctx,
+    "El incumplimiento de pago dentro de los terminos acordados puede resultar en la suspension temporal del servicio hasta regularizar la cuenta.",
+    9.4
+  );
+
+  drawSectionHeading(ctx, "Duracion, cancelacion y responsabilidad");
+  drawBullet(
+    ctx,
+    "Este contrato se renueva automaticamente de forma mensual salvo notificacion de cancelacion por cualquiera de las partes."
+  );
+  drawBullet(
+    ctx,
+    "Las politicas completas de pago y cancelacion aplicables se encuentran en /legal/payment-cancellation-policy."
+  );
+  drawBullet(
+    ctx,
+    "El descargo de responsabilidad y limite de responsabilidad aplicable se encuentra en /legal/disclaimer-limitation-of-liability."
+  );
+  drawBullet(
+    ctx,
+    "Los terminos generales de servicio de la plataforma se encuentran en /legal/terms-of-service."
+  );
+
+  drawSectionHeading(ctx, "Firmas");
+  ensureRoom(ctx, 70);
+  if (ctx.page) {
+    const colWidth = (PAGE_WIDTH - MARGIN_X * 2 - 24) / 2;
+    const lineY = ctx.y - 40;
+    ctx.page.drawLine({
+      start: { x: MARGIN_X, y: lineY },
+      end: { x: MARGIN_X + colWidth, y: lineY },
+      thickness: 0.7,
+      color: rgb(0.4, 0.46, 0.56),
+    });
+    ctx.page.drawText("Representante AcostasPool", {
+      x: MARGIN_X,
+      y: lineY - 12,
+      font: ctx.regular,
+      size: 8.6,
+      color: rgb(0.38, 0.46, 0.58),
+    });
+    ctx.page.drawLine({
+      start: { x: MARGIN_X + colWidth + 24, y: lineY },
+      end: { x: MARGIN_X + colWidth * 2 + 24, y: lineY },
+      thickness: 0.7,
+      color: rgb(0.4, 0.46, 0.56),
+    });
+    ctx.page.drawText("Cliente", {
+      x: MARGIN_X + colWidth + 24,
+      y: lineY - 12,
+      font: ctx.regular,
+      size: 8.6,
+      color: rgb(0.38, 0.46, 0.58),
+    });
+    ctx.y = lineY - 32;
+  }
+
+  drawParagraph(
+    ctx,
+    "BORRADOR interno: contenido generado automaticamente para revision. No enviar al cliente ni usar como contrato vinculante sin revision legal previa.",
+    8.6,
+    "muted"
+  );
+
+  return doc.save();
+}

@@ -6,7 +6,6 @@ export const POOL_CONDITION_ITEM_KEYS = [
   "pump",
   "filter",
   "heater",
-  "skimmer",
   "ladder",
   "lighting",
   "tileLiner",

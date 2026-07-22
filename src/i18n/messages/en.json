@@ -1188,6 +1188,10 @@
           "noAddress": "No address on file.",
           "noWeekends": "No weekend booking"
         },
+        "profileFields": {
+          "name": "Name",
+          "weekends": "Weekends"
+        },
         "properties": {
           "empty": "No properties registered.",
           "nameFallback": "Property",
@@ -1264,7 +1268,6 @@
               "pump": "Pump",
               "filter": "Filter",
               "heater": "Heater",
-              "skimmer": "Skimmer",
               "ladder": "Ladder / handrails",
               "lighting": "Lighting",
               "tileLiner": "Tile / liner",
@@ -2144,7 +2147,19 @@
           "kicker": "Infrastructure",
           "title": "DB health endpoint",
           "subtitle": "Developer-only database connectivity status."
+        },
+        "serviceContract": {
+          "kicker": "Contracts",
+          "title": "Service contract",
+          "subtitle": "Generate a per-customer draft contract PDF with logo and financial data."
         }
+      },
+      "serviceContract": {
+        "title": "Service contract",
+        "subtitle": "Internal draft to review the contract layout with logo and customer data.",
+        "draftNotice": "Temporary developer-only tool. The generated PDF is a draft and needs legal review before use with real customers.",
+        "selectCustomer": "Customer",
+        "generate": "Generate PDF"
       },
       "audit": {
         "title": "Audit log",
