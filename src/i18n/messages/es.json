@@ -2159,6 +2159,7 @@
         "subtitle": "Borrador interno para revisar el formato del contrato con logo y datos del cliente.",
         "draftNotice": "Herramienta temporal solo para el desarrollador. El PDF generado es un borrador y requiere revision legal antes de usarse con clientes reales.",
         "selectCustomer": "Cliente",
+        "language": "Idioma del contrato",
         "generate": "Generar PDF"
       },
       "audit": {

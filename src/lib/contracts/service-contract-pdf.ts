@@ -2,6 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import { PDFDocument, PDFPage, PDFFont, PDFImage, StandardFonts, rgb } from "pdf-lib";
 import type { InvoiceTemplateConfig } from "@/lib/invoice-template";
+import {
+  SERVICE_CONTRACT_CONTENT,
+  type ServiceContractLocale,
+} from "@/lib/contracts/service-contract-content";
 
 const PAGE_WIDTH = 595.28; // A4 portrait
 const PAGE_HEIGHT = 841.89;
@@ -10,7 +14,14 @@ const TOP_HEADER_HEIGHT = 78;
 const START_Y = PAGE_HEIGHT - TOP_HEADER_HEIGHT - 24;
 const BOTTOM_SAFE = 56;
 
+export type PoolConditionRow = {
+  label: string;
+  status: "BROKEN" | "BAD" | "GOOD" | null;
+  statusLabel: string | null;
+};
+
 export type ServiceContractPdfInput = {
+  locale: ServiceContractLocale;
   customerName: string;
   customerEmail: string | null;
   customerPhone: string | null;
@@ -18,11 +29,13 @@ export type ServiceContractPdfInput = {
   propertyAddress: string | null;
   poolType: string | null;
   planName: string | null;
+  planServices: string[];
   servicePrice: number | null;
   paymentDayLabel: string | null;
   paymentTypeLabel: string | null;
   paymentMethodLabel: string | null;
   serviceStartDateLabel: string | null;
+  poolCondition: PoolConditionRow[];
   company: InvoiceTemplateConfig;
   generatedAt: string;
 };
@@ -37,6 +50,12 @@ type RenderContext = {
   pageNumber: number;
   headerLabel: string;
   generatedAt: string;
+};
+
+const CONDITION_DOT_COLOR: Record<string, ReturnType<typeof rgb>> = {
+  BROKEN: rgb(0.88, 0.24, 0.24),
+  BAD: rgb(0.93, 0.7, 0.13),
+  GOOD: rgb(0.13, 0.63, 0.39),
 };
 
 function wrapText(text: string, maxWidth: number, font: PDFFont, size: number) {
@@ -100,7 +119,7 @@ function drawHeader(ctx: RenderContext) {
     color: rgb(0.74, 0.83, 0.94),
   });
 
-  const pageLabel = `Pag ${pageNumber}`;
+  const pageLabel = `Page ${pageNumber}`;
   const labelWidth = regular.widthOfTextAtSize(pageLabel, 9);
   page.drawText(pageLabel, {
     x: PAGE_WIDTH - MARGIN_X - labelWidth,
@@ -231,6 +250,37 @@ function drawFieldRow(ctx: RenderContext, label: string, value: string) {
   ctx.y -= 15;
 }
 
+function drawConditionRow(ctx: RenderContext, row: PoolConditionRow) {
+  ensureRoom(ctx, 14);
+  if (!ctx.page) {
+    return;
+  }
+  ctx.page.drawText(row.label, {
+    x: MARGIN_X,
+    y: ctx.y,
+    font: ctx.regular,
+    size: 9.4,
+    color: rgb(0.14, 0.18, 0.26),
+  });
+  const dotX = MARGIN_X + 220;
+  if (row.status) {
+    ctx.page.drawCircle({
+      x: dotX,
+      y: ctx.y + 3,
+      size: 4,
+      color: CONDITION_DOT_COLOR[row.status],
+    });
+  }
+  ctx.page.drawText(row.statusLabel ?? "N/A", {
+    x: dotX + 12,
+    y: ctx.y,
+    font: ctx.regular,
+    size: 9.4,
+    color: rgb(0.14, 0.18, 0.26),
+  });
+  ctx.y -= 15;
+}
+
 async function loadLogoImage(doc: PDFDocument): Promise<PDFImage | null> {
   try {
     const logoPath = path.join(process.cwd(), "public", "newlogo.png");
@@ -245,6 +295,7 @@ async function loadLogoImage(doc: PDFDocument): Promise<PDFImage | null> {
 export async function buildServiceContractPdfBytes(
   input: ServiceContractPdfInput
 ): Promise<Uint8Array> {
+  const copy = SERVICE_CONTRACT_CONTENT[input.locale];
   const doc = await PDFDocument.create();
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -258,81 +309,76 @@ export async function buildServiceContractPdfBytes(
     page: null,
     y: START_Y,
     pageNumber: 0,
-    headerLabel: `${input.company.companyName} | CONTRATO DE SERVICIO`,
+    headerLabel: `${input.company.companyName} | ${copy.headerLabel}`,
     generatedAt: input.generatedAt,
   };
 
   createPage(ctx);
 
-  drawTitle(ctx, "Contrato de Servicio de Mantenimiento de Piscina");
-  drawParagraph(
-    ctx,
-    `Documento generado el ${input.generatedAt}. Este contrato es un borrador de trabajo y debe ser revisado por asesoria legal antes de usarse como documento vinculante.`,
-    9,
-    "muted"
-  );
+  drawTitle(ctx, copy.documentTitle);
+  drawParagraph(ctx, copy.draftIntro.replace("{{date}}", input.generatedAt), 9, "muted");
 
-  drawSectionHeading(ctx, "Partes del contrato");
-  drawFieldRow(ctx, "Empresa:", input.company.companyName);
+  drawSectionHeading(ctx, copy.sections.parties);
+  drawFieldRow(ctx, copy.fields.company, input.company.companyName);
   drawFieldRow(
     ctx,
-    "Direccion:",
+    copy.fields.address,
     [input.company.companyAddressLine1, input.company.companyAddressLine2]
       .filter(Boolean)
       .join(", ")
   );
-  drawFieldRow(ctx, "Contacto:", [input.company.companyEmail, input.company.companyPhone].filter(Boolean).join(" | "));
-  ctx.y -= 4;
-  drawFieldRow(ctx, "Cliente:", input.customerName);
-  drawFieldRow(ctx, "Correo:", input.customerEmail ?? "N/A");
-  drawFieldRow(ctx, "Telefono:", input.customerPhone ?? "N/A");
-  drawFieldRow(ctx, "Direccion del cliente:", input.customerAddress ?? "N/A");
-
-  drawSectionHeading(ctx, "Propiedad y alcance del servicio");
-  drawFieldRow(ctx, "Direccion de la propiedad:", input.propertyAddress ?? "N/A");
-  drawFieldRow(ctx, "Tipo de piscina:", input.poolType ?? "N/A");
-  drawFieldRow(ctx, "Paquete / plan contratado:", input.planName ?? "N/A");
-  drawParagraph(
-    ctx,
-    "El servicio incluye limpieza y mantenimiento rutinario de la piscina segun el paquete contratado, balance quimico del agua, revision de equipo principal (bomba, filtro) y reporte de condicion tras cada visita.",
-    9.4
-  );
-
-  drawSectionHeading(ctx, "Condiciones de pago");
   drawFieldRow(
     ctx,
-    "Monto del servicio:",
-    input.servicePrice != null ? `$${input.servicePrice.toFixed(2)} USD / mes` : "N/A"
+    copy.fields.contact,
+    [input.company.companyEmail, input.company.companyPhone].filter(Boolean).join(" | ")
   );
-  drawFieldRow(ctx, "Fecha de inicio:", input.serviceStartDateLabel ?? "N/A");
-  drawFieldRow(ctx, "Dia de pago:", input.paymentDayLabel ?? "N/A");
-  drawFieldRow(ctx, "Metodo de pago:", input.paymentMethodLabel ?? "N/A");
-  drawFieldRow(ctx, "Plazo de pago:", input.paymentTypeLabel ?? "N/A");
-  drawParagraph(
-    ctx,
-    "El incumplimiento de pago dentro de los terminos acordados puede resultar en la suspension temporal del servicio hasta regularizar la cuenta.",
-    9.4
-  );
+  ctx.y -= 4;
+  drawFieldRow(ctx, copy.fields.client, input.customerName);
+  drawFieldRow(ctx, copy.fields.email, input.customerEmail ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.phone, input.customerPhone ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.clientAddress, input.customerAddress ?? copy.notAvailable);
 
-  drawSectionHeading(ctx, "Duracion, cancelacion y responsabilidad");
-  drawBullet(
-    ctx,
-    "Este contrato se renueva automaticamente de forma mensual salvo notificacion de cancelacion por cualquiera de las partes."
-  );
-  drawBullet(
-    ctx,
-    "Las politicas completas de pago y cancelacion aplicables se encuentran en /legal/payment-cancellation-policy."
-  );
-  drawBullet(
-    ctx,
-    "El descargo de responsabilidad y limite de responsabilidad aplicable se encuentra en /legal/disclaimer-limitation-of-liability."
-  );
-  drawBullet(
-    ctx,
-    "Los terminos generales de servicio de la plataforma se encuentran en /legal/terms-of-service."
-  );
+  drawSectionHeading(ctx, copy.sections.propertyAndScope);
+  drawFieldRow(ctx, copy.fields.propertyAddress, input.propertyAddress ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.poolType, input.poolType ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.plan, input.planName ?? copy.notAvailable);
+  drawParagraph(ctx, copy.scopeParagraph, 9.4);
+  if (input.planServices.length > 0) {
+    drawParagraph(ctx, copy.planServicesIntro, 9.4, "muted");
+    for (const service of input.planServices) {
+      drawBullet(ctx, service);
+    }
+  } else {
+    drawParagraph(ctx, copy.noPlanServices, 9, "muted");
+  }
 
-  drawSectionHeading(ctx, "Firmas");
+  drawSectionHeading(ctx, copy.sections.paymentTerms);
+  drawFieldRow(
+    ctx,
+    copy.fields.servicePrice,
+    input.servicePrice != null ? `$${input.servicePrice.toFixed(2)} USD / mo` : copy.notAvailable
+  );
+  drawFieldRow(ctx, copy.fields.startDate, input.serviceStartDateLabel ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.paymentDay, input.paymentDayLabel ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.paymentMethod, input.paymentMethodLabel ?? copy.notAvailable);
+  drawFieldRow(ctx, copy.fields.paymentType, input.paymentTypeLabel ?? copy.notAvailable);
+  drawParagraph(ctx, copy.paymentOverdueNote, 9.4);
+
+  drawSectionHeading(ctx, copy.sections.poolCondition);
+  if (input.poolCondition.length > 0) {
+    for (const row of input.poolCondition) {
+      drawConditionRow(ctx, row);
+    }
+  } else {
+    drawParagraph(ctx, copy.poolConditionEmpty, 9, "muted");
+  }
+
+  drawSectionHeading(ctx, copy.sections.durationAndLiability);
+  for (const bullet of copy.durationBullets) {
+    drawBullet(ctx, bullet);
+  }
+
+  drawSectionHeading(ctx, copy.sections.signatures);
   ensureRoom(ctx, 70);
   if (ctx.page) {
     const colWidth = (PAGE_WIDTH - MARGIN_X * 2 - 24) / 2;
@@ -343,7 +389,7 @@ export async function buildServiceContractPdfBytes(
       thickness: 0.7,
       color: rgb(0.4, 0.46, 0.56),
     });
-    ctx.page.drawText("Representante AcostasPool", {
+    ctx.page.drawText(copy.signatureCompany, {
       x: MARGIN_X,
       y: lineY - 12,
       font: ctx.regular,
@@ -356,7 +402,7 @@ export async function buildServiceContractPdfBytes(
       thickness: 0.7,
       color: rgb(0.4, 0.46, 0.56),
     });
-    ctx.page.drawText("Cliente", {
+    ctx.page.drawText(copy.signatureClient, {
       x: MARGIN_X + colWidth + 24,
       y: lineY - 12,
       font: ctx.regular,
@@ -366,12 +412,7 @@ export async function buildServiceContractPdfBytes(
     ctx.y = lineY - 32;
   }
 
-  drawParagraph(
-    ctx,
-    "BORRADOR interno: contenido generado automaticamente para revision. No enviar al cliente ni usar como contrato vinculante sin revision legal previa.",
-    8.6,
-    "muted"
-  );
+  drawParagraph(ctx, copy.draftFooter, 8.6, "muted");
 
   return doc.save();
 }

@@ -49,6 +49,22 @@ export default async function ServiceContractPage() {
             </select>
           </div>
 
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              {t("admin.developer.serviceContract.language")}
+            </label>
+            <div className="mt-2 flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" name="locale" value="en" defaultChecked className="h-4 w-4" />
+                {t("common.language.en")}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" name="locale" value="es" className="h-4 w-4" />
+                {t("common.language.es")}
+              </label>
+            </div>
+          </div>
+
           <button
             type="submit"
             className="app-button-primary px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.2em]"

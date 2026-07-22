@@ -6,20 +6,10 @@ import { buildServiceContractPdfBytes } from "@/lib/contracts/service-contract-p
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { formatUsPhone } from "@/lib/phones";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
-
-const PAYMENT_METHOD_LABELS_ES: Record<string, string> = {
-  CASH: "Efectivo",
-  ZELLE: "Zelle",
-  CARD: "Tarjeta",
-  CHECK: "Cheque",
-  TRANSFER: "Transferencia",
-  OTHER: "Otro",
-};
-
-const PAYMENT_TYPE_LABELS_ES: Record<string, string> = {
-  TO_WORK: "Mes por trabajar",
-  WORKED: "Mes trabajado",
-};
+import { normalizeChecklist } from "@/lib/service-tiers";
+import { readPoolCondition } from "@/lib/customers/pool-condition";
+import { normalizeLocale } from "@/i18n/config";
+import { getTranslations } from "@/i18n/server";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -29,6 +19,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const customerId = searchParams.get("customerId") ?? "";
+  const locale = normalizeLocale(searchParams.get("locale"));
   if (!customerId) {
     return NextResponse.json({ error: "customerId requerido" }, { status: 400 });
   }
@@ -37,7 +28,7 @@ export async function GET(request: Request) {
     where: { id: customerId },
     include: {
       properties: { orderBy: { createdAt: "asc" }, take: 1 },
-      contractedServiceTier: { select: { name: true } },
+      contractedServiceTier: { select: { name: true, checklist: true } },
     },
   });
 
@@ -46,10 +37,26 @@ export async function GET(request: Request) {
   }
 
   try {
-    const company = await getInvoiceTemplateConfig();
+    const [company, t] = await Promise.all([
+      getInvoiceTemplateConfig(),
+      getTranslations(locale),
+    ]);
     const primaryProperty = customer.properties[0] ?? null;
 
+    const planServices = normalizeChecklist(customer.contractedServiceTier?.checklist).map(
+      (item) => item.label
+    );
+
+    const poolCondition = readPoolCondition(primaryProperty?.poolCondition).map((entry) => ({
+      label: t(`admin.customers.detail.properties.condition.items.${entry.key}`),
+      status: entry.status,
+      statusLabel: entry.status
+        ? t(`admin.customers.detail.properties.condition.status.${entry.status}`)
+        : null,
+    }));
+
     const pdfBytes = await buildServiceContractPdfBytes({
+      locale,
       customerName: formatCustomerName(customer),
       customerEmail: customer.email || null,
       customerPhone: formatUsPhone(customer.telefono) || null,
@@ -57,21 +64,27 @@ export async function GET(request: Request) {
       propertyAddress: primaryProperty?.address ?? null,
       poolType: primaryProperty?.poolType ?? null,
       planName: customer.contractedServiceTier?.name ?? null,
+      planServices,
       servicePrice:
         primaryProperty?.servicePrice != null ? Number(primaryProperty.servicePrice) : null,
       paymentDayLabel:
-        primaryProperty?.paymentDay != null ? `Dia ${primaryProperty.paymentDay} de cada mes` : null,
+        primaryProperty?.paymentDay != null
+          ? t("admin.invoices.servicePayment.dayOfMonth", {
+              day: String(primaryProperty.paymentDay),
+            })
+          : null,
       paymentTypeLabel: primaryProperty?.paymentType
-        ? PAYMENT_TYPE_LABELS_ES[primaryProperty.paymentType] ?? primaryProperty.paymentType
+        ? t(`admin.invoices.servicePayment.paymentTypes.${primaryProperty.paymentType}`)
         : null,
       paymentMethodLabel: customer.paymentMethod
-        ? PAYMENT_METHOD_LABELS_ES[customer.paymentMethod] ?? customer.paymentMethod
+        ? t(`admin.customers.detail.financials.paymentMethods.${customer.paymentMethod}`)
         : null,
       serviceStartDateLabel: primaryProperty?.serviceStartDate
-        ? formatInBusinessTimeZone(primaryProperty.serviceStartDate, "es", { dateStyle: "long" })
+        ? formatInBusinessTimeZone(primaryProperty.serviceStartDate, locale, { dateStyle: "long" })
         : null,
+      poolCondition,
       company,
-      generatedAt: formatInBusinessTimeZone(new Date(), "es", { dateStyle: "long" }),
+      generatedAt: formatInBusinessTimeZone(new Date(), locale, { dateStyle: "long" }),
     });
 
     const fileSafeName = formatCustomerName(customer)

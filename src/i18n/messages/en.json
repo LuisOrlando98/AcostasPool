@@ -2159,6 +2159,7 @@
         "subtitle": "Internal draft to review the contract layout with logo and customer data.",
         "draftNotice": "Temporary developer-only tool. The generated PDF is a draft and needs legal review before use with real customers.",
         "selectCustomer": "Customer",
+        "language": "Contract language",
         "generate": "Generate PDF"
       },
       "audit": {
