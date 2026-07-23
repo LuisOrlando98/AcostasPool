@@ -14,6 +14,11 @@ const TOP_HEADER_HEIGHT = 78;
 const START_Y = PAGE_HEIGHT - TOP_HEADER_HEIGHT - 24;
 const BOTTOM_SAFE = 56;
 
+// The contract's Parties section must state the exact registered legal
+// entity, independent of whatever short brand name is configured for
+// invoices/settings.
+const COMPANY_LEGAL_NAME = "Acosta's Pool LLC";
+
 export type PoolConditionRow = {
   label: string;
   status: "BROKEN" | "BAD" | "GOOD" | null;
@@ -319,7 +324,7 @@ export async function buildServiceContractPdfBytes(
   drawParagraph(ctx, copy.draftIntro.replace("{{date}}", input.generatedAt), 9, "muted");
 
   drawSectionHeading(ctx, copy.sections.parties);
-  drawFieldRow(ctx, copy.fields.company, input.company.companyName);
+  drawFieldRow(ctx, copy.fields.company, COMPANY_LEGAL_NAME);
   drawFieldRow(
     ctx,
     copy.fields.address,
@@ -343,14 +348,6 @@ export async function buildServiceContractPdfBytes(
   drawFieldRow(ctx, copy.fields.poolType, input.poolType ?? copy.notAvailable);
   drawFieldRow(ctx, copy.fields.plan, input.planName ?? copy.notAvailable);
   drawParagraph(ctx, copy.scopeParagraph, 9.4);
-  if (input.planServices.length > 0) {
-    drawParagraph(ctx, copy.planServicesIntro, 9.4, "muted");
-    for (const service of input.planServices) {
-      drawBullet(ctx, service);
-    }
-  } else {
-    drawParagraph(ctx, copy.noPlanServices, 9, "muted");
-  }
 
   drawSectionHeading(ctx, copy.sections.paymentTerms);
   drawFieldRow(
