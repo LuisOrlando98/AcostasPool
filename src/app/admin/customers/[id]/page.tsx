@@ -1425,6 +1425,12 @@ export default async function CustomerDetailPage({
   const contractHistory = customer.serviceContracts.slice(1, 6);
   const contractPdfHref = (contractId: string) =>
     `/api/admin/customers/${customer.id}/contracts/${contractId}/pdf`;
+  const contractStatusBadgeClass = (status: string) =>
+    status === "SIGNED"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : status === "SENT"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-slate-200 bg-slate-100 text-slate-700";
 
   return (
     <AppShell
@@ -1835,13 +1841,9 @@ export default async function CustomerDetailPage({
               headerExtra={
                 latestContract ? (
                   <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
-                      latestContract.status === "SIGNED"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : latestContract.status === "SENT"
-                          ? "border-amber-200 bg-amber-50 text-amber-700"
-                          : "border-slate-200 bg-slate-100 text-slate-700"
-                    }`}
+                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${contractStatusBadgeClass(
+                      latestContract.status
+                    )}`}
                   >
                     {t(`admin.customers.detail.contract.status.${latestContract.status}`)}
                   </span>
@@ -1964,30 +1966,43 @@ export default async function CustomerDetailPage({
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                         {t("admin.customers.detail.contract.history")}
                       </p>
-                      <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                      <ul className="mt-2 space-y-2">
                         {contractHistory.map((historyContract) => (
-                          <li key={historyContract.id} className="flex items-center gap-2">
-                            <span>
-                              {formatInBusinessTimeZone(historyContract.periodMonth, locale, {
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </span>
-                            <span className="text-slate-400">
-                              {t(
-                                `admin.customers.detail.contract.status.${historyContract.status}`
-                              )}
-                            </span>
+                          <li
+                            key={historyContract.id}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5"
+                          >
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <span className="text-sm font-medium text-slate-700">
+                                {formatInBusinessTimeZone(historyContract.periodMonth, locale, {
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </span>
+                              <span
+                                className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${contractStatusBadgeClass(
+                                  historyContract.status
+                                )}`}
+                              >
+                                {t(
+                                  `admin.customers.detail.contract.status.${historyContract.status}`
+                                )}
+                              </span>
+                            </div>
                             {historyContract.pdfUrl ? (
                               <a
                                 href={contractPdfHref(historyContract.id)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="text-sky-700 hover:underline"
+                                className="text-xs font-semibold text-sky-700 hover:underline"
                               >
-                                PDF
+                                {t("admin.customers.detail.contract.viewPdf")}
                               </a>
-                            ) : null}
+                            ) : (
+                              <span className="text-xs text-slate-400">
+                                {t("common.labels.notAvailable")}
+                              </span>
+                            )}
                           </li>
                         ))}
                       </ul>

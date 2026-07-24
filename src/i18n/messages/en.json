@@ -1919,10 +1919,13 @@
         "current": "Current signature",
         "clear": "Clear signature",
         "save": "Save signature",
+        "remove": "Remove signature",
         "missing": "Draw a signature before saving.",
         "feedback": {
           "saved": "Signature saved successfully.",
-          "saveFailed": "Could not save the signature: {{error}}"
+          "saveFailed": "Could not save the signature: {{error}}",
+          "removed": "Signature removed.",
+          "removeFailed": "Could not remove the signature: {{error}}"
         }
       },
       "landing": {

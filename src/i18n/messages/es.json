@@ -1919,10 +1919,13 @@
         "current": "Firma actual",
         "clear": "Borrar firma",
         "save": "Guardar firma",
+        "remove": "Eliminar firma",
         "missing": "Dibuja una firma antes de guardar.",
         "feedback": {
           "saved": "Firma guardada correctamente.",
-          "saveFailed": "No se pudo guardar la firma: {{error}}"
+          "saveFailed": "No se pudo guardar la firma: {{error}}",
+          "removed": "Firma eliminada.",
+          "removeFailed": "No se pudo eliminar la firma: {{error}}"
         }
       },
       "landing": {

@@ -42,7 +42,7 @@ import {
   saveSiteSocialLinks,
 } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import { deleteStoredAsset, storePublicAsset } from "@/lib/storage/object-store";
 import { buildCompanySignatureAssetPath } from "@/lib/storage/paths";
 import CompanySignatureForm from "@/components/settings/CompanySignatureForm";
 
@@ -248,6 +248,25 @@ async function saveCompanySignature(formData: FormData) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("settings: failed to save company signature", error);
     redirectPath = settingsErrorPath("signature", "signature-save-failed", message);
+  }
+
+  revalidatePath("/admin/settings");
+  redirect(redirectPath);
+}
+
+async function deleteCompanySignature() {
+  "use server";
+  await requireRole("ADMIN");
+
+  let redirectPath: string;
+  try {
+    await deleteStoredAsset(buildCompanySignatureAssetPath());
+    await saveCompanySignatureUrl(null);
+    redirectPath = settingsFeedbackPath("signature", "signature-removed");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("settings: failed to remove company signature", error);
+    redirectPath = settingsErrorPath("signature", "signature-remove-failed", message);
   }
 
   revalidatePath("/admin/settings");
@@ -1405,6 +1424,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 })}
                 dismissLabel={t("common.actions.close")}
               />
+            ) : feedback === "signature-removed" ? (
+              <ActionFeedbackToast
+                message={t("admin.settings.signature.feedback.removed")}
+                dismissLabel={t("common.actions.close")}
+              />
+            ) : feedback === "signature-remove-failed" ? (
+              <ActionFeedbackToast
+                tone="error"
+                message={t("admin.settings.signature.feedback.removeFailed", {
+                  error: signatureError || t("common.labels.notAvailable"),
+                })}
+                dismissLabel={t("common.actions.close")}
+              />
             ) : null}
             <h2 className="text-lg font-semibold">{t("admin.settings.signature.title")}</h2>
             <p className="mt-2 text-sm text-slate-600">
@@ -1412,16 +1444,26 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             </p>
 
             {companySignatureUrl ? (
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {t("admin.settings.signature.current")}
-                </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/api/admin/settings/company-signature"
-                  alt={t("admin.settings.signature.current")}
-                  className="mt-2 h-20 w-auto rounded-lg border border-slate-200 bg-white p-2"
-                />
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("admin.settings.signature.current")}
+                  </p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/api/admin/settings/company-signature"
+                    alt={t("admin.settings.signature.current")}
+                    className="mt-2 h-20 w-auto rounded-lg border border-slate-200 bg-white p-2"
+                  />
+                </div>
+                <form action={deleteCompanySignature}>
+                  <button
+                    type="submit"
+                    className="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-rose-600 transition hover:border-rose-300 hover:bg-rose-50"
+                  >
+                    {t("admin.settings.signature.remove")}
+                  </button>
+                </form>
               </div>
             ) : null}
 
