@@ -139,3 +139,23 @@ export function buildCustomerDocumentAssetPath(
   const fileName = buildFileName(originalName, now);
   return `uploads/customers/${safeCustomer}/documents/${toYearMonth(now)}/${fileName}`;
 }
+
+export function buildContractPdfAssetPath(customerId: string, contractId: string) {
+  const safeCustomer = sanitizeSegment(customerId, "customer");
+  const safeContract = sanitizeSegment(contractId, "contract");
+  return `contracts/${safeCustomer}/${safeContract}.pdf`;
+}
+
+export function buildContractSignatureAssetPath(
+  customerId: string,
+  contractId: string,
+  who: "client" | "company"
+) {
+  const safeCustomer = sanitizeSegment(customerId, "customer");
+  const safeContract = sanitizeSegment(contractId, "contract");
+  return `contracts/${safeCustomer}/${safeContract}-${who}-signature.png`;
+}
+
+export function buildCompanySignatureAssetPath() {
+  return "settings/company-signature.png";
+}

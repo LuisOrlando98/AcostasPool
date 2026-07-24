@@ -177,6 +177,7 @@ model Customer {
   notifications Notification[]
   servicePlans  ServicePlan[]
   emailLogs     EmailLog[]
+  serviceContracts ServiceContract[]
 }
 
 model Property {
@@ -214,6 +215,50 @@ model Property {
   customer Customer @relation(fields: [customerId], references: [id])
   jobs     Job[]
   servicePlans ServicePlan[]
+  serviceContracts ServiceContract[]
+}
+
+model ServiceContract {
+  id            String   @id @default(cuid())
+  customerId    String
+  propertyId    String?
+  locale        String
+  status        String   @default("DRAFT")
+  periodMonth   DateTime
+
+  customerNameSnapshot    String
+  customerEmailSnapshot   String?
+  customerPhoneSnapshot   String?
+  customerAddressSnapshot String?
+  propertyAddressSnapshot String?
+  poolTypeSnapshot        String?
+  planNameSnapshot        String?
+  servicePriceSnapshot    Decimal? @db.Decimal(10, 2)
+  paymentDaySnapshot      Int?
+  paymentMethodSnapshot   String?
+  paymentTypeSnapshot     String?
+  poolConditionSnapshot   Json?
+
+  companySignatureUrl String?
+  pdfUrl              String?
+
+  sentAt DateTime?
+
+  clientSignatureUrl     String?
+  clientSignedAt         DateTime?
+  clientSignedVia        String?
+  clientSignedByUserId   String?
+  clientSignedIp         String?
+  clientSignedUserAgent  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer Customer  @relation(fields: [customerId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+
+  @@index([customerId, periodMonth])
+  @@index([status])
 }
 
 model Job {
@@ -509,6 +554,7 @@ model SiteSettings {
   invoiceTemplate  Json?
   routeAssistantConfig Json?
   complianceContent Json?
+  companySignatureUrl String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

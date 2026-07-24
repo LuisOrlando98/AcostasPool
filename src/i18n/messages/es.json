@@ -172,6 +172,7 @@
       "invoices": "Facturas",
       "profile": "Perfil",
       "properties": "Mis propiedades",
+      "contract": "Contrato",
       "website": "Visitar nuestro sitio web",
       "otherServices": "Otros servicios",
       "comingSoon": "Proximamente"
@@ -1104,6 +1105,9 @@
         "deleted": "Cliente eliminado correctamente.",
         "saved": "Cambios del cliente guardados.",
         "financialsSaved": "Informacion financiera guardada.",
+        "contractGenerated": "Contrato generado correctamente.",
+        "contractSent": "Contrato enviado al cliente.",
+        "contractSigned": "Contrato firmado correctamente.",
         "propertyCreated": "Propiedad creada correctamente.",
         "propertySaved": "Propiedad actualizada correctamente.",
         "propertyDeleted": "Propiedad eliminada correctamente.",
@@ -1174,6 +1178,8 @@
           "propertiesSubtitle": "Datos completos de cada piscina.",
           "financialsTitle": "Informacion financiera",
           "financialsSubtitle": "Plan, precio y forma de pago del cliente.",
+          "contractTitle": "Contrato de servicio",
+          "contractSubtitle": "Genera, envia y firma el contrato de servicio del cliente.",
           "plansTitle": "Planes recurrentes",
           "plansSubtitle": "Planes semanales, bisemanales o mensuales.",
           "jobsTitle": "Trabajos"
@@ -1299,6 +1305,33 @@
           "primaryPropertyHint": "Precio y fecha de pago de la propiedad principal: {{address}}.",
           "multiPropertyHint": "Este cliente tiene varias propiedades; el precio y la fecha de pago mostrados aqui son los de su propiedad principal. Ajusta el resto desde cada propiedad en la seccion de Propiedades.",
           "noPropertyHint": "Agrega una propiedad para registrar precio y fecha de pago."
+        },
+        "contract": {
+          "noContract": "Este cliente todavia no tiene un contrato de servicio generado.",
+          "generate": "Generar contrato",
+          "generating": "Generando...",
+          "generateNew": "Generar un contrato nuevo",
+          "period": "Periodo: {{month}}",
+          "viewPdf": "Ver PDF",
+          "send": "Enviar al cliente",
+          "sending": "Enviando...",
+          "inPersonTitle": "Firmar en persona",
+          "inPersonHint": "Entrega el dispositivo al cliente para que firme aqui mismo con el dedo o el mouse.",
+          "clearSignature": "Borrar firma",
+          "signAction": "Firmar",
+          "signing": "Firmando...",
+          "missingSignature": "Dibuja tu firma antes de continuar.",
+          "signedOn": "Firmado el {{date}}",
+          "history": "Historial de contratos",
+          "status": {
+            "DRAFT": "Borrador",
+            "SENT": "Enviado, esperando firma",
+            "SIGNED": "Firmado"
+          },
+          "signedVia": {
+            "PORTAL": "Firmado desde el portal del cliente",
+            "IN_PERSON_ADMIN": "Firmado en persona"
+          }
         },
         "plans": {
           "empty": "No hay planes recurrentes activos.",
@@ -1856,7 +1889,19 @@
         "notifications": {
           "label": "Notificaciones",
           "hint": "Reglas y estado"
+        },
+        "signature": {
+          "label": "Firma",
+          "hint": "Firma del presidente"
         }
+      },
+      "signature": {
+        "title": "Firma de la empresa",
+        "subtitle": "Dibuja la firma del presidente de Acosta's Pool. Se usara automaticamente en todos los contratos de servicio.",
+        "current": "Firma actual",
+        "clear": "Borrar firma",
+        "save": "Guardar firma",
+        "missing": "Dibuja una firma antes de guardar."
       },
       "landing": {
         "title": "Configuracion del landing",
@@ -2148,20 +2193,7 @@
           "kicker": "Infraestructura",
           "title": "DB health endpoint",
           "subtitle": "Solo developer: estado de conectividad de base de datos."
-        },
-        "serviceContract": {
-          "kicker": "Contratos",
-          "title": "Contrato de servicio",
-          "subtitle": "Genera un borrador de contrato en PDF por cliente, con logo y datos financieros."
         }
-      },
-      "serviceContract": {
-        "title": "Contrato de servicio",
-        "subtitle": "Borrador interno para revisar el formato del contrato con logo y datos del cliente.",
-        "draftNotice": "Herramienta temporal solo para el desarrollador. El PDF generado es un borrador y requiere revision legal antes de usarse con clientes reales.",
-        "selectCustomer": "Cliente",
-        "language": "Idioma del contrato",
-        "generate": "Generar PDF"
       },
       "audit": {
         "title": "Audit log",
@@ -2542,6 +2574,21 @@
         "empty": "No hay facturas aun.",
         "viewPdf": "Ver PDF"
       }
+    },
+    "contract": {
+      "title": "Contrato de servicio",
+      "subtitle": "Revisa y firma tu contrato de servicio.",
+      "pending": {
+        "title": "Contrato pendiente de firma",
+        "subtitle": "Revisa los terminos antes de firmar."
+      },
+      "viewFullContract": "Ver contrato completo (PDF)",
+      "signHere": "Firma aqui",
+      "signHint": "Usa el dedo en tu telefono o el mouse en tu computadora para firmar.",
+      "signAction": "Firmar contrato",
+      "signError": "No se pudo guardar la firma. Intenta de nuevo.",
+      "noPending": "No tienes contratos pendientes de firma en este momento.",
+      "history": "Historial de contratos"
     }
   },
   "tech": {

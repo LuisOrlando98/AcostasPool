@@ -9,6 +9,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "CUSTOMER_JOB_COMPLETED",
   "TECH_DAILY_DIGEST",
   "TECH_CHANGE_DIGEST",
+  "CONTRACT_READY_TO_SIGN",
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
@@ -433,6 +434,37 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
         "<li>Reprogramado: Cliente 1 - 123 Palm Ave (09:00 AM -> 11:00 AM)</li><li>Trabajo asignado: Cliente 3 - 44 Lake Rd (01:30 PM)</li>",
     },
   },
+  CONTRACT_READY_TO_SIGN: {
+    label: "Contract ready to sign",
+    description: "Sent to a customer when their service contract is ready for their signature.",
+    placeholders: ["{{customer_name}}", "{{customer_name_html}}", "{{contract_link}}"],
+    defaults: {
+      subject: "Your AcostasPool service contract is ready to sign",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your pool service contract is ready for your review and signature.",
+        "Open it here:",
+        "{{contract_link}}",
+        "",
+        "You can sign it with your finger on your phone or with your mouse on a computer.",
+        "If you have any questions, reply to this message and our team will assist you.",
+      ].join("\n"),
+      html: [
+        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+        '<p style="margin:0 0 14px;color:#0b1f35;">Hi {{customer_name_html}},</p>',
+        '<p style="margin:0 0 14px;color:#334155;">Your pool service contract is ready for your review and signature.</p>',
+        '<p style="margin:0 0 14px;"><a href="{{contract_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Review and sign</a></p>',
+        '<p style="margin:0;color:#64748b;font-size:13px;">You can sign with your finger on your phone or your mouse on a computer.</p>',
+        "</div>",
+      ].join(""),
+    },
+    previewValues: {
+      customer_name: "Alex Rivera",
+      customer_name_html: "Alex Rivera",
+      contract_link: "https://app.example.com/client/contract",
+    },
+  },
 };
 
 const EMAIL_TEMPLATE_LOCALES: readonly EmailTemplateLocale[] = ["EN", "ES"];
@@ -598,6 +630,34 @@ const LOCALIZED_EMAIL_TEMPLATE_DEFAULTS: LocalizedEmailTemplateDefaultsInput = {
       ].join("\n"),
     },
   },
+  CONTRACT_READY_TO_SIGN: {
+    EN: {
+      subject: "Your AcostasPool service contract is ready to sign",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Your pool service contract is ready for your review and signature.",
+        "Open it here:",
+        "{{contract_link}}",
+        "",
+        "You can sign it with your finger on your phone or with your mouse on a computer.",
+        "If you have any questions, reply to this message and our team will assist you.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Tu contrato de servicio de AcostasPool esta listo para firmar",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Tu contrato de servicio de piscina esta listo para tu revision y firma.",
+        "Abrelo aqui:",
+        "{{contract_link}}",
+        "",
+        "Puedes firmarlo con el dedo desde tu telefono o con el mouse desde tu computadora.",
+        "Si tienes dudas, responde este mensaje y nuestro equipo te apoyara.",
+      ].join("\n"),
+    },
+  },
 };
 
 const SPANISH_HINT_PATTERN =
@@ -647,6 +707,10 @@ function getTemplateButtonHtml(templateId: EmailTemplateId, token: string) {
     return buildEmailButtonHtml(token, "Reset password", "#0ea5e9");
   }
 
+  if (token === "{{contract_link}}") {
+    return buildEmailButtonHtml(token, "Review and sign", "#18b978");
+  }
+
   return "";
 }
 
@@ -674,7 +738,11 @@ function buildEmailBodyBlocks(templateId: EmailTemplateId, text: string) {
       continue;
     }
 
-    if (trimmed === "{{invite_link}}" || trimmed === "{{reset_link}}") {
+    if (
+      trimmed === "{{invite_link}}" ||
+      trimmed === "{{reset_link}}" ||
+      trimmed === "{{contract_link}}"
+    ) {
       flushList();
       blocks.push(getTemplateButtonHtml(templateId, trimmed));
       continue;

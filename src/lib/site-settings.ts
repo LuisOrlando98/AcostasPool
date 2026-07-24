@@ -75,6 +75,7 @@ type SiteSettingsData = {
   invoiceTemplate?: Prisma.InputJsonValue | null;
   routeAssistantConfig?: Prisma.InputJsonValue | null;
   complianceContent?: Prisma.InputJsonValue | null;
+  companySignatureUrl?: string | null;
 };
 
 function toNullableJsonInput(value: Prisma.InputJsonValue | null | undefined) {
@@ -154,6 +155,7 @@ const getSiteSettingsCached = unstable_cache(
         invoiceTemplate: true,
         routeAssistantConfig: true,
         complianceContent: true,
+        companySignatureUrl: true,
       },
     });
   },
@@ -284,6 +286,15 @@ export async function saveInvoiceTemplateConfig(template: SiteInvoiceTemplateCon
   return saveSiteSettings({
     invoiceTemplate: normalized as Prisma.InputJsonValue,
   });
+}
+
+export async function getCompanySignatureUrl(): Promise<string | null> {
+  const settings = await getSiteSettingsCached();
+  return settings?.companySignatureUrl ?? null;
+}
+
+export async function saveCompanySignatureUrl(url: string | null) {
+  return saveSiteSettings({ companySignatureUrl: url });
 }
 
 export async function getRouteAssistantConfig(): Promise<RouteAssistantConfig> {

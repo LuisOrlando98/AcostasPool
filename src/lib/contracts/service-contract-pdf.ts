@@ -43,6 +43,9 @@ export type ServiceContractPdfInput = {
   poolCondition: PoolConditionRow[];
   company: InvoiceTemplateConfig;
   generatedAt: string;
+  companySignatureImageBytes?: Uint8Array | null;
+  clientSignatureImageBytes?: Uint8Array | null;
+  clientSignedAtLabel?: string | null;
 };
 
 type RenderContext = {
@@ -321,7 +324,7 @@ export async function buildServiceContractPdfBytes(
   createPage(ctx);
 
   drawTitle(ctx, copy.documentTitle);
-  drawParagraph(ctx, copy.draftIntro.replace("{{date}}", input.generatedAt), 9, "muted");
+  drawParagraph(ctx, copy.intro.replace("{{date}}", input.generatedAt), 9, "muted");
 
   drawSectionHeading(ctx, copy.sections.parties);
   drawFieldRow(ctx, copy.fields.company, COMPANY_LEGAL_NAME);
@@ -376,40 +379,82 @@ export async function buildServiceContractPdfBytes(
   }
 
   drawSectionHeading(ctx, copy.sections.signatures);
-  ensureRoom(ctx, 70);
+  ensureRoom(ctx, 96);
   if (ctx.page) {
     const colWidth = (PAGE_WIDTH - MARGIN_X * 2 - 24) / 2;
-    const lineY = ctx.y - 40;
+    const imageMaxHeight = 40;
+    const lineY = ctx.y - imageMaxHeight - 8;
+    const companyX = MARGIN_X;
+    const clientX = MARGIN_X + colWidth + 24;
+
+    const companySig = input.companySignatureImageBytes
+      ? await doc.embedPng(input.companySignatureImageBytes).catch(() => null)
+      : null;
+    if (companySig) {
+      const imgWidth = Math.min(colWidth, (companySig.width / companySig.height) * imageMaxHeight);
+      ctx.page.drawImage(companySig, {
+        x: companyX,
+        y: lineY + 4,
+        width: imgWidth,
+        height: imageMaxHeight,
+      });
+    }
+    const clientSig = input.clientSignatureImageBytes
+      ? await doc.embedPng(input.clientSignatureImageBytes).catch(() => null)
+      : null;
+    if (clientSig) {
+      const imgWidth = Math.min(colWidth, (clientSig.width / clientSig.height) * imageMaxHeight);
+      ctx.page.drawImage(clientSig, {
+        x: clientX,
+        y: lineY + 4,
+        width: imgWidth,
+        height: imageMaxHeight,
+      });
+    }
+
     ctx.page.drawLine({
-      start: { x: MARGIN_X, y: lineY },
-      end: { x: MARGIN_X + colWidth, y: lineY },
+      start: { x: companyX, y: lineY },
+      end: { x: companyX + colWidth, y: lineY },
       thickness: 0.7,
       color: rgb(0.4, 0.46, 0.56),
     });
     ctx.page.drawText(copy.signatureCompany, {
-      x: MARGIN_X,
+      x: companyX,
       y: lineY - 12,
       font: ctx.regular,
       size: 8.6,
       color: rgb(0.38, 0.46, 0.58),
     });
+
     ctx.page.drawLine({
-      start: { x: MARGIN_X + colWidth + 24, y: lineY },
-      end: { x: MARGIN_X + colWidth * 2 + 24, y: lineY },
+      start: { x: clientX, y: lineY },
+      end: { x: clientX + colWidth, y: lineY },
       thickness: 0.7,
       color: rgb(0.4, 0.46, 0.56),
     });
     ctx.page.drawText(copy.signatureClient, {
-      x: MARGIN_X + colWidth + 24,
+      x: clientX,
       y: lineY - 12,
       font: ctx.regular,
       size: 8.6,
       color: rgb(0.38, 0.46, 0.58),
     });
-    ctx.y = lineY - 32;
+    if (input.clientSignedAtLabel) {
+      ctx.page.drawText(
+        copy.signedOnLabel.replace("{{date}}", input.clientSignedAtLabel),
+        {
+          x: clientX,
+          y: lineY - 24,
+          font: ctx.regular,
+          size: 8,
+          color: rgb(0.55, 0.6, 0.68),
+        }
+      );
+    }
+    ctx.y = lineY - 40;
   }
 
-  drawParagraph(ctx, copy.draftFooter, 8.6, "muted");
+  drawParagraph(ctx, copy.closingNote, 8.6, "muted");
 
   return doc.save();
 }

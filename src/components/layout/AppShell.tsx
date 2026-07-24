@@ -363,6 +363,30 @@ const clientNavItems = (t: (key: string) => string): NavItem[] => [
       </svg>
     ),
   },
+  {
+    label: t("nav.client.contract"),
+    href: "/client/contract",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 3.5h8l4 4V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9.5 14.5c1-1.5 1.7-3.2 2.3-4.6.3-.7 1.2-.7 1.4 0 .4 1.1 1 2.7 1.4 3.3.3.4.7-.1 1-.6.3-.5.8-.6 1.3-.1"
+        />
+      </svg>
+    ),
+  },
 ];
 
 type AppShellProps = {

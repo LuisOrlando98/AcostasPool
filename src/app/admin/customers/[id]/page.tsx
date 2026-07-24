@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import AppShell from "@/components/layout/AppShell";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
@@ -59,6 +60,17 @@ import {
   getBusinessTimeParts,
 } from "@/lib/timezone";
 import { withFeedbackParam } from "@/lib/ui/action-feedback";
+import { getCompanySignatureUrl } from "@/lib/site-settings";
+import { sendContractReadyEmail } from "@/lib/contracts/notify";
+import {
+  buildSnapshotFields,
+  customerLocale,
+  loadCustomerForContract,
+  renderAndStoreContractPdf,
+  startOfCurrentPeriodMonth,
+  storeSignatureDataUrl,
+} from "@/lib/contracts/service";
+import ContractInPersonSignForm from "@/components/contracts/ContractInPersonSignForm";
 
 function customerDetailFeedbackPath(customerId: string, feedback: string) {
   return withFeedbackParam(`/admin/customers/${customerId}`, feedback);
@@ -435,6 +447,115 @@ async function updateCustomerFinancials(formData: FormData) {
   revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
   redirect(customerDetailFeedbackPath(customerId, "customer-financials-saved"));
+}
+
+async function generateServiceContract(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const customerId = String(formData.get("customerId") ?? "");
+  if (!customerId) {
+    return;
+  }
+
+  const customer = await loadCustomerForContract(customerId);
+  if (!customer) {
+    return;
+  }
+
+  const snapshot = buildSnapshotFields(customer);
+  const locale = customerLocale(customer.idiomaPreferencia);
+  const companySignatureUrl = await getCompanySignatureUrl();
+
+  const contract = await prisma.serviceContract.create({
+    data: {
+      customerId,
+      locale,
+      status: "DRAFT",
+      periodMonth: startOfCurrentPeriodMonth(),
+      companySignatureUrl,
+      ...snapshot,
+    },
+  });
+
+  await renderAndStoreContractPdf(contract);
+
+  revalidatePath(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "contract-generated"));
+}
+
+async function sendServiceContract(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const contractId = String(formData.get("contractId") ?? "");
+  const customerId = String(formData.get("customerId") ?? "");
+  if (!contractId || !customerId) {
+    return;
+  }
+
+  await prisma.serviceContract.update({
+    where: { id: contractId },
+    data: { status: "SENT", sentAt: new Date() },
+  });
+
+  await createNotification({
+    customerId,
+    recipientRole: "CUSTOMER",
+    eventType: "CONTRACT_READY_TO_SIGN",
+    severity: "INFO",
+    payload: { contractId },
+  });
+
+  try {
+    const result = await sendContractReadyEmail(customerId);
+    if (!result.ok) {
+      console.error("Contract email failed:", result.error);
+    }
+  } catch (error) {
+    console.error("Contract email failed:", error);
+  }
+
+  revalidatePath(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "contract-sent"));
+}
+
+async function signServiceContractInPerson(formData: FormData) {
+  "use server";
+  const session = await requireRole("ADMIN");
+
+  const contractId = String(formData.get("contractId") ?? "");
+  const customerId = String(formData.get("customerId") ?? "");
+  const signatureDataUrl = String(formData.get("signatureDataUrl") ?? "");
+  if (!contractId || !customerId || !signatureDataUrl.startsWith("data:image/png")) {
+    return;
+  }
+
+  const requestHeaders = await headers();
+  const clientSignatureUrl = await storeSignatureDataUrl(
+    customerId,
+    contractId,
+    "client",
+    signatureDataUrl
+  );
+
+  const updated = await prisma.serviceContract.update({
+    where: { id: contractId },
+    data: {
+      status: "SIGNED",
+      clientSignatureUrl,
+      clientSignedAt: new Date(),
+      clientSignedVia: "IN_PERSON_ADMIN",
+      clientSignedByUserId: session.sub,
+      clientSignedIp: requestHeaders.get("x-forwarded-for") ?? null,
+      clientSignedUserAgent: requestHeaders.get("user-agent") ?? null,
+    },
+  });
+
+  await renderAndStoreContractPdf(updated);
+
+  revalidatePath(`/admin/customers/${customerId}`);
+  redirect(customerDetailFeedbackPath(customerId, "contract-signed"));
 }
 
 async function inviteCustomer(formData: FormData) {
@@ -1078,6 +1199,7 @@ export default async function CustomerDetailPage({
       },
       properties: true,
       contractedServiceTier: { select: { id: true, name: true } },
+      serviceContracts: { orderBy: { periodMonth: "desc" } },
       jobs: {
         orderBy: { scheduledDate: "desc" },
         include: {
@@ -1248,6 +1370,8 @@ export default async function CustomerDetailPage({
     style: "currency",
     currency: "USD",
   });
+  const latestContract = customer.serviceContracts[0] ?? null;
+  const contractHistory = customer.serviceContracts.slice(1, 6);
 
   return (
     <AppShell
@@ -1264,6 +1388,21 @@ export default async function CustomerDetailPage({
       ) : feedback === "customer-financials-saved" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.financialsSaved")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-generated" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.contractGenerated")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-sent" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.contractSent")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-signed" ? (
+        <ActionFeedbackToast
+          message={t("admin.customers.feedback.contractSigned")}
           dismissLabel={t("common.actions.close")}
         />
       ) : feedback === "property-created" ? (
@@ -1610,6 +1749,159 @@ export default async function CustomerDetailPage({
               onUpdateProperty={updateProperty}
               onDeleteProperty={deleteProperty}
             />
+          </div>
+
+          <div className="min-w-0 2xl:col-span-2">
+            <CollapsibleSection
+              title={t("admin.customers.detail.sections.contractTitle")}
+              subtitle={t("admin.customers.detail.sections.contractSubtitle")}
+              headerExtra={
+                latestContract ? (
+                  <span
+                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                      latestContract.status === "SIGNED"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : latestContract.status === "SENT"
+                          ? "border-amber-200 bg-amber-50 text-amber-700"
+                          : "border-slate-200 bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    {t(`admin.customers.detail.contract.status.${latestContract.status}`)}
+                  </span>
+                ) : null
+              }
+            >
+              {!latestContract ? (
+                <div>
+                  <p className="text-sm text-slate-500">
+                    {t("admin.customers.detail.contract.noContract")}
+                  </p>
+                  <form action={generateServiceContract} className="mt-3">
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <FormSubmitButton
+                      idleLabel={t("admin.customers.detail.contract.generate")}
+                      pendingLabel={t("admin.customers.detail.contract.generating")}
+                      className="px-4 py-2 text-xs"
+                    />
+                  </form>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm text-slate-600">
+                      {t("admin.customers.detail.contract.period", {
+                        month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
+                          month: "long",
+                          year: "numeric",
+                        }),
+                      })}
+                    </p>
+                    {latestContract.pdfUrl ? (
+                      <a
+                        href={latestContract.pdfUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                      >
+                        {t("admin.customers.detail.contract.viewPdf")}
+                      </a>
+                    ) : null}
+                  </div>
+
+                  {latestContract.status === "DRAFT" ? (
+                    <form action={sendServiceContract}>
+                      <input type="hidden" name="contractId" value={latestContract.id} />
+                      <input type="hidden" name="customerId" value={customer.id} />
+                      <FormSubmitButton
+                        idleLabel={t("admin.customers.detail.contract.send")}
+                        pendingLabel={t("admin.customers.detail.contract.sending")}
+                        className="px-4 py-2 text-xs"
+                      />
+                    </form>
+                  ) : null}
+
+                  {latestContract.status !== "SIGNED" ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                      <p className="text-sm font-semibold text-slate-800">
+                        {t("admin.customers.detail.contract.inPersonTitle")}
+                      </p>
+                      <ContractInPersonSignForm
+                        action={signServiceContractInPerson}
+                        contractId={latestContract.id}
+                        customerId={customer.id}
+                        hint={t("admin.customers.detail.contract.inPersonHint")}
+                        clearLabel={t("admin.customers.detail.contract.clearSignature")}
+                        submitIdleLabel={t("admin.customers.detail.contract.signAction")}
+                        submitPendingLabel={t("admin.customers.detail.contract.signing")}
+                        missingSignatureLabel={t(
+                          "admin.customers.detail.contract.missingSignature"
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500">
+                      {t("admin.customers.detail.contract.signedOn", {
+                        date: latestContract.clientSignedAt
+                          ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
+                              dateStyle: "long",
+                            })
+                          : t("common.labels.notAvailable"),
+                      })}
+                      {latestContract.clientSignedVia
+                        ? ` · ${t(
+                            `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
+                          )}`
+                        : ""}
+                    </p>
+                  )}
+
+                  <form action={generateServiceContract}>
+                    <input type="hidden" name="customerId" value={customer.id} />
+                    <button
+                      type="submit"
+                      className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 transition hover:text-slate-600"
+                    >
+                      {t("admin.customers.detail.contract.generateNew")}
+                    </button>
+                  </form>
+
+                  {contractHistory.length > 0 ? (
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        {t("admin.customers.detail.contract.history")}
+                      </p>
+                      <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                        {contractHistory.map((historyContract) => (
+                          <li key={historyContract.id} className="flex items-center gap-2">
+                            <span>
+                              {formatInBusinessTimeZone(historyContract.periodMonth, locale, {
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </span>
+                            <span className="text-slate-400">
+                              {t(
+                                `admin.customers.detail.contract.status.${historyContract.status}`
+                              )}
+                            </span>
+                            {historyContract.pdfUrl ? (
+                              <a
+                                href={historyContract.pdfUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-sky-700 hover:underline"
+                              >
+                                PDF
+                              </a>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </CollapsibleSection>
           </div>
 
           <div className="min-w-0">

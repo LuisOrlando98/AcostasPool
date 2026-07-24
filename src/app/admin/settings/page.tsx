@@ -25,11 +25,13 @@ import {
 } from "@/lib/compliance-config";
 import { requireRole } from "@/lib/auth/guards";
 import {
+  getCompanySignatureUrl,
   getComplianceContentConfig,
   getEmailTemplatesConfig,
   getInvoiceTemplateConfig,
   getSiteLandingConfig,
   getSiteSocialLinks,
+  saveCompanySignatureUrl,
   saveComplianceDocLocalesConfig,
   saveEmailTemplateConfig,
   saveInvoiceTemplateConfig,
@@ -37,6 +39,9 @@ import {
   saveSiteSocialLinks,
 } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { storePublicAsset } from "@/lib/storage/object-store";
+import { buildCompanySignatureAssetPath } from "@/lib/storage/paths";
+import CompanySignatureForm from "@/components/settings/CompanySignatureForm";
 
 type SettingsTabId =
   | "social"
@@ -44,7 +49,8 @@ type SettingsTabId =
   | "email-templates"
   | "compliance"
   | "tiers"
-  | "notifications";
+  | "notifications"
+  | "signature";
 type TemplatesKind = "email" | "invoice";
 type TemplateViewMode = "code" | "web" | "split";
 
@@ -59,6 +65,7 @@ const SETTINGS_TAB_IDS: SettingsTabId[] = [
   "compliance",
   "tiers",
   "notifications",
+  "signature",
 ];
 
 function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
@@ -100,6 +107,14 @@ function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
         <rect x="4" y="5" width="16" height="4" rx="1.5" />
         <rect x="4" y="10" width="12" height="4" rx="1.5" />
         <rect x="4" y="15" width="8" height="4" rx="1.5" />
+      </svg>
+    );
+  }
+  if (tabId === "signature") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 18.5c2-3 3.5-6.5 4.6-9.3.5-1.4 2.4-1.5 2.9 0 .8 2.3 2 5.5 2.9 6.7.6.9 1.4-.2 2-1.1.7-1 1.6-1.2 2.6-.3" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 20.5h16" />
       </svg>
     );
   }
@@ -167,6 +182,7 @@ function resolveTab(value: string | undefined): SettingsTabId {
   if (value === "compliance") return "compliance";
   if (value === "tiers") return "tiers";
   if (value === "notifications") return "notifications";
+  if (value === "signature") return "signature";
   return "social";
 }
 
@@ -189,6 +205,29 @@ function resolveInvoiceTheme(value: string | undefined): InvoiceTemplateTheme {
     return value;
   }
   return "STANDARD";
+}
+
+async function saveCompanySignature(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const signatureDataUrl = String(formData.get("signatureDataUrl") ?? "");
+  if (!signatureDataUrl.startsWith("data:image/png")) {
+    return;
+  }
+
+  const base64 = signatureDataUrl.split(",")[1] ?? "";
+  const buffer = Buffer.from(base64, "base64");
+  const url = await storePublicAsset({
+    relativePath: buildCompanySignatureAssetPath(),
+    buffer,
+    contentType: "image/png",
+    cacheControl: "private, max-age=0, must-revalidate",
+  });
+
+  await saveCompanySignatureUrl(url);
+
+  revalidatePath("/admin/settings");
 }
 
 async function saveSocialLinks(formData: FormData) {
@@ -353,15 +392,23 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   );
   const complianceDocQuery = getFirstSearchValue(resolvedSearchParams?.complianceDoc);
 
-  const [t, socialLinks, landingConfig, emailTemplates, invoiceTemplate, complianceContent] =
-    await Promise.all([
+  const [
+    t,
+    socialLinks,
+    landingConfig,
+    emailTemplates,
+    invoiceTemplate,
+    complianceContent,
+    companySignatureUrl,
+  ] = await Promise.all([
     getTranslations(),
     getSiteSocialLinks(),
     getSiteLandingConfig(),
     getEmailTemplatesConfig(adminLocale),
     getInvoiceTemplateConfig(),
     getComplianceContentConfig(),
-    ]);
+    getCompanySignatureUrl(),
+  ]);
 
   const selectedTemplateId = isEmailTemplateId(templateQuery)
     ? templateQuery
@@ -1314,6 +1361,37 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               {t("admin.settings.notifications.subtitle")}
             </p>
             <NotificationPreferences />
+          </div>
+        ) : null}
+
+        {currentTab === "signature" ? (
+          <div className="app-card p-4 shadow-contrast sm:p-6">
+            <h2 className="text-lg font-semibold">{t("admin.settings.signature.title")}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("admin.settings.signature.subtitle")}
+            </p>
+
+            {companySignatureUrl ? (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("admin.settings.signature.current")}
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={companySignatureUrl}
+                  alt={t("admin.settings.signature.current")}
+                  className="mt-2 h-20 w-auto rounded-lg border border-slate-200 bg-white p-2"
+                />
+              </div>
+            ) : null}
+
+            <CompanySignatureForm
+              action={saveCompanySignature}
+              clearLabel={t("admin.settings.signature.clear")}
+              submitIdleLabel={t("admin.settings.signature.save")}
+              submitPendingLabel={t("common.feedback.saving")}
+              missingSignatureLabel={t("admin.settings.signature.missing")}
+            />
           </div>
         ) : null}
       </section>

@@ -129,20 +129,6 @@ export default async function DeveloperPage() {
             {t("admin.developer.links.infrastructure.subtitle")}
           </p>
         </a>
-        <a
-          href="/admin/developer/service-contract"
-          className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
-        >
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-            {t("admin.developer.links.serviceContract.kicker")}
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            {t("admin.developer.links.serviceContract.title")}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            {t("admin.developer.links.serviceContract.subtitle")}
-          </p>
-        </a>
       </section>
 
       <CustomerTransferPanel />

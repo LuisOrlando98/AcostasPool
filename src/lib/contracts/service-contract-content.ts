@@ -3,7 +3,7 @@ export type ServiceContractLocale = "en" | "es";
 export type ServiceContractCopy = {
   headerLabel: string;
   documentTitle: string;
-  draftIntro: string;
+  intro: string;
   sections: {
     parties: string;
     propertyAndScope: string;
@@ -37,7 +37,8 @@ export type ServiceContractCopy = {
   poolConditionEmpty: string;
   signatureCompany: string;
   signatureClient: string;
-  draftFooter: string;
+  signedOnLabel: string;
+  closingNote: string;
   notAvailable: string;
 };
 
@@ -45,8 +46,8 @@ export const SERVICE_CONTRACT_CONTENT: Record<ServiceContractLocale, ServiceCont
   en: {
     headerLabel: "SERVICE CONTRACT",
     documentTitle: "Pool Maintenance Service Contract",
-    draftIntro:
-      "Document generated on {{date}}. This contract is a working draft and must be reviewed by legal counsel before it is used as a binding document.",
+    intro:
+      "Document generated on {{date}}. This contract describes the terms of the pool maintenance service agreed between the parties below.",
     sections: {
       parties: "Parties to the contract",
       propertyAndScope: "Property and scope of service",
@@ -87,15 +88,16 @@ export const SERVICE_CONTRACT_CONTENT: Record<ServiceContractLocale, ServiceCont
     poolConditionEmpty: "No pool condition assessment on file for this property.",
     signatureCompany: "AcostasPool Representative",
     signatureClient: "Client",
-    draftFooter:
-      "INTERNAL DRAFT: content generated automatically for review. Do not send to the customer or use as a binding contract without prior legal review.",
+    signedOnLabel: "Signed on {{date}}",
+    closingNote:
+      "This document was generated electronically. Once signed by both parties, it constitutes a binding agreement between them. Please retain a copy for your records.",
     notAvailable: "N/A",
   },
   es: {
     headerLabel: "CONTRATO DE SERVICIO",
     documentTitle: "Contrato de Servicio de Mantenimiento de Piscina",
-    draftIntro:
-      "Documento generado el {{date}}. Este contrato es un borrador de trabajo y debe ser revisado por asesoria legal antes de usarse como documento vinculante.",
+    intro:
+      "Documento generado el {{date}}. Este contrato describe los terminos del servicio de mantenimiento de piscina acordado entre las partes indicadas a continuacion.",
     sections: {
       parties: "Partes del contrato",
       propertyAndScope: "Propiedad y alcance del servicio",
@@ -136,8 +138,9 @@ export const SERVICE_CONTRACT_CONTENT: Record<ServiceContractLocale, ServiceCont
     poolConditionEmpty: "Esta propiedad no tiene una evaluacion de condicion de piscina registrada.",
     signatureCompany: "Representante AcostasPool",
     signatureClient: "Cliente",
-    draftFooter:
-      "BORRADOR interno: contenido generado automaticamente para revision. No enviar al cliente ni usar como contrato vinculante sin revision legal previa.",
+    signedOnLabel: "Firmado el {{date}}",
+    closingNote:
+      "Este documento fue generado electronicamente. Una vez firmado por ambas partes, constituye un acuerdo vinculante entre ellas. Por favor conserva una copia para tus registros.",
     notAvailable: "N/A",
   },
 };

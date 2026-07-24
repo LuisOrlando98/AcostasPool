@@ -172,6 +172,7 @@
       "invoices": "Invoices",
       "profile": "Profile",
       "properties": "My properties",
+      "contract": "Contract",
       "website": "Visit our website",
       "otherServices": "Other services",
       "comingSoon": "Coming soon"
@@ -1104,6 +1105,9 @@
         "deleted": "Customer deleted successfully.",
         "saved": "Customer changes saved.",
         "financialsSaved": "Financial information saved.",
+        "contractGenerated": "Contract generated successfully.",
+        "contractSent": "Contract sent to the customer.",
+        "contractSigned": "Contract signed successfully.",
         "propertyCreated": "Property created successfully.",
         "propertySaved": "Property updated successfully.",
         "propertyDeleted": "Property deleted successfully.",
@@ -1174,6 +1178,8 @@
           "propertiesSubtitle": "Full pool details for each site.",
           "financialsTitle": "Financial information",
           "financialsSubtitle": "Plan, price, and payment method for this customer.",
+          "contractTitle": "Service contract",
+          "contractSubtitle": "Generate, send, and sign the customer's service contract.",
           "plansTitle": "Recurring plans",
           "plansSubtitle": "Weekly, biweekly, or monthly plans.",
           "jobsTitle": "Jobs"
@@ -1299,6 +1305,33 @@
           "primaryPropertyHint": "Price and payment date shown are for the primary property: {{address}}.",
           "multiPropertyHint": "This customer has multiple properties; the price and payment date shown here are for their primary property. Adjust the rest from each property in the Properties section.",
           "noPropertyHint": "Add a property to record price and payment date."
+        },
+        "contract": {
+          "noContract": "This customer doesn't have a service contract generated yet.",
+          "generate": "Generate contract",
+          "generating": "Generating...",
+          "generateNew": "Generate a new contract",
+          "period": "Period: {{month}}",
+          "viewPdf": "View PDF",
+          "send": "Send to customer",
+          "sending": "Sending...",
+          "inPersonTitle": "Sign in person",
+          "inPersonHint": "Hand the device to the customer so they can sign right here with a finger or the mouse.",
+          "clearSignature": "Clear signature",
+          "signAction": "Sign",
+          "signing": "Signing...",
+          "missingSignature": "Draw your signature before continuing.",
+          "signedOn": "Signed on {{date}}",
+          "history": "Contract history",
+          "status": {
+            "DRAFT": "Draft",
+            "SENT": "Sent, awaiting signature",
+            "SIGNED": "Signed"
+          },
+          "signedVia": {
+            "PORTAL": "Signed from the customer portal",
+            "IN_PERSON_ADMIN": "Signed in person"
+          }
         },
         "plans": {
           "empty": "No active recurring plans.",
@@ -1856,7 +1889,19 @@
         "notifications": {
           "label": "Notifications",
           "hint": "Rules and status"
+        },
+        "signature": {
+          "label": "Signature",
+          "hint": "President's signature"
         }
+      },
+      "signature": {
+        "title": "Company signature",
+        "subtitle": "Draw the signature of Acosta's Pool's president. It will be used automatically on every service contract.",
+        "current": "Current signature",
+        "clear": "Clear signature",
+        "save": "Save signature",
+        "missing": "Draw a signature before saving."
       },
       "landing": {
         "title": "Landing page configuration",
@@ -2148,20 +2193,7 @@
           "kicker": "Infrastructure",
           "title": "DB health endpoint",
           "subtitle": "Developer-only database connectivity status."
-        },
-        "serviceContract": {
-          "kicker": "Contracts",
-          "title": "Service contract",
-          "subtitle": "Generate a per-customer draft contract PDF with logo and financial data."
         }
-      },
-      "serviceContract": {
-        "title": "Service contract",
-        "subtitle": "Internal draft to review the contract layout with logo and customer data.",
-        "draftNotice": "Temporary developer-only tool. The generated PDF is a draft and needs legal review before use with real customers.",
-        "selectCustomer": "Customer",
-        "language": "Contract language",
-        "generate": "Generate PDF"
       },
       "audit": {
         "title": "Audit log",
@@ -2542,6 +2574,21 @@
         "empty": "No invoices yet.",
         "viewPdf": "View PDF"
       }
+    },
+    "contract": {
+      "title": "Service contract",
+      "subtitle": "Review and sign your service contract.",
+      "pending": {
+        "title": "Contract pending signature",
+        "subtitle": "Review the terms before signing."
+      },
+      "viewFullContract": "View full contract (PDF)",
+      "signHere": "Sign here",
+      "signHint": "Use your finger on your phone or the mouse on your computer to sign.",
+      "signAction": "Sign contract",
+      "signError": "Could not save your signature. Please try again.",
+      "noPending": "You don't have any contracts pending signature right now.",
+      "history": "Contract history"
     }
   },
   "tech": {
