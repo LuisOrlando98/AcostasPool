@@ -1325,6 +1325,8 @@
           "retryGenerate": "Try again",
           "viewContract": "View contract",
           "viewAndSign": "View & sign",
+          "companySignatureIncluded": "Company signature: included",
+          "companySignatureMissing": "Company signature: not set yet (add one in Settings)",
           "period": "Period: {{month}}",
           "viewPdf": "View PDF",
           "documentPreview": "Contract preview",

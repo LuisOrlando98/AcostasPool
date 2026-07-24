@@ -1915,15 +1915,39 @@ export default async function CustomerDetailPage({
                               {t("admin.customers.detail.contract.previewHint")}
                             </p>
                           )}
+                          <p
+                            className={`mt-1 text-xs ${
+                              latestContract.companySignatureUrl
+                                ? "text-emerald-600"
+                                : "text-amber-600"
+                            }`}
+                          >
+                            {latestContract.companySignatureUrl
+                              ? t("admin.customers.detail.contract.companySignatureIncluded")
+                              : t("admin.customers.detail.contract.companySignatureMissing")}
+                          </p>
                         </div>
-                        <label
-                          htmlFor="view-contract"
-                          className="cursor-pointer rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-700"
-                        >
-                          {latestContract.status === "SIGNED"
-                            ? t("admin.customers.detail.contract.viewContract")
-                            : t("admin.customers.detail.contract.viewAndSign")}
-                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <form action={generateServiceContract}>
+                            <input type="hidden" name="customerId" value={customer.id} />
+                            <button
+                              type="submit"
+                              className="rounded-full border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-400 hover:bg-slate-50"
+                            >
+                              {latestContract.status === "DRAFT"
+                                ? t("admin.customers.detail.contract.refreshDraft")
+                                : t("admin.customers.detail.contract.generateNew")}
+                            </button>
+                          </form>
+                          <label
+                            htmlFor="view-contract"
+                            className="cursor-pointer rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-700"
+                          >
+                            {latestContract.status === "SIGNED"
+                              ? t("admin.customers.detail.contract.viewContract")
+                              : t("admin.customers.detail.contract.viewAndSign")}
+                          </label>
+                        </div>
                       </div>
                     ) : (
                       <div className="px-4 py-10 text-center">
@@ -1946,20 +1970,6 @@ export default async function CustomerDetailPage({
                       </div>
                     )}
                   </div>
-
-                  {latestContract.pdfUrl ? (
-                    <form action={generateServiceContract} className="border-t border-slate-100 pt-3">
-                      <input type="hidden" name="customerId" value={customer.id} />
-                      <button
-                        type="submit"
-                        className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 transition hover:text-slate-600"
-                      >
-                        {latestContract.status === "DRAFT"
-                          ? t("admin.customers.detail.contract.refreshDraft")
-                          : t("admin.customers.detail.contract.generateNew")}
-                      </button>
-                    </form>
-                  ) : null}
 
                   {contractHistory.length > 0 ? (
                     <div>

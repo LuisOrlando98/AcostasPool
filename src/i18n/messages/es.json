@@ -1325,6 +1325,8 @@
           "retryGenerate": "Intentar de nuevo",
           "viewContract": "Ver contrato",
           "viewAndSign": "Ver y firmar",
+          "companySignatureIncluded": "Firma de la empresa: incluida",
+          "companySignatureMissing": "Firma de la empresa: aun no configurada (agregala en Ajustes)",
           "period": "Periodo: {{month}}",
           "viewPdf": "Ver PDF",
           "documentPreview": "Vista previa del contrato",

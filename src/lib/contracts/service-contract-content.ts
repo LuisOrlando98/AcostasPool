@@ -86,7 +86,7 @@ export const SERVICE_CONTRACT_CONTENT: Record<ServiceContractLocale, ServiceCont
       "The platform's general terms of service are available at /legal/terms-of-service.",
     ],
     poolConditionEmpty: "No pool condition assessment on file for this property.",
-    signatureCompany: "AcostasPool Representative",
+    signatureCompany: "Acosta's Pool Representative",
     signatureClient: "Client",
     signedOnLabel: "Signed on {{date}}",
     closingNote:
@@ -136,7 +136,7 @@ export const SERVICE_CONTRACT_CONTENT: Record<ServiceContractLocale, ServiceCont
       "Los terminos generales de servicio de la plataforma se encuentran en /legal/terms-of-service.",
     ],
     poolConditionEmpty: "Esta propiedad no tiene una evaluacion de condicion de piscina registrada.",
-    signatureCompany: "Representante AcostasPool",
+    signatureCompany: "Representante de Acosta's Pool",
     signatureClient: "Cliente",
     signedOnLabel: "Firmado el {{date}}",
     closingNote:
