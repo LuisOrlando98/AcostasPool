@@ -476,17 +476,31 @@ async function generateServiceContract(formData: FormData) {
     const snapshot = buildSnapshotFields(customer);
     const locale = customerLocale(customer.idiomaPreferencia);
     const companySignatureUrl = await getCompanySignatureUrl();
+    const periodMonth = startOfCurrentPeriodMonth();
 
-    const contract = await prisma.serviceContract.create({
-      data: {
-        customerId,
-        locale,
-        status: "DRAFT",
-        periodMonth: startOfCurrentPeriodMonth(),
-        companySignatureUrl,
-        ...snapshot,
-      },
+    // A draft hasn't been shown to the client yet, so regenerating it just
+    // refreshes the same record instead of piling up duplicate drafts for
+    // the same period. Once sent/signed it's a delivered record, so a new
+    // generation for that period starts a fresh row instead of mutating it.
+    const existingDraft = await prisma.serviceContract.findFirst({
+      where: { customerId, periodMonth, status: "DRAFT" },
     });
+
+    const contract = existingDraft
+      ? await prisma.serviceContract.update({
+          where: { id: existingDraft.id },
+          data: { locale, companySignatureUrl, ...snapshot },
+        })
+      : await prisma.serviceContract.create({
+          data: {
+            customerId,
+            locale,
+            status: "DRAFT",
+            periodMonth,
+            companySignatureUrl,
+            ...snapshot,
+          },
+        });
 
     await renderAndStoreContractPdf(contract);
     redirectPath = customerDetailFeedbackPath(customerId, "contract-generated");
@@ -1236,7 +1250,7 @@ export default async function CustomerDetailPage({
       },
       properties: true,
       contractedServiceTier: { select: { id: true, name: true } },
-      serviceContracts: { orderBy: { periodMonth: "desc" } },
+      serviceContracts: { orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }] },
       jobs: {
         orderBy: { scheduledDate: "desc" },
         include: {
@@ -1874,26 +1888,41 @@ export default async function CustomerDetailPage({
 
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     {latestContract.pdfUrl ? (
-                      <>
-                        <iframe
-                          src={contractPdfHref(latestContract.id)}
-                          title={t("admin.customers.detail.contract.documentPreview")}
-                          className="h-[70vh] max-h-[720px] w-full border-0 bg-white"
-                        />
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
-                          <p className="text-xs text-slate-500">
-                            {t("admin.customers.detail.contract.previewHint")}
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">
+                            {t("admin.customers.detail.contract.documentPreview")}
                           </p>
-                          <a
-                            href={contractPdfHref(latestContract.id)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs font-semibold text-sky-700 hover:underline"
-                          >
-                            {t("admin.customers.detail.contract.openNewTab")}
-                          </a>
+                          {latestContract.status === "SIGNED" ? (
+                            <p className="mt-1 text-xs text-slate-500">
+                              {t("admin.customers.detail.contract.signedOn", {
+                                date: latestContract.clientSignedAt
+                                  ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
+                                      dateStyle: "long",
+                                    })
+                                  : t("common.labels.notAvailable"),
+                              })}
+                              {latestContract.clientSignedVia
+                                ? ` · ${t(
+                                    `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
+                                  )}`
+                                : ""}
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs text-slate-500">
+                              {t("admin.customers.detail.contract.previewHint")}
+                            </p>
+                          )}
                         </div>
-                      </>
+                        <label
+                          htmlFor="view-contract"
+                          className="cursor-pointer rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-700"
+                        >
+                          {latestContract.status === "SIGNED"
+                            ? t("admin.customers.detail.contract.viewContract")
+                            : t("admin.customers.detail.contract.viewAndSign")}
+                        </label>
+                      </div>
                     ) : (
                       <div className="px-4 py-10 text-center">
                         <p className="text-sm text-slate-500">
@@ -1916,41 +1945,6 @@ export default async function CustomerDetailPage({
                     )}
                   </div>
 
-                  {latestContract.status === "SIGNED" ? (
-                    <p className="text-xs text-slate-500">
-                      {t("admin.customers.detail.contract.signedOn", {
-                        date: latestContract.clientSignedAt
-                          ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
-                              dateStyle: "long",
-                            })
-                          : t("common.labels.notAvailable"),
-                      })}
-                      {latestContract.clientSignedVia
-                        ? ` · ${t(
-                            `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
-                          )}`
-                        : ""}
-                    </p>
-                  ) : latestContract.pdfUrl ? (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <p className="text-sm font-semibold text-slate-800">
-                        {t("admin.customers.detail.contract.inPersonTitle")}
-                      </p>
-                      <ContractInPersonSignForm
-                        action={signServiceContractInPerson}
-                        contractId={latestContract.id}
-                        customerId={customer.id}
-                        hint={t("admin.customers.detail.contract.inPersonHint")}
-                        clearLabel={t("admin.customers.detail.contract.clearSignature")}
-                        submitIdleLabel={t("admin.customers.detail.contract.signAction")}
-                        submitPendingLabel={t("admin.customers.detail.contract.signing")}
-                        missingSignatureLabel={t(
-                          "admin.customers.detail.contract.missingSignature"
-                        )}
-                      />
-                    </div>
-                  ) : null}
-
                   {latestContract.pdfUrl ? (
                     <form action={generateServiceContract} className="border-t border-slate-100 pt-3">
                       <input type="hidden" name="customerId" value={customer.id} />
@@ -1958,7 +1952,9 @@ export default async function CustomerDetailPage({
                         type="submit"
                         className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 transition hover:text-slate-600"
                       >
-                        {t("admin.customers.detail.contract.generateNew")}
+                        {latestContract.status === "DRAFT"
+                          ? t("admin.customers.detail.contract.refreshDraft")
+                          : t("admin.customers.detail.contract.generateNew")}
                       </button>
                     </form>
                   ) : null}
@@ -3033,6 +3029,110 @@ export default async function CustomerDetailPage({
           </div>
         </div>
       </div>
+
+      {latestContract ? (
+        <>
+          <input id="view-contract" type="checkbox" className="peer/contract hidden" />
+          <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/contract:flex">
+            <label
+              htmlFor="view-contract"
+              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
+            />
+            <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+                <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      {t("admin.customers.detail.sections.contractTitle")}
+                    </p>
+                    <h2 className="text-lg font-semibold">
+                      {t("admin.customers.detail.contract.period", {
+                        month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
+                          month: "long",
+                          year: "numeric",
+                        }),
+                      })}
+                    </h2>
+                    <p className="text-sm text-slate-500">{customerName}</p>
+                  </div>
+                  <label
+                    htmlFor="view-contract"
+                    className="app-modal-close"
+                    aria-label={t("common.actions.close")}
+                    title={t("common.actions.close")}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-4 w-4"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+                    </svg>
+                  </label>
+                </div>
+
+                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <iframe
+                    src={contractPdfHref(latestContract.id)}
+                    title={t("admin.customers.detail.contract.documentPreview")}
+                    className="h-[70vh] max-h-[720px] w-full border-0 bg-white"
+                  />
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
+                    <p className="text-xs text-slate-500">
+                      {t("admin.customers.detail.contract.previewHint")}
+                    </p>
+                    <a
+                      href={contractPdfHref(latestContract.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-sky-700 hover:underline"
+                    >
+                      {t("admin.customers.detail.contract.openNewTab")}
+                    </a>
+                  </div>
+                </div>
+
+                {latestContract.status === "SIGNED" ? (
+                  <p className="mt-4 text-xs text-slate-500">
+                    {t("admin.customers.detail.contract.signedOn", {
+                      date: latestContract.clientSignedAt
+                        ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
+                            dateStyle: "long",
+                          })
+                        : t("common.labels.notAvailable"),
+                    })}
+                    {latestContract.clientSignedVia
+                      ? ` · ${t(
+                          `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
+                        )}`
+                      : ""}
+                  </p>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {t("admin.customers.detail.contract.inPersonTitle")}
+                    </p>
+                    <ContractInPersonSignForm
+                      action={signServiceContractInPerson}
+                      contractId={latestContract.id}
+                      customerId={customer.id}
+                      hint={t("admin.customers.detail.contract.inPersonHint")}
+                      clearLabel={t("admin.customers.detail.contract.clearSignature")}
+                      submitIdleLabel={t("admin.customers.detail.contract.signAction")}
+                      submitPendingLabel={t("admin.customers.detail.contract.signing")}
+                      missingSignatureLabel={t(
+                        "admin.customers.detail.contract.missingSignature"
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </AppShell>
   );
 }

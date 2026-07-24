@@ -15,7 +15,7 @@ export default async function ClientContractPage() {
     select: {
       id: true,
       serviceContracts: {
-        orderBy: { periodMonth: "desc" },
+        orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }],
         take: 12,
       },
     },
