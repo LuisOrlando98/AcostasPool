@@ -1409,6 +1409,8 @@ export default async function CustomerDetailPage({
   });
   const latestContract = customer.serviceContracts[0] ?? null;
   const contractHistory = customer.serviceContracts.slice(1, 6);
+  const contractPdfHref = (contractId: string) =>
+    `/api/admin/customers/${customer.id}/contracts/${contractId}/pdf`;
 
   return (
     <AppShell
@@ -1874,7 +1876,7 @@ export default async function CustomerDetailPage({
                     {latestContract.pdfUrl ? (
                       <>
                         <iframe
-                          src={latestContract.pdfUrl}
+                          src={contractPdfHref(latestContract.id)}
                           title={t("admin.customers.detail.contract.documentPreview")}
                           className="h-[70vh] max-h-[720px] w-full border-0 bg-white"
                         />
@@ -1883,7 +1885,7 @@ export default async function CustomerDetailPage({
                             {t("admin.customers.detail.contract.previewHint")}
                           </p>
                           <a
-                            href={latestContract.pdfUrl}
+                            href={contractPdfHref(latestContract.id)}
                             target="_blank"
                             rel="noreferrer"
                             className="text-xs font-semibold text-sky-700 hover:underline"
@@ -1982,7 +1984,7 @@ export default async function CustomerDetailPage({
                             </span>
                             {historyContract.pdfUrl ? (
                               <a
-                                href={historyContract.pdfUrl}
+                                href={contractPdfHref(historyContract.id)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-sky-700 hover:underline"

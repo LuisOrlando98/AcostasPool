@@ -1378,7 +1378,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 </p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={companySignatureUrl}
+                  src="/api/admin/settings/company-signature"
                   alt={t("admin.settings.signature.current")}
                   className="mt-2 h-20 w-auto rounded-lg border border-slate-200 bg-white p-2"
                 />
