@@ -482,9 +482,21 @@ async function generateServiceContract(formData: FormData) {
     // refreshes the same record instead of piling up duplicate drafts for
     // the same period. Once sent/signed it's a delivered record, so a new
     // generation for that period starts a fresh row instead of mutating it.
-    const existingDraft = await prisma.serviceContract.findFirst({
-      where: { customerId, periodMonth, status: "DRAFT" },
+    //
+    // Must match the exact same "latest" row the admin page displays
+    // (orderBy periodMonth desc, createdAt desc) - an unordered findFirst
+    // could silently update a different, older duplicate draft than the
+    // one actually shown on screen, making the refresh look like a no-op.
+    const mostRecentContract = await prisma.serviceContract.findFirst({
+      where: { customerId },
+      orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }],
     });
+    const existingDraft =
+      mostRecentContract &&
+      mostRecentContract.status === "DRAFT" &&
+      mostRecentContract.periodMonth.getTime() === periodMonth.getTime()
+        ? mostRecentContract
+        : null;
 
     const contract = existingDraft
       ? await prisma.serviceContract.update({
