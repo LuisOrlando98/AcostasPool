@@ -94,6 +94,17 @@ const nextConfig = {
         },
       ],
     },
+    {
+      // These routes are embedded in an <iframe> on the same page that
+      // requests them (contract/document preview), so the blanket
+      // X-Frame-Options: DENY above has to be relaxed to same-origin only.
+      source: "/api/admin/customers/:id/contracts/:contractId/pdf",
+      headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+    },
+    {
+      source: "/api/client/contract/:id/pdf",
+      headers: [{ key: "X-Frame-Options", value: "SAMEORIGIN" }],
+    },
   ],
   webpack: (config) => {
     config.resolve.alias = {
