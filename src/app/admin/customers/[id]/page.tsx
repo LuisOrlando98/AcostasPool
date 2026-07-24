@@ -76,6 +76,14 @@ function customerDetailFeedbackPath(customerId: string, feedback: string) {
   return withFeedbackParam(`/admin/customers/${customerId}`, feedback);
 }
 
+function customerDetailErrorPath(customerId: string, feedback: string, errorMessage: string) {
+  const base = withFeedbackParam(`/admin/customers/${customerId}`, feedback);
+  const [pathname, queryString = ""] = base.split("?", 2);
+  const params = new URLSearchParams(queryString);
+  params.set("contractError", errorMessage);
+  return `${pathname}?${params.toString()}`;
+}
+
 async function materializeServicePlanJob(
   planId: string,
   options?: {
@@ -458,30 +466,38 @@ async function generateServiceContract(formData: FormData) {
     return;
   }
 
-  const customer = await loadCustomerForContract(customerId);
-  if (!customer) {
-    return;
+  let redirectPath: string;
+  try {
+    const customer = await loadCustomerForContract(customerId);
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+
+    const snapshot = buildSnapshotFields(customer);
+    const locale = customerLocale(customer.idiomaPreferencia);
+    const companySignatureUrl = await getCompanySignatureUrl();
+
+    const contract = await prisma.serviceContract.create({
+      data: {
+        customerId,
+        locale,
+        status: "DRAFT",
+        periodMonth: startOfCurrentPeriodMonth(),
+        companySignatureUrl,
+        ...snapshot,
+      },
+    });
+
+    await renderAndStoreContractPdf(contract);
+    redirectPath = customerDetailFeedbackPath(customerId, "contract-generated");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("service-contract: failed to generate contract", customerId, error);
+    redirectPath = customerDetailErrorPath(customerId, "contract-generate-failed", message);
   }
 
-  const snapshot = buildSnapshotFields(customer);
-  const locale = customerLocale(customer.idiomaPreferencia);
-  const companySignatureUrl = await getCompanySignatureUrl();
-
-  const contract = await prisma.serviceContract.create({
-    data: {
-      customerId,
-      locale,
-      status: "DRAFT",
-      periodMonth: startOfCurrentPeriodMonth(),
-      companySignatureUrl,
-      ...snapshot,
-    },
-  });
-
-  await renderAndStoreContractPdf(contract);
-
   revalidatePath(`/admin/customers/${customerId}`);
-  redirect(customerDetailFeedbackPath(customerId, "contract-generated"));
+  redirect(redirectPath);
 }
 
 async function sendServiceContract(formData: FormData) {
@@ -494,30 +510,39 @@ async function sendServiceContract(formData: FormData) {
     return;
   }
 
-  await prisma.serviceContract.update({
-    where: { id: contractId },
-    data: { status: "SENT", sentAt: new Date() },
-  });
-
-  await createNotification({
-    customerId,
-    recipientRole: "CUSTOMER",
-    eventType: "CONTRACT_READY_TO_SIGN",
-    severity: "INFO",
-    payload: { contractId },
-  });
-
+  let redirectPath: string;
   try {
-    const result = await sendContractReadyEmail(customerId);
-    if (!result.ok) {
-      console.error("Contract email failed:", result.error);
+    await prisma.serviceContract.update({
+      where: { id: contractId },
+      data: { status: "SENT", sentAt: new Date() },
+    });
+
+    await createNotification({
+      customerId,
+      recipientRole: "CUSTOMER",
+      eventType: "CONTRACT_READY_TO_SIGN",
+      severity: "INFO",
+      payload: { contractId },
+    });
+
+    try {
+      const result = await sendContractReadyEmail(customerId);
+      if (!result.ok) {
+        console.error("Contract email failed:", result.error);
+      }
+    } catch (error) {
+      console.error("Contract email failed:", error);
     }
+
+    redirectPath = customerDetailFeedbackPath(customerId, "contract-sent");
   } catch (error) {
-    console.error("Contract email failed:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("service-contract: failed to send contract", contractId, error);
+    redirectPath = customerDetailErrorPath(customerId, "contract-send-failed", message);
   }
 
   revalidatePath(`/admin/customers/${customerId}`);
-  redirect(customerDetailFeedbackPath(customerId, "contract-sent"));
+  redirect(redirectPath);
 }
 
 async function signServiceContractInPerson(formData: FormData) {
@@ -531,31 +556,39 @@ async function signServiceContractInPerson(formData: FormData) {
     return;
   }
 
-  const requestHeaders = await headers();
-  const clientSignatureUrl = await storeSignatureDataUrl(
-    customerId,
-    contractId,
-    "client",
-    signatureDataUrl
-  );
+  let redirectPath: string;
+  try {
+    const requestHeaders = await headers();
+    const clientSignatureUrl = await storeSignatureDataUrl(
+      customerId,
+      contractId,
+      "client",
+      signatureDataUrl
+    );
 
-  const updated = await prisma.serviceContract.update({
-    where: { id: contractId },
-    data: {
-      status: "SIGNED",
-      clientSignatureUrl,
-      clientSignedAt: new Date(),
-      clientSignedVia: "IN_PERSON_ADMIN",
-      clientSignedByUserId: session.sub,
-      clientSignedIp: requestHeaders.get("x-forwarded-for") ?? null,
-      clientSignedUserAgent: requestHeaders.get("user-agent") ?? null,
-    },
-  });
+    const updated = await prisma.serviceContract.update({
+      where: { id: contractId },
+      data: {
+        status: "SIGNED",
+        clientSignatureUrl,
+        clientSignedAt: new Date(),
+        clientSignedVia: "IN_PERSON_ADMIN",
+        clientSignedByUserId: session.sub,
+        clientSignedIp: requestHeaders.get("x-forwarded-for") ?? null,
+        clientSignedUserAgent: requestHeaders.get("user-agent") ?? null,
+      },
+    });
 
-  await renderAndStoreContractPdf(updated);
+    await renderAndStoreContractPdf(updated);
+    redirectPath = customerDetailFeedbackPath(customerId, "contract-signed");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("service-contract: failed to sign contract in person", contractId, error);
+    redirectPath = customerDetailErrorPath(customerId, "contract-sign-failed", message);
+  }
 
   revalidatePath(`/admin/customers/${customerId}`);
-  redirect(customerDetailFeedbackPath(customerId, "contract-signed"));
+  redirect(redirectPath);
 }
 
 async function inviteCustomer(formData: FormData) {
@@ -1164,6 +1197,10 @@ export default async function CustomerDetailPage({
   const customerId = resolvedParams?.id;
   const feedbackValue = resolvedSearchParams?.feedback;
   const feedback = Array.isArray(feedbackValue) ? feedbackValue[0] : feedbackValue;
+  const contractErrorValue = resolvedSearchParams?.contractError;
+  const contractError = Array.isArray(contractErrorValue)
+    ? contractErrorValue[0]
+    : contractErrorValue;
   if (!customerId) {
     return (
       <AppShell
@@ -1403,6 +1440,30 @@ export default async function CustomerDetailPage({
       ) : feedback === "contract-signed" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.contractSigned")}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-generate-failed" ? (
+        <ActionFeedbackToast
+          tone="error"
+          message={t("admin.customers.feedback.contractGenerateFailed", {
+            error: contractError || t("common.labels.notAvailable"),
+          })}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-send-failed" ? (
+        <ActionFeedbackToast
+          tone="error"
+          message={t("admin.customers.feedback.contractSendFailed", {
+            error: contractError || t("common.labels.notAvailable"),
+          })}
+          dismissLabel={t("common.actions.close")}
+        />
+      ) : feedback === "contract-sign-failed" ? (
+        <ActionFeedbackToast
+          tone="error"
+          message={t("admin.customers.feedback.contractSignFailed", {
+            error: contractError || t("common.labels.notAvailable"),
+          })}
           dismissLabel={t("common.actions.close")}
         />
       ) : feedback === "property-created" ? (
@@ -1841,11 +1902,34 @@ export default async function CustomerDetailPage({
                             {latestContract.pdfError}
                           </p>
                         ) : null}
+                        <form action={generateServiceContract} className="mt-4">
+                          <input type="hidden" name="customerId" value={customer.id} />
+                          <FormSubmitButton
+                            idleLabel={t("admin.customers.detail.contract.retryGenerate")}
+                            pendingLabel={t("admin.customers.detail.contract.generating")}
+                            className="px-4 py-2 text-xs"
+                          />
+                        </form>
                       </div>
                     )}
                   </div>
 
-                  {latestContract.status !== "SIGNED" ? (
+                  {latestContract.status === "SIGNED" ? (
+                    <p className="text-xs text-slate-500">
+                      {t("admin.customers.detail.contract.signedOn", {
+                        date: latestContract.clientSignedAt
+                          ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
+                              dateStyle: "long",
+                            })
+                          : t("common.labels.notAvailable"),
+                      })}
+                      {latestContract.clientSignedVia
+                        ? ` · ${t(
+                            `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
+                          )}`
+                        : ""}
+                    </p>
+                  ) : latestContract.pdfUrl ? (
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
                       <p className="text-sm font-semibold text-slate-800">
                         {t("admin.customers.detail.contract.inPersonTitle")}
@@ -1863,32 +1947,19 @@ export default async function CustomerDetailPage({
                         )}
                       />
                     </div>
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      {t("admin.customers.detail.contract.signedOn", {
-                        date: latestContract.clientSignedAt
-                          ? formatInBusinessTimeZone(latestContract.clientSignedAt, locale, {
-                              dateStyle: "long",
-                            })
-                          : t("common.labels.notAvailable"),
-                      })}
-                      {latestContract.clientSignedVia
-                        ? ` · ${t(
-                            `admin.customers.detail.contract.signedVia.${latestContract.clientSignedVia}`
-                          )}`
-                        : ""}
-                    </p>
-                  )}
+                  ) : null}
 
-                  <form action={generateServiceContract} className="border-t border-slate-100 pt-3">
-                    <input type="hidden" name="customerId" value={customer.id} />
-                    <button
-                      type="submit"
-                      className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 transition hover:text-slate-600"
-                    >
-                      {t("admin.customers.detail.contract.generateNew")}
-                    </button>
-                  </form>
+                  {latestContract.pdfUrl ? (
+                    <form action={generateServiceContract} className="border-t border-slate-100 pt-3">
+                      <input type="hidden" name="customerId" value={customer.id} />
+                      <button
+                        type="submit"
+                        className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400 transition hover:text-slate-600"
+                      >
+                        {t("admin.customers.detail.contract.generateNew")}
+                      </button>
+                    </form>
+                  ) : null}
 
                   {contractHistory.length > 0 ? (
                     <div>

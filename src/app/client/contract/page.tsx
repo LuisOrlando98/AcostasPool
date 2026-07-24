@@ -124,20 +124,22 @@ export default async function ClientContractPage() {
             )}
           </div>
 
-          <div className="mt-6 border-t border-slate-200 pt-5">
-            <h3 className="text-sm font-semibold text-slate-800">
-              {t("client.contract.signHere")}
-            </h3>
-            <ClientContractSignForm
-              contractId={pendingContract.id}
-              hint={t("client.contract.signHint")}
-              clearLabel={t("admin.customers.detail.contract.clearSignature")}
-              submitIdleLabel={t("client.contract.signAction")}
-              submitPendingLabel={t("admin.customers.detail.contract.signing")}
-              missingSignatureLabel={t("admin.customers.detail.contract.missingSignature")}
-              errorLabel={t("client.contract.signError")}
-            />
-          </div>
+          {pendingContract.pdfUrl ? (
+            <div className="mt-6 border-t border-slate-200 pt-5">
+              <h3 className="text-sm font-semibold text-slate-800">
+                {t("client.contract.signHere")}
+              </h3>
+              <ClientContractSignForm
+                contractId={pendingContract.id}
+                hint={t("client.contract.signHint")}
+                clearLabel={t("admin.customers.detail.contract.clearSignature")}
+                submitIdleLabel={t("client.contract.signAction")}
+                submitPendingLabel={t("admin.customers.detail.contract.signing")}
+                missingSignatureLabel={t("admin.customers.detail.contract.missingSignature")}
+                errorLabel={t("client.contract.signError")}
+              />
+            </div>
+          ) : null}
         </section>
       ) : (
         <section className="app-card p-6 shadow-contrast">
