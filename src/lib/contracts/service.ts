@@ -146,19 +146,26 @@ export async function renderContractPdfBytes(
   });
 }
 
-export async function renderAndStoreContractPdf(contract: ServiceContract) {
-  const bytes = await renderContractPdfBytes(contract);
-  const pdfUrl = await storePublicAsset({
-    relativePath: buildContractPdfAssetPath(contract.customerId, contract.id),
-    buffer: Buffer.from(bytes),
-    contentType: "application/pdf",
-    cacheControl: "private, max-age=0, must-revalidate",
-  });
-  await prisma.serviceContract.update({
-    where: { id: contract.id },
-    data: { pdfUrl },
-  });
-  return pdfUrl;
+export async function renderAndStoreContractPdf(
+  contract: ServiceContract
+): Promise<string | null> {
+  try {
+    const bytes = await renderContractPdfBytes(contract);
+    const pdfUrl = await storePublicAsset({
+      relativePath: buildContractPdfAssetPath(contract.customerId, contract.id),
+      buffer: Buffer.from(bytes),
+      contentType: "application/pdf",
+      cacheControl: "private, max-age=0, must-revalidate",
+    });
+    await prisma.serviceContract.update({
+      where: { id: contract.id },
+      data: { pdfUrl },
+    });
+    return pdfUrl;
+  } catch (error) {
+    console.error("service-contract: failed to render/store PDF", contract.id, error);
+    return null;
+  }
 }
 
 export async function storeSignatureDataUrl(

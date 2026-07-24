@@ -95,16 +95,34 @@ export default async function ClientContractPage() {
             </div>
           </dl>
 
-          {pendingContract.pdfUrl ? (
-            <a
-              href={pendingContract.pdfUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-4 inline-flex text-sm font-semibold text-sky-700 hover:underline"
-            >
-              {t("client.contract.viewFullContract")}
-            </a>
-          ) : null}
+          <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+            {pendingContract.pdfUrl ? (
+              <>
+                <iframe
+                  src={pendingContract.pdfUrl}
+                  title={t("client.contract.viewFullContract")}
+                  className="h-[60vh] max-h-[600px] w-full border-0 bg-white"
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
+                  <p className="text-xs text-slate-500">
+                    {t("admin.customers.detail.contract.previewHint")}
+                  </p>
+                  <a
+                    href={pendingContract.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold text-sky-700 hover:underline"
+                  >
+                    {t("admin.customers.detail.contract.openNewTab")}
+                  </a>
+                </div>
+              </>
+            ) : (
+              <p className="px-4 py-8 text-center text-sm text-slate-500">
+                {t("admin.customers.detail.contract.pdfUnavailable")}
+              </p>
+            )}
+          </div>
 
           <div className="mt-6 border-t border-slate-200 pt-5">
             <h3 className="text-sm font-semibold text-slate-800">

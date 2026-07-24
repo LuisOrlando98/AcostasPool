@@ -1786,8 +1786,8 @@ export default async function CustomerDetailPage({
                   </form>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="flex flex-wrap items-center gap-3">
+                <div className="space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-slate-600">
                       {t("admin.customers.detail.contract.period", {
                         month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
@@ -1796,32 +1796,50 @@ export default async function CustomerDetailPage({
                         }),
                       })}
                     </p>
-                    {latestContract.pdfUrl ? (
-                      <a
-                        href={latestContract.pdfUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-                      >
-                        {t("admin.customers.detail.contract.viewPdf")}
-                      </a>
+                    {latestContract.status === "DRAFT" ? (
+                      <form action={sendServiceContract}>
+                        <input type="hidden" name="contractId" value={latestContract.id} />
+                        <input type="hidden" name="customerId" value={customer.id} />
+                        <FormSubmitButton
+                          idleLabel={t("admin.customers.detail.contract.send")}
+                          pendingLabel={t("admin.customers.detail.contract.sending")}
+                          className="px-4 py-2 text-xs"
+                        />
+                      </form>
                     ) : null}
                   </div>
 
-                  {latestContract.status === "DRAFT" ? (
-                    <form action={sendServiceContract}>
-                      <input type="hidden" name="contractId" value={latestContract.id} />
-                      <input type="hidden" name="customerId" value={customer.id} />
-                      <FormSubmitButton
-                        idleLabel={t("admin.customers.detail.contract.send")}
-                        pendingLabel={t("admin.customers.detail.contract.sending")}
-                        className="px-4 py-2 text-xs"
-                      />
-                    </form>
-                  ) : null}
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    {latestContract.pdfUrl ? (
+                      <>
+                        <iframe
+                          src={latestContract.pdfUrl}
+                          title={t("admin.customers.detail.contract.documentPreview")}
+                          className="h-[70vh] max-h-[720px] w-full border-0 bg-white"
+                        />
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
+                          <p className="text-xs text-slate-500">
+                            {t("admin.customers.detail.contract.previewHint")}
+                          </p>
+                          <a
+                            href={latestContract.pdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-semibold text-sky-700 hover:underline"
+                          >
+                            {t("admin.customers.detail.contract.openNewTab")}
+                          </a>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="px-4 py-10 text-center text-sm text-slate-500">
+                        {t("admin.customers.detail.contract.pdfUnavailable")}
+                      </p>
+                    )}
+                  </div>
 
                   {latestContract.status !== "SIGNED" ? (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
                       <p className="text-sm font-semibold text-slate-800">
                         {t("admin.customers.detail.contract.inPersonTitle")}
                       </p>
@@ -1855,7 +1873,7 @@ export default async function CustomerDetailPage({
                     </p>
                   )}
 
-                  <form action={generateServiceContract}>
+                  <form action={generateServiceContract} className="border-t border-slate-100 pt-3">
                     <input type="hidden" name="customerId" value={customer.id} />
                     <button
                       type="submit"
