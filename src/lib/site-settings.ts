@@ -289,7 +289,13 @@ export async function saveInvoiceTemplateConfig(template: SiteInvoiceTemplateCon
 }
 
 export async function getCompanySignatureUrl(): Promise<string | null> {
-  const settings = await getSiteSettingsCached();
+  // Bypasses the 5-minute site-settings cache: this feeds a legal
+  // document, so a signature saved moments ago must show up immediately
+  // on the next "generate contract" instead of waiting out the cache.
+  const settings = await prisma.siteSettings.findUnique({
+    where: { id: "default" },
+    select: { companySignatureUrl: true },
+  });
   return settings?.companySignatureUrl ?? null;
 }
 

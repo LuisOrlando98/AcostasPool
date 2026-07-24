@@ -3038,8 +3038,8 @@ export default async function CustomerDetailPage({
               htmlFor="view-contract"
               className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
             />
-            <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+            <div className="app-modal-card relative z-10 flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <div className="app-modal-scroll modal-scroll flex-1 overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
                 <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
@@ -3073,13 +3073,13 @@ export default async function CustomerDetailPage({
                   </label>
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <div className="mt-5 flex h-[64vh] min-h-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <iframe
                     src={contractPdfHref(latestContract.id)}
                     title={t("admin.customers.detail.contract.documentPreview")}
-                    className="h-[70vh] max-h-[720px] w-full border-0 bg-white"
+                    className="w-full flex-1 border-0 bg-white"
                   />
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
+                  <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
                     <p className="text-xs text-slate-500">
                       {t("admin.customers.detail.contract.previewHint")}
                     </p>
