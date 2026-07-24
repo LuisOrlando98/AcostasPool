@@ -1866,27 +1866,14 @@ export default async function CustomerDetailPage({
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm text-slate-600">
-                      {t("admin.customers.detail.contract.period", {
-                        month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
-                          month: "long",
-                          year: "numeric",
-                        }),
-                      })}
-                    </p>
-                    {latestContract.status === "DRAFT" ? (
-                      <form action={sendServiceContract}>
-                        <input type="hidden" name="contractId" value={latestContract.id} />
-                        <input type="hidden" name="customerId" value={customer.id} />
-                        <FormSubmitButton
-                          idleLabel={t("admin.customers.detail.contract.send")}
-                          pendingLabel={t("admin.customers.detail.contract.sending")}
-                          className="px-4 py-2 text-xs"
-                        />
-                      </form>
-                    ) : null}
-                  </div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    {t("admin.customers.detail.contract.period", {
+                      month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
+                        month: "long",
+                        year: "numeric",
+                      }),
+                    })}
+                  </p>
 
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     {latestContract.pdfUrl ? (
@@ -1939,6 +1926,17 @@ export default async function CustomerDetailPage({
                                 : t("admin.customers.detail.contract.generateNew")}
                             </button>
                           </form>
+                          {latestContract.status === "DRAFT" ? (
+                            <form action={sendServiceContract}>
+                              <input type="hidden" name="contractId" value={latestContract.id} />
+                              <input type="hidden" name="customerId" value={customer.id} />
+                              <FormSubmitButton
+                                idleLabel={t("admin.customers.detail.contract.send")}
+                                pendingLabel={t("admin.customers.detail.contract.sending")}
+                                className="rounded-full px-3.5 py-2 text-xs"
+                              />
+                            </form>
+                          ) : null}
                           <label
                             htmlFor="view-contract"
                             className="cursor-pointer rounded-full bg-sky-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-sky-700"
