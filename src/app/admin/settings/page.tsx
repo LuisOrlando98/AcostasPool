@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
+import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
+import { withFeedbackParam } from "@/lib/ui/action-feedback";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import ServiceTiersManager from "@/components/settings/ServiceTiersManager";
 import DocumentPreviewModal from "@/components/settings/DocumentPreviewModal";
@@ -207,27 +210,48 @@ function resolveInvoiceTheme(value: string | undefined): InvoiceTemplateTheme {
   return "STANDARD";
 }
 
+function settingsFeedbackPath(tab: string, feedback: string) {
+  return withFeedbackParam(`/admin/settings?tab=${tab}`, feedback);
+}
+
+function settingsErrorPath(tab: string, feedback: string, errorMessage: string) {
+  const base = settingsFeedbackPath(tab, feedback);
+  const [pathname, queryString = ""] = base.split("?", 2);
+  const params = new URLSearchParams(queryString);
+  params.set("signatureError", errorMessage);
+  return `${pathname}?${params.toString()}`;
+}
+
 async function saveCompanySignature(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
 
   const signatureDataUrl = String(formData.get("signatureDataUrl") ?? "");
   if (!signatureDataUrl.startsWith("data:image/png")) {
-    return;
+    redirect(settingsErrorPath("signature", "signature-save-failed", "Missing signature"));
   }
 
-  const base64 = signatureDataUrl.split(",")[1] ?? "";
-  const buffer = Buffer.from(base64, "base64");
-  const url = await storePublicAsset({
-    relativePath: buildCompanySignatureAssetPath(),
-    buffer,
-    contentType: "image/png",
-    cacheControl: "private, max-age=0, must-revalidate",
-  });
+  let redirectPath: string;
+  try {
+    const base64 = signatureDataUrl.split(",")[1] ?? "";
+    const buffer = Buffer.from(base64, "base64");
+    const url = await storePublicAsset({
+      relativePath: buildCompanySignatureAssetPath(),
+      buffer,
+      contentType: "image/png",
+      cacheControl: "private, max-age=0, must-revalidate",
+    });
 
-  await saveCompanySignatureUrl(url);
+    await saveCompanySignatureUrl(url);
+    redirectPath = settingsFeedbackPath("signature", "signature-saved");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("settings: failed to save company signature", error);
+    redirectPath = settingsErrorPath("signature", "signature-save-failed", message);
+  }
 
   revalidatePath("/admin/settings");
+  redirect(redirectPath);
 }
 
 async function saveSocialLinks(formData: FormData) {
@@ -380,6 +404,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const adminLocale = resolveEmailTemplateLocale(await getRequestLocale());
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const currentTab = resolveTab(getFirstSearchValue(resolvedSearchParams?.tab));
+  const feedback = getFirstSearchValue(resolvedSearchParams?.feedback);
+  const signatureError = getFirstSearchValue(resolvedSearchParams?.signatureError);
   const templateQuery = getFirstSearchValue(resolvedSearchParams?.template);
   const templateKind = resolveTemplateKind(
     getFirstSearchValue(resolvedSearchParams?.kind)
@@ -1366,6 +1392,20 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
         {currentTab === "signature" ? (
           <div className="app-card p-4 shadow-contrast sm:p-6">
+            {feedback === "signature-saved" ? (
+              <ActionFeedbackToast
+                message={t("admin.settings.signature.feedback.saved")}
+                dismissLabel={t("common.actions.close")}
+              />
+            ) : feedback === "signature-save-failed" ? (
+              <ActionFeedbackToast
+                tone="error"
+                message={t("admin.settings.signature.feedback.saveFailed", {
+                  error: signatureError || t("common.labels.notAvailable"),
+                })}
+                dismissLabel={t("common.actions.close")}
+              />
+            ) : null}
             <h2 className="text-lg font-semibold">{t("admin.settings.signature.title")}</h2>
             <p className="mt-2 text-sm text-slate-600">
               {t("admin.settings.signature.subtitle")}

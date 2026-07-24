@@ -1919,7 +1919,11 @@
         "current": "Firma actual",
         "clear": "Borrar firma",
         "save": "Guardar firma",
-        "missing": "Dibuja una firma antes de guardar."
+        "missing": "Dibuja una firma antes de guardar.",
+        "feedback": {
+          "saved": "Firma guardada correctamente.",
+          "saveFailed": "No se pudo guardar la firma: {{error}}"
+        }
       },
       "landing": {
         "title": "Configuracion del landing",

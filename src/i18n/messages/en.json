@@ -1919,7 +1919,11 @@
         "current": "Current signature",
         "clear": "Clear signature",
         "save": "Save signature",
-        "missing": "Draw a signature before saving."
+        "missing": "Draw a signature before saving.",
+        "feedback": {
+          "saved": "Signature saved successfully.",
+          "saveFailed": "Could not save the signature: {{error}}"
+        }
       },
       "landing": {
         "title": "Landing page configuration",
