@@ -1098,6 +1098,13 @@
         "actions": {
           "create": "Crear cliente",
           "creating": "Creando..."
+        },
+        "errors": {
+          "nameRequired": "El nombre es obligatorio.",
+          "invalidPhone": "El telefono no es valido. Verifica que tenga 10 digitos (o 11 si empieza con 1).",
+          "invalidPhoneSecondary": "El telefono secundario no es valido. Verifica que tenga 10 digitos (o 11 si empieza con 1).",
+          "emailInUse": "Ese correo ya esta en uso por otra cuenta.",
+          "incompleteAddress": "Completa direccion, ciudad, estado y codigo postal, o deja los cuatro campos vacios."
         }
       },
       "feedback": {

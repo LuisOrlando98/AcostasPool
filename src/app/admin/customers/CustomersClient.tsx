@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import CustomersOverview from "@/components/customers/CustomersOverview";
@@ -72,7 +72,10 @@ type CustomersClientProps = {
     portal: string;
     sort: string;
   };
-  createCustomer: (formData: FormData) => void | Promise<void>;
+  createCustomer: (
+    prevState: { error: string | null },
+    formData: FormData
+  ) => Promise<{ error: string | null }>;
 };
 
 export default function CustomersClient({
@@ -87,6 +90,10 @@ export default function CustomersClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [createCustomerState, createCustomerAction] = useActionState(
+    createCustomer,
+    { error: null }
+  );
   const [bulkInviteState, setBulkInviteState] = useState<BulkInviteState | null>(
     null
   );
@@ -318,10 +325,15 @@ export default function CustomersClient({
                   </button>
                 </div>
                 <form
-                  action={createCustomer}
+                  action={createCustomerAction}
                   className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]"
                 >
                   <input type="hidden" name="returnTo" value={returnTo} />
+                  {createCustomerState.error ? (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 lg:col-span-2">
+                      {createCustomerState.error}
+                    </div>
+                  ) : null}
                   <div className="space-y-6">
                     <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                       <h3 className="text-sm font-semibold text-slate-800">

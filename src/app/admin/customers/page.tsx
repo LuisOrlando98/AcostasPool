@@ -23,9 +23,17 @@ import {
   withFeedbackParam,
 } from "@/lib/ui/action-feedback";
 
-async function createCustomer(formData: FormData) {
+export type CreateCustomerState = {
+  error: string | null;
+};
+
+async function createCustomer(
+  _prevState: CreateCustomerState,
+  formData: FormData
+): Promise<CreateCustomerState> {
   "use server";
   await requireRole("ADMIN");
+  const t = await getTranslations();
 
   const returnTo = resolveSafeReturnTo(
     formData.get("returnTo"),
@@ -65,13 +73,13 @@ async function createCustomer(formData: FormData) {
     : null;
 
   if (!nombre) {
-    return;
+    return { error: t("admin.customers.new.errors.nameRequired") };
   }
   if (telefonoRaw && !telefono) {
-    return;
+    return { error: t("admin.customers.new.errors.invalidPhone") };
   }
   if (telefonoSecundarioRaw && !telefonoSecundario) {
-    return;
+    return { error: t("admin.customers.new.errors.invalidPhoneSecondary") };
   }
 
   if (email) {
@@ -80,7 +88,7 @@ async function createCustomer(formData: FormData) {
       select: { id: true, role: true },
     });
     if (existingUser && existingUser.role !== "CUSTOMER") {
-      return;
+      return { error: t("admin.customers.new.errors.emailInUse") };
     }
     if (existingUser) {
       const linkedCustomer = await prisma.customer.findFirst({
@@ -88,7 +96,7 @@ async function createCustomer(formData: FormData) {
         select: { id: true },
       });
       if (linkedCustomer) {
-        return;
+        return { error: t("admin.customers.new.errors.emailInUse") };
       }
     }
   }
@@ -96,7 +104,7 @@ async function createCustomer(formData: FormData) {
   const hasAddress =
     direccionLinea1 || ciudad || estadoProvincia || codigoPostal;
   if (hasAddress && (!direccionLinea1 || !ciudad || !estadoProvincia || !codigoPostal)) {
-    return;
+    return { error: t("admin.customers.new.errors.incompleteAddress") };
   }
 
   const customer = await prisma.customer.create({

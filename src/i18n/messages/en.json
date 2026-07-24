@@ -1098,6 +1098,13 @@
         "actions": {
           "create": "Create customer",
           "creating": "Creating..."
+        },
+        "errors": {
+          "nameRequired": "First name is required.",
+          "invalidPhone": "That phone number isn't valid. Check that it has 10 digits (or 11 starting with 1).",
+          "invalidPhoneSecondary": "That secondary phone number isn't valid. Check that it has 10 digits (or 11 starting with 1).",
+          "emailInUse": "That email is already in use by another account.",
+          "incompleteAddress": "Fill in address, city, state, and zip code, or leave all four blank."
         }
       },
       "feedback": {
