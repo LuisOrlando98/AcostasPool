@@ -1832,9 +1832,16 @@ export default async function CustomerDetailPage({
                         </div>
                       </>
                     ) : (
-                      <p className="px-4 py-10 text-center text-sm text-slate-500">
-                        {t("admin.customers.detail.contract.pdfUnavailable")}
-                      </p>
+                      <div className="px-4 py-10 text-center">
+                        <p className="text-sm text-slate-500">
+                          {t("admin.customers.detail.contract.pdfUnavailable")}
+                        </p>
+                        {latestContract.pdfError ? (
+                          <p className="mx-auto mt-3 max-w-xl rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-left font-mono text-[11px] text-rose-700">
+                            {latestContract.pdfError}
+                          </p>
+                        ) : null}
+                      </div>
                     )}
                   </div>
 

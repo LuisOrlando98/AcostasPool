@@ -159,11 +159,15 @@ export async function renderAndStoreContractPdf(
     });
     await prisma.serviceContract.update({
       where: { id: contract.id },
-      data: { pdfUrl },
+      data: { pdfUrl, pdfError: null },
     });
     return pdfUrl;
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("service-contract: failed to render/store PDF", contract.id, error);
+    await prisma.serviceContract
+      .update({ where: { id: contract.id }, data: { pdfError: message } })
+      .catch(() => undefined);
     return null;
   }
 }

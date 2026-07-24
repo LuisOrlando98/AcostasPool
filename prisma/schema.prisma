@@ -241,6 +241,7 @@ model ServiceContract {
 
   companySignatureUrl String?
   pdfUrl              String?
+  pdfError            String?
 
   sentAt DateTime?
 
