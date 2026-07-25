@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     severity: "WARNING",
     actorUserId: session.sub,
     payload: {
-      jobIds: [job.id],
+      jobId: job.id,
       count: 1,
       requestedAt: now.toISOString(),
       reason,
