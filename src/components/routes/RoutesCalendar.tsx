@@ -1482,8 +1482,8 @@ export default function RoutesCalendar({
                 type="button"
                 onClick={() => moveMonth(-1)}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800 sm:h-9 sm:w-9"
-                aria-label={t("client.request.calendar.previousMonth")}
-                title={t("client.request.calendar.previousMonth")}
+                aria-label={t("admin.routes.calendar.previousMonth")}
+                title={t("admin.routes.calendar.previousMonth")}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -1506,8 +1506,8 @@ export default function RoutesCalendar({
                 type="button"
                 onClick={() => moveMonth(1)}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-slate-300 hover:text-slate-800 sm:h-9 sm:w-9"
-                aria-label={t("client.request.calendar.nextMonth")}
-                title={t("client.request.calendar.nextMonth")}
+                aria-label={t("admin.routes.calendar.nextMonth")}
+                title={t("admin.routes.calendar.nextMonth")}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -2090,7 +2090,7 @@ export default function RoutesCalendar({
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500">
                               {isPlanEntry
-                                ? planLabel || t("client.request.modes.recurring")
+                                ? planLabel || t("jobs.type.recurring")
                                 : job.type === "ON_DEMAND"
                                   ? t("jobs.type.onDemand")
                                   : t("jobs.type.routine")}
@@ -3129,7 +3129,7 @@ export default function RoutesCalendar({
                                 {statusInfo.label}
                               </span>
                               <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
-                                {planLabel || t("client.request.modes.recurring")}
+                                {planLabel || t("jobs.type.recurring")}
                               </span>
                             </div>
                           </div>

@@ -468,7 +468,8 @@
     },
     "type": {
       "onDemand": "On-demand",
-      "routine": "Routine"
+      "routine": "Routine",
+      "recurring": "Recurring"
     },
     "priority": {
       "urgent": "Urgent",
@@ -622,6 +623,10 @@
       "tabs": {
         "calendar": "Calendar",
         "assistant": "Route assistant"
+      },
+      "calendar": {
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month"
       },
       "assistant": {
         "pageTitle": "Route assistant",
@@ -2404,76 +2409,35 @@
       "title": "Quick service request",
       "subtitle": "Create an additional visit outside the plan.",
       "formTitle": "Request details",
-      "formSubtitle": "Choose available slots or send an urgent request for manual review.",
-      "leadTime": "Minimum lead time: {{days}} days",
-      "calendar": {
-        "stepDate": "Step 1 - Select date",
-        "stepTime": "Step 2 - Select time",
-        "previousMonth": "Previous month",
-        "nextMonth": "Next month",
-        "prev": "Prev",
-        "next": "Next",
-        "selectDateHint": "Select a date to see available times.",
-        "availableShort": "Available",
-        "unavailableShort": "Unavailable",
-        "available": "Available",
-        "unavailable": "Not available",
-        "selection": "Selected: {{date}} at {{time}}"
-      },
+      "formSubtitle": "Tell us which days work for you - we'll review and confirm the exact time.",
       "fields": {
         "property": "Property",
         "noProperty": "No properties registered",
-        "noAvailability": "No available slots found",
         "reason": "Reason",
-        "mode": "Scheduling mode",
-        "weeks": "Duration (weeks)",
-        "visitsPerWeek": "Visits per week",
-        "availableDate": "Available date",
-        "availableTime": "Available time",
-        "preferredDate": "Preferred date",
-        "preferredTime": "Preferred time",
-        "urgentOverride": "Need a sooner date? Send as urgent request (manual review)",
+        "availableDays": "Available days",
         "description": "Description"
       },
       "placeholders": {
-        "description": "Describe the issue or requested service."
+        "description": "Describe the issue or requested service.",
+        "reasonOther": "Tell us what you need."
       },
-      "modes": {
-        "single": "Single visit",
-        "recurring": "Recurring schedule"
-      },
-      "options": {
-        "oncePerWeek": "1 visit / week",
-        "twicePerWeek": "2 visits / week",
-        "visitsPerWeekCount": "{{count}} visits / week",
-        "weeksCount": "{{count}} week(s)",
-        "dayCapacity": "{{date}} · {{count}} slot(s)",
-        "timeCapacity": "{{time}} · {{count}} slot(s)"
-      },
-      "notice": "The system will auto-assign your request based on real availability.",
-      "noticeUrgent": "Urgent requests under the lead time are sent for manual review.",
+      "availableDaysHint": "We need at least {{days}} days notice before the visit.",
+      "notice": "We'll contact you to confirm the exact date and time.",
       "submit": "Send request",
       "loading": "Sending...",
       "errors": {
         "property": "Select a property.",
-        "availability": "Select date and time.",
-        "recurringPaused": "Recurring service is paused. Resume it in your profile before creating a recurring request.",
+        "availableDays": "Select at least one available day.",
+        "reasonOther": "Describe the reason.",
         "submit": "Unable to submit the request."
       },
-      "successCount": "Request scheduled successfully. Visits created: {{count}}.",
-      "successRecurringConfigured": "Recurring service configured: {{visits}} visit(s) per week with {{plans}} active recurring plan(s).",
-      "successReview": "Urgent request sent. Our team will review and confirm as soon as possible.",
-      "successPartial": "Partial schedule created due limited availability. Visits created: {{count}}.",
-      "hints": {
-        "recurringResidential": "Recurring mode stays active indefinitely. Residential accounts support up to 2 visits per week.",
-        "recurringCommercial": "Recurring mode stays active indefinitely. Commercial accounts support up to 5 visits per week.",
-        "recurringPaused": "Your recurring service is currently paused from profile settings."
-      },
+      "successThankYou": "Thank you for your request. We'll review it and contact you within 24 hours.",
       "reasons": {
         "emergency": "Emergency / Pump",
         "quickCleaning": "Quick cleaning",
         "chemBalance": "Urgent chemical balance",
-        "general": "General checkup"
+        "general": "General checkup",
+        "other": "Other"
       }
     },
     "profile": {

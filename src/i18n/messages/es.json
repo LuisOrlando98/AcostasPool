@@ -468,7 +468,8 @@
     },
     "type": {
       "onDemand": "On-demand",
-      "routine": "Rutina"
+      "routine": "Rutina",
+      "recurring": "Recurrente"
     },
     "priority": {
       "urgent": "Urgente",
@@ -622,6 +623,10 @@
       "tabs": {
         "calendar": "Calendario",
         "assistant": "Route assistant"
+      },
+      "calendar": {
+        "previousMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente"
       },
       "assistant": {
         "pageTitle": "Route assistant",
@@ -2404,76 +2409,35 @@
       "title": "Solicitud de servicio rapido",
       "subtitle": "Crea una visita adicional fuera del plan.",
       "formTitle": "Detalle de la solicitud",
-      "formSubtitle": "Elige disponibilidad real o envia una solicitud urgente para revision manual.",
-      "leadTime": "Anticipacion minima: {{days}} dias",
-      "calendar": {
-        "stepDate": "Paso 1 - Selecciona fecha",
-        "stepTime": "Paso 2 - Selecciona hora",
-        "previousMonth": "Mes anterior",
-        "nextMonth": "Mes siguiente",
-        "prev": "Ant",
-        "next": "Sig",
-        "selectDateHint": "Selecciona una fecha para ver horarios disponibles.",
-        "availableShort": "Disponible",
-        "unavailableShort": "No disponible",
-        "available": "Disponible",
-        "unavailable": "No disponible",
-        "selection": "Seleccionado: {{date}} a las {{time}}"
-      },
+      "formSubtitle": "Dinos que dias te funcionan - revisaremos y confirmaremos la hora exacta.",
       "fields": {
         "property": "Propiedad",
         "noProperty": "Sin propiedades registradas",
-        "noAvailability": "No se encontraron horarios disponibles",
         "reason": "Motivo",
-        "mode": "Modo de agenda",
-        "weeks": "Duracion (semanas)",
-        "visitsPerWeek": "Visitas por semana",
-        "availableDate": "Fecha disponible",
-        "availableTime": "Hora disponible",
-        "preferredDate": "Fecha preferida",
-        "preferredTime": "Horario sugerido",
-        "urgentOverride": "Necesito una fecha mas cercana (revision manual)",
+        "availableDays": "Dias disponibles",
         "description": "Descripcion"
       },
       "placeholders": {
-        "description": "Explica el problema o el servicio requerido."
+        "description": "Explica el problema o el servicio requerido.",
+        "reasonOther": "Cuentanos que necesitas."
       },
-      "modes": {
-        "single": "Visita unica",
-        "recurring": "Servicio recurrente"
-      },
-      "options": {
-        "oncePerWeek": "1 visita / semana",
-        "twicePerWeek": "2 visitas / semana",
-        "visitsPerWeekCount": "{{count}} visitas / semana",
-        "weeksCount": "{{count}} semana(s)",
-        "dayCapacity": "{{date}} · {{count}} espacio(s)",
-        "timeCapacity": "{{time}} · {{count}} espacio(s)"
-      },
-      "notice": "El sistema asigna automaticamente segun la disponibilidad real.",
-      "noticeUrgent": "Las solicitudes urgentes fuera del tiempo minimo pasan a revision manual.",
+      "availableDaysHint": "Necesitamos al menos {{days}} dias de antelacion antes de la visita.",
+      "notice": "Te contactaremos para confirmar la fecha y hora exacta.",
       "submit": "Enviar solicitud",
       "loading": "Enviando...",
       "errors": {
         "property": "Selecciona una propiedad.",
-        "availability": "Selecciona fecha y hora.",
-        "recurringPaused": "El servicio recurrente esta pausado. Reanudalo en tu perfil antes de crear una solicitud recurrente.",
+        "availableDays": "Selecciona al menos un dia disponible.",
+        "reasonOther": "Describe el motivo.",
         "submit": "No se pudo enviar la solicitud."
       },
-      "successCount": "Solicitud programada correctamente. Visitas creadas: {{count}}.",
-      "successRecurringConfigured": "Servicio recurrente configurado: {{visits}} visita(s) por semana con {{plans}} plan(es) activo(s).",
-      "successReview": "Solicitud urgente enviada. Nuestro equipo la revisara y confirmara lo antes posible.",
-      "successPartial": "Se creo una programacion parcial por disponibilidad limitada. Visitas creadas: {{count}}.",
-      "hints": {
-        "recurringResidential": "El modo recurrente queda activo de forma indefinida. Cuentas residenciales permiten hasta 2 visitas por semana.",
-        "recurringCommercial": "El modo recurrente queda activo de forma indefinida. Cuentas comerciales permiten hasta 5 visitas por semana.",
-        "recurringPaused": "Tu servicio recurrente esta pausado desde el perfil."
-      },
+      "successThankYou": "Gracias por tu solicitud. La revisaremos y te estaremos contactando en menos de 24 horas.",
       "reasons": {
         "emergency": "Emergencia / Bomba",
         "quickCleaning": "Limpieza rapida",
         "chemBalance": "Balance quimico urgente",
-        "general": "Revision general"
+        "general": "Revision general",
+        "other": "Otro"
       }
     },
     "profile": {

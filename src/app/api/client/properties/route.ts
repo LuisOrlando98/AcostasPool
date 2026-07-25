@@ -44,6 +44,7 @@ export async function GET() {
       customerType: "RESIDENTIAL",
       accountStatus: "ACTIVE",
       pauseServicesFrom: null,
+      allowWeekendBooking: false,
     });
   }
 
@@ -52,6 +53,7 @@ export async function GET() {
     customerType: customer.tipoCliente,
     accountStatus: customer.estadoCuenta,
     pauseServicesFrom: customer.pauseServicesFrom?.toISOString() ?? null,
+    allowWeekendBooking: customer.allowWeekendBooking,
   });
 }
 
