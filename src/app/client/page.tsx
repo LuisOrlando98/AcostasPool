@@ -65,6 +65,45 @@ export default async function ClientPage() {
       subtitle={t("client.home.subtitle")}
       role="CUSTOMER"
     >
+      <a
+        href="/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group mb-4 flex items-center justify-between gap-3 rounded-2xl border border-sky-200/70 bg-gradient-to-r from-sky-600 to-cyan-600 px-4 py-3.5 text-white shadow-[0_10px_24px_rgba(14,165,233,0.25)] transition hover:from-sky-500 hover:to-cyan-500 sm:px-5"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-5 w-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4"
+              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 4h6v6M20 4l-9 9" />
+            </svg>
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold">{t("nav.client.website")}</p>
+            <p className="truncate text-xs text-sky-50/85">{t("client.home.visitWebsiteHint")}</p>
+          </div>
+        </div>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+        </svg>
+      </a>
+
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <article className="relative overflow-hidden rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 via-cyan-50 to-white p-4 shadow-[0_10px_24px_rgba(14,165,233,0.12)] sm:p-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">

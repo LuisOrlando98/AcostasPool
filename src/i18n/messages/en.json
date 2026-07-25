@@ -2369,6 +2369,7 @@
       "subtitle": "Evidence and billing in one place.",
       "subtitleEmpty": "Your profile isn't configured yet.",
       "noProfile": "Contact the administrator to activate your profile.",
+      "visitWebsiteHint": "See our services, plans, and more.",
       "stats": {
         "nextService": "Next service",
         "notScheduled": "Not scheduled",
