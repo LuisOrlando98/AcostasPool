@@ -418,6 +418,7 @@
       "submit": "Completar perfil",
       "loadingSubmit": "Guardando...",
       "success": "Perfil completado. Ya puedes iniciar sesion.",
+      "successHint": "Tu cuenta esta lista. Inicia sesion con tu correo y la contrasena que acabas de crear para acceder a tu portal.",
       "notFound": "No se encontro el perfil.",
       "errors": {
         "token": "Token requerido.",

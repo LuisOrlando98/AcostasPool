@@ -418,6 +418,7 @@
       "submit": "Complete profile",
       "loadingSubmit": "Saving...",
       "success": "Profile completed. You can sign in now.",
+      "successHint": "Your account is ready. Sign in with your email and the password you just created to access your portal.",
       "notFound": "Profile not found.",
       "errors": {
         "token": "Token required.",

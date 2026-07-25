@@ -47,6 +47,7 @@ export default function CompleteProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [switchingLocale, setSwitchingLocale] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
 
   const legalLinks = [
     {
@@ -146,6 +147,13 @@ export default function CompleteProfilePage() {
       .finally(() => setLoadingProfile(false));
   }, [token, t]);
 
+  useEffect(() => {
+    if (!message) {
+      return;
+    }
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [message]);
+
   const handleSubmit = async () => {
     if (!token) {
       setMessage(t("auth.complete.errors.token"));
@@ -162,6 +170,7 @@ export default function CompleteProfilePage() {
 
     const form = formRef.current;
     if (!form) {
+      setMessage(t("auth.complete.errors.submit"));
       return;
     }
 
@@ -323,13 +332,43 @@ export default function CompleteProfilePage() {
             </div>
           </section>
 
-          <section className="order-1 app-card w-full max-w-3xl p-6 sm:p-8 lg:order-2">
+          <section
+            ref={cardRef}
+            className="order-1 app-card w-full max-w-3xl p-6 sm:p-8 lg:order-2"
+          >
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t("app.name")}</p>
             <h2 className="mt-2 text-2xl font-semibold text-slate-900">{t("auth.complete.title")}</h2>
             <p className="mt-1 text-sm text-slate-600">{t("auth.complete.subtitle")}</p>
 
             {loadingProfile ? (
               <p className="mt-6 text-sm text-slate-600">{t("auth.complete.loading")}</p>
+            ) : isSuccessMessage ? (
+              <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-center">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    className="h-6 w-6"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 10l4 4 8-8" />
+                  </svg>
+                </span>
+                <h3 className="mt-4 text-lg font-semibold text-emerald-800">
+                  {t("auth.complete.success")}
+                </h3>
+                <p className="mt-1 text-sm text-emerald-700">
+                  {t("auth.complete.successHint")}
+                </p>
+                <Link
+                  href="/login"
+                  className="app-button-primary mt-5 inline-flex w-full items-center justify-center px-4 py-3 text-sm font-semibold"
+                >
+                  {t("auth.login.title")}
+                </Link>
+              </div>
             ) : profile ? (
               <form ref={formRef} className="mt-6 space-y-5" onSubmit={handleFormSubmit}>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -461,13 +500,7 @@ export default function CompleteProfilePage() {
                 </div>
 
                 {message ? (
-                  <div
-                    className={`rounded-xl border px-4 py-3 text-sm ${
-                      isSuccessMessage
-                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                        : "border-rose-300 bg-rose-50 text-rose-700"
-                    }`}
-                  >
+                  <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                     {message}
                   </div>
                 ) : null}
@@ -479,15 +512,6 @@ export default function CompleteProfilePage() {
                 >
                   {submitting ? t("auth.complete.loadingSubmit") : t("auth.complete.submit")}
                 </button>
-
-                {isSuccessMessage ? (
-                  <Link
-                    href="/login"
-                    className="inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-                  >
-                    {t("auth.login.title")}
-                  </Link>
-                ) : null}
               </form>
             ) : (
               <p className="mt-6 text-sm text-slate-600">{message ?? t("auth.complete.notFound")}</p>
