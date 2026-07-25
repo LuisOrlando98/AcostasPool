@@ -37,24 +37,21 @@ type PropertyRow = {
 
 const CONDITION_STATUS_STYLES: Record<
   PoolConditionStatus,
-  { idle: string; peerChecked: string; solid: string }
+  { idle: string; active: string; solid: string }
 > = {
   BROKEN: {
     idle: "border-rose-300 bg-rose-50",
-    peerChecked:
-      "peer-checked:border-rose-600 peer-checked:bg-rose-500 peer-checked:ring-2 peer-checked:ring-rose-200",
+    active: "border-rose-600 bg-rose-500 ring-2 ring-rose-200",
     solid: "border-rose-600 bg-rose-500",
   },
   BAD: {
     idle: "border-amber-300 bg-amber-50",
-    peerChecked:
-      "peer-checked:border-amber-500 peer-checked:bg-amber-400 peer-checked:ring-2 peer-checked:ring-amber-200",
+    active: "border-amber-500 bg-amber-400 ring-2 ring-amber-200",
     solid: "border-amber-500 bg-amber-400",
   },
   GOOD: {
     idle: "border-emerald-300 bg-emerald-50",
-    peerChecked:
-      "peer-checked:border-emerald-600 peer-checked:bg-emerald-500 peer-checked:ring-2 peer-checked:ring-emerald-200",
+    active: "border-emerald-600 bg-emerald-500 ring-2 ring-emerald-200",
     solid: "border-emerald-600 bg-emerald-500",
   },
 };
@@ -81,6 +78,9 @@ export default function AdminCustomerProperties({
   const [activePropertyId, setActivePropertyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [conditionDraft, setConditionDraft] = useState<
+    Record<string, PoolConditionStatus | null>
+  >({});
 
   const conditionLabel = (key: (typeof POOL_CONDITION_ITEM_KEYS)[number]) =>
     t(`admin.customers.detail.properties.condition.items.${key}`);
@@ -102,11 +102,19 @@ export default function AdminCustomerProperties({
   const openPropertyEditor = (propertyId: string) => {
     setConfirmDelete(false);
     setActivePropertyId(propertyId);
+    const property = rows.find((row) => row.id === propertyId);
+    const draft: Record<string, PoolConditionStatus | null> = {};
+    for (const key of POOL_CONDITION_ITEM_KEYS) {
+      draft[key] =
+        property?.poolCondition.find((entry) => entry.key === key)?.status ?? null;
+    }
+    setConditionDraft(draft);
   };
 
   const closePropertyEditor = () => {
     setConfirmDelete(false);
     setActivePropertyId(null);
+    setConditionDraft({});
   };
 
   const poolTypeOptions = [
@@ -613,9 +621,7 @@ export default function AdminCustomerProperties({
                   </p>
                   <div className="mt-3 grid gap-2">
                     {POOL_CONDITION_ITEM_KEYS.map((key) => {
-                      const currentStatus =
-                        activeProperty.poolCondition.find((entry) => entry.key === key)
-                          ?.status ?? null;
+                      const currentStatus = conditionDraft[key] ?? null;
                       return (
                         <div
                           key={key}
@@ -625,23 +631,26 @@ export default function AdminCustomerProperties({
                             {conditionLabel(key)}
                           </span>
                           <div className="flex items-center gap-2">
+                            <input
+                              type="hidden"
+                              name={`condition_${key}`}
+                              value={currentStatus ?? ""}
+                            />
                             {POOL_CONDITION_STATUS_VALUES.map((status) => (
-                              <label
+                              <button
                                 key={status}
-                                className="cursor-pointer"
+                                type="button"
                                 title={conditionStatusLabel(status)}
-                              >
-                                <input
-                                  type="radio"
-                                  name={`condition_${key}`}
-                                  value={status}
-                                  defaultChecked={currentStatus === status}
-                                  className="peer sr-only"
-                                />
-                                <span
-                                  className={`block h-6 w-6 rounded-full border-2 transition ${CONDITION_STATUS_STYLES[status].idle} ${CONDITION_STATUS_STYLES[status].peerChecked}`}
-                                />
-                              </label>
+                                aria-pressed={currentStatus === status}
+                                onClick={() =>
+                                  setConditionDraft((prev) => ({ ...prev, [key]: status }))
+                                }
+                                className={`h-6 w-6 rounded-full border-2 transition ${
+                                  currentStatus === status
+                                    ? CONDITION_STATUS_STYLES[status].active
+                                    : CONDITION_STATUS_STYLES[status].idle
+                                }`}
+                              />
                             ))}
                           </div>
                         </div>
