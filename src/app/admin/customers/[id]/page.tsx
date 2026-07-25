@@ -1852,13 +1852,23 @@ export default async function CustomerDetailPage({
               subtitle={t("admin.customers.detail.sections.contractSubtitle")}
               headerExtra={
                 latestContract ? (
-                  <span
-                    className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${contractStatusBadgeClass(
-                      latestContract.status
-                    )}`}
-                  >
-                    {t(`admin.customers.detail.contract.status.${latestContract.status}`)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      {t("admin.customers.detail.contract.period", {
+                        month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
+                          month: "long",
+                          year: "numeric",
+                        }),
+                      })}
+                    </span>
+                    <span
+                      className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold ${contractStatusBadgeClass(
+                        latestContract.status
+                      )}`}
+                    >
+                      {t(`admin.customers.detail.contract.status.${latestContract.status}`)}
+                    </span>
+                  </div>
                 ) : null
               }
             >
@@ -1878,15 +1888,6 @@ export default async function CustomerDetailPage({
                 </div>
               ) : (
                 <div className="space-y-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {t("admin.customers.detail.contract.period", {
-                      month: formatInBusinessTimeZone(latestContract.periodMonth, locale, {
-                        month: "long",
-                        year: "numeric",
-                      }),
-                    })}
-                  </p>
-
                   <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     {latestContract.pdfUrl ? (
                       <div className="flex flex-wrap items-center justify-between gap-3 p-4">
