@@ -555,6 +555,10 @@
       "CUSTOM": "Otro (concentracion personalizada)"
     },
     "incompleteHint": "Completa todos los campos para ver el resultado.",
+    "units": {
+      "gal": "gal",
+      "oz": "oz"
+    },
     "results": {
       "doseTitle": "Cloro a agregar",
       "doseNone": "El cloro libre ya esta dentro del rango objetivo. No es necesario agregar cloro ahora.",

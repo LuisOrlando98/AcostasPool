@@ -220,7 +220,7 @@ export default function ChlorineCalculatorForm() {
               <p className="mt-2 text-2xl font-semibold text-sky-900">
                 {t("poolCalculator.results.doseAmount", {
                   amount: String(result.doseAmount),
-                  unit: result.doseUnit,
+                  unit: t(`poolCalculator.units.${result.doseUnit}`),
                   product: productLabel,
                 })}
               </p>

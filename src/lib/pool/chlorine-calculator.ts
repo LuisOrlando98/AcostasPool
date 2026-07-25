@@ -3,7 +3,9 @@
 // the methodology used industry-wide for stabilized pools (e.g. Trouble Free
 // Pool's chlorine/CYA chart). Dosing constants below are anchored to the
 // commonly published industry figures for a 10,000 gallon pool: ~10.6 fl oz
-// of 12.5% liquid chlorine, or ~2.0 oz of 65% cal-hypo, raise FC by 1 ppm.
+// (~0.083 gal) of 12.5% liquid chlorine, or ~2.0 oz of 65% cal-hypo, raise
+// FC by 1 ppm. Liquid is reported in gallons (how techs buy/pour it),
+// granular stays in ounces (how it's scooped/weighed).
 
 export type ChlorineProduct =
   | "LIQUID_10"
@@ -32,7 +34,7 @@ export type ChlorineCalculatorResult = {
   shockFC: number;
   ppmToAdd: number;
   doseAmount: number;
-  doseUnit: "fl oz" | "oz";
+  doseUnit: "gal" | "oz";
   phStatus: LevelStatus;
   alkalinityStatus: LevelStatus;
 };
@@ -42,8 +44,8 @@ const PH_MAX = 7.8;
 const TA_MIN = 80;
 const TA_MAX = 120;
 
-// fl oz (or oz) x strength% needed per 10,000 gallons per 1 ppm FC increase.
-const LIQUID_DOSE_CONSTANT = 132.5;
+// gallons (or oz) x strength% needed per 10,000 gallons per 1 ppm FC increase.
+const LIQUID_DOSE_CONSTANT = 132.5 / 128; // fl oz constant converted to gallons
 const GRANULAR_DOSE_CONSTANT = 130;
 
 function round(value: number, decimals: number) {
@@ -109,7 +111,7 @@ export function calculateChlorineDose(
     shockFC,
     ppmToAdd,
     doseAmount,
-    doseUnit: form === "liquid" ? "fl oz" : "oz",
+    doseUnit: form === "liquid" ? "gal" : "oz",
     phStatus,
     alkalinityStatus,
   };

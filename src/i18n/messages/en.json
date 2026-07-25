@@ -555,6 +555,10 @@
       "CUSTOM": "Other (custom %)"
     },
     "incompleteHint": "Fill in all fields to see the result.",
+    "units": {
+      "gal": "gal",
+      "oz": "oz"
+    },
     "results": {
       "doseTitle": "Chlorine to add",
       "doseNone": "Free chlorine is already within the target range. No chlorine needed right now.",
