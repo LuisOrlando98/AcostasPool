@@ -41,6 +41,7 @@ type JobItem = {
   planName?: string | null;
   showScheduledTime: boolean;
   notes?: string | null;
+  customerNotes?: string | null;
   checklist?: { label?: string; completed?: boolean }[] | null;
   photos: { id: string; url: string; takenAt: string }[];
   customer: { id: string; name: string; email?: string | null; phone?: string | null };
@@ -149,6 +150,7 @@ type JobModalState = {
   technicianId: string;
   type: string;
   notes: string;
+  customerNotes: string;
   checklist: { label?: string; completed?: boolean }[];
   photos: { id: string; url: string; takenAt: string }[];
 };
@@ -1042,6 +1044,7 @@ export default function RoutesCalendar({
       technicianId: job.technicianId ?? "",
       type: job.type,
       notes: job.notes ?? "",
+      customerNotes: job.customerNotes ?? "",
       checklist:
         checklistItems.length > 0
           ? checklistItems
@@ -3595,6 +3598,22 @@ export default function RoutesCalendar({
                                 </div>
                               </div>
                             </div>
+
+                            {jobModal.customerNotes ? (
+                              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="text-sm font-semibold text-amber-900">
+                                    {t("admin.routes.labels.customerRequest")}
+                                  </h3>
+                                  <span className="rounded-full border border-amber-300 bg-white px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                                    {t("admin.routes.labels.customerRequestBadge")}
+                                  </span>
+                                </div>
+                                <p className="mt-3 whitespace-pre-wrap text-sm text-amber-900">
+                                  {jobModal.customerNotes}
+                                </p>
+                              </div>
+                            ) : null}
 
                             <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
                               <div className="flex items-center justify-between">

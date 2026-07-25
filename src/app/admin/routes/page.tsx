@@ -86,6 +86,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
         sortOrder: true,
         planId: true,
         notes: true,
+        customerNotes: true,
         checklist: true,
         photos: { select: { id: true, url: true, takenAt: true } },
         plan: {
@@ -209,6 +210,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
     entryKind: "job" as const,
     showScheduledTime: job.plan?.name === CUSTOM_SERVICE_PLAN_NAME,
     notes: job.notes,
+    customerNotes: job.customerNotes,
     checklist: Array.isArray(job.checklist)
       ? (job.checklist as Array<{ label?: string; completed?: boolean }>)
       : null,

@@ -11,6 +11,7 @@ import {
 import { combineDateAndTime } from "@/lib/jobs/scheduling";
 import { MIN_BOOKING_LEAD_DAYS, getLeadStartDate, toDateKey } from "@/lib/jobs/capacity";
 import { getBusinessTimeParts } from "@/lib/timezone";
+import { getRequestLocale, getTranslations } from "@/i18n/server";
 
 const requestSchema = z.object({
   propertyId: z.string().min(1),
@@ -93,13 +94,28 @@ export async function POST(request: Request) {
 
   const defaultTierId = await getDefaultServiceTierId();
   const checklist = await getServiceTierChecklist(defaultTierId);
-  const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const availabilityNote = `Available: ${allowedWeekdays
-    .slice()
-    .sort()
-    .map((day) => weekdayLabels[day])
-    .join(", ")}`;
-  const notes = [reason, description?.trim() || null, availabilityNote]
+
+  const locale = await getRequestLocale();
+  const t = await getTranslations(locale);
+  const weekdayFormatter = new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+    weekday: "long",
+    timeZone: "UTC",
+  });
+  // 2024-01-07 is a UTC Sunday, so offsetting by `day` (0=Sun..6=Sat) lands
+  // on the matching weekday regardless of what "today" is.
+  const weekdayLabel = (day: number) => {
+    const label = weekdayFormatter.format(new Date(Date.UTC(2024, 0, 7 + day)));
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  };
+  const availableDaysLabel = allowedWeekdays.slice().sort().map(weekdayLabel).join(", ");
+
+  const customerNotes = [
+    `${t("client.request.fields.reason")}: ${reason}`,
+    description?.trim()
+      ? `${t("client.request.fields.description")}: ${description.trim()}`
+      : null,
+    `${t("client.request.fields.availableDays")}: ${availableDaysLabel}`,
+  ]
     .filter(Boolean)
     .join("\n");
 
@@ -118,7 +134,7 @@ export async function POST(request: Request) {
       type: "ON_DEMAND",
       serviceTierId: defaultTierId,
       checklist,
-      notes,
+      customerNotes,
       requestedAt: now,
       requestedByUserId: session.sub,
     },

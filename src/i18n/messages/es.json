@@ -847,6 +847,8 @@
         "noProperties": "Sin propiedades",
         "noEmail": "Sin email",
         "noPhone": "Sin telefono",
+        "customerRequest": "Solicitud del cliente",
+        "customerRequestBadge": "Del cliente",
         "withSpa": "Con spa",
         "withoutSpa": "Sin spa",
         "unassigned": "Sin asignar",

@@ -847,6 +847,8 @@
         "noProperties": "No properties",
         "noEmail": "No email",
         "noPhone": "No phone",
+        "customerRequest": "Customer's request",
+        "customerRequestBadge": "From the customer",
         "withSpa": "With spa",
         "withoutSpa": "No spa",
         "unassigned": "Unassigned",
