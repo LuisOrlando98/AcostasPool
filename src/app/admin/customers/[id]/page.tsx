@@ -1435,8 +1435,8 @@ export default async function CustomerDetailPage({
   });
   const latestContract = customer.serviceContracts[0] ?? null;
   const contractHistory = customer.serviceContracts.slice(1, 6);
-  const contractPdfHref = (contractId: string) =>
-    `/api/admin/customers/${customer.id}/contracts/${contractId}/pdf`;
+  const contractPdfHref = (contractId: string, updatedAt: Date) =>
+    `/api/admin/customers/${customer.id}/contracts/${contractId}/pdf?v=${updatedAt.getTime()}`;
   const contractStatusBadgeClass = (status: string) =>
     status === "SIGNED"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -2012,7 +2012,7 @@ export default async function CustomerDetailPage({
                             </div>
                             {historyContract.pdfUrl ? (
                               <a
-                                href={contractPdfHref(historyContract.id)}
+                                href={contractPdfHref(historyContract.id, historyContract.updatedAt)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-xs font-semibold text-sky-700 hover:underline"
@@ -3111,7 +3111,7 @@ export default async function CustomerDetailPage({
 
                 <div className="mt-5 flex h-[64vh] min-h-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                   <iframe
-                    src={contractPdfHref(latestContract.id)}
+                    src={contractPdfHref(latestContract.id, latestContract.updatedAt)}
                     title={t("admin.customers.detail.contract.documentPreview")}
                     className="w-full flex-1 border-0 bg-white"
                   />
@@ -3120,7 +3120,7 @@ export default async function CustomerDetailPage({
                       {t("admin.customers.detail.contract.previewHint")}
                     </p>
                     <a
-                      href={contractPdfHref(latestContract.id)}
+                      href={contractPdfHref(latestContract.id, latestContract.updatedAt)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs font-semibold text-sky-700 hover:underline"

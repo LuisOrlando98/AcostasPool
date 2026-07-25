@@ -99,7 +99,7 @@ export default async function ClientContractPage() {
             {pendingContract.pdfUrl ? (
               <>
                 <iframe
-                  src={`/api/client/contract/${pendingContract.id}/pdf`}
+                  src={`/api/client/contract/${pendingContract.id}/pdf?v=${pendingContract.updatedAt.getTime()}`}
                   title={t("client.contract.viewFullContract")}
                   className="h-[60vh] max-h-[600px] w-full border-0 bg-white"
                 />
@@ -108,7 +108,7 @@ export default async function ClientContractPage() {
                     {t("admin.customers.detail.contract.previewHint")}
                   </p>
                   <a
-                    href={`/api/client/contract/${pendingContract.id}/pdf`}
+                    href={`/api/client/contract/${pendingContract.id}/pdf?v=${pendingContract.updatedAt.getTime()}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs font-semibold text-sky-700 hover:underline"
@@ -169,7 +169,7 @@ export default async function ClientContractPage() {
                 </div>
                 {contract.pdfUrl ? (
                   <a
-                    href={`/api/client/contract/${contract.id}/pdf`}
+                    href={`/api/client/contract/${contract.id}/pdf?v=${contract.updatedAt.getTime()}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-slate-600 underline"

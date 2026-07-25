@@ -28,7 +28,7 @@ import {
 } from "@/lib/compliance-config";
 import { requireRole } from "@/lib/auth/guards";
 import {
-  getCompanySignatureUrl,
+  getCompanySignatureMeta,
   getComplianceContentConfig,
   getEmailTemplatesConfig,
   getInvoiceTemplateConfig,
@@ -444,7 +444,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     emailTemplates,
     invoiceTemplate,
     complianceContent,
-    companySignatureUrl,
+    companySignatureMeta,
   ] = await Promise.all([
     getTranslations(),
     getSiteSocialLinks(),
@@ -452,8 +452,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     getEmailTemplatesConfig(adminLocale),
     getInvoiceTemplateConfig(),
     getComplianceContentConfig(),
-    getCompanySignatureUrl(),
+    getCompanySignatureMeta(),
   ]);
+  const { url: companySignatureUrl, updatedAt: companySignatureUpdatedAt } =
+    companySignatureMeta;
 
   const selectedTemplateId = isEmailTemplateId(templateQuery)
     ? templateQuery
@@ -1451,7 +1453,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   </p>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/api/admin/settings/company-signature"
+                    src={`/api/admin/settings/company-signature?v=${
+                      companySignatureUpdatedAt ? companySignatureUpdatedAt.getTime() : 0
+                    }`}
                     alt={t("admin.settings.signature.current")}
                     className="mt-2 h-20 w-auto rounded-lg border border-slate-200 bg-white p-2"
                   />

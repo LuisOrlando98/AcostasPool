@@ -299,6 +299,20 @@ export async function getCompanySignatureUrl(): Promise<string | null> {
   return settings?.companySignatureUrl ?? null;
 }
 
+export async function getCompanySignatureMeta(): Promise<{
+  url: string | null;
+  updatedAt: Date | null;
+}> {
+  const settings = await prisma.siteSettings.findUnique({
+    where: { id: "default" },
+    select: { companySignatureUrl: true, updatedAt: true },
+  });
+  return {
+    url: settings?.companySignatureUrl ?? null,
+    updatedAt: settings?.updatedAt ?? null,
+  };
+}
+
 export async function saveCompanySignatureUrl(url: string | null) {
   return saveSiteSettings({ companySignatureUrl: url });
 }
