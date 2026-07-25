@@ -86,6 +86,20 @@ export default async function DeveloperPage() {
 
       <section className="grid gap-4 lg:grid-cols-3">
         <a
+          href="/admin/developer/pool-calculator"
+          className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+            {t("admin.developer.links.poolCalculator.kicker")}
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-900">
+            {t("admin.developer.links.poolCalculator.title")}
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            {t("admin.developer.links.poolCalculator.subtitle")}
+          </p>
+        </a>
+        <a
           href="/admin/developer/tests"
           className="app-card p-6 shadow-contrast transition hover:-translate-y-0.5"
         >

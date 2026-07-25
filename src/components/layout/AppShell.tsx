@@ -269,6 +269,26 @@ const techNavItems = (t: (key: string) => string): NavItem[] => [
       </svg>
     ),
   },
+  {
+    label: t("nav.tech.calculator"),
+    href: "/tech/calculator",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7 3.5h10a1.5 1.5 0 011.5 1.5v14a1.5 1.5 0 01-1.5 1.5H7A1.5 1.5 0 015.5 19V5A1.5 1.5 0 017 3.5z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 7h7M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01M9 17h.01M12 17h.01M15 17h.01" />
+      </svg>
+    ),
+  },
 ];
 
 const clientNavItems = (t: (key: string) => string): NavItem[] => [

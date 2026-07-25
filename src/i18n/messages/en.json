@@ -164,6 +164,7 @@
     "tech": {
       "route": "My Route",
       "history": "History",
+      "calculator": "Calculator",
       "profile": "Profile"
     },
     "client": {
@@ -526,6 +527,56 @@
       "noAccess": "You don't have access to this job.",
       "serviceTitle": "Service"
     }
+  },
+  "poolCalculator": {
+    "title": "Chlorine calculator",
+    "subtitle": "Enter your test strip readings to see how much chlorine to add.",
+    "fields": {
+      "volume": "Pool volume (gallons)",
+      "ph": "pH",
+      "freeChlorine": "Free chlorine (ppm)",
+      "totalAlkalinity": "Total alkalinity (ppm)",
+      "stabilizer": "Stabilizer / CYA (ppm)",
+      "product": "Chlorine product",
+      "customStrength": "Strength (%)"
+    },
+    "placeholders": {
+      "volume": "e.g. 15000",
+      "ph": "e.g. 7.4",
+      "freeChlorine": "e.g. 1.5",
+      "totalAlkalinity": "e.g. 90",
+      "stabilizer": "e.g. 40"
+    },
+    "products": {
+      "LIQUID_10": "Liquid chlorine (10%)",
+      "LIQUID_12_5": "Liquid chlorine (12.5%)",
+      "CAL_HYPO_65": "Cal-hypo granular (65%)",
+      "CAL_HYPO_73": "Cal-hypo granular (73%)",
+      "CUSTOM": "Other (custom %)"
+    },
+    "incompleteHint": "Fill in all fields to see the result.",
+    "results": {
+      "doseTitle": "Chlorine to add",
+      "doseNone": "Free chlorine is already within the target range. No chlorine needed right now.",
+      "doseAmount": "Add {{amount}} {{unit}} of {{product}}",
+      "currentToTarget": "Current FC {{current}} ppm -> target {{target}} ppm.",
+      "targetRangeTitle": "Target free chlorine (based on stabilizer)",
+      "minimum": "Minimum",
+      "target": "Target",
+      "shock": "Shock/algae",
+      "phTitle": "pH",
+      "alkalinityTitle": "Total alkalinity",
+      "status": {
+        "low": "Low",
+        "ok": "In range",
+        "high": "High"
+      },
+      "phLowHint": "Raise with pH increaser (soda ash).",
+      "phHighHint": "Lower with pH decreaser (muriatic/dry acid).",
+      "alkalinityLowHint": "Raise with sodium bicarbonate (baking soda).",
+      "alkalinityHighHint": "Lower with muriatic acid, then aerate."
+    },
+    "disclaimer": "Estimate based on standard pool industry guidance (free chlorine / stabilizer relationship). Always follow your company's procedures and use professional judgment before dosing."
   },
   "plans": {
     "frequency": {
@@ -2212,6 +2263,11 @@
         }
       },
       "links": {
+        "poolCalculator": {
+          "kicker": "Tools",
+          "title": "Chlorine calculator",
+          "subtitle": "Same tool technicians use - review it here."
+        },
         "tests": {
           "kicker": "Testing",
           "title": "Diagnostics suite",

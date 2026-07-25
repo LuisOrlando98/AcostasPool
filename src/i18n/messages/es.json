@@ -164,6 +164,7 @@
     "tech": {
       "route": "Mi ruta",
       "history": "Historial",
+      "calculator": "Calculadora",
       "profile": "Perfil"
     },
     "client": {
@@ -526,6 +527,56 @@
       "noAccess": "No tienes acceso a este trabajo.",
       "serviceTitle": "Servicio"
     }
+  },
+  "poolCalculator": {
+    "title": "Calculadora de cloro",
+    "subtitle": "Ingresa las lecturas de tu tira reactiva para saber cuanto cloro agregar.",
+    "fields": {
+      "volume": "Volumen de la piscina (galones)",
+      "ph": "pH",
+      "freeChlorine": "Cloro libre (ppm)",
+      "totalAlkalinity": "Alcalinidad total (ppm)",
+      "stabilizer": "Estabilizador / CYA (ppm)",
+      "product": "Producto de cloro",
+      "customStrength": "Concentracion (%)"
+    },
+    "placeholders": {
+      "volume": "ej. 15000",
+      "ph": "ej. 7.4",
+      "freeChlorine": "ej. 1.5",
+      "totalAlkalinity": "ej. 90",
+      "stabilizer": "ej. 40"
+    },
+    "products": {
+      "LIQUID_10": "Cloro liquido (10%)",
+      "LIQUID_12_5": "Cloro liquido (12.5%)",
+      "CAL_HYPO_65": "Hipoclorito de calcio granulado (65%)",
+      "CAL_HYPO_73": "Hipoclorito de calcio granulado (73%)",
+      "CUSTOM": "Otro (concentracion personalizada)"
+    },
+    "incompleteHint": "Completa todos los campos para ver el resultado.",
+    "results": {
+      "doseTitle": "Cloro a agregar",
+      "doseNone": "El cloro libre ya esta dentro del rango objetivo. No es necesario agregar cloro ahora.",
+      "doseAmount": "Agrega {{amount}} {{unit}} de {{product}}",
+      "currentToTarget": "Cloro libre actual {{current}} ppm -> objetivo {{target}} ppm.",
+      "targetRangeTitle": "Cloro libre objetivo (segun estabilizador)",
+      "minimum": "Minimo",
+      "target": "Objetivo",
+      "shock": "Choque/algas",
+      "phTitle": "pH",
+      "alkalinityTitle": "Alcalinidad total",
+      "status": {
+        "low": "Bajo",
+        "ok": "En rango",
+        "high": "Alto"
+      },
+      "phLowHint": "Sube con incrementador de pH (carbonato de sodio).",
+      "phHighHint": "Baja con reductor de pH (acido muriatico/seco).",
+      "alkalinityLowHint": "Sube con bicarbonato de sodio.",
+      "alkalinityHighHint": "Baja con acido muriatico y luego airea el agua."
+    },
+    "disclaimer": "Estimado segun la guia estandar de la industria de piscinas (relacion cloro libre / estabilizador). Sigue siempre los procedimientos de tu empresa y usa tu criterio profesional antes de dosificar."
   },
   "plans": {
     "frequency": {
@@ -2212,6 +2263,11 @@
         }
       },
       "links": {
+        "poolCalculator": {
+          "kicker": "Herramientas",
+          "title": "Calculadora de cloro",
+          "subtitle": "La misma herramienta que usan los tecnicos - revisala aqui."
+        },
         "tests": {
           "kicker": "Pruebas",
           "title": "Suite de diagnosticos",
