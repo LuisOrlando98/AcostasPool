@@ -43,7 +43,7 @@ type BillingFilterState = {
 
 type AdminBillingTableProps = {
   rows: BillingRow[];
-  updatePropertyBillingAction: (formData: FormData) => Promise<void>;
+  updatePropertyBillingAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
 };
 
 const DEFAULT_FILTERS: BillingFilterState = {
@@ -111,6 +111,7 @@ export default function AdminBillingTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [editing, setEditing] = useState<BillingDraft | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -314,8 +315,13 @@ export default function AdminBillingTable({
     formData.set("paymentType", editing.paymentType);
     formData.set("paymentNotes", editing.paymentNotes);
 
+    setBillingError(null);
     startTransition(async () => {
-      await updatePropertyBillingAction(formData);
+      const result = await updatePropertyBillingAction(formData);
+      if (result?.error) {
+        setBillingError(result.error);
+        return;
+      }
       setConfirmOpen(false);
       setEditing(null);
       router.refresh();
@@ -846,6 +852,12 @@ export default function AdminBillingTable({
                         </p>
                       </div>
                     </div>
+
+                    {billingError ? (
+                      <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                        {billingError}
+                      </div>
+                    ) : null}
 
                     <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                       <button

@@ -34,7 +34,7 @@ type LineDraft = {
 type Props = {
   customers: CustomerOption[];
   jobs: JobOption[];
-  createInvoiceAction: (formData: FormData) => Promise<void>;
+  createInvoiceAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
   onCreated?: () => void;
 };
 
@@ -69,6 +69,7 @@ export default function InvoiceCreateForm({
   const [invoiceType, setInvoiceType] = useState<InvoiceType>("STANDARD");
   const [taxExempt, setTaxExempt] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([createLine()]);
+  const [error, setError] = useState<string | null>(null);
 
   const serviceCatalog = useMemo(
     () =>
@@ -201,7 +202,12 @@ export default function InvoiceCreateForm({
   return (
     <form
       action={async (formData) => {
-        await createInvoiceAction(formData);
+        setError(null);
+        const result = await createInvoiceAction(formData);
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
         onCreated?.();
         router.refresh();
       }}
@@ -476,6 +482,12 @@ export default function InvoiceCreateForm({
               className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
             />
           </div>
+
+          {error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          ) : null}
 
           <FormSubmitButton
             idleLabel={t("admin.invoices.new.actions.create")}

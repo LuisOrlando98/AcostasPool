@@ -1420,6 +1420,7 @@ export default async function CustomerDetailPage({
     theme: invoice.theme,
     total: Number(invoice.total),
     createdAt: invoice.createdAt.toISOString(),
+    updatedAt: invoice.updatedAt.toISOString(),
     jobLabel: invoice.job
       ? `${formatInBusinessTimeZone(invoice.job.scheduledDate, locale, {
           dateStyle: "short",

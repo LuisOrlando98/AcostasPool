@@ -41,7 +41,7 @@ type Props = {
   jobs: JobOption[];
   initialLineItems: LineItem[];
   locked: boolean;
-  updateInvoiceAction: (formData: FormData) => Promise<void>;
+  updateInvoiceAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
 };
 
 function toNumber(value: string, fallback = 0) {
@@ -82,6 +82,7 @@ export default function InvoiceEditForm({
       : [makeLine()]
   );
   const [taxExempt, setTaxExempt] = useState(defaultTax <= 0);
+  const [error, setError] = useState<string | null>(null);
 
   const normalizedLines = useMemo(
     () =>
@@ -121,7 +122,12 @@ export default function InvoiceEditForm({
   return (
     <form
       action={async (formData) => {
-        await updateInvoiceAction(formData);
+        setError(null);
+        const result = await updateInvoiceAction(formData);
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
         router.refresh();
       }}
       className="space-y-4"
@@ -357,6 +363,12 @@ export default function InvoiceEditForm({
           disabled={locked}
         />
       </div>
+
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      ) : null}
 
       {!locked ? (
         <FormSubmitButton

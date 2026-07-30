@@ -28,9 +28,12 @@ import {
 } from "@/lib/timezone";
 import type { Prisma } from "@prisma/client";
 
-async function createInvoice(formData: FormData) {
+async function createInvoice(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
   "use server";
   const session = await requireRole("ADMIN");
+  const t = await getTranslations();
 
   const customerId = String(formData.get("customerId") ?? "");
   const jobId = String(formData.get("jobId") ?? "");
@@ -49,14 +52,17 @@ async function createInvoice(formData: FormData) {
   try {
     parsedLineItems = JSON.parse(lineItemsJsonRaw);
   } catch {
-    return;
+    return { error: t("admin.invoices.new.errors.invalidLineItems") };
   }
   const lineItems = normalizeInvoiceLineItems(parsedLineItems);
   const subtotal = roundCurrency(
     lineItems.reduce((sum, line) => sum + line.amount, 0)
   );
-  if (!customerId || lineItems.length === 0 || subtotal <= 0) {
-    return;
+  if (!customerId) {
+    return { error: t("admin.invoices.new.errors.customerRequired") };
+  }
+  if (lineItems.length === 0 || subtotal <= 0) {
+    return { error: t("admin.invoices.new.errors.lineItemsRequired") };
   }
   const tax = taxExempt ? 0 : roundCurrency(subtotal * 0.07);
   const total = roundCurrency(subtotal + tax);
@@ -67,7 +73,7 @@ async function createInvoice(formData: FormData) {
   });
 
   if (!customer) {
-    return;
+    return { error: t("admin.invoices.new.errors.customerNotFound") };
   }
 
   const customerName = formatCustomerName(customer);
@@ -78,7 +84,7 @@ async function createInvoice(formData: FormData) {
       select: { customerId: true },
     });
     if (!linkedJob || linkedJob.customerId !== customerId) {
-      return;
+      return { error: t("admin.invoices.new.errors.invalidJob") };
     }
   }
   const invoiceTemplate = await getInvoiceTemplateConfig();
@@ -126,7 +132,7 @@ async function createInvoice(formData: FormData) {
       where: { id: invoice.id },
     });
     console.error(`[invoices] Failed to generate PDF for ${invoice.number}`, error);
-    return;
+    return { error: t("admin.invoices.new.errors.pdfFailed") };
   }
 
   await logAuditEvent({
@@ -204,9 +210,12 @@ async function deleteInvoice(formData: FormData) {
   revalidatePath("/client/invoices");
 }
 
-async function updatePropertyBillingAction(formData: FormData) {
+async function updatePropertyBillingAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
   "use server";
   await requireRole("ADMIN");
+  const t = await getTranslations();
 
   const propertyId = String(formData.get("propertyId") ?? "").trim();
   const customerId = String(formData.get("customerId") ?? "").trim();
@@ -218,8 +227,11 @@ async function updatePropertyBillingAction(formData: FormData) {
     paymentNotes: String(formData.get("paymentNotes") ?? ""),
   });
 
-  if (!propertyId || !servicePaymentInfo) {
-    return;
+  if (!propertyId) {
+    return { error: t("admin.invoices.servicePayment.errors.propertyRequired") };
+  }
+  if (!servicePaymentInfo) {
+    return { error: t("admin.invoices.servicePayment.errors.invalidInput") };
   }
 
   await prisma.property.update({
@@ -362,6 +374,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       status: true,
       theme: true,
       createdAt: true,
+      updatedAt: true,
       sentAt: true,
       pdfUrl: true,
       customer: { select: { nombre: true, apellidos: true, email: true } },
@@ -686,7 +699,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                       </Link>
                       {invoice.pdfUrl ? (
                         <a
-                          href={getAssetUrl(invoice.pdfUrl)}
+                          href={`${getAssetUrl(invoice.pdfUrl)}?v=${invoice.updatedAt.getTime()}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-xs text-slate-600 underline"

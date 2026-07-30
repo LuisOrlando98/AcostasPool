@@ -49,9 +49,12 @@ function parseEditorMode(value: string | undefined) {
   return "split";
 }
 
-async function updateInvoice(formData: FormData) {
+async function updateInvoice(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
   "use server";
   await requireRole("ADMIN");
+  const t = await getTranslations();
 
   const invoiceId = String(formData.get("invoiceId") ?? "");
   const number = String(formData.get("number") ?? "").trim();
@@ -65,7 +68,7 @@ async function updateInvoice(formData: FormData) {
   const lineItemsRaw = String(formData.get("lineItemsJson") ?? "[]");
 
   if (!invoiceId || !number) {
-    return;
+    return { error: t("admin.invoices.editor.errors.numberRequired") };
   }
 
   const currentInvoice = await prisma.invoice.findUnique({
@@ -75,23 +78,23 @@ async function updateInvoice(formData: FormData) {
     },
   });
   if (!currentInvoice) {
-    return;
+    return { error: t("admin.invoices.new.errors.customerNotFound") };
   }
 
   const isLocked = Boolean(currentInvoice.sentAt);
   if (isLocked) {
-    return;
+    return { error: t("admin.invoices.editor.errors.locked") };
   }
 
   let parsedLineItems: unknown = null;
   try {
     parsedLineItems = JSON.parse(lineItemsRaw);
   } catch {
-    return;
+    return { error: t("admin.invoices.new.errors.invalidLineItems") };
   }
   const lineItems = normalizeInvoiceLineItems(parsedLineItems);
   if (lineItems.length === 0) {
-    return;
+    return { error: t("admin.invoices.new.errors.lineItemsRequired") };
   }
 
   const subtotal = roundCurrency(lineItems.reduce((sum, item) => sum + item.amount, 0));
@@ -112,23 +115,29 @@ async function updateInvoice(formData: FormData) {
   }
 
   const template = await getInvoiceTemplateConfig();
-  const pdfUrl = await generateInvoicePdf({
-    customerId: currentInvoice.customerId,
-    invoiceNumber: number,
-    issueDate: currentInvoice.createdAt,
-    customerName: formatCustomerName(currentInvoice.customer),
-    customerEmail: currentInvoice.customer.email,
-    customerPhone: currentInvoice.customer.telefono,
-    customerAddress: formatCustomerAddress(currentInvoice.customer),
-    items: lineItems,
-    subtotal,
-    tax,
-    total,
-    notes: notesRaw || null,
-    locale: currentInvoice.customer.idiomaPreferencia,
-    theme,
-    template,
-  });
+  let pdfUrl: string;
+  try {
+    pdfUrl = await generateInvoicePdf({
+      customerId: currentInvoice.customerId,
+      invoiceNumber: number,
+      issueDate: currentInvoice.createdAt,
+      customerName: formatCustomerName(currentInvoice.customer),
+      customerEmail: currentInvoice.customer.email,
+      customerPhone: currentInvoice.customer.telefono,
+      customerAddress: formatCustomerAddress(currentInvoice.customer),
+      items: lineItems,
+      subtotal,
+      tax,
+      total,
+      notes: notesRaw || null,
+      locale: currentInvoice.customer.idiomaPreferencia,
+      theme,
+      template,
+    });
+  } catch (error) {
+    console.error(`[invoices] Failed to regenerate PDF for ${invoiceId}`, error);
+    return { error: t("admin.invoices.new.errors.pdfFailed") };
+  }
 
   await prisma.invoice.update({
     where: { id: invoiceId },
@@ -265,7 +274,9 @@ export default async function InvoiceEditorPage({
   const lockedTitle = t("admin.invoices.editor.locked.title");
   const lockedDescription = t("admin.invoices.editor.locked.description");
   const lockedSentAtLabel = t("admin.invoices.editor.locked.sentOn");
-  const previewPdfUrl = invoice.pdfUrl?.trim() ? invoice.pdfUrl : null;
+  const previewPdfUrl = invoice.pdfUrl?.trim()
+    ? `${invoice.pdfUrl}?v=${invoice.updatedAt.getTime()}`
+    : null;
 
   const editorLabel = t("admin.invoices.editor.modes.editor");
   const previewLabel = t("admin.invoices.editor.modes.preview");

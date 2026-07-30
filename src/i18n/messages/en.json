@@ -321,6 +321,15 @@
       "title": "Profile",
       "name": "Full name"
     },
+    "errors": {
+      "required": "Name and email are required.",
+      "userNotFound": "User not found.",
+      "emailInUse": "That email is already in use by another account."
+    },
+    "feedback": {
+      "profileSaved": "Profile updated.",
+      "profileError": "Could not save your profile: {{error}}"
+    },
     "photo": {
       "title": "Profile photo"
     },
@@ -1707,6 +1716,10 @@
           "reviewSave": "Review changes",
           "saving": "Saving..."
         },
+        "errors": {
+          "propertyRequired": "No property selected.",
+          "invalidInput": "Check the payment day, price, and start date - one of them isn't valid."
+        },
         "filters": {
           "open": "Open filters",
           "modalTitle": "Billing filters",
@@ -1795,6 +1808,14 @@
           "create": "Create invoice",
           "addLine": "Add line",
           "removeLine": "Remove"
+        },
+        "errors": {
+          "invalidLineItems": "Invalid line items.",
+          "customerRequired": "Select a customer.",
+          "lineItemsRequired": "Add at least one line item with an amount greater than zero.",
+          "customerNotFound": "Customer not found.",
+          "invalidJob": "The selected job doesn't belong to this customer.",
+          "pdfFailed": "Could not generate the invoice PDF. Try again."
         }
       },
       "send": {
@@ -1830,6 +1851,10 @@
           "saveRegenerate": "Save changes and regenerate PDF",
           "saving": "Saving...",
           "updated": "Updated"
+        },
+        "errors": {
+          "numberRequired": "Enter an invoice number.",
+          "locked": "This invoice was already sent and can no longer be edited."
         }
       }
     },

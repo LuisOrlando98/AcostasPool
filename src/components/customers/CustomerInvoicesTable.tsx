@@ -12,6 +12,7 @@ type InvoiceRow = {
   theme: string;
   total: number;
   createdAt: string;
+  updatedAt: string;
   jobLabel: string | null;
   pdfUrl: string | null;
 };
@@ -172,7 +173,11 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
     : t("admin.invoices.list.empty");
   const openInvoiceFromRow = (invoice: InvoiceRow, canEdit: boolean) => {
     if (invoice.pdfUrl) {
-      window.open(getAssetUrl(invoice.pdfUrl), "_blank", "noopener,noreferrer");
+      window.open(
+        `${getAssetUrl(invoice.pdfUrl)}?v=${invoice.updatedAt}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
       return;
     }
     if (canEdit) {

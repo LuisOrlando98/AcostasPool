@@ -88,7 +88,7 @@ export default async function ClientInvoicesPage() {
                 </div>
                 {invoice.pdfUrl ? (
                   <a
-                    href={getAssetUrl(invoice.pdfUrl)}
+                    href={`${getAssetUrl(invoice.pdfUrl)}?v=${invoice.updatedAt.getTime()}`}
                     className="text-xs text-slate-600 underline"
                     target="_blank"
                     rel="noreferrer"

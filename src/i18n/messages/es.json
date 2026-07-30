@@ -321,6 +321,15 @@
       "title": "Perfil",
       "name": "Nombre completo"
     },
+    "errors": {
+      "required": "El nombre y el correo son obligatorios.",
+      "userNotFound": "Usuario no encontrado.",
+      "emailInUse": "Ese correo ya esta en uso por otra cuenta."
+    },
+    "feedback": {
+      "profileSaved": "Perfil actualizado.",
+      "profileError": "No se pudo guardar tu perfil: {{error}}"
+    },
     "photo": {
       "title": "Foto de perfil"
     },
@@ -1707,6 +1716,10 @@
           "reviewSave": "Revisar cambios",
           "saving": "Guardando..."
         },
+        "errors": {
+          "propertyRequired": "No hay propiedad seleccionada.",
+          "invalidInput": "Revisa el dia de pago, el precio y la fecha de inicio - alguno no es valido."
+        },
         "filters": {
           "open": "Abrir filtros",
           "modalTitle": "Filtros de billing",
@@ -1795,6 +1808,14 @@
           "create": "Crear factura",
           "addLine": "Agregar linea",
           "removeLine": "Quitar"
+        },
+        "errors": {
+          "invalidLineItems": "Lineas de servicio invalidas.",
+          "customerRequired": "Selecciona un cliente.",
+          "lineItemsRequired": "Agrega al menos una linea con un monto mayor a cero.",
+          "customerNotFound": "Cliente no encontrado.",
+          "invalidJob": "El trabajo seleccionado no pertenece a este cliente.",
+          "pdfFailed": "No se pudo generar el PDF de la factura. Intenta de nuevo."
         }
       },
       "send": {
@@ -1830,6 +1851,10 @@
           "saveRegenerate": "Guardar cambios y regenerar PDF",
           "saving": "Guardando...",
           "updated": "Actualizado"
+        },
+        "errors": {
+          "numberRequired": "Ingresa un numero de factura.",
+          "locked": "Esta factura ya fue enviada y no se puede editar."
         }
       }
     },

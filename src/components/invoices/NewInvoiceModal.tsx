@@ -22,7 +22,7 @@ type JobOption = {
 type Props = {
   customers: CustomerOption[];
   jobs: JobOption[];
-  createInvoiceAction: (formData: FormData) => Promise<void>;
+  createInvoiceAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
   triggerLabel: string;
   kicker: string;
   title: string;

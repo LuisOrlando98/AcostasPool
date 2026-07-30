@@ -146,6 +146,9 @@ function getNotificationLink(
   if (eventType === "INVOICE_SENT" && role === "CUSTOMER") {
     return "/client/invoices";
   }
+  if (eventType === "CONTRACT_READY_TO_SIGN" && role === "CUSTOMER") {
+    return "/client/contract";
+  }
   if (role === "TECH") {
     return "/tech";
   }
