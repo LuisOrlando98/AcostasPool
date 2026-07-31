@@ -2,12 +2,18 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import InvoiceEditForm from "@/components/invoices/InvoiceEditForm";
+import InvoicePaymentsPanel from "@/components/invoices/InvoicePaymentsPanel";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems, roundCurrency } from "@/lib/invoices/line-items";
+import { recordPayment, markInvoicePaid, toCents } from "@/lib/payments/service";
+import {
+  normalizePaymentMethod,
+  PAYMENT_METHOD_VALUES,
+} from "@/lib/customers/financial-info";
 import {
   getInvoiceTemplateLocaleCopy,
   localizeInvoiceTemplate,
@@ -160,6 +166,56 @@ async function updateInvoice(
   revalidatePath(`/admin/customers/${currentInvoice.customerId}`);
 }
 
+async function recordManualPaymentAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  const session = await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const invoiceId = String(formData.get("invoiceId") ?? "");
+  const amountRaw = Number(String(formData.get("amount") ?? "0"));
+  const methodRaw = String(formData.get("method") ?? "").trim();
+  const method = normalizePaymentMethod(methodRaw);
+
+  if (!invoiceId || !Number.isFinite(amountRaw) || amountRaw <= 0) {
+    return { error: t("admin.invoices.payments.errors.invalidAmount") };
+  }
+  if (!method) {
+    return { error: t("admin.invoices.payments.errors.invalidMethod") };
+  }
+
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { payments: { select: { amountCents: true } } },
+  });
+  if (!invoice) {
+    return { error: t("admin.invoices.new.errors.customerNotFound") };
+  }
+
+  const paidAt = new Date();
+  const newAmountCents = toCents(amountRaw);
+  await recordPayment({
+    customerId: invoice.customerId,
+    invoiceId: invoice.id,
+    amountCents: newAmountCents,
+    status: "SUCCEEDED",
+    method,
+    recordedByUserId: session.sub,
+    paidAt,
+  });
+
+  const paidSoFarCents =
+    invoice.payments.reduce((sum, payment) => sum + payment.amountCents, 0) + newAmountCents;
+  if (paidSoFarCents >= toCents(Number(invoice.total))) {
+    await markInvoicePaid(invoice.id, paidAt);
+  }
+
+  revalidatePath(`/admin/invoices/${invoiceId}`);
+  revalidatePath("/admin/invoices");
+  revalidatePath(`/admin/customers/${invoice.customerId}`);
+}
+
 type InvoiceEditorPageProps = {
   params: Promise<{ id: string }>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -203,6 +259,7 @@ export default async function InvoiceEditorPage({
           technician: { select: { user: { select: { fullName: true } } } },
         },
       },
+      payments: { orderBy: { paidAt: "desc" } },
     },
   });
 
@@ -397,6 +454,24 @@ export default async function InvoiceEditorPage({
             </div>
           ) : null}
         </div>
+
+        <InvoicePaymentsPanel
+          invoiceId={invoice.id}
+          isPaid={invoice.status === "PAID"}
+          totalCents={toCents(Number(invoice.total))}
+          payments={invoice.payments.map((payment) => ({
+            id: payment.id,
+            amountCents: payment.amountCents,
+            status: payment.status,
+            method: payment.method,
+            paidAt: payment.paidAt.toISOString(),
+            stripePaymentIntentId: payment.stripePaymentIntentId,
+            recordedByUserId: payment.recordedByUserId,
+          }))}
+          paymentMethods={PAYMENT_METHOD_VALUES}
+          sendPaymentLinkHref={`/api/admin/invoices/${invoice.id}/checkout`}
+          recordManualPaymentAction={recordManualPaymentAction}
+        />
       </section>
     </AppShell>
   );

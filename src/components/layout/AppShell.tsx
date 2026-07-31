@@ -166,6 +166,25 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
+    label: t("nav.admin.accounting"),
+    href: "/admin/accounting",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4 19.5h16M6.5 19.5V13M11 19.5V8.5M15.5 19.5v-7M20 19.5V5"
+        />
+      </svg>
+    ),
+  },
+  {
     label: t("admin.notifications.title"),
     href: "/admin/notifications",
     icon: (

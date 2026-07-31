@@ -155,6 +155,7 @@
       "technicians": "Technicians",
       "customers": "Customers",
       "invoices": "Billing",
+      "accounting": "Accounting",
       "reports": "Reports",
       "settings": "Settings",
       "routes": "Routes & Jobs",
@@ -275,6 +276,8 @@
     "serviceRescheduled": "Service rescheduled",
     "routeUpdated": "Route updated",
     "invoiceSent": "Invoice sent",
+    "paymentReceived": "Payment received",
+    "membershipPaymentFailed": "Autopay charge failed",
     "preferences": {
       "helper": "Choose the alerts this account should receive.",
       "enabledCount": "{{enabled}} of {{total}} active",
@@ -292,7 +295,9 @@
         "SERVICE_SCHEDULED": "Notify when a service date has been scheduled.",
         "SERVICE_RESCHEDULED": "Notify when a scheduled service has been moved.",
         "ROUTE_UPDATED": "Notify when route timing changes may affect your visit.",
-        "INVOICE_SENT": "Notify when a new invoice is sent to this customer."
+        "INVOICE_SENT": "Notify when a new invoice is sent to this customer.",
+        "PAYMENT_RECEIVED": "Notify when a payment is received (Stripe or manually recorded).",
+        "MEMBERSHIP_PAYMENT_FAILED": "Notify when a customer's autopay membership charge fails."
       }
     },
     "group": {
@@ -307,7 +312,9 @@
       "SERVICE_SCHEDULED": "Service scheduled",
       "SERVICE_RESCHEDULED": "Service rescheduled",
       "ROUTE_UPDATED": "Route updated",
-      "INVOICE_SENT": "Invoice sent"
+      "INVOICE_SENT": "Invoice sent",
+      "PAYMENT_RECEIVED": "Payment received",
+      "MEMBERSHIP_PAYMENT_FAILED": "Autopay charge failed"
     }
   },
   "account": {
@@ -1260,6 +1267,8 @@
           "propertiesSubtitle": "Full pool details for each site.",
           "financialsTitle": "Financial information",
           "financialsSubtitle": "Plan, price, and payment method for this customer.",
+          "membershipTitle": "Membership / Autopay",
+          "membershipSubtitle": "Stripe autopay status for this customer's primary property.",
           "contractTitle": "Service contract",
           "contractSubtitle": "Generate, send, and sign the customer's service contract.",
           "plansTitle": "Recurring plans",
@@ -1387,6 +1396,14 @@
           "primaryPropertyHint": "Price and payment date shown are for the primary property: {{address}}.",
           "multiPropertyHint": "This customer has multiple properties; the price and payment date shown here are for their primary property. Adjust the rest from each property in the Properties section.",
           "noPropertyHint": "Add a property to record price and payment date."
+        },
+        "membership": {
+          "noServicePrice": "Set a service price on the primary property to enable autopay.",
+          "statusCanceling": "Ends after current period",
+          "cancelPeriodEnd": "Cancel at period end",
+          "cancelImmediate": "Cancel immediately",
+          "notActive": "No active autopay membership for this property.",
+          "sendSetupLink": "Send autopay setup link"
         },
         "contract": {
           "noContract": "This customer doesn't have a service contract generated yet.",
@@ -1856,6 +1873,69 @@
           "numberRequired": "Enter an invoice number.",
           "locked": "This invoice was already sent and can no longer be edited."
         }
+      },
+      "payments": {
+        "title": "Payments",
+        "sendLink": "Send payment link",
+        "empty": "No payments recorded yet.",
+        "recordManual": "Record manual payment",
+        "recorded": "Recorded",
+        "remaining": "{{amount}} still due - the invoice will be marked paid once the full amount is recorded.",
+        "fields": {
+          "amount": "Amount",
+          "method": "Method"
+        },
+        "errors": {
+          "invalidAmount": "Enter a valid payment amount.",
+          "invalidMethod": "Select a valid payment method."
+        }
+      }
+    },
+    "accounting": {
+      "title": "Accounting",
+      "subtitle": "Revenue, memberships, and payment activity across the business.",
+      "stats": {
+        "revenue12mo": "Revenue (12 months)",
+        "revenue12moHelper": "Net of refunds, Stripe and manual payments",
+        "mrr": "Monthly recurring revenue",
+        "mrrHelper": "{{count}} active membership(s)",
+        "overdue": "Overdue invoices",
+        "overdueHelper": "{{count}} unpaid invoice(s)",
+        "pastDue": "Failed autopay charges",
+        "pastDueHelper": "Memberships needing attention",
+        "momentum": "Last 30 days vs prior 30 days",
+        "newLabel": "new",
+        "canceledLabel": "canceled"
+      },
+      "charts": {
+        "revenueTitle": "Revenue over time",
+        "revenueSubtitle": "Net revenue by month, last 12 months.",
+        "oneTime": "One-time payments",
+        "recurring": "Autopay memberships",
+        "tableView": "Table view",
+        "chartView": "Chart view",
+        "methodTitle": "Payment method breakdown",
+        "methodSubtitle": "Successful payments by method, last 12 months.",
+        "methodEmpty": "No payments recorded yet.",
+        "topCustomersTitle": "Top customers",
+        "topCustomersSubtitle": "Highest revenue, last 12 months.",
+        "topCustomersEmpty": "No payments recorded yet.",
+        "membershipTrendTitle": "Membership activity",
+        "membershipTrendSubtitle": "New vs. canceled autopay memberships, last 6 months.",
+        "activated": "Activated",
+        "canceled": "Canceled",
+        "invoiceStatusTitle": "Invoice pipeline",
+        "invoiceStatusSubtitle": "All invoices by current status.",
+        "invoiceStatusEmpty": "No invoices yet."
+      },
+      "recentPayments": {
+        "title": "Recent payments",
+        "empty": "No payments recorded yet."
+      },
+      "overdueInvoices": {
+        "title": "Overdue invoices",
+        "empty": "No overdue invoices.",
+        "notSent": "Not sent yet"
       }
     },
     "reports": {
@@ -2001,6 +2081,10 @@
         "signature": {
           "label": "Signature",
           "hint": "President's signature"
+        },
+        "payments": {
+          "label": "Payments",
+          "hint": "Stripe status"
         }
       },
       "signature": {
@@ -2017,6 +2101,23 @@
           "removed": "Signature removed.",
           "removeFailed": "Could not remove the signature: {{error}}"
         }
+      },
+      "payments": {
+        "title": "Payments (Stripe)",
+        "subtitle": "Connection status for online payments and autopay memberships. Keys are configured as environment variables, not stored here.",
+        "fields": {
+          "secretKey": "Secret key",
+          "webhookSecret": "Webhook secret",
+          "mode": "Mode"
+        },
+        "status": {
+          "configured": "Configured",
+          "missing": "Not configured",
+          "live": "Live",
+          "test": "Test"
+        },
+        "keysHint": "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in the hosting environment. Use test-mode keys until you're ready to accept real charges.",
+        "viewDashboard": "View accounting dashboard"
       },
       "landing": {
         "title": "Landing page configuration",
@@ -2651,7 +2752,24 @@
         "title": "Invoices",
         "total": "{{count}} total",
         "empty": "No invoices yet.",
-        "viewPdf": "View PDF"
+        "viewPdf": "View PDF",
+        "payNow": "Pay now"
+      },
+      "membership": {
+        "title": "Autopay membership",
+        "subtitle": "Authorize automatic monthly billing for your pool service. Cancel anytime.",
+        "perMonth": "month",
+        "activate": "Activate autopay",
+        "cancel": "Cancel autopay",
+        "statusCanceling": "Ends after current period",
+        "empty": "No properties with a service price set up yet."
+      },
+      "feedback": {
+        "paymentSuccess": "Payment received. Thank you!",
+        "paymentError": "We couldn't start the payment. Please try again.",
+        "membershipSuccess": "Autopay activated. Thank you!",
+        "membershipAlreadyActive": "This property already has an active autopay membership.",
+        "membershipError": "We couldn't start autopay setup. Please try again."
       }
     },
     "contract": {

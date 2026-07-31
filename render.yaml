@@ -58,6 +58,10 @@ services:
         sync: false
       - key: CRON_SECRET
         sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
 
   - type: worker
     name: acostaspool-cron-worker
@@ -94,6 +98,8 @@ services:
       - key: SMTP_FROM
         sync: false
       - key: CRON_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
         sync: false
 
 databases:

@@ -104,6 +104,19 @@ enum ResetTokenPurpose {
   PASSWORD_RESET
 }
 
+enum PaymentStatus {
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -165,6 +178,7 @@ model Customer {
   notas         String?
   contractedServiceTierId String?
   paymentMethod String?
+  stripeCustomerId String? @unique
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -178,6 +192,8 @@ model Customer {
   servicePlans  ServicePlan[]
   emailLogs     EmailLog[]
   serviceContracts ServiceContract[]
+  payments      Payment[]
+  memberships   Membership[]
 }
 
 model Property {
@@ -216,6 +232,7 @@ model Property {
   jobs     Job[]
   servicePlans ServicePlan[]
   serviceContracts ServiceContract[]
+  memberships Membership[]
 }
 
 model ServiceContract {
@@ -374,15 +391,81 @@ model Invoice {
   pdfUrl    String?
   sentAt    DateTime?
   paidAt    DateTime?
+  stripeCheckoutSessionId String?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
   customer Customer @relation(fields: [customerId], references: [id])
   job      Job?     @relation(fields: [jobId], references: [id])
+  payments Payment[]
 
   @@index([status])
   @@index([customerId])
   @@index([createdAt])
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  customerId            String
+  invoiceId             String?
+  membershipId          String?
+  amountCents           Int
+  currency              String        @default("usd")
+  status                PaymentStatus
+  method                String
+  stripePaymentIntentId String?
+  stripeChargeId        String?
+  stripeInvoiceId       String?
+  refundOfPaymentId     String?
+  recordedByUserId      String?
+  paidAt                DateTime
+  createdAt             DateTime      @default(now())
+
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
+  membership Membership? @relation(fields: [membershipId], references: [id])
+
+  @@index([customerId, paidAt])
+  @@index([paidAt])
+  @@index([status])
+  @@index([invoiceId])
+  @@index([membershipId])
+}
+
+model Membership {
+  id                   String           @id @default(cuid())
+  customerId           String
+  propertyId           String?
+  stripeSubscriptionId String           @unique
+  stripePriceId        String
+  amountCents          Int
+  interval             String           @default("MONTHLY")
+  status               MembershipStatus @default(INCOMPLETE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean          @default(false)
+  canceledAt           DateTime?
+  authorizedAt         DateTime?
+  authorizedVia        String?
+  authorizedByUserId   String?
+  authorizedIp         String?
+  authorizedUserAgent  String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  customer Customer  @relation(fields: [customerId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model StripeWebhookEvent {
+  stripeEventId String    @id
+  type          String
+  receivedAt    DateTime  @default(now())
+  processedAt   DateTime?
 }
 
 model CustomerDocument {

@@ -1,0 +1,140 @@
+import { getStripeClient } from "@/lib/stripe/client";
+import { prisma } from "@/lib/db";
+import { toCents } from "@/lib/payments/service";
+
+function baseAppUrl() {
+  const raw = process.env.APP_URL?.trim();
+  return (raw || "https://acostaspool.com").replace(/\/$/, "");
+}
+
+async function ensureStripeCustomerId(customer: {
+  id: string;
+  email: string;
+  nombre: string;
+  apellidos: string;
+  stripeCustomerId: string | null;
+}) {
+  if (customer.stripeCustomerId) {
+    return customer.stripeCustomerId;
+  }
+
+  const stripe = getStripeClient();
+  const created = await stripe.customers.create({
+    email: customer.email,
+    name: `${customer.nombre} ${customer.apellidos}`.trim(),
+    metadata: { customerId: customer.id },
+  });
+
+  await prisma.customer.update({
+    where: { id: customer.id },
+    data: { stripeCustomerId: created.id },
+  });
+
+  return created.id;
+}
+
+export async function createInvoiceCheckoutSession(invoiceId: string) {
+  const invoice = await prisma.invoice.findUnique({
+    where: { id: invoiceId },
+    include: { customer: true },
+  });
+  if (!invoice) {
+    throw new Error("Invoice not found");
+  }
+  if (invoice.status === "PAID") {
+    throw new Error("Invoice already paid");
+  }
+
+  const stripeCustomerId = await ensureStripeCustomerId(invoice.customer);
+  const stripe = getStripeClient();
+  const appUrl = baseAppUrl();
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    customer: stripeCustomerId,
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          unit_amount: toCents(Number(invoice.total)),
+          product_data: { name: `AcostasPool - Invoice ${invoice.number}` },
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: { invoiceId },
+    success_url: `${appUrl}/client/invoices?payment=success`,
+    cancel_url: `${appUrl}/client/invoices?payment=cancelled`,
+  });
+
+  if (!session.url) {
+    throw new Error("Stripe did not return a checkout URL");
+  }
+
+  await prisma.invoice.update({
+    where: { id: invoiceId },
+    data: { stripeCheckoutSessionId: session.id },
+  });
+
+  return session.url;
+}
+
+type MembershipCheckoutInput = {
+  customerId: string;
+  propertyId: string;
+  amountCents: number;
+  authorizedVia: "PORTAL" | "IN_PERSON_ADMIN";
+  authorizedByUserId?: string | null;
+  authorizedIp?: string | null;
+  authorizedUserAgent?: string | null;
+};
+
+export async function createMembershipCheckoutSession(
+  input: MembershipCheckoutInput
+) {
+  const customer = await prisma.customer.findUnique({
+    where: { id: input.customerId },
+  });
+  if (!customer) {
+    throw new Error("Customer not found");
+  }
+
+  const stripeCustomerId = await ensureStripeCustomerId(customer);
+  const stripe = getStripeClient();
+  const appUrl = baseAppUrl();
+
+  const metadata: Record<string, string> = {
+    customerId: input.customerId,
+    propertyId: input.propertyId,
+    authorizedVia: input.authorizedVia,
+    authorizedByUserId: input.authorizedByUserId ?? "",
+    authorizedIp: input.authorizedIp ?? "",
+    authorizedUserAgent: input.authorizedUserAgent ?? "",
+  };
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    customer: stripeCustomerId,
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          unit_amount: input.amountCents,
+          recurring: { interval: "month" },
+          product_data: { name: "AcostasPool - Monthly membership" },
+        },
+        quantity: 1,
+      },
+    ],
+    metadata,
+    subscription_data: { metadata },
+    success_url: `${appUrl}/client/invoices?membership=success`,
+    cancel_url: `${appUrl}/client/invoices?membership=cancelled`,
+  });
+
+  if (!session.url) {
+    throw new Error("Stripe did not return a checkout URL");
+  }
+
+  return session.url;
+}

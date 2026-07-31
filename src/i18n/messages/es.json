@@ -155,6 +155,7 @@
       "technicians": "Tecnicos",
       "customers": "Clientes",
       "invoices": "Billing",
+      "accounting": "Contabilidad",
       "reports": "Reportes",
       "settings": "Ajustes",
       "routes": "Rutas y trabajos",
@@ -275,6 +276,8 @@
     "serviceRescheduled": "Servicio reprogramado",
     "routeUpdated": "Ruta actualizada",
     "invoiceSent": "Factura enviada",
+    "paymentReceived": "Pago recibido",
+    "membershipPaymentFailed": "Cobro automatico fallido",
     "preferences": {
       "helper": "Elige que alertas quieres recibir en esta cuenta.",
       "enabledCount": "{{enabled}} de {{total}} activas",
@@ -292,7 +295,9 @@
         "SERVICE_SCHEDULED": "Avisa cuando se programe una fecha de servicio.",
         "SERVICE_RESCHEDULED": "Avisa cuando un servicio programado cambie de fecha.",
         "ROUTE_UPDATED": "Avisa cuando un cambio de ruta pueda afectar tu visita.",
-        "INVOICE_SENT": "Avisa cuando se envie una factura nueva a este cliente."
+        "INVOICE_SENT": "Avisa cuando se envie una factura nueva a este cliente.",
+        "PAYMENT_RECEIVED": "Avisa cuando se reciba un pago (Stripe o registrado manualmente).",
+        "MEMBERSHIP_PAYMENT_FAILED": "Avisa cuando falle el cobro automatico de la membresia de un cliente."
       }
     },
     "group": {
@@ -307,7 +312,9 @@
       "SERVICE_SCHEDULED": "Servicio programado",
       "SERVICE_RESCHEDULED": "Servicio reprogramado",
       "ROUTE_UPDATED": "Ruta actualizada",
-      "INVOICE_SENT": "Factura enviada"
+      "INVOICE_SENT": "Factura enviada",
+      "PAYMENT_RECEIVED": "Pago recibido",
+      "MEMBERSHIP_PAYMENT_FAILED": "Cobro automatico fallido"
     }
   },
   "account": {
@@ -1260,6 +1267,8 @@
           "propertiesSubtitle": "Datos completos de cada piscina.",
           "financialsTitle": "Informacion financiera",
           "financialsSubtitle": "Plan, precio y forma de pago del cliente.",
+          "membershipTitle": "Membresia / Cobro automatico",
+          "membershipSubtitle": "Estado del cobro automatico de Stripe para la propiedad principal del cliente.",
           "contractTitle": "Contrato de servicio",
           "contractSubtitle": "Genera, envia y firma el contrato de servicio del cliente.",
           "plansTitle": "Planes recurrentes",
@@ -1387,6 +1396,14 @@
           "primaryPropertyHint": "Precio y fecha de pago de la propiedad principal: {{address}}.",
           "multiPropertyHint": "Este cliente tiene varias propiedades; el precio y la fecha de pago mostrados aqui son los de su propiedad principal. Ajusta el resto desde cada propiedad en la seccion de Propiedades.",
           "noPropertyHint": "Agrega una propiedad para registrar precio y fecha de pago."
+        },
+        "membership": {
+          "noServicePrice": "Configura un precio de servicio en la propiedad principal para habilitar el cobro automatico.",
+          "statusCanceling": "Termina al finalizar el periodo actual",
+          "cancelPeriodEnd": "Cancelar al finalizar el periodo",
+          "cancelImmediate": "Cancelar de inmediato",
+          "notActive": "No hay una membresia de cobro automatico activa para esta propiedad.",
+          "sendSetupLink": "Enviar enlace de configuracion"
         },
         "contract": {
           "noContract": "Este cliente todavia no tiene un contrato de servicio generado.",
@@ -1856,6 +1873,69 @@
           "numberRequired": "Ingresa un numero de factura.",
           "locked": "Esta factura ya fue enviada y no se puede editar."
         }
+      },
+      "payments": {
+        "title": "Pagos",
+        "sendLink": "Enviar enlace de pago",
+        "empty": "Todavia no hay pagos registrados.",
+        "recordManual": "Registrar pago manual",
+        "recorded": "Registrado",
+        "remaining": "Faltan {{amount}} por pagar - la factura se marcara como pagada cuando se registre el monto completo.",
+        "fields": {
+          "amount": "Monto",
+          "method": "Metodo"
+        },
+        "errors": {
+          "invalidAmount": "Ingresa un monto de pago valido.",
+          "invalidMethod": "Selecciona un metodo de pago valido."
+        }
+      }
+    },
+    "accounting": {
+      "title": "Contabilidad",
+      "subtitle": "Ingresos, membresias y actividad de pagos de todo el negocio.",
+      "stats": {
+        "revenue12mo": "Ingresos (12 meses)",
+        "revenue12moHelper": "Netos de reembolsos, pagos por Stripe y manuales",
+        "mrr": "Ingreso recurrente mensual",
+        "mrrHelper": "{{count}} membresia(s) activa(s)",
+        "overdue": "Facturas vencidas",
+        "overdueHelper": "{{count}} factura(s) sin pagar",
+        "pastDue": "Cobros automaticos fallidos",
+        "pastDueHelper": "Membresias que necesitan atencion",
+        "momentum": "Ultimos 30 dias vs 30 dias anteriores",
+        "newLabel": "nuevas",
+        "canceledLabel": "canceladas"
+      },
+      "charts": {
+        "revenueTitle": "Ingresos en el tiempo",
+        "revenueSubtitle": "Ingreso neto por mes, ultimos 12 meses.",
+        "oneTime": "Pagos unicos",
+        "recurring": "Membresias de cobro automatico",
+        "tableView": "Ver tabla",
+        "chartView": "Ver grafico",
+        "methodTitle": "Desglose por metodo de pago",
+        "methodSubtitle": "Pagos exitosos por metodo, ultimos 12 meses.",
+        "methodEmpty": "Todavia no hay pagos registrados.",
+        "topCustomersTitle": "Mejores clientes",
+        "topCustomersSubtitle": "Mayor ingreso, ultimos 12 meses.",
+        "topCustomersEmpty": "Todavia no hay pagos registrados.",
+        "membershipTrendTitle": "Actividad de membresias",
+        "membershipTrendSubtitle": "Membresias de cobro automatico nuevas vs. canceladas, ultimos 6 meses.",
+        "activated": "Activadas",
+        "canceled": "Canceladas",
+        "invoiceStatusTitle": "Estado de facturas",
+        "invoiceStatusSubtitle": "Todas las facturas segun su estado actual.",
+        "invoiceStatusEmpty": "Todavia no hay facturas."
+      },
+      "recentPayments": {
+        "title": "Pagos recientes",
+        "empty": "Todavia no hay pagos registrados."
+      },
+      "overdueInvoices": {
+        "title": "Facturas vencidas",
+        "empty": "No hay facturas vencidas.",
+        "notSent": "Aun no enviada"
       }
     },
     "reports": {
@@ -2001,6 +2081,10 @@
         "signature": {
           "label": "Firma",
           "hint": "Firma del presidente"
+        },
+        "payments": {
+          "label": "Pagos",
+          "hint": "Estado de Stripe"
         }
       },
       "signature": {
@@ -2017,6 +2101,23 @@
           "removed": "Firma eliminada.",
           "removeFailed": "No se pudo eliminar la firma: {{error}}"
         }
+      },
+      "payments": {
+        "title": "Pagos (Stripe)",
+        "subtitle": "Estado de conexion para pagos en linea y membresias de cobro automatico. Las claves se configuran como variables de entorno, no se guardan aqui.",
+        "fields": {
+          "secretKey": "Clave secreta",
+          "webhookSecret": "Secreto del webhook",
+          "mode": "Modo"
+        },
+        "status": {
+          "configured": "Configurado",
+          "missing": "No configurado",
+          "live": "En vivo",
+          "test": "Prueba"
+        },
+        "keysHint": "Configura STRIPE_SECRET_KEY y STRIPE_WEBHOOK_SECRET en el entorno de hosting. Usa claves de modo prueba hasta que estes listo para aceptar cobros reales.",
+        "viewDashboard": "Ver panel de contabilidad"
       },
       "landing": {
         "title": "Configuracion del landing",
@@ -2651,7 +2752,24 @@
         "title": "Facturas",
         "total": "{{count}} total",
         "empty": "No hay facturas aun.",
-        "viewPdf": "Ver PDF"
+        "viewPdf": "Ver PDF",
+        "payNow": "Pagar ahora"
+      },
+      "membership": {
+        "title": "Membresia de cobro automatico",
+        "subtitle": "Autoriza el cobro mensual automatico de tu servicio de piscina. Cancela cuando quieras.",
+        "perMonth": "mes",
+        "activate": "Activar cobro automatico",
+        "cancel": "Cancelar cobro automatico",
+        "statusCanceling": "Termina al finalizar el periodo actual",
+        "empty": "Aun no hay propiedades con precio de servicio configurado."
+      },
+      "feedback": {
+        "paymentSuccess": "Pago recibido. ¡Gracias!",
+        "paymentError": "No pudimos iniciar el pago. Intenta de nuevo.",
+        "membershipSuccess": "Cobro automatico activado. ¡Gracias!",
+        "membershipAlreadyActive": "Esta propiedad ya tiene una membresia de cobro automatico activa.",
+        "membershipError": "No pudimos iniciar la configuracion del cobro automatico. Intenta de nuevo."
       }
     },
     "contract": {

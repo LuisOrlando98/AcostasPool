@@ -45,6 +45,7 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { deleteStoredAsset, storePublicAsset } from "@/lib/storage/object-store";
 import { buildCompanySignatureAssetPath } from "@/lib/storage/paths";
 import CompanySignatureForm from "@/components/settings/CompanySignatureForm";
+import { isStripeConfigured } from "@/lib/stripe/client";
 
 type SettingsTabId =
   | "social"
@@ -53,7 +54,8 @@ type SettingsTabId =
   | "compliance"
   | "tiers"
   | "notifications"
-  | "signature";
+  | "signature"
+  | "payments";
 type TemplatesKind = "email" | "invoice";
 type TemplateViewMode = "code" | "web" | "split";
 
@@ -69,6 +71,7 @@ const SETTINGS_TAB_IDS: SettingsTabId[] = [
   "tiers",
   "notifications",
   "signature",
+  "payments",
 ];
 
 function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
@@ -118,6 +121,14 @@ function SettingsTabIcon({ tabId }: { tabId: SettingsTabId }) {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 18.5c2-3 3.5-6.5 4.6-9.3.5-1.4 2.4-1.5 2.9 0 .8 2.3 2 5.5 2.9 6.7.6.9 1.4-.2 2-1.1.7-1 1.6-1.2 2.6-.3" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 20.5h16" />
+      </svg>
+    );
+  }
+  if (tabId === "payments") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+        <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 9.5h17" />
       </svg>
     );
   }
@@ -186,6 +197,7 @@ function resolveTab(value: string | undefined): SettingsTabId {
   if (value === "tiers") return "tiers";
   if (value === "notifications") return "notifications";
   if (value === "signature") return "signature";
+  if (value === "payments") return "payments";
   return "social";
 }
 
@@ -517,6 +529,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     label: t(`admin.settings.tabs.${id}.label`),
     hint: t(`admin.settings.tabs.${id}.hint`),
   }));
+  const stripeSecretConfigured = isStripeConfigured();
+  const stripeWebhookConfigured = Boolean(process.env.STRIPE_WEBHOOK_SECRET);
+  const stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
+    ? "live"
+    : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+      ? "test"
+      : null;
 
   const socialFields = [
     {
@@ -1478,6 +1497,77 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               submitPendingLabel={t("common.feedback.saving")}
               missingSignatureLabel={t("admin.settings.signature.missing")}
             />
+          </div>
+        ) : null}
+
+        {currentTab === "payments" ? (
+          <div className="app-card p-4 shadow-contrast sm:p-6">
+            <h2 className="text-lg font-semibold">{t("admin.settings.payments.title")}</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {t("admin.settings.payments.subtitle")}
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("admin.settings.payments.fields.secretKey")}
+                </p>
+                <p
+                  className={`mt-2 text-sm font-semibold ${
+                    stripeSecretConfigured ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
+                  {stripeSecretConfigured
+                    ? t("admin.settings.payments.status.configured")
+                    : t("admin.settings.payments.status.missing")}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("admin.settings.payments.fields.webhookSecret")}
+                </p>
+                <p
+                  className={`mt-2 text-sm font-semibold ${
+                    stripeWebhookConfigured ? "text-emerald-600" : "text-rose-600"
+                  }`}
+                >
+                  {stripeWebhookConfigured
+                    ? t("admin.settings.payments.status.configured")
+                    : t("admin.settings.payments.status.missing")}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("admin.settings.payments.fields.mode")}
+                </p>
+                <p
+                  className={`mt-2 text-sm font-semibold ${
+                    stripeMode === "live"
+                      ? "text-amber-600"
+                      : stripeMode === "test"
+                        ? "text-sky-600"
+                        : "text-slate-400"
+                  }`}
+                >
+                  {stripeMode === "live"
+                    ? t("admin.settings.payments.status.live")
+                    : stripeMode === "test"
+                      ? t("admin.settings.payments.status.test")
+                      : t("admin.settings.payments.status.missing")}
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs text-slate-500">
+              {t("admin.settings.payments.keysHint")}
+            </p>
+
+            <Link
+              href="/admin/accounting"
+              className="app-button-primary mt-4 inline-flex px-4 py-2 text-xs font-semibold"
+            >
+              {t("admin.settings.payments.viewDashboard")}
+            </Link>
           </div>
         ) : null}
       </section>

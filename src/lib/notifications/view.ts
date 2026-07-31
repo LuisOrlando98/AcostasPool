@@ -65,6 +65,8 @@ export function getNotificationTitle(eventType: string, t: TranslateFn) {
     SERVICE_RESCHEDULED: t("notifications.serviceRescheduled"),
     ROUTE_UPDATED: t("notifications.routeUpdated"),
     INVOICE_SENT: t("notifications.invoiceSent"),
+    PAYMENT_RECEIVED: t("notifications.paymentReceived"),
+    MEMBERSHIP_PAYMENT_FAILED: t("notifications.membershipPaymentFailed"),
   };
   return titleMap[eventType] ?? eventType.replaceAll("_", " ");
 }
@@ -140,6 +142,33 @@ export function getNotificationDetail(
     return parts.join(" - ");
   }
 
+  if (item.eventType === "PAYMENT_RECEIVED") {
+    const amountCents = asNumber(payload.amountCents);
+    const amountLabel =
+      amountCents !== null
+        ? new Intl.NumberFormat(locale.toLowerCase().startsWith("es") ? "es-US" : "en-US", {
+            style: "currency",
+            currency: "USD",
+          }).format(amountCents / 100)
+        : null;
+    const sourceLabel = asString(payload.source);
+    const parts = [amountLabel, sourceLabel, createdAt].filter(Boolean);
+    return parts.join(" - ");
+  }
+
+  if (item.eventType === "MEMBERSHIP_PAYMENT_FAILED") {
+    const amountCents = asNumber(payload.amountCents);
+    const amountLabel =
+      amountCents !== null
+        ? new Intl.NumberFormat(locale.toLowerCase().startsWith("es") ? "es-US" : "en-US", {
+            style: "currency",
+            currency: "USD",
+          }).format(amountCents / 100)
+        : null;
+    const parts = [amountLabel, createdAt].filter(Boolean);
+    return parts.join(" - ");
+  }
+
   if (item.eventType === "INVOICE_SENT") {
     const delivery =
       item.status === "FAILED"
@@ -180,7 +209,11 @@ export function getNotificationSource(
     return explicitName;
   }
 
-  if (item.eventType === "INVOICE_SENT") {
+  if (
+    item.eventType === "INVOICE_SENT" ||
+    item.eventType === "PAYMENT_RECEIVED" ||
+    item.eventType === "MEMBERSHIP_PAYMENT_FAILED"
+  ) {
     return t("notifications.source.billing");
   }
 

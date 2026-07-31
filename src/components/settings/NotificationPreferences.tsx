@@ -15,6 +15,8 @@ const EVENT_COLOR: Record<string, string> = {
   SERVICE_RESCHEDULED: "bg-cyan-100 text-cyan-700",
   ROUTE_UPDATED: "bg-violet-100 text-violet-700",
   INVOICE_SENT: "bg-indigo-100 text-indigo-700",
+  PAYMENT_RECEIVED: "bg-emerald-100 text-emerald-700",
+  MEMBERSHIP_PAYMENT_FAILED: "bg-rose-100 text-rose-700",
 };
 
 function humanizeEventType(eventType: string) {

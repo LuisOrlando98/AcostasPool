@@ -48,6 +48,7 @@ import {
   normalizePaymentMethod,
   PAYMENT_METHOD_VALUES,
 } from "@/lib/customers/financial-info";
+import { cancelMembership } from "@/lib/payments/cancel";
 import {
   parsePoolConditionInput,
   readPoolCondition,
@@ -787,6 +788,21 @@ async function deleteProperty(formData: FormData) {
   redirect(customerDetailFeedbackPath(customerId, "property-deleted"));
 }
 
+async function cancelMembershipAction(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const customerId = String(formData.get("customerId") ?? "");
+  const mode = String(formData.get("mode") ?? "period_end");
+  if (!membershipId || !customerId) {
+    return;
+  }
+
+  await cancelMembership(membershipId, mode === "immediate" ? "immediate" : "period_end");
+  revalidatePath(`/admin/customers/${customerId}`);
+}
+
 async function updateProperty(formData: FormData) {
   "use server";
   await requireRole("ADMIN");
@@ -1288,6 +1304,7 @@ export default async function CustomerDetailPage({
           },
         },
       },
+      memberships: { orderBy: { createdAt: "desc" } },
     },
   });
 
@@ -1413,6 +1430,12 @@ export default async function CustomerDetailPage({
     poolConditionNotes: property.poolConditionNotes,
   }));
   const primaryProperty = customer.properties[0] ?? null;
+  const activeMembership =
+    customer.memberships.find(
+      (membership) =>
+        membership.propertyId === primaryProperty?.id &&
+        (membership.status === "ACTIVE" || membership.status === "PAST_DUE")
+    ) ?? null;
   const invoicesRows = customer.invoices.map((invoice) => ({
     id: invoice.id,
     number: invoice.number,
@@ -1834,6 +1857,87 @@ export default async function CustomerDetailPage({
                   {t("admin.customers.detail.financials.noPropertyHint")}
                 </p>
               ) : null}
+            </CollapsibleSection>
+          </div>
+
+          <div className="min-w-0">
+            <CollapsibleSection
+              className="h-full"
+              title={t("admin.customers.detail.sections.membershipTitle")}
+              subtitle={t("admin.customers.detail.sections.membershipSubtitle")}
+            >
+              {!primaryProperty || primaryProperty.servicePrice == null ? (
+                <p className="text-sm text-slate-500">
+                  {t("admin.customers.detail.membership.noServicePrice")}
+                </p>
+              ) : activeMembership ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span
+                      className="app-chip px-2.5 py-0.5 text-[11px] font-semibold"
+                      data-tone={
+                        activeMembership.status === "ACTIVE" ? "success" : "warning"
+                      }
+                    >
+                      {activeMembership.cancelAtPeriodEnd
+                        ? t("admin.customers.detail.membership.statusCanceling")
+                        : activeMembership.status}
+                    </span>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {currencyFormatter.format(activeMembership.amountCents / 100)}
+                      /{t("client.invoices.membership.perMonth")}
+                    </p>
+                  </div>
+                  {!activeMembership.cancelAtPeriodEnd ? (
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <form action={cancelMembershipAction}>
+                        <input
+                          type="hidden"
+                          name="membershipId"
+                          value={activeMembership.id}
+                        />
+                        <input type="hidden" name="customerId" value={customer.id} />
+                        <input type="hidden" name="mode" value="period_end" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+                        >
+                          {t("admin.customers.detail.membership.cancelPeriodEnd")}
+                        </button>
+                      </form>
+                      <form action={cancelMembershipAction}>
+                        <input
+                          type="hidden"
+                          name="membershipId"
+                          value={activeMembership.id}
+                        />
+                        <input type="hidden" name="customerId" value={customer.id} />
+                        <input type="hidden" name="mode" value="immediate" />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300"
+                        >
+                          {t("admin.customers.detail.membership.cancelImmediate")}
+                        </button>
+                      </form>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-slate-600">
+                    {t("admin.customers.detail.membership.notActive")}
+                  </p>
+                  <a
+                    href={`/api/admin/memberships/checkout?customerId=${customer.id}&propertyId=${primaryProperty.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="app-button-primary mt-3 inline-flex px-4 py-2 text-xs font-semibold"
+                  >
+                    {t("admin.customers.detail.membership.sendSetupLink")}
+                  </a>
+                </div>
+              )}
             </CollapsibleSection>
           </div>
 

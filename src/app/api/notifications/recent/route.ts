@@ -149,6 +149,15 @@ function getNotificationLink(
   if (eventType === "CONTRACT_READY_TO_SIGN" && role === "CUSTOMER") {
     return "/client/contract";
   }
+  if (
+    (eventType === "PAYMENT_RECEIVED" || eventType === "MEMBERSHIP_PAYMENT_FAILED") &&
+    role === "ADMIN"
+  ) {
+    return "/admin/accounting";
+  }
+  if (eventType === "MEMBERSHIP_PAYMENT_FAILED" && role === "CUSTOMER") {
+    return "/client/invoices";
+  }
   if (role === "TECH") {
     return "/tech";
   }
