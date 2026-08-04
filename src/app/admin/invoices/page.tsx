@@ -6,6 +6,7 @@ import Badge from "@/components/ui/Badge";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
 import NewInvoiceModal from "@/components/invoices/NewInvoiceModal";
 import DeleteInvoiceButton from "@/components/invoices/DeleteInvoiceButton";
+import AccountingSectionTabs from "@/components/accounting/AccountingSectionTabs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
@@ -469,6 +470,10 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       subtitle={t("admin.invoices.subtitle")}
       role="ADMIN"
     >
+      <div className="mb-4 flex justify-end">
+        <AccountingSectionTabs />
+      </div>
+
       <section className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">{t("admin.invoices.title")}</h2>

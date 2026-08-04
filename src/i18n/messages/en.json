@@ -154,7 +154,6 @@
       "calendar": "Calendar",
       "technicians": "Technicians",
       "customers": "Customers",
-      "invoices": "Billing",
       "accounting": "Accounting",
       "reports": "Reports",
       "settings": "Settings",
@@ -1894,6 +1893,10 @@
     "accounting": {
       "title": "Accounting",
       "subtitle": "Revenue, memberships, and payment activity across the business.",
+      "tabs": {
+        "dashboard": "Dashboard",
+        "invoices": "Invoices"
+      },
       "stats": {
         "revenue12mo": "Revenue (12 months)",
         "revenue12moHelper": "Net of refunds, Stripe and manual payments",

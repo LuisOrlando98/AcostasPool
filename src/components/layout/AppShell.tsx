@@ -17,6 +17,7 @@ export type NavItem = {
   label: string;
   href: string;
   icon?: ReactNode;
+  matchPaths?: string[];
 };
 
 type MobileUser = {
@@ -142,32 +143,9 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
-    label: t("nav.admin.invoices"),
-    href: "/admin/invoices",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        className={iconClassName}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7 3.5h7l4.5 4.5V20a1 1 0 01-1 1H7a1 1 0 01-1-1V4.5a1 1 0 011-1z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 13h6M9 16.5h5"
-        />
-      </svg>
-    ),
-  },
-  {
     label: t("nav.admin.accounting"),
     href: "/admin/accounting",
+    matchPaths: ["/admin/accounting", "/admin/invoices"],
     icon: (
       <svg
         viewBox="0 0 24 24"
@@ -741,7 +719,9 @@ export default function AppShell({
                 item.href === "/tech";
               const isActive = isRoot
                 ? pathname === item.href
-                : pathname.startsWith(item.href);
+                : (item.matchPaths ?? [item.href]).some((path) =>
+                    pathname.startsWith(path)
+                  );
               return (
                 <Link
                   key={item.href}
@@ -934,7 +914,9 @@ export default function AppShell({
                     item.href === "/tech";
                   const isActive = isRoot
                     ? pathname === item.href
-                    : pathname.startsWith(item.href);
+                    : (item.matchPaths ?? [item.href]).some((path) =>
+                        pathname.startsWith(path)
+                      );
                   return (
                     <Link
                       key={item.href}

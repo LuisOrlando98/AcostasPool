@@ -154,7 +154,6 @@
       "calendar": "Calendario",
       "technicians": "Tecnicos",
       "customers": "Clientes",
-      "invoices": "Billing",
       "accounting": "Contabilidad",
       "reports": "Reportes",
       "settings": "Ajustes",
@@ -1894,6 +1893,10 @@
     "accounting": {
       "title": "Contabilidad",
       "subtitle": "Ingresos, membresias y actividad de pagos de todo el negocio.",
+      "tabs": {
+        "dashboard": "Panel",
+        "invoices": "Facturas"
+      },
       "stats": {
         "revenue12mo": "Ingresos (12 meses)",
         "revenue12moHelper": "Netos de reembolsos, pagos por Stripe y manuales",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import StatCard from "@/components/ui/StatCard";
+import AccountingSectionTabs from "@/components/accounting/AccountingSectionTabs";
 import {
   RevenueChart,
   MethodBreakdownChart,
@@ -96,6 +97,10 @@ export default async function AccountingPage() {
       subtitle={t("admin.accounting.subtitle")}
       role="ADMIN"
     >
+      <div className="mb-4 flex justify-end">
+        <AccountingSectionTabs />
+      </div>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label={t("admin.accounting.stats.revenue12mo")}
