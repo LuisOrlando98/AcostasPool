@@ -79,11 +79,20 @@ export async function POST(
     );
   }
 
+  const appUrl = (process.env.APP_URL?.trim() || "https://acostaspool.com").replace(/\/+$/, "");
+  const invoiceTotalLabel = new Intl.NumberFormat(invoiceLocale === "ES" ? "es-US" : "en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(invoice.total));
+
   const templates = await getEmailTemplatesConfig(invoiceLocale);
   const rendered = renderEmailTemplate(templates.INVOICE_SENT, {
     customer_name: customerName,
     customer_name_html: escapeHtml(customerName),
     invoice_number: invoice.number,
+    invoice_total: invoiceTotalLabel,
+    pay_link: `${appUrl}/api/client/invoices/${invoice.id}/checkout`,
+    portal_link: `${appUrl}/client/invoices`,
   });
   const lineItems = normalizeInvoiceLineItems(invoice.lineItems);
   if (lineItems.length === 0) {
