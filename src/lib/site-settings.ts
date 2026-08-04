@@ -47,6 +47,12 @@ export type RouteAssistantConfig = {
   dailyAutoOptimizeEnabled: boolean;
 };
 
+export type StripeReconcileStatus = {
+  lastRunAt: string | null;
+  checkedCount: number;
+  correctedCount: number;
+};
+
 const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   instagramUrl: null,
   facebookUrl: null,
@@ -58,6 +64,12 @@ const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
 
 const DEFAULT_ROUTE_ASSISTANT_CONFIG: RouteAssistantConfig = {
   dailyAutoOptimizeEnabled: false,
+};
+
+const DEFAULT_STRIPE_RECONCILE_STATUS: StripeReconcileStatus = {
+  lastRunAt: null,
+  checkedCount: 0,
+  correctedCount: 0,
 };
 
 const SITE_SETTINGS_TAG = "site-settings";
@@ -76,6 +88,7 @@ type SiteSettingsData = {
   routeAssistantConfig?: Prisma.InputJsonValue | null;
   complianceContent?: Prisma.InputJsonValue | null;
   companySignatureUrl?: string | null;
+  stripeReconcileStatus?: Prisma.InputJsonValue | null;
 };
 
 function toNullableJsonInput(value: Prisma.InputJsonValue | null | undefined) {
@@ -96,6 +109,27 @@ function normalizeRouteAssistantConfig(
   return {
     dailyAutoOptimizeEnabled:
       candidate.dailyAutoOptimizeEnabled === true,
+  };
+}
+
+function normalizeStripeReconcileStatus(
+  value: Prisma.JsonValue | null | undefined
+): StripeReconcileStatus {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return DEFAULT_STRIPE_RECONCILE_STATUS;
+  }
+
+  const candidate = value as {
+    lastRunAt?: unknown;
+    checkedCount?: unknown;
+    correctedCount?: unknown;
+  };
+  return {
+    lastRunAt: typeof candidate.lastRunAt === "string" ? candidate.lastRunAt : null,
+    checkedCount:
+      typeof candidate.checkedCount === "number" ? candidate.checkedCount : 0,
+    correctedCount:
+      typeof candidate.correctedCount === "number" ? candidate.correctedCount : 0,
   };
 }
 
@@ -156,6 +190,7 @@ const getSiteSettingsCached = unstable_cache(
         routeAssistantConfig: true,
         complianceContent: true,
         companySignatureUrl: true,
+        stripeReconcileStatus: true,
       },
     });
   },
@@ -171,6 +206,7 @@ async function saveSiteSettings(data: SiteSettingsData) {
     invoiceTemplate: toNullableJsonInput(data.invoiceTemplate),
     routeAssistantConfig: toNullableJsonInput(data.routeAssistantConfig),
     complianceContent: toNullableJsonInput(data.complianceContent),
+    stripeReconcileStatus: toNullableJsonInput(data.stripeReconcileStatus),
   };
 
   const saved = await prisma.siteSettings.upsert({
@@ -351,5 +387,16 @@ export async function saveComplianceDocLocalesConfig(
 
   return saveSiteSettings({
     complianceContent: next as Prisma.InputJsonValue,
+  });
+}
+
+export async function getStripeReconcileStatus(): Promise<StripeReconcileStatus> {
+  const settings = await getSiteSettingsCached();
+  return normalizeStripeReconcileStatus(settings?.stripeReconcileStatus);
+}
+
+export async function saveStripeReconcileStatus(status: StripeReconcileStatus) {
+  return saveSiteSettings({
+    stripeReconcileStatus: status as unknown as Prisma.InputJsonValue,
   });
 }

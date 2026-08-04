@@ -58,14 +58,14 @@ function money(cents: number, locale: string, compact = false) {
 }
 
 type RevenuePoint = {
-  month: string;
+  bucket: string;
   oneTimeCents: number;
   recurringCents: number;
   totalCents: number;
 };
 type MethodPoint = { method: string; amountCents: number };
 type TopCustomerPoint = { customerId: string; customerName: string; amountCents: number };
-type MembershipTrendPoint = { month: string; activated: number; canceled: number };
+type MembershipTrendPoint = { bucket: string; activated: number; canceled: number };
 type InvoiceStatusPoint = { status: string; count: number };
 
 function ChartCard({
@@ -150,7 +150,7 @@ function RevenueTooltip({
 
 export function RevenueChart({
   data,
-  monthLabels,
+  bucketLabels,
   oneTimeLabel,
   recurringLabel,
   totalLabel,
@@ -158,7 +158,7 @@ export function RevenueChart({
   chartViewLabel,
 }: {
   data: RevenuePoint[];
-  monthLabels: Record<string, string>;
+  bucketLabels: Record<string, string>;
   oneTimeLabel: string;
   recurringLabel: string;
   totalLabel: string;
@@ -169,7 +169,7 @@ export function RevenueChart({
   const [showTable, setShowTable] = useState(false);
   const chartData = data.map((point) => ({
     ...point,
-    label: monthLabels[point.month] ?? point.month,
+    label: bucketLabels[point.bucket] ?? point.bucket,
   }));
 
   return (
@@ -198,7 +198,7 @@ export function RevenueChart({
             </thead>
             <tbody>
               {chartData.map((point) => (
-                <tr key={point.month} className="border-t border-slate-100">
+                <tr key={point.bucket} className="border-t border-slate-100">
                   <td className="px-3 py-2 font-medium text-slate-800">{point.label}</td>
                   <td className="px-3 py-2 text-slate-600">{money(point.oneTimeCents, locale)}</td>
                   <td className="px-3 py-2 text-slate-600">{money(point.recurringCents, locale)}</td>
@@ -404,18 +404,18 @@ export function TopCustomersChart({ data }: { data: TopCustomerPoint[] }) {
 
 export function MembershipTrendChart({
   data,
-  monthLabels,
+  bucketLabels,
   activatedLabel,
   canceledLabel,
 }: {
   data: MembershipTrendPoint[];
-  monthLabels: Record<string, string>;
+  bucketLabels: Record<string, string>;
   activatedLabel: string;
   canceledLabel: string;
 }) {
   const chartData = data.map((point) => ({
     ...point,
-    label: monthLabels[point.month] ?? point.month,
+    label: bucketLabels[point.bucket] ?? point.bucket,
   }));
 
   return (

@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import StatCard from "@/components/ui/StatCard";
 import AccountingSectionTabs from "@/components/accounting/AccountingSectionTabs";
+import AccountingFiltersBar from "@/components/accounting/AccountingFiltersBar";
+import PastDueMembershipsPanel from "@/components/accounting/PastDueMembershipsPanel";
 import {
   RevenueChart,
   MethodBreakdownChart,
@@ -11,8 +14,53 @@ import {
 } from "@/components/accounting/AccountingCharts";
 import { requireRole } from "@/lib/auth/guards";
 import { getAccountingDashboardData } from "@/lib/payments/dashboard";
+import { getAccountingFilters, formatDateInput } from "@/lib/payments/dashboard-filters";
+import { retryMembershipCharge } from "@/lib/payments/retry";
+import { cancelMembership } from "@/lib/payments/cancel";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
+
+async function retryMembershipChargeAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+  const membershipId = String(formData.get("membershipId") ?? "");
+  if (!membershipId) {
+    return { error: t("admin.accounting.pastDue.errors.generic") };
+  }
+
+  try {
+    await retryMembershipCharge(membershipId);
+  } catch (error) {
+    console.error("[accounting] retry charge failed", error);
+    return { error: t("admin.accounting.pastDue.errors.retryFailed") };
+  }
+
+  revalidatePath("/admin/accounting");
+}
+
+async function cancelPastDueMembershipAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+  const membershipId = String(formData.get("membershipId") ?? "");
+  if (!membershipId) {
+    return { error: t("admin.accounting.pastDue.errors.generic") };
+  }
+
+  try {
+    await cancelMembership(membershipId, "immediate");
+  } catch (error) {
+    console.error("[accounting] cancel past-due membership failed", error);
+    return { error: t("admin.accounting.pastDue.errors.cancelFailed") };
+  }
+
+  revalidatePath("/admin/accounting");
+}
 
 function money(cents: number, locale: string) {
   return new Intl.NumberFormat(locale, {
@@ -49,32 +97,38 @@ function TrendBadge({ pct, positiveIsGood = true }: { pct: number | null; positi
   );
 }
 
-export default async function AccountingPage() {
+type AccountingPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function AccountingPage({ searchParams }: AccountingPageProps) {
   await requireRole("ADMIN");
   const t = await getTranslations();
   const locale = await getRequestLocale();
-  const data = await getAccountingDashboardData();
+  const resolvedSearchParams = await Promise.resolve(searchParams);
+  const filters = getAccountingFilters(resolvedSearchParams);
+  const data = await getAccountingDashboardData(filters);
 
-  const monthLabels = Object.fromEntries(
+  const bucketLabels = Object.fromEntries(
     data.revenueSeries.map((point) => {
-      const [year, month] = point.month.split("-").map(Number);
+      if (data.granularity === "day") {
+        const date = new Date(`${point.bucket}T00:00:00Z`);
+        return [
+          point.bucket,
+          new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", timeZone: "UTC" }).format(
+            date
+          ),
+        ];
+      }
+      const [year, month] = point.bucket.split("-").map(Number);
       const date = new Date(Date.UTC(year, month - 1, 1));
       return [
-        point.month,
+        point.bucket,
         new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(date),
       ];
     })
   );
-  const membershipMonthLabels = Object.fromEntries(
-    data.membershipTrend.map((point) => {
-      const [year, month] = point.month.split("-").map(Number);
-      const date = new Date(Date.UTC(year, month - 1, 1));
-      return [
-        point.month,
-        new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(date),
-      ];
-    })
-  );
+
   const invoiceStatusLabels: Record<string, string> = {
     DRAFT: t("admin.invoices.status.draft"),
     SENT: t("admin.invoices.status.sent"),
@@ -91,6 +145,23 @@ export default async function AccountingPage() {
       : null,
   ].filter(Boolean);
 
+  const exportHref = `/api/accounting/export?${new URLSearchParams({
+    range: filters.range,
+    from: formatDateInput(filters.from),
+    to: formatDateInput(filters.to),
+  }).toString()}`;
+
+  const reconcileLabel = data.reconcileStatus.lastRunAt
+    ? t("admin.accounting.reconcile.status", {
+        date: formatInBusinessTimeZone(data.reconcileStatus.lastRunAt, locale, {
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+        checked: String(data.reconcileStatus.checkedCount),
+        corrected: String(data.reconcileStatus.correctedCount),
+      })
+    : t("admin.accounting.reconcile.neverRun");
+
   return (
     <AppShell
       title={t("admin.accounting.title")}
@@ -101,13 +172,23 @@ export default async function AccountingPage() {
         <AccountingSectionTabs />
       </div>
 
+      <div className="mb-4">
+        <AccountingFiltersBar
+          defaults={{
+            range: filters.range,
+            from: formatDateInput(filters.from),
+            to: formatDateInput(filters.to),
+          }}
+          exportHref={exportHref}
+        />
+      </div>
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label={t("admin.accounting.stats.revenue12mo")}
-          value={money(data.totalRevenue12moCents, locale)}
-          helper={t("admin.accounting.stats.revenue12moHelper")}
+          label={t("admin.accounting.stats.revenue")}
+          value={money(data.totalRevenueCents, locale)}
+          helper={t("admin.accounting.stats.revenueHelper")}
           tone="success"
-          className="relative"
         />
         <StatCard
           label={t("admin.accounting.stats.mrr")}
@@ -124,6 +205,12 @@ export default async function AccountingPage() {
           tone="info"
         />
         <StatCard
+          label={t("admin.accounting.stats.mrrAtRisk")}
+          value={money(data.mrrAtRiskCents, locale)}
+          helper={t("admin.accounting.stats.mrrAtRiskHelper")}
+          tone={data.mrrAtRiskCents > 0 ? "warning" : "success"}
+        />
+        <StatCard
           label={t("admin.accounting.stats.overdue")}
           value={money(data.overdueInvoiceTotalCents, locale)}
           helper={t("admin.accounting.stats.overdueHelper", {
@@ -131,25 +218,21 @@ export default async function AccountingPage() {
           })}
           tone={data.overdueInvoiceCount > 0 ? "danger" : "success"}
         />
-        <StatCard
-          label={t("admin.accounting.stats.pastDue")}
-          value={String(data.pastDueMembershipCount)}
-          helper={t("admin.accounting.stats.pastDueHelper")}
-          tone={data.pastDueMembershipCount > 0 ? "warning" : "success"}
-        />
       </section>
 
-      <div className="mt-2 flex items-center gap-2 px-1">
+      <div className="mt-2 flex flex-wrap items-center gap-3 px-1">
         <span className="text-xs font-medium text-slate-500">
           {t("admin.accounting.stats.momentum")}
         </span>
         <TrendBadge pct={data.revenueTrendPct} />
+        <span className="text-slate-300">|</span>
+        <span className="text-xs text-slate-500">{reconcileLabel}</span>
       </div>
 
       <section className="mt-6 grid gap-6 xl:grid-cols-[3fr_2fr]">
         <RevenueChart
           data={data.revenueSeries}
-          monthLabels={monthLabels}
+          bucketLabels={bucketLabels}
           oneTimeLabel={t("admin.accounting.charts.oneTime")}
           recurringLabel={t("admin.accounting.charts.recurring")}
           totalLabel={t("admin.accounting.charts.revenueTitle")}
@@ -203,7 +286,7 @@ export default async function AccountingPage() {
           <div className="mt-4">
             <MembershipTrendChart
               data={data.membershipTrend}
-              monthLabels={membershipMonthLabels}
+              bucketLabels={bucketLabels}
               activatedLabel={t("admin.accounting.charts.activated")}
               canceledLabel={t("admin.accounting.charts.canceled")}
             />
@@ -229,6 +312,28 @@ export default async function AccountingPage() {
               />
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="mt-6 app-card p-6 shadow-contrast">
+        <h2 className="text-base font-semibold text-slate-900">
+          {t("admin.accounting.pastDue.title")}
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">{t("admin.accounting.pastDue.subtitle")}</p>
+        <div className="mt-4">
+          <PastDueMembershipsPanel
+            memberships={data.pastDueMemberships.map((membership) => ({
+              id: membership.id,
+              customerId: membership.customerId,
+              customerName: membership.customerName,
+              amountCents: membership.amountCents,
+              currentPeriodEnd: membership.currentPeriodEnd
+                ? membership.currentPeriodEnd.toISOString()
+                : null,
+            }))}
+            retryAction={retryMembershipChargeAction}
+            cancelAction={cancelPastDueMembershipAction}
+          />
         </div>
       </section>
 

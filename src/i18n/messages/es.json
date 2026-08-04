@@ -1641,9 +1641,8 @@
       "title": "Billing",
       "subtitle": "Facturas, datos de servicio y seguimiento de pagos.",
       "views": {
-        "subtitle": "Cambia entre la gestion de facturas y la tabla interna de pagos.",
         "invoices": "Facturas",
-        "servicePayment": "Service & Payment Info"
+        "servicePayment": "Info de servicio y pago"
       },
       "theme": {
         "standard": "Normal",
@@ -1895,41 +1894,74 @@
       "subtitle": "Ingresos, membresias y actividad de pagos de todo el negocio.",
       "tabs": {
         "dashboard": "Panel",
-        "invoices": "Facturas"
+        "invoices": "Facturas",
+        "servicePayment": "Info de servicio y pago"
+      },
+      "filters": {
+        "showing": "Mostrando",
+        "export": "Exportar CSV",
+        "open": "Abrir filtros",
+        "toolbar": "Filtros",
+        "modalTitle": "Elige un rango de fechas",
+        "range7": "7 dias",
+        "range30": "30 dias",
+        "range90": "90 dias",
+        "range365": "12 meses",
+        "rangeCustom": "Personalizado",
+        "customRange": "Rango personalizado",
+        "from": "Desde",
+        "to": "Hasta",
+        "apply": "Aplicar"
       },
       "stats": {
-        "revenue12mo": "Ingresos (12 meses)",
-        "revenue12moHelper": "Netos de reembolsos, pagos por Stripe y manuales",
+        "revenue": "Ingresos",
+        "revenueHelper": "Netos de reembolsos, pagos por Stripe y manuales, rango seleccionado",
         "mrr": "Ingreso recurrente mensual",
         "mrrHelper": "{{count}} membresia(s) activa(s)",
+        "mrrAtRisk": "MRR en riesgo",
+        "mrrAtRiskHelper": "Membresias activas configuradas para cancelarse al final del periodo",
         "overdue": "Facturas vencidas",
         "overdueHelper": "{{count}} factura(s) sin pagar",
-        "pastDue": "Cobros automaticos fallidos",
-        "pastDueHelper": "Membresias que necesitan atencion",
-        "momentum": "Ultimos 30 dias vs 30 dias anteriores",
+        "momentum": "vs. periodo anterior equivalente",
         "newLabel": "nuevas",
         "canceledLabel": "canceladas"
       },
       "charts": {
         "revenueTitle": "Ingresos en el tiempo",
-        "revenueSubtitle": "Ingreso neto por mes, ultimos 12 meses.",
+        "revenueSubtitle": "Ingreso neto del rango seleccionado.",
         "oneTime": "Pagos unicos",
         "recurring": "Membresias de cobro automatico",
         "tableView": "Ver tabla",
         "chartView": "Ver grafico",
         "methodTitle": "Desglose por metodo de pago",
-        "methodSubtitle": "Pagos exitosos por metodo, ultimos 12 meses.",
+        "methodSubtitle": "Pagos exitosos por metodo, rango seleccionado.",
         "methodEmpty": "Todavia no hay pagos registrados.",
         "topCustomersTitle": "Mejores clientes",
-        "topCustomersSubtitle": "Mayor ingreso, ultimos 12 meses.",
+        "topCustomersSubtitle": "Mayor ingreso, rango seleccionado.",
         "topCustomersEmpty": "Todavia no hay pagos registrados.",
         "membershipTrendTitle": "Actividad de membresias",
-        "membershipTrendSubtitle": "Membresias de cobro automatico nuevas vs. canceladas, ultimos 6 meses.",
+        "membershipTrendSubtitle": "Membresias de cobro automatico nuevas vs. canceladas, rango seleccionado.",
         "activated": "Activadas",
         "canceled": "Canceladas",
         "invoiceStatusTitle": "Estado de facturas",
         "invoiceStatusSubtitle": "Todas las facturas segun su estado actual.",
         "invoiceStatusEmpty": "Todavia no hay facturas."
+      },
+      "pastDue": {
+        "title": "Membresias con cobro vencido",
+        "subtitle": "Cobros automaticos que fallaron. Reintenta ahora o cancela la membresia.",
+        "empty": "No hay membresias con cobro vencido. Todo esta al dia.",
+        "retry": "Reintentar cobro",
+        "cancel": "Cancelar",
+        "errors": {
+          "generic": "Algo salio mal. Intenta de nuevo.",
+          "retryFailed": "El reintento fallo - la tarjeta puede seguir siendo rechazada.",
+          "cancelFailed": "No se pudo cancelar esta membresia. Intenta de nuevo."
+        }
+      },
+      "reconcile": {
+        "status": "Ultima verificacion con Stripe: {{date}} ({{checked}} revisadas, {{corrected}} corregidas)",
+        "neverRun": "Ultima verificacion con Stripe: aun no se ha ejecutado"
       },
       "recentPayments": {
         "title": "Pagos recientes",

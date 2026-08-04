@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe/client";
 import { mapStripeSubscriptionStatus, subscriptionPeriod } from "@/lib/payments/membership";
+import { saveStripeReconcileStatus } from "@/lib/site-settings";
 
 function hasValidCronSecret(request: Request) {
   const expected = process.env.CRON_SECRET?.trim();
@@ -60,6 +61,12 @@ export async function POST(request: Request) {
       correctedCount += 1;
     }
   }
+
+  await saveStripeReconcileStatus({
+    lastRunAt: new Date().toISOString(),
+    checkedCount,
+    correctedCount,
+  });
 
   return NextResponse.json({ ok: true, checkedCount, correctedCount });
 }

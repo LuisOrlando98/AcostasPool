@@ -639,6 +639,7 @@ model SiteSettings {
   routeAssistantConfig Json?
   complianceContent Json?
   companySignatureUrl String?
+  stripeReconcileStatus Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }

@@ -1641,7 +1641,6 @@
       "title": "Billing",
       "subtitle": "Invoices, service billing details, and payment tracking.",
       "views": {
-        "subtitle": "Switch between invoice management and the admin-only payment table.",
         "invoices": "Invoices",
         "servicePayment": "Service & Payment Info"
       },
@@ -1895,41 +1894,74 @@
       "subtitle": "Revenue, memberships, and payment activity across the business.",
       "tabs": {
         "dashboard": "Dashboard",
-        "invoices": "Invoices"
+        "invoices": "Invoices",
+        "servicePayment": "Service & Payment Info"
+      },
+      "filters": {
+        "showing": "Showing",
+        "export": "Export CSV",
+        "open": "Open filters",
+        "toolbar": "Filters",
+        "modalTitle": "Choose a date range",
+        "range7": "7 days",
+        "range30": "30 days",
+        "range90": "90 days",
+        "range365": "12 months",
+        "rangeCustom": "Custom",
+        "customRange": "Custom range",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply"
       },
       "stats": {
-        "revenue12mo": "Revenue (12 months)",
-        "revenue12moHelper": "Net of refunds, Stripe and manual payments",
+        "revenue": "Revenue",
+        "revenueHelper": "Net of refunds, Stripe and manual payments, selected range",
         "mrr": "Monthly recurring revenue",
         "mrrHelper": "{{count}} active membership(s)",
+        "mrrAtRisk": "MRR at risk",
+        "mrrAtRiskHelper": "Active memberships set to cancel at period end",
         "overdue": "Overdue invoices",
         "overdueHelper": "{{count}} unpaid invoice(s)",
-        "pastDue": "Failed autopay charges",
-        "pastDueHelper": "Memberships needing attention",
-        "momentum": "Last 30 days vs prior 30 days",
+        "momentum": "vs. previous equal period",
         "newLabel": "new",
         "canceledLabel": "canceled"
       },
       "charts": {
         "revenueTitle": "Revenue over time",
-        "revenueSubtitle": "Net revenue by month, last 12 months.",
+        "revenueSubtitle": "Net revenue for the selected range.",
         "oneTime": "One-time payments",
         "recurring": "Autopay memberships",
         "tableView": "Table view",
         "chartView": "Chart view",
         "methodTitle": "Payment method breakdown",
-        "methodSubtitle": "Successful payments by method, last 12 months.",
+        "methodSubtitle": "Successful payments by method, selected range.",
         "methodEmpty": "No payments recorded yet.",
         "topCustomersTitle": "Top customers",
-        "topCustomersSubtitle": "Highest revenue, last 12 months.",
+        "topCustomersSubtitle": "Highest revenue, selected range.",
         "topCustomersEmpty": "No payments recorded yet.",
         "membershipTrendTitle": "Membership activity",
-        "membershipTrendSubtitle": "New vs. canceled autopay memberships, last 6 months.",
+        "membershipTrendSubtitle": "New vs. canceled autopay memberships, selected range.",
         "activated": "Activated",
         "canceled": "Canceled",
         "invoiceStatusTitle": "Invoice pipeline",
         "invoiceStatusSubtitle": "All invoices by current status.",
         "invoiceStatusEmpty": "No invoices yet."
+      },
+      "pastDue": {
+        "title": "Past-due memberships",
+        "subtitle": "Autopay charges that failed. Retry now or cancel the membership.",
+        "empty": "No past-due memberships. Everything is up to date.",
+        "retry": "Retry charge",
+        "cancel": "Cancel",
+        "errors": {
+          "generic": "Something went wrong. Please try again.",
+          "retryFailed": "The retry failed - the card may still be declined.",
+          "cancelFailed": "Could not cancel this membership. Please try again."
+        }
+      },
+      "reconcile": {
+        "status": "Last Stripe check: {{date}} ({{checked}} checked, {{corrected}} corrected)",
+        "neverRun": "Last Stripe check: not run yet"
       },
       "recentPayments": {
         "title": "Recent payments",
