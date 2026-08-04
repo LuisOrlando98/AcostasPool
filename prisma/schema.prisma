@@ -439,6 +439,8 @@ model Membership {
   stripeSubscriptionId String           @unique
   stripePriceId        String
   amountCents          Int
+  baseAmountCents      Int?
+  feeAmountCents       Int?
   interval             String           @default("MONTHLY")
   status               MembershipStatus @default(INCOMPLETE)
   currentPeriodStart   DateTime?

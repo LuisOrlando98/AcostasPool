@@ -10,6 +10,7 @@ export const EMAIL_TEMPLATE_IDS = [
   "TECH_DAILY_DIGEST",
   "TECH_CHANGE_DIGEST",
   "CONTRACT_READY_TO_SIGN",
+  "MEMBERSHIP_START_INVITE",
 ] as const;
 
 export type EmailTemplateId = (typeof EMAIL_TEMPLATE_IDS)[number];
@@ -465,6 +466,47 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
       contract_link: "https://app.example.com/client/contract",
     },
   },
+  MEMBERSHIP_START_INVITE: {
+    label: "Membership start invite",
+    description: "Sent to a customer to start their service: sign the contract if pending, then set up monthly autopay.",
+    placeholders: [
+      "{{customer_name}}",
+      "{{customer_name_html}}",
+      "{{activation_link}}",
+      "{{property_address}}",
+      "{{property_address_html}}",
+      "{{monthly_amount}}",
+    ],
+    defaults: {
+      subject: "Let's get your AcostasPool service started",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Let's get your pool service at {{property_address}} up and running.",
+        "Open this secure link to review your contract (if pending) and set up automatic monthly billing of {{monthly_amount}}:",
+        "{{activation_link}}",
+        "",
+        "Autopay stays active until you or AcostasPool cancel it - you're always in control.",
+        "If you have any questions, reply to this message and our team will assist you.",
+      ].join("\n"),
+      html: [
+        '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
+        '<p style="margin:0 0 14px;color:#0b1f35;">Hi {{customer_name_html}},</p>',
+        '<p style="margin:0 0 14px;color:#334155;">Let\'s get your pool service at {{property_address_html}} up and running.</p>',
+        '<p style="margin:0 0 14px;"><a href="{{activation_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Start my service</a></p>',
+        '<p style="margin:0;color:#64748b;font-size:13px;">Monthly autopay of {{monthly_amount}} stays active until you or AcostasPool cancel it.</p>',
+        "</div>",
+      ].join(""),
+    },
+    previewValues: {
+      customer_name: "Alex Rivera",
+      customer_name_html: "Alex Rivera",
+      activation_link: "https://app.example.com/client/membership/activate?propertyId=123",
+      property_address: "123 Palm Ave",
+      property_address_html: "123 Palm Ave",
+      monthly_amount: "$103.00",
+    },
+  },
 };
 
 const EMAIL_TEMPLATE_LOCALES: readonly EmailTemplateLocale[] = ["EN", "ES"];
@@ -654,6 +696,34 @@ const LOCALIZED_EMAIL_TEMPLATE_DEFAULTS: LocalizedEmailTemplateDefaultsInput = {
         "{{contract_link}}",
         "",
         "Puedes firmarlo con el dedo desde tu telefono o con el mouse desde tu computadora.",
+        "Si tienes dudas, responde este mensaje y nuestro equipo te apoyara.",
+      ].join("\n"),
+    },
+  },
+  MEMBERSHIP_START_INVITE: {
+    EN: {
+      subject: "Let's get your AcostasPool service started",
+      text: [
+        "Hi {{customer_name}},",
+        "",
+        "Let's get your pool service at {{property_address}} up and running.",
+        "Open this secure link to review your contract (if pending) and set up automatic monthly billing of {{monthly_amount}}:",
+        "{{activation_link}}",
+        "",
+        "Autopay stays active until you or AcostasPool cancel it - you're always in control.",
+        "If you have any questions, reply to this message and our team will assist you.",
+      ].join("\n"),
+    },
+    ES: {
+      subject: "Vamos a iniciar tu servicio de AcostasPool",
+      text: [
+        "Hola {{customer_name}},",
+        "",
+        "Vamos a activar tu servicio de piscina en {{property_address}}.",
+        "Abre este enlace seguro para revisar tu contrato (si esta pendiente) y configurar el cobro automatico mensual de {{monthly_amount}}:",
+        "{{activation_link}}",
+        "",
+        "El cobro automatico permanece activo hasta que tu o AcostasPool lo cancelen - tu tienes el control.",
         "Si tienes dudas, responde este mensaje y nuestro equipo te apoyara.",
       ].join("\n"),
     },

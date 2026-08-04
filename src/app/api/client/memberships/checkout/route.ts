@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     const url = await createMembershipCheckoutSession({
       customerId: customer.id,
       propertyId: property.id,
-      amountCents: toCents(Number(property.servicePrice)),
+      baseAmountCents: toCents(Number(property.servicePrice)),
       authorizedVia: "PORTAL",
       authorizedByUserId: session.sub,
       authorizedIp: forwardedFor ? forwardedFor.split(",")[0].trim() : null,

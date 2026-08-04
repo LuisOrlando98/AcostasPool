@@ -1,6 +1,7 @@
 import { getStripeClient } from "@/lib/stripe/client";
 import { prisma } from "@/lib/db";
 import { toCents } from "@/lib/payments/service";
+import { computeMembershipFeeCents, MEMBERSHIP_TRANSACTION_FEE_PERCENT } from "@/lib/payments/fees";
 
 function baseAppUrl() {
   const raw = process.env.APP_URL?.trim();
@@ -82,7 +83,7 @@ export async function createInvoiceCheckoutSession(invoiceId: string) {
 type MembershipCheckoutInput = {
   customerId: string;
   propertyId: string;
-  amountCents: number;
+  baseAmountCents: number;
   authorizedVia: "PORTAL" | "IN_PERSON_ADMIN";
   authorizedByUserId?: string | null;
   authorizedIp?: string | null;
@@ -102,6 +103,7 @@ export async function createMembershipCheckoutSession(
   const stripeCustomerId = await ensureStripeCustomerId(customer);
   const stripe = getStripeClient();
   const appUrl = baseAppUrl();
+  const { baseCents, feeCents } = computeMembershipFeeCents(input.baseAmountCents);
 
   const metadata: Record<string, string> = {
     customerId: input.customerId,
@@ -110,6 +112,8 @@ export async function createMembershipCheckoutSession(
     authorizedByUserId: input.authorizedByUserId ?? "",
     authorizedIp: input.authorizedIp ?? "",
     authorizedUserAgent: input.authorizedUserAgent ?? "",
+    baseAmountCents: String(baseCents),
+    feeAmountCents: String(feeCents),
   };
 
   const session = await stripe.checkout.sessions.create({
@@ -119,9 +123,20 @@ export async function createMembershipCheckoutSession(
       {
         price_data: {
           currency: "usd",
-          unit_amount: input.amountCents,
+          unit_amount: baseCents,
           recurring: { interval: "month" },
           product_data: { name: "AcostasPool - Monthly membership" },
+        },
+        quantity: 1,
+      },
+      {
+        price_data: {
+          currency: "usd",
+          unit_amount: feeCents,
+          recurring: { interval: "month" },
+          product_data: {
+            name: `Payment processing fee (${MEMBERSHIP_TRANSACTION_FEE_PERCENT}%)`,
+          },
         },
         quantity: 1,
       },
@@ -129,7 +144,7 @@ export async function createMembershipCheckoutSession(
     metadata,
     subscription_data: { metadata },
     success_url: `${appUrl}/client/invoices?membership=success`,
-    cancel_url: `${appUrl}/client/invoices?membership=cancelled`,
+    cancel_url: `${appUrl}/client/membership/activate?propertyId=${input.propertyId}&membership=cancelled`,
   });
 
   if (!session.url) {

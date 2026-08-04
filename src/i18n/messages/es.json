@@ -1402,7 +1402,14 @@
           "cancelPeriodEnd": "Cancelar al finalizar el periodo",
           "cancelImmediate": "Cancelar de inmediato",
           "notActive": "No hay una membresia de cobro automatico activa para esta propiedad.",
-          "sendSetupLink": "Enviar enlace de configuracion"
+          "sendSetupLink": "O abrir la pagina de pago directamente (en persona)",
+          "sendStartEmail": "Enviar correo de inicio de servicio",
+          "breakdown": "Servicio {{service}} + cargo por procesamiento {{fee}}",
+          "addFee": "Agregar cargo del 3%",
+          "errors": {
+            "generic": "Algo salio mal. Intenta de nuevo.",
+            "feeFailed": "No se pudo agregar el cargo a esta membresia. Intenta de nuevo."
+          }
         },
         "contract": {
           "noContract": "Este cliente todavia no tiene un contrato de servicio generado.",
@@ -2821,6 +2828,33 @@
       "signError": "No se pudo guardar la firma. Intenta de nuevo.",
       "noPending": "No tienes contratos pendientes de firma en este momento.",
       "history": "Historial de contratos"
+    },
+    "membershipActivate": {
+      "title": "Inicia tu servicio",
+      "subtitle": "Firma tu contrato si hace falta, luego configura el cobro automatico mensual.",
+      "invalidProperty": "No encontramos esta propiedad, o todavia no tiene un precio de servicio configurado. Contactanos para ayuda.",
+      "feedback": {
+        "cancelled": "El pago fue cancelado - puedes intentar de nuevo abajo.",
+        "error": "No pudimos iniciar el pago. Intenta de nuevo."
+      },
+      "alreadyActive": {
+        "title": "El cobro automatico ya esta activo",
+        "subtitle": "Esta propiedad ya tiene una membresia de cobro automatico activa.",
+        "viewLink": "Ver mis facturas"
+      },
+      "contractStep": {
+        "title": "Primero, firma tu contrato de servicio",
+        "subtitle": "Revisa los terminos abajo y firma para continuar a la configuracion del pago."
+      },
+      "payStep": {
+        "title": "Configura el cobro automatico mensual",
+        "subtitle": "Para {{address}}. Ingresaras tu tarjeta en la pagina segura de Stripe - nunca vemos ni guardamos los datos de tu tarjeta.",
+        "service": "Servicio",
+        "fee": "Cargo por procesamiento ({{percent}}%)",
+        "total": "Total",
+        "consent": "Al continuar, autorizas a AcostasPool a cobrar este monto automaticamente cada mes. Esto permanece activo hasta que tu o AcostasPool lo cancelen - puedes cancelar en cualquier momento desde tu portal.",
+        "continue": "Continuar al pago seguro"
+      }
     }
   },
   "tech": {

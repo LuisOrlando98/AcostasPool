@@ -8,6 +8,7 @@ import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
+import InlineActionButton from "@/components/customers/InlineActionButton";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import CustomerInvoicesTable from "@/components/customers/CustomerInvoicesTable";
 import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
@@ -49,6 +50,8 @@ import {
   PAYMENT_METHOD_VALUES,
 } from "@/lib/customers/financial-info";
 import { cancelMembership } from "@/lib/payments/cancel";
+import { sendMembershipStartEmail } from "@/lib/payments/notify";
+import { applyFeeToMembership } from "@/lib/payments/fees";
 import {
   parsePoolConditionInput,
   readPoolCondition,
@@ -800,6 +803,50 @@ async function cancelMembershipAction(formData: FormData) {
   }
 
   await cancelMembership(membershipId, mode === "immediate" ? "immediate" : "period_end");
+  revalidatePath(`/admin/customers/${customerId}`);
+}
+
+async function sendMembershipStartEmailAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const customerId = String(formData.get("customerId") ?? "");
+  const propertyId = String(formData.get("propertyId") ?? "");
+  if (!customerId || !propertyId) {
+    return { error: t("admin.customers.detail.membership.errors.generic") };
+  }
+
+  const result = await sendMembershipStartEmail(customerId, propertyId);
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  revalidatePath(`/admin/customers/${customerId}`);
+}
+
+async function applyMembershipFeeAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const membershipId = String(formData.get("membershipId") ?? "");
+  const customerId = String(formData.get("customerId") ?? "");
+  if (!membershipId || !customerId) {
+    return { error: t("admin.customers.detail.membership.errors.generic") };
+  }
+
+  try {
+    await applyFeeToMembership(membershipId);
+  } catch (error) {
+    console.error("[admin] applyFeeToMembership failed", error);
+    return { error: t("admin.customers.detail.membership.errors.feeFailed") };
+  }
+
   revalidatePath(`/admin/customers/${customerId}`);
 }
 
@@ -1888,6 +1935,24 @@ export default async function CustomerDetailPage({
                       /{t("client.invoices.membership.perMonth")}
                     </p>
                   </div>
+                  {activeMembership.baseAmountCents != null && activeMembership.feeAmountCents != null ? (
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      {t("admin.customers.detail.membership.breakdown", {
+                        service: currencyFormatter.format(activeMembership.baseAmountCents / 100),
+                        fee: currencyFormatter.format(activeMembership.feeAmountCents / 100),
+                      })}
+                    </p>
+                  ) : (
+                    <div className="mt-3">
+                      <InlineActionButton
+                        action={applyMembershipFeeAction}
+                        fields={{ membershipId: activeMembership.id, customerId: customer.id }}
+                        label={t("admin.customers.detail.membership.addFee")}
+                        pendingLabel={t("common.feedback.saving")}
+                        className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:border-amber-400"
+                      />
+                    </div>
+                  )}
                   {!activeMembership.cancelAtPeriodEnd ? (
                     <div className="mt-4 flex flex-wrap gap-3">
                       <form action={cancelMembershipAction}>
@@ -1928,14 +1993,23 @@ export default async function CustomerDetailPage({
                   <p className="text-sm text-slate-600">
                     {t("admin.customers.detail.membership.notActive")}
                   </p>
-                  <a
-                    href={`/api/admin/memberships/checkout?customerId=${customer.id}&propertyId=${primaryProperty.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="app-button-primary mt-3 inline-flex px-4 py-2 text-xs font-semibold"
-                  >
-                    {t("admin.customers.detail.membership.sendSetupLink")}
-                  </a>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <InlineActionButton
+                      action={sendMembershipStartEmailAction}
+                      fields={{ customerId: customer.id, propertyId: primaryProperty.id }}
+                      label={t("admin.customers.detail.membership.sendStartEmail")}
+                      pendingLabel={t("common.feedback.saving")}
+                      className="app-button-primary px-4 py-2 text-xs font-semibold"
+                    />
+                    <a
+                      href={`/api/admin/memberships/checkout?customerId=${customer.id}&propertyId=${primaryProperty.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs font-semibold text-slate-600 underline"
+                    >
+                      {t("admin.customers.detail.membership.sendSetupLink")}
+                    </a>
+                  </div>
                 </div>
               )}
             </CollapsibleSection>

@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import { prisma } from "@/lib/db";
@@ -240,12 +241,12 @@ export default async function ClientInvoicesPage({
                       ) : null}
                     </div>
                   ) : (
-                    <a
-                      href={`/api/client/memberships/checkout?propertyId=${property.id}`}
+                    <Link
+                      href={`/client/membership/activate?propertyId=${property.id}`}
                       className="app-button-secondary px-3 py-1.5 text-xs font-semibold"
                     >
                       {t("client.invoices.membership.activate")}
-                    </a>
+                    </Link>
                   )}
                 </div>
               );

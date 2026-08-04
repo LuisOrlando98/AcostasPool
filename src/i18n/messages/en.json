@@ -1402,7 +1402,14 @@
           "cancelPeriodEnd": "Cancel at period end",
           "cancelImmediate": "Cancel immediately",
           "notActive": "No active autopay membership for this property.",
-          "sendSetupLink": "Send autopay setup link"
+          "sendSetupLink": "Or open the payment page directly (in-person)",
+          "sendStartEmail": "Send service start email",
+          "breakdown": "Service {{service}} + processing fee {{fee}}",
+          "addFee": "Add 3% processing fee",
+          "errors": {
+            "generic": "Something went wrong. Please try again.",
+            "feeFailed": "Could not add the fee to this membership. Please try again."
+          }
         },
         "contract": {
           "noContract": "This customer doesn't have a service contract generated yet.",
@@ -2821,6 +2828,33 @@
       "signError": "Could not save your signature. Please try again.",
       "noPending": "You don't have any contracts pending signature right now.",
       "history": "Contract history"
+    },
+    "membershipActivate": {
+      "title": "Start your service",
+      "subtitle": "Sign your contract if needed, then set up automatic monthly billing.",
+      "invalidProperty": "We couldn't find this property, or it doesn't have a service price set up yet. Contact us for help.",
+      "feedback": {
+        "cancelled": "Checkout was cancelled - you can try again below.",
+        "error": "We couldn't start the payment. Please try again."
+      },
+      "alreadyActive": {
+        "title": "Autopay is already active",
+        "subtitle": "This property already has an active autopay membership.",
+        "viewLink": "View my invoices"
+      },
+      "contractStep": {
+        "title": "First, sign your service contract",
+        "subtitle": "Review the terms below and sign to continue to payment setup."
+      },
+      "payStep": {
+        "title": "Set up automatic monthly billing",
+        "subtitle": "For {{address}}. You'll enter your card on Stripe's secure page - we never see or store your card details.",
+        "service": "Service",
+        "fee": "Processing fee ({{percent}}%)",
+        "total": "Total",
+        "consent": "By continuing, you authorize AcostasPool to charge this amount automatically every month. This stays active until you or AcostasPool cancel it - you can cancel anytime from your portal.",
+        "continue": "Continue to secure payment"
+      }
     }
   },
   "tech": {

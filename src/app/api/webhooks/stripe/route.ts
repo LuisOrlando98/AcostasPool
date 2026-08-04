@@ -68,8 +68,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
     const stripe = getStripeClient();
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const price = subscription.items.data[0]?.price;
     const period = subscriptionPeriod(subscription);
+    const baseAmountCents = Number(metadata.baseAmountCents);
+    const feeAmountCents = Number(metadata.feeAmountCents);
+    const hasFeeBreakdown = Number.isFinite(baseAmountCents) && Number.isFinite(feeAmountCents);
+    const servicePrice =
+      subscription.items.data.find((item) => item.price.unit_amount === baseAmountCents)
+        ?.price ?? subscription.items.data[0]?.price;
+    const totalAmountCents = hasFeeBreakdown
+      ? baseAmountCents + feeAmountCents
+      : (servicePrice?.unit_amount ?? 0);
 
     const existing = await prisma.membership.findUnique({
       where: { stripeSubscriptionId: subscriptionId },
@@ -83,8 +91,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         customerId,
         propertyId,
         stripeSubscriptionId: subscriptionId,
-        stripePriceId: price?.id ?? "",
-        amountCents: price?.unit_amount ?? 0,
+        stripePriceId: servicePrice?.id ?? "",
+        amountCents: totalAmountCents,
+        baseAmountCents: hasFeeBreakdown ? baseAmountCents : null,
+        feeAmountCents: hasFeeBreakdown ? feeAmountCents : null,
         status: mapStripeSubscriptionStatus(subscription.status),
         currentPeriodStart: period.start,
         currentPeriodEnd: period.end,
