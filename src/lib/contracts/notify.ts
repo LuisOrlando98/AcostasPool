@@ -7,6 +7,7 @@ import {
   resolveEmailTemplateLocale,
 } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 type NotifyResult = { ok: true } | { ok: false; error: string };
 
@@ -19,11 +20,7 @@ export async function sendContractReadyEmail(customerId: string): Promise<Notify
     return { ok: false, error: "Cliente sin email" };
   }
 
-  const baseUrl = process.env.APP_URL?.trim();
-  if (!baseUrl) {
-    return { ok: false, error: "APP_URL no configurado" };
-  }
-  const contractLink = `${baseUrl}/client/contract`;
+  const contractLink = `${getPublicAppUrl()}/client/contract`;
 
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");

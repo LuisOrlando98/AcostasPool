@@ -9,6 +9,7 @@ import {
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
 import { hashPasswordResetToken } from "@/lib/auth/reset-token";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -64,11 +65,7 @@ export async function sendTechnicianInvite(technicianId: string): Promise<Invite
     },
   });
 
-  const baseUrl = process.env.APP_URL?.trim();
-  if (!baseUrl) {
-    return { ok: false, error: "APP_URL no configurado" };
-  }
-  const inviteLink = `${baseUrl.replace(/\/+$/, "")}/complete-profile?token=${token}`;
+  const inviteLink = `${getPublicAppUrl()}/complete-profile?token=${token}`;
 
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");

@@ -4,6 +4,7 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { escapeHtml, renderEmailTemplate, resolveEmailTemplateLocale } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { computeMembershipFeeCents } from "@/lib/payments/fees";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 type NotifyResult = { ok: true } | { ok: false; error: string };
 
@@ -24,11 +25,7 @@ export async function sendMembershipStartEmail(
     return { ok: false, error: "Propiedad invalida o sin precio de servicio" };
   }
 
-  const baseUrl = process.env.APP_URL?.trim();
-  if (!baseUrl) {
-    return { ok: false, error: "APP_URL no configurado" };
-  }
-  const activationLink = `${baseUrl}/client/membership/activate?propertyId=${propertyId}`;
+  const activationLink = `${getPublicAppUrl()}/client/membership/activate?propertyId=${propertyId}`;
 
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? "587");

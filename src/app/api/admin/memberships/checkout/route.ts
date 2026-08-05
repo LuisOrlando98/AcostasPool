@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createMembershipCheckoutSession } from "@/lib/payments/checkout";
 import { toCents } from "@/lib/payments/service";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   });
   if (existingMembership) {
     return NextResponse.redirect(
-      new URL(`/admin/customers/${customerId}?membership=already-active`, request.url),
+      `${getPublicAppUrl()}/admin/customers/${customerId}?membership=already-active`,
       { status: 303 }
     );
   }
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("[admin membership checkout]", error);
     return NextResponse.redirect(
-      new URL(`/admin/customers/${customerId}?membership=error`, request.url),
+      `${getPublicAppUrl()}/admin/customers/${customerId}?membership=error`,
       { status: 303 }
     );
   }

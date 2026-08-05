@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { revalidateTag, unstable_cache } from "next/cache";
 import {
   buildPremiumEmailTemplateHtml,
+  getDefaultLocalizedEmailTemplatesConfig,
   normalizeEmailTemplateContent,
   normalizeLocalizedEmailTemplates,
   normalizeEmailTemplates,
@@ -305,6 +306,20 @@ export async function saveEmailTemplateConfig(
         ),
       },
     },
+  };
+
+  return saveSiteSettings({
+    emailTemplates: next as Prisma.InputJsonValue,
+  });
+}
+
+export async function resetEmailTemplateConfig(templateId: EmailTemplateId) {
+  const settings = await getSiteSettingsCached();
+  const current = normalizeLocalizedEmailTemplates(settings?.emailTemplates);
+  const defaults = getDefaultLocalizedEmailTemplatesConfig();
+  const next = {
+    ...current,
+    [templateId]: defaults[templateId],
   };
 
   return saveSiteSettings({

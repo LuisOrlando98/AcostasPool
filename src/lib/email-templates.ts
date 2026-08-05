@@ -1,3 +1,5 @@
+import { getPublicAppUrl } from "@/lib/app-url";
+
 export const EMAIL_TEMPLATE_IDS = [
   "CUSTOMER_INVITE",
   "TECH_ACCOUNT_INVITE",
@@ -148,7 +150,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
     },
   },
   INVOICE_SENT: {
-    label: "Invoice sent",
+    label: "Invoice received",
     description: "Email sent to customers with the invoice PDF attached, with a direct pay link.",
     placeholders: [
       "{{customer_name}}",
@@ -178,7 +180,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
         '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
         '<h2 style="margin:0 0 10px;color:#0b1f35;">Invoice {{invoice_number}}</h2>',
         '<p style="margin:0 0 14px;color:#334155;">Hi {{customer_name_html}}, you have received a new invoice for <strong>{{invoice_total}}</strong>. It\'s attached to this email as a PDF.</p>',
-        '<p style="margin:0 0 14px;"><a href="{{pay_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Pay invoice now</a></p>',
+        buildEmailButtonHtml("{{pay_link}}", "Pay invoice now", "#0ea5e9"),
         '<p style="margin:0;color:#64748b;font-size:13px;">You can also pay it anytime from your <a href="{{portal_link}}" style="color:#0c4a6e;">customer portal</a>. Thank you for choosing AcostasPool.</p>',
         "</div>",
       ].join(""),
@@ -472,7 +474,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
         '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
         '<p style="margin:0 0 14px;color:#0b1f35;">Hi {{customer_name_html}},</p>',
         '<p style="margin:0 0 14px;color:#334155;">Your pool service contract is ready for your review and signature.</p>',
-        '<p style="margin:0 0 14px;"><a href="{{contract_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Review and sign</a></p>',
+        buildEmailButtonHtml("{{contract_link}}", "Review and sign", "#18b978"),
         '<p style="margin:0;color:#64748b;font-size:13px;">You can sign with your finger on your phone or your mouse on a computer.</p>',
         "</div>",
       ].join(""),
@@ -510,7 +512,7 @@ export const EMAIL_TEMPLATE_DEFINITIONS: Record<EmailTemplateId, EmailTemplateDe
         '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #dbe6f2;border-radius:16px;background:#ffffff;">',
         '<p style="margin:0 0 14px;color:#0b1f35;">Hi {{customer_name_html}},</p>',
         '<p style="margin:0 0 14px;color:#334155;">Let\'s get your pool service at {{property_address_html}} up and running.</p>',
-        '<p style="margin:0 0 14px;"><a href="{{activation_link}}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#0ea5e9;color:#ffffff;text-decoration:none;font-weight:700;">Start my service</a></p>',
+        buildEmailButtonHtml("{{activation_link}}", "Start my service", "#18b978"),
         '<p style="margin:0;color:#64748b;font-size:13px;">Monthly autopay of {{monthly_amount}} stays active until you or AcostasPool cancel it.</p>',
         "</div>",
       ].join(""),
@@ -810,6 +812,18 @@ function getTemplateButtonHtml(templateId: EmailTemplateId, token: string) {
     return buildEmailButtonHtml(token, "Review and sign", "#18b978");
   }
 
+  if (token === "{{activation_link}}") {
+    return buildEmailButtonHtml(token, "Start my service", "#18b978");
+  }
+
+  if (token === "{{pay_link}}") {
+    return buildEmailButtonHtml(token, "Pay invoice now", "#18b978");
+  }
+
+  if (token === "{{portal_link}}") {
+    return buildEmailButtonHtml(token, "User Portal", "#0b4f7f");
+  }
+
   return "";
 }
 
@@ -840,7 +854,10 @@ function buildEmailBodyBlocks(templateId: EmailTemplateId, text: string) {
     if (
       trimmed === "{{invite_link}}" ||
       trimmed === "{{reset_link}}" ||
-      trimmed === "{{contract_link}}"
+      trimmed === "{{contract_link}}" ||
+      trimmed === "{{activation_link}}" ||
+      trimmed === "{{pay_link}}" ||
+      trimmed === "{{portal_link}}"
     ) {
       flushList();
       blocks.push(getTemplateButtonHtml(templateId, trimmed));
@@ -888,14 +905,7 @@ export function buildPremiumEmailTemplateHtml(
 ) {
   const meta = EMAIL_TEMPLATE_DEFINITIONS[templateId];
   const bodyBlocks = buildEmailBodyBlocks(templateId, text);
-  const appUrlRaw = process.env.APP_URL?.trim() || "https://acostaspool.com";
-  const appUrlNormalized = /^https?:\/\//i.test(appUrlRaw) ? appUrlRaw : `https://${appUrlRaw}`;
-  let appOrigin = "https://acostaspool.com";
-  try {
-    appOrigin = new URL(appUrlNormalized).origin.replace(/\/+$/, "");
-  } catch {
-    appOrigin = "https://acostaspool.com";
-  }
+  const appOrigin = getPublicAppUrl();
   const legalCenterUrl = `${appOrigin}/legal`;
   const privacyUrl = `${appOrigin}/legal/privacy-policy`;
   const termsUrl = `${appOrigin}/legal/terms-of-service`;

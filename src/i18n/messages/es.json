@@ -2196,7 +2196,8 @@
         "textBody": "Mensaje del email (texto)",
         "htmlAuto": "El diseno HTML se genera automaticamente con estilo premium.",
         "actions": {
-          "saveEmail": "Guardar template de email"
+          "saveEmail": "Guardar template de email",
+          "resetEmail": "Restablecer al predeterminado"
         },
         "email": {
           "title": "Templates de email",

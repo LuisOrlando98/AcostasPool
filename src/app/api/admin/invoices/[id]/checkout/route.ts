@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
 import { createInvoiceCheckoutSession } from "@/lib/payments/checkout";
 import { resolveParams } from "@/lib/utils/params";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
@@ -24,7 +25,7 @@ export async function GET(
   } catch (error) {
     console.error("[admin invoice checkout]", error);
     return NextResponse.redirect(
-      new URL(`/admin/invoices/${invoiceId}?payment=error`, request.url),
+      `${getPublicAppUrl()}/admin/invoices/${invoiceId}?payment=error`,
       { status: 303 }
     );
   }

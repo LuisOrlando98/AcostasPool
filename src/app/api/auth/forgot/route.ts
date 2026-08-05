@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { normalizeEmail } from "@/lib/auth/email";
 import { sendPasswordResetEmail } from "@/lib/auth/password-reset";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 const forgotSchema = z.object({
   email: z.string().email(),
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
       userId: user.id,
       recipientEmail: user.email,
       recipientName: user.fullName,
-      baseUrl: process.env.APP_URL ?? new URL(request.url).origin,
+      baseUrl: getPublicAppUrl(),
       locale: user.locale,
     });
   }

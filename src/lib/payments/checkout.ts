@@ -2,10 +2,10 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { prisma } from "@/lib/db";
 import { toCents } from "@/lib/payments/service";
 import { computeMembershipFeeCents, MEMBERSHIP_TRANSACTION_FEE_PERCENT } from "@/lib/payments/fees";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 function baseAppUrl() {
-  const raw = process.env.APP_URL?.trim();
-  return (raw || "https://acostaspool.com").replace(/\/$/, "");
+  return getPublicAppUrl();
 }
 
 async function ensureStripeCustomerId(customer: {

@@ -11,6 +11,7 @@ import { logAuditEvent } from "@/lib/audit/log";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems } from "@/lib/invoices/line-items";
 import { resolveInvoiceTemplateLocale } from "@/lib/invoice-template";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 
@@ -79,7 +80,7 @@ export async function POST(
     );
   }
 
-  const appUrl = (process.env.APP_URL?.trim() || "https://acostaspool.com").replace(/\/+$/, "");
+  const appUrl = getPublicAppUrl();
   const invoiceTotalLabel = new Intl.NumberFormat(invoiceLocale === "ES" ? "es-US" : "en-US", {
     style: "currency",
     currency: "USD",

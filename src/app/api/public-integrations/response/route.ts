@@ -6,6 +6,7 @@ import { normalizeEmail } from "@/lib/auth/email";
 import { escapeHtml } from "@/lib/email-templates";
 import { isAllowedPublicIntegrationToken } from "@/lib/public-integrations";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export const runtime = "nodejs";
 const DEV_NOTIFICATION_EMAIL = "dev@wyxloop.com";
@@ -29,14 +30,7 @@ const responseSchema = z.object({
 });
 
 function getAppLoginUrl() {
-  const appUrl = process.env.APP_URL?.trim();
-  if (!appUrl) {
-    return "https://acostaspool.com/login";
-  }
-  const normalizedAppUrl = appUrl.startsWith("http://") || appUrl.startsWith("https://")
-    ? appUrl
-    : `https://${appUrl}`;
-  return `${normalizedAppUrl.replace(/\/+$/, "")}/login`;
+  return `${getPublicAppUrl()}/login`;
 }
 
 function getDecisionLabel(decision: "ACCEPT" | "DECLINE") {

@@ -3,9 +3,10 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createInvoiceCheckoutSession } from "@/lib/payments/checkout";
 import { resolveParams } from "@/lib/utils/params";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   const params = await resolveParams(context.params);
@@ -20,7 +21,7 @@ export async function GET(
     // router's soft navigation after login can't reliably follow a
     // redirect from a plain Route Handler.
     const next = encodeURIComponent("/client/invoices");
-    return NextResponse.redirect(new URL(`/login?next=${next}`, request.url), { status: 303 });
+    return NextResponse.redirect(`${getPublicAppUrl()}/login?next=${next}`, { status: 303 });
   }
 
   const customer = await prisma.customer.findUnique({
@@ -40,9 +41,8 @@ export async function GET(
     return NextResponse.redirect(url, { status: 303 });
   } catch (error) {
     console.error("[client invoice checkout]", error);
-    return NextResponse.redirect(
-      new URL("/client/invoices?payment=error", request.url),
-      { status: 303 }
-    );
+    return NextResponse.redirect(`${getPublicAppUrl()}/client/invoices?payment=error`, {
+      status: 303,
+    });
   }
 }

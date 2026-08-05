@@ -37,6 +37,7 @@ import {
   saveCompanySignatureUrl,
   saveComplianceDocLocalesConfig,
   saveEmailTemplateConfig,
+  resetEmailTemplateConfig,
   saveInvoiceTemplateConfig,
   saveSiteLandingConfig,
   saveSiteSocialLinks,
@@ -350,6 +351,19 @@ async function saveEmailTemplate(formData: FormData) {
     html: "",
   }, adminLocale);
 
+  revalidatePath("/admin/settings");
+}
+
+async function resetEmailTemplate(formData: FormData) {
+  "use server";
+  await requireRole("ADMIN");
+
+  const templateId = String(formData.get("templateId") ?? "");
+  if (!isEmailTemplateId(templateId)) {
+    return;
+  }
+
+  await resetEmailTemplateConfig(templateId);
   revalidatePath("/admin/settings");
 }
 
@@ -1014,7 +1028,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                           {t("admin.settings.templates.htmlAuto")}
                         </p>
 
-                        <div className="flex justify-stretch sm:justify-end">
+                        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                          <button
+                            type="submit"
+                            formAction={resetEmailTemplate}
+                            className="app-button-secondary w-full px-5 py-2.5 text-sm font-semibold sm:w-auto"
+                          >
+                            {t("admin.settings.templates.actions.resetEmail")}
+                          </button>
                           <FormSubmitButton
                             idleLabel={t("admin.settings.templates.actions.saveEmail")}
                             pendingLabel={t("common.feedback.saving")}

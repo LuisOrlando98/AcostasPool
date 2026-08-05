@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { sendPasswordResetEmail } from "@/lib/auth/password-reset";
+import { getPublicAppUrl } from "@/lib/app-url";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
     userId: user.id,
     recipientEmail: user.email,
     recipientName: user.fullName,
-    baseUrl: process.env.APP_URL ?? new URL(request.url).origin,
+    baseUrl: getPublicAppUrl(),
     locale: user.locale,
   });
 
