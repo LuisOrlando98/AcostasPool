@@ -9,7 +9,12 @@ import { resolveParams } from "@/lib/utils/params";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems, roundCurrency } from "@/lib/invoices/line-items";
-import { recordPayment, markInvoicePaid, toCents } from "@/lib/payments/service";
+import {
+  recordPayment,
+  markInvoicePaid,
+  toCents,
+  STRIPE_MINIMUM_CHARGE_USD,
+} from "@/lib/payments/service";
 import {
   normalizePaymentMethod,
   PAYMENT_METHOD_VALUES,
@@ -105,6 +110,13 @@ async function updateInvoice(
 
   const subtotal = roundCurrency(lineItems.reduce((sum, item) => sum + item.amount, 0));
   const total = roundCurrency(subtotal + tax);
+  if (total < STRIPE_MINIMUM_CHARGE_USD) {
+    return {
+      error: t("admin.invoices.new.errors.belowMinimum", {
+        amount: STRIPE_MINIMUM_CHARGE_USD.toFixed(2),
+      }),
+    };
+  }
 
   let jobId: string | null = null;
   if (jobIdRaw) {

@@ -1837,7 +1837,8 @@
           "lineItemsRequired": "Agrega al menos una linea con un monto mayor a cero.",
           "customerNotFound": "Cliente no encontrado.",
           "invalidJob": "El trabajo seleccionado no pertenece a este cliente.",
-          "pdfFailed": "No se pudo generar el PDF de la factura. Intenta de nuevo."
+          "pdfFailed": "No se pudo generar el PDF de la factura. Intenta de nuevo.",
+          "belowMinimum": "El total debe ser de al menos ${{amount}} - los procesadores de tarjeta rechazan montos menores."
         }
       },
       "send": {

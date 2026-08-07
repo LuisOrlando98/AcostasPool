@@ -20,6 +20,7 @@ import { getInvoiceTemplateConfig } from "@/lib/site-settings";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { logAuditEvent } from "@/lib/audit/log";
 import { parseServicePaymentInfoInput } from "@/lib/customers/service-payment-info";
+import { STRIPE_MINIMUM_CHARGE_USD } from "@/lib/payments/service";
 import {
   endOfBusinessDay,
   formatBusinessDateInput,
@@ -67,6 +68,13 @@ async function createInvoice(
   }
   const tax = taxExempt ? 0 : roundCurrency(subtotal * 0.07);
   const total = roundCurrency(subtotal + tax);
+  if (total < STRIPE_MINIMUM_CHARGE_USD) {
+    return {
+      error: t("admin.invoices.new.errors.belowMinimum", {
+        amount: STRIPE_MINIMUM_CHARGE_USD.toFixed(2),
+      }),
+    };
+  }
 
   const number = `INV-${Date.now()}`;
   const customer = await prisma.customer.findUnique({

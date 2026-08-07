@@ -1,6 +1,9 @@
 import type { PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
+/** Stripe rejects any USD charge below this amount, regardless of flow. */
+export const STRIPE_MINIMUM_CHARGE_USD = 0.5;
+
 export function toCents(amount: number): number {
   return Math.round(amount * 100);
 }
