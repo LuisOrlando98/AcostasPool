@@ -12,6 +12,7 @@ import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import { normalizeInvoiceLineItems } from "@/lib/invoices/line-items";
 import { resolveInvoiceTemplateLocale } from "@/lib/invoice-template";
 import { getPublicAppUrl } from "@/lib/app-url";
+import { issueInvoicePaymentToken } from "@/lib/payments/invoice-token";
 
 export const runtime = "nodejs";
 
@@ -85,6 +86,7 @@ export async function POST(
     style: "currency",
     currency: "USD",
   }).format(Number(invoice.total));
+  const paymentToken = await issueInvoicePaymentToken(invoice.id);
 
   const templates = await getEmailTemplatesConfig(invoiceLocale);
   const rendered = renderEmailTemplate(templates.INVOICE_SENT, {
@@ -92,7 +94,7 @@ export async function POST(
     customer_name_html: escapeHtml(customerName),
     invoice_number: invoice.number,
     invoice_total: invoiceTotalLabel,
-    pay_link: `${appUrl}/api/client/invoices/${invoice.id}/checkout`,
+    pay_link: `${appUrl}/api/pay/invoice/${paymentToken}`,
     portal_link: `${appUrl}/client/invoices`,
   });
   const lineItems = normalizeInvoiceLineItems(invoice.lineItems);
