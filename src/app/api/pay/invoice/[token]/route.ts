@@ -10,10 +10,11 @@ export async function GET(
   context: { params: Promise<{ token: string }> }
 ) {
   const appUrl = getPublicAppUrl();
-  const fallback = (reason: string) => {
-    console.error(`[pay invoice token] falling back to login, reason=${reason}`);
+  const fallback = (reason: string, detail?: string) => {
+    console.error(`[pay invoice token] falling back to login, reason=${reason}`, detail ?? "");
+    const detailParam = detail ? `&detail=${encodeURIComponent(detail.slice(0, 200))}` : "";
     return NextResponse.redirect(
-      `${appUrl}/login?next=%2Fclient%2Finvoices&reason=${reason}`,
+      `${appUrl}/login?next=%2Fclient%2Finvoices&reason=${reason}${detailParam}`,
       { status: 303 }
     );
   };
@@ -53,7 +54,7 @@ export async function GET(
     const url = await createInvoiceCheckoutSession(invoice.id);
     return NextResponse.redirect(url, { status: 303 });
   } catch (error) {
-    console.error("[pay invoice token] checkout session creation failed", error);
-    return fallback("checkout_failed");
+    const message = error instanceof Error ? error.message : String(error);
+    return fallback("checkout_failed", message);
   }
 }
