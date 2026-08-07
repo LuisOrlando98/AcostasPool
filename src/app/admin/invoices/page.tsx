@@ -294,6 +294,11 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
       nombre: true,
       apellidos: true,
       email: true,
+      contractedServiceTier: { select: { name: true } },
+      memberships: {
+        where: { status: { in: ["ACTIVE", "PAST_DUE"] } },
+        select: { propertyId: true, status: true },
+      },
       properties: {
         orderBy: [{ name: "asc" }, { address: "asc" }],
         select: {
@@ -471,23 +476,41 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           }
         )
       : null;
-  const billingRows = customers.flatMap((customer) =>
-    customer.properties.map((property) => ({
-      propertyId: property.id,
-      customerId: customer.id,
-      customerName: formatCustomerName(customer),
-      propertyName: property.name?.trim() || property.address.trim(),
-      propertyAddress: property.address,
-      serviceStartDate: property.serviceStartDate
-        ? formatBusinessDateInput(property.serviceStartDate)
-        : null,
-      paymentDay: property.paymentDay,
-      servicePrice:
-        property.servicePrice !== null ? Number(property.servicePrice) : null,
-      paymentType: property.paymentType,
-      paymentNotes: property.paymentNotes,
-    }))
-  );
+  const billingRows = customers.flatMap((customer) => {
+    const contractedPlanName = customer.contractedServiceTier?.name ?? null;
+    const singleProperty =
+      customer.properties.length === 1 ? customer.properties[0] : null;
+    return customer.properties.map((property) => {
+      const propertyMembership =
+        customer.memberships.find((membership) => membership.propertyId === property.id) ??
+        (singleProperty?.id === property.id
+          ? customer.memberships.find((membership) => membership.propertyId === null)
+          : undefined);
+      const autopayStatus: "ACTIVE" | "PAST_DUE" | "NONE" =
+        propertyMembership?.status === "ACTIVE"
+          ? "ACTIVE"
+          : propertyMembership?.status === "PAST_DUE"
+            ? "PAST_DUE"
+            : "NONE";
+      return {
+        propertyId: property.id,
+        customerId: customer.id,
+        customerName: formatCustomerName(customer),
+        propertyName: property.name?.trim() || property.address.trim(),
+        propertyAddress: property.address,
+        serviceStartDate: property.serviceStartDate
+          ? formatBusinessDateInput(property.serviceStartDate)
+          : null,
+        paymentDay: property.paymentDay,
+        servicePrice:
+          property.servicePrice !== null ? Number(property.servicePrice) : null,
+        paymentType: property.paymentType,
+        paymentNotes: property.paymentNotes,
+        autopayStatus,
+        contractedPlanName,
+      };
+    });
+  });
 
   const buildPageHref = (page: number) => {
     const params = new URLSearchParams();

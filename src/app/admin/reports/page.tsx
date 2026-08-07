@@ -1,6 +1,7 @@
 import AppShell from "@/components/layout/AppShell";
 import Badge from "@/components/ui/Badge";
 import StatCard from "@/components/ui/StatCard";
+import ReportsSectionTabs from "@/components/reports/ReportsSectionTabs";
 import ReportsFiltersBar from "@/components/reports/ReportsFiltersBar";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
@@ -490,6 +491,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       subtitle={t("admin.reports.subtitle")}
       role="ADMIN"
     >
+      <div className="mb-4 flex justify-end overflow-x-auto">
+        <ReportsSectionTabs />
+      </div>
+
       <ReportsFiltersBar
         technicians={technicians.map((tech) => ({
           id: tech.id,

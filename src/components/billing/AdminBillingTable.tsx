@@ -4,8 +4,12 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
+import Badge from "@/components/ui/Badge";
 import { SERVICE_PAYMENT_TYPE_VALUES } from "@/lib/customers/service-payment-info";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { buildPageItems } from "@/lib/ui/pagination";
+
+type AutopayStatus = "ACTIVE" | "PAST_DUE" | "NONE";
 
 type BillingRow = {
   propertyId: string;
@@ -18,6 +22,8 @@ type BillingRow = {
   servicePrice: number | null;
   paymentType: string | null;
   paymentNotes: string | null;
+  autopayStatus: AutopayStatus;
+  contractedPlanName: string | null;
 };
 
 type BillingDraft = {
@@ -37,6 +43,8 @@ type BillingFilterState = {
   search: string;
   customerId: string;
   paymentType: string;
+  autopay: "ALL" | AutopayStatus;
+  plan: string;
   notes: "ALL" | "WITH" | "WITHOUT";
   sort: "customer" | "property" | "startDate" | "paymentDay" | "price";
 };
@@ -50,11 +58,19 @@ const DEFAULT_FILTERS: BillingFilterState = {
   search: "",
   customerId: "ALL",
   paymentType: "ALL",
+  autopay: "ALL",
+  plan: "ALL",
   notes: "ALL",
   sort: "customer",
 };
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+
+const AUTOPAY_TONE: Record<AutopayStatus, "success" | "warning" | "neutral"> = {
+  ACTIVE: "success",
+  PAST_DUE: "warning",
+  NONE: "neutral",
+};
 
 function toDraft(row: BillingRow): BillingDraft {
   return {
@@ -70,31 +86,6 @@ function toDraft(row: BillingRow): BillingDraft {
     paymentType: row.paymentType ?? "",
     paymentNotes: row.paymentNotes ?? "",
   };
-}
-
-function buildPageItems(currentPage: number, totalPages: number) {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const items: Array<number | "ellipsis-start" | "ellipsis-end"> = [1];
-  const windowStart = Math.max(2, currentPage - 1);
-  const windowEnd = Math.min(totalPages - 1, currentPage + 1);
-
-  if (windowStart > 2) {
-    items.push("ellipsis-start");
-  }
-
-  for (let page = windowStart; page <= windowEnd; page += 1) {
-    items.push(page);
-  }
-
-  if (windowEnd < totalPages - 1) {
-    items.push("ellipsis-end");
-  }
-
-  items.push(totalPages);
-  return items;
 }
 
 export default function AdminBillingTable({
@@ -163,6 +154,14 @@ export default function AdminBillingTable({
     [rows]
   );
 
+  const planOptions = useMemo(
+    () =>
+      [...new Set(rows.map((row) => row.contractedPlanName).filter((name): name is string => Boolean(name)))].sort(
+        (a, b) => a.localeCompare(b)
+      ),
+    [rows]
+  );
+
   const filteredRows = useMemo(() => {
     const normalizedQuery = filters.search.trim().toLowerCase();
 
@@ -171,6 +170,12 @@ export default function AdminBillingTable({
         return false;
       }
       if (filters.paymentType !== "ALL" && row.paymentType !== filters.paymentType) {
+        return false;
+      }
+      if (filters.autopay !== "ALL" && row.autopayStatus !== filters.autopay) {
+        return false;
+      }
+      if (filters.plan !== "ALL" && (row.contractedPlanName ?? "") !== filters.plan) {
         return false;
       }
       if (filters.notes === "WITH" && !row.paymentNotes?.trim()) {
@@ -195,6 +200,7 @@ export default function AdminBillingTable({
         row.paymentType ?? "",
         paymentTypeLabel,
         row.paymentNotes ?? "",
+        row.contractedPlanName ?? "",
       ]
         .join(" ")
         .toLowerCase();
@@ -266,6 +272,8 @@ export default function AdminBillingTable({
     filters.search.trim().length > 0,
     filters.customerId !== "ALL",
     filters.paymentType !== "ALL",
+    filters.autopay !== "ALL",
+    filters.plan !== "ALL",
     filters.notes !== "ALL",
     filters.sort !== DEFAULT_FILTERS.sort,
   ].filter(Boolean).length;
@@ -464,6 +472,58 @@ export default function AdminBillingTable({
                           {SERVICE_PAYMENT_TYPE_VALUES.map((value) => (
                             <option key={value} value={value}>
                               {t(`admin.invoices.servicePayment.paymentTypes.${value}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.autopay")}
+                        </span>
+                        <select
+                          value={draftFilters.autopay}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              autopay: event.target.value as BillingFilterState["autopay"],
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.invoices.servicePayment.filters.allAutopay")}
+                          </option>
+                          <option value="ACTIVE">
+                            {t("admin.invoices.servicePayment.autopay.ACTIVE")}
+                          </option>
+                          <option value="PAST_DUE">
+                            {t("admin.invoices.servicePayment.autopay.PAST_DUE")}
+                          </option>
+                          <option value="NONE">
+                            {t("admin.invoices.servicePayment.autopay.NONE")}
+                          </option>
+                        </select>
+                      </label>
+                      <label>
+                        <span className="app-modal-field-label">
+                          {t("admin.invoices.servicePayment.filters.plan")}
+                        </span>
+                        <select
+                          value={draftFilters.plan}
+                          onChange={(event) =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              plan: event.target.value,
+                            }))
+                          }
+                          className="app-modal-input app-input bg-white"
+                        >
+                          <option value="ALL">
+                            {t("admin.invoices.servicePayment.filters.allPlans")}
+                          </option>
+                          {planOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
                             </option>
                           ))}
                         </select>
@@ -992,7 +1052,7 @@ export default function AdminBillingTable({
 
         <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] text-left text-sm">
+            <table className="w-full min-w-[1360px] text-left text-sm">
               <thead className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.14em] text-slate-100/85">
                 <tr>
                   <th className="px-4 py-3">
@@ -1000,6 +1060,12 @@ export default function AdminBillingTable({
                   </th>
                   <th className="px-4 py-3">
                     {t("admin.invoices.servicePayment.table.property")}
+                  </th>
+                  <th className="px-4 py-3">
+                    {t("admin.invoices.servicePayment.table.plan")}
+                  </th>
+                  <th className="px-4 py-3">
+                    {t("admin.invoices.servicePayment.table.autopay")}
                   </th>
                   <th className="px-4 py-3">
                     {t("admin.invoices.servicePayment.table.serviceStartDate")}
@@ -1024,7 +1090,7 @@ export default function AdminBillingTable({
               <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
                 {paginatedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
+                    <td colSpan={10} className="px-4 py-8 text-center text-sm text-slate-500">
                       {t("admin.invoices.servicePayment.empty")}
                     </td>
                   </tr>
@@ -1044,6 +1110,15 @@ export default function AdminBillingTable({
                             {row.propertyAddress}
                           </p>
                         ) : null}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        {row.contractedPlanName ?? t("common.labels.notAvailable")}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <Badge
+                          label={t(`admin.invoices.servicePayment.autopay.${row.autopayStatus}`)}
+                          tone={AUTOPAY_TONE[row.autopayStatus]}
+                        />
                       </td>
                       <td className="px-4 py-3.5">
                         {formatServiceDate(row.serviceStartDate)}

@@ -42,6 +42,7 @@
       "firstName": "Nombre",
       "lastName": "Apellidos",
       "notAvailable": "No definido",
+      "all": "Todos",
       "yes": "Si",
       "no": "No"
     },
@@ -1733,9 +1734,16 @@
           "TO_WORK": "X-Trabajar",
           "WORKED": "Trabajado"
         },
+        "autopay": {
+          "ACTIVE": "Autopay activo",
+          "PAST_DUE": "Autopay - cobro fallido",
+          "NONE": "Pago manual"
+        },
         "table": {
           "customer": "Cliente",
           "property": "Propiedad",
+          "plan": "Plan contratado",
+          "autopay": "Autopay",
           "serviceStartDate": "Fecha de inicio del servicio",
           "paymentDay": "Dia de pago",
           "price": "Precio",
@@ -1761,6 +1769,10 @@
           "allCustomers": "Todos los clientes",
           "paymentType": "Tipo de pago",
           "allPaymentTypes": "Todos los tipos de pago",
+          "autopay": "Estado de autopay",
+          "allAutopay": "Todos los estados de autopay",
+          "plan": "Plan contratado",
+          "allPlans": "Todos los planes",
           "notes": "Notas",
           "notesAll": "Con y sin notas",
           "notesWith": "Solo con notas",
@@ -2001,6 +2013,83 @@
     "reports": {
       "title": "Reportes",
       "subtitle": "Rendimiento operativo, productividad del equipo y facturacion.",
+      "tabs": {
+        "operations": "Operaciones",
+        "propertyHealth": "Salud de propiedades",
+        "contracts": "Contratos"
+      },
+      "propertyHealth": {
+        "title": "Salud de propiedades",
+        "subtitle": "Condicion de la piscina en cada propiedad: que esta roto, que se esta desgastando y que esta bien.",
+        "stats": {
+          "critical": "Critico",
+          "criticalHelper": "Propiedades con al menos un componente roto",
+          "warning": "Necesita atencion",
+          "warningHelper": "Propiedades con componentes desgastados, nada roto",
+          "good": "Todo bien",
+          "goodHelper": "Todos los componentes marcados como buenos",
+          "unset": "Sin evaluar",
+          "unsetHelper": "Aun no se ha registrado la condicion"
+        },
+        "flags": {
+          "RED": "Critico",
+          "YELLOW": "Necesita atencion",
+          "GREEN": "Todo bien",
+          "UNSET": "Sin evaluar"
+        },
+        "table": {
+          "title": "Propiedades",
+          "showing": "Mostrando {{count}} de {{total}} propiedades.",
+          "activeCount": "{{count}} activos",
+          "searchPlaceholder": "Buscar cliente, propiedad, direccion, componente...",
+          "sort": {
+            "severity": "Mas critico primero",
+            "updated": "Actualizado mas reciente",
+            "customer": "Nombre del cliente"
+          },
+          "empty": "Ninguna propiedad coincide con los filtros actuales.",
+          "viewCustomer": "Ver cliente",
+          "updated": "Actualizado {{date}}",
+          "page": "Pagina {{page}} de {{total}}"
+        }
+      },
+      "contracts": {
+        "title": "Contratos",
+        "subtitle": "Estado del contrato de servicio de cada cliente: firmado, pendiente, vencido o nunca enviado.",
+        "stats": {
+          "signed": "Firmados",
+          "signedHelper": "Firmado para el periodo actual",
+          "pending": "Pendientes de firma",
+          "pendingHelper": "Enviado o en borrador este periodo, aun sin firmar",
+          "stale": "Vencidos",
+          "staleHelper": "Enviado o en borrador en un periodo anterior, nunca firmado",
+          "none": "Sin contrato",
+          "noneHelper": "Clientes sin ningun contrato registrado"
+        },
+        "category": {
+          "SIGNED": "Firmado",
+          "PENDING": "Pendiente",
+          "STALE": "Vencido",
+          "NONE": "Sin contrato"
+        },
+        "status": {
+          "NONE": "Sin contrato"
+        },
+        "table": {
+          "title": "Clientes",
+          "showing": "Mostrando {{count}} de {{total}} clientes.",
+          "activeCount": "{{count}} activos",
+          "searchPlaceholder": "Buscar cliente...",
+          "empty": "Ningun cliente coincide con los filtros actuales.",
+          "customer": "Cliente",
+          "status": "Estado",
+          "period": "Periodo",
+          "sentAt": "Enviado el",
+          "signedAt": "Firmado el",
+          "actions": "Acciones",
+          "page": "Pagina {{page}} de {{total}}"
+        }
+      },
       "filters": {
         "toolbar": "Filtros",
         "open": "Abrir filtros",

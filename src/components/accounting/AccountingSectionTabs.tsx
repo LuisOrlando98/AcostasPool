@@ -58,7 +58,7 @@ export default function AccountingSectionTabs() {
   const { t } = useI18n();
 
   return (
-    <nav className="accounting-tabs max-w-full overflow-x-auto" aria-label={t("admin.accounting.title")}>
+    <nav className="section-tabs max-w-full overflow-x-auto" aria-label={t("admin.accounting.title")}>
       {tabs.map((tab) => {
         const isActive = tab.match(pathname, view);
         return (
@@ -66,9 +66,9 @@ export default function AccountingSectionTabs() {
             key={tab.key}
             href={tab.href}
             data-active={isActive ? "true" : undefined}
-            className="accounting-tabs-item"
+            className="section-tabs-item"
           >
-            <span className="accounting-tabs-item-icon">
+            <span className="section-tabs-item-icon">
               <TabIcon tabKey={tab.key} />
             </span>
             {t(`admin.accounting.tabs.${tab.key}`)}

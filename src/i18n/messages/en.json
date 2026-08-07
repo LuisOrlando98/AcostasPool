@@ -42,6 +42,7 @@
       "firstName": "First name",
       "lastName": "Last name",
       "notAvailable": "Not available",
+      "all": "All",
       "yes": "Yes",
       "no": "No"
     },
@@ -1733,9 +1734,16 @@
           "TO_WORK": "To Work",
           "WORKED": "Worked"
         },
+        "autopay": {
+          "ACTIVE": "Autopay active",
+          "PAST_DUE": "Autopay - payment failed",
+          "NONE": "Manual payment"
+        },
         "table": {
           "customer": "Customer",
           "property": "Property",
+          "plan": "Contracted plan",
+          "autopay": "Autopay",
           "serviceStartDate": "Service Start Date",
           "paymentDay": "Payment Day",
           "price": "Price",
@@ -1761,6 +1769,10 @@
           "allCustomers": "All customers",
           "paymentType": "Payment type",
           "allPaymentTypes": "All payment types",
+          "autopay": "Autopay status",
+          "allAutopay": "All autopay statuses",
+          "plan": "Contracted plan",
+          "allPlans": "All plans",
           "notes": "Notes",
           "notesAll": "With and without notes",
           "notesWith": "Only with notes",
@@ -2001,6 +2013,83 @@
     "reports": {
       "title": "Reports",
       "subtitle": "Operational performance, team productivity, and billing insights.",
+      "tabs": {
+        "operations": "Operations",
+        "propertyHealth": "Property health",
+        "contracts": "Contracts"
+      },
+      "propertyHealth": {
+        "title": "Property health",
+        "subtitle": "Pool condition across every property: what's broken, what's wearing out, and what's fine.",
+        "stats": {
+          "critical": "Critical",
+          "criticalHelper": "Properties with at least one broken component",
+          "warning": "Needs attention",
+          "warningHelper": "Properties with worn components, nothing broken",
+          "good": "All good",
+          "goodHelper": "Every component marked good",
+          "unset": "Not evaluated",
+          "unsetHelper": "No condition recorded yet"
+        },
+        "flags": {
+          "RED": "Critical",
+          "YELLOW": "Needs attention",
+          "GREEN": "All good",
+          "UNSET": "Not evaluated"
+        },
+        "table": {
+          "title": "Properties",
+          "showing": "Showing {{count}} of {{total}} properties.",
+          "activeCount": "{{count}} active",
+          "searchPlaceholder": "Search customer, property, address, component...",
+          "sort": {
+            "severity": "Most critical first",
+            "updated": "Most recently updated",
+            "customer": "Customer name"
+          },
+          "empty": "No properties match the current filters.",
+          "viewCustomer": "View customer",
+          "updated": "Updated {{date}}",
+          "page": "Page {{page}} of {{total}}"
+        }
+      },
+      "contracts": {
+        "title": "Contracts",
+        "subtitle": "Service contract status for every customer: signed, pending, stale, or never sent.",
+        "stats": {
+          "signed": "Signed",
+          "signedHelper": "Signed for the current period",
+          "pending": "Pending signature",
+          "pendingHelper": "Sent or drafted this period, not signed yet",
+          "stale": "Stale",
+          "staleHelper": "Sent or drafted in a past period, never signed",
+          "none": "No contract",
+          "noneHelper": "Customers with no contract on file"
+        },
+        "category": {
+          "SIGNED": "Signed",
+          "PENDING": "Pending",
+          "STALE": "Stale",
+          "NONE": "No contract"
+        },
+        "status": {
+          "NONE": "No contract"
+        },
+        "table": {
+          "title": "Customers",
+          "showing": "Showing {{count}} of {{total}} customers.",
+          "activeCount": "{{count}} active",
+          "searchPlaceholder": "Search customer...",
+          "empty": "No customers match the current filters.",
+          "customer": "Customer",
+          "status": "Status",
+          "period": "Period",
+          "sentAt": "Sent on",
+          "signedAt": "Signed on",
+          "actions": "Actions",
+          "page": "Page {{page}} of {{total}}"
+        }
+      },
       "filters": {
         "toolbar": "Filters",
         "open": "Open filters",
