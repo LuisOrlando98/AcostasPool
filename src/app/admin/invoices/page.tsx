@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import AdminBillingTable from "@/components/billing/AdminBillingTable";
 import Badge from "@/components/ui/Badge";
+import StatCard from "@/components/ui/StatCard";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
 import NewInvoiceModal from "@/components/invoices/NewInvoiceModal";
 import DeleteInvoiceButton from "@/components/invoices/DeleteInvoiceButton";
@@ -365,6 +366,24 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   };
 
   const totalInvoices = await prisma.invoice.count({ where });
+  const statusTotals = await prisma.invoice.groupBy({
+    by: ["status"],
+    where,
+    _sum: { total: true },
+    _count: { _all: true },
+  });
+  const totalsByStatus = Object.fromEntries(
+    statusTotals.map((row) => [
+      row.status,
+      { total: Number(row._sum.total ?? 0), count: row._count._all },
+    ])
+  ) as Record<string, { total: number; count: number }>;
+  const draftStats = totalsByStatus.DRAFT ?? { total: 0, count: 0 };
+  const sentStats = totalsByStatus.SENT ?? { total: 0, count: 0 };
+  const paidStats = totalsByStatus.PAID ?? { total: 0, count: 0 };
+  const overdueStats = totalsByStatus.OVERDUE ?? { total: 0, count: 0 };
+  const outstandingTotal = sentStats.total + overdueStats.total;
+  const outstandingCount = sentStats.count + overdueStats.count;
   const totalPages = Math.max(1, Math.ceil(totalInvoices / pageSize));
   const currentPage = Number.isFinite(requestedPage) && requestedPage > 0
     ? Math.min(requestedPage, totalPages)
@@ -416,6 +435,24 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     STANDARD: t("admin.invoices.theme.standard"),
     SPECIAL: t("admin.invoices.theme.special"),
     ESTIMATE: t("admin.invoices.theme.estimate"),
+  };
+  const statusLabels: Record<string, string> = {
+    DRAFT: t("admin.invoices.status.draft"),
+    SENT: t("admin.invoices.status.sent"),
+    PAID: t("admin.invoices.status.paid"),
+    OVERDUE: t("admin.invoices.status.overdue"),
+  };
+  const statusTone: Record<string, "neutral" | "info" | "success" | "danger"> = {
+    DRAFT: "neutral",
+    SENT: "info",
+    PAID: "success",
+    OVERDUE: "danger",
+  };
+  const statusAccent: Record<string, string> = {
+    DRAFT: "border-l-slate-300",
+    SENT: "border-l-sky-400",
+    PAID: "border-l-emerald-400",
+    OVERDUE: "border-l-rose-400",
   };
   const activeFiltersCount = [
     query.length > 0,
@@ -500,23 +537,65 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
         />
       ) : (
         <>
+      <section className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label={t("admin.invoices.stats.outstanding")}
+          value={`$${outstandingTotal.toFixed(2)}`}
+          helper={t("admin.invoices.stats.outstandingHelper", { count: outstandingCount })}
+          tone={outstandingCount > 0 ? "info" : "success"}
+        />
+        <StatCard
+          label={t("admin.invoices.stats.paid")}
+          value={`$${paidStats.total.toFixed(2)}`}
+          helper={t("admin.invoices.stats.paidHelper", { count: paidStats.count })}
+          tone="success"
+        />
+        <StatCard
+          label={t("admin.invoices.stats.overdue")}
+          value={`$${overdueStats.total.toFixed(2)}`}
+          helper={t("admin.invoices.stats.overdueHelper", { count: overdueStats.count })}
+          tone={overdueStats.count > 0 ? "danger" : "success"}
+        />
+        <StatCard
+          label={t("admin.invoices.stats.drafts")}
+          value={String(draftStats.count)}
+          helper={t("admin.invoices.stats.draftsHelper")}
+          tone="warning"
+        />
+      </section>
+
       <input id="invoice-filters" type="checkbox" className="peer/invoice-filters hidden" />
       <section className="space-y-6">
         <div className="app-card p-6 shadow-contrast">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold">
-                {t("admin.invoices.list.recentTitle")}
-              </h2>
-              <p className="text-sm text-slate-500">
-                {t("admin.invoices.list.count", { count: totalInvoices })}
-              </p>
-              <p className="text-xs text-slate-400">
-                {t("admin.invoices.list.showing", {
-                  count: pagedInvoices.length,
-                  total: totalInvoices,
-                })}
-              </p>
+            <div className="flex items-start gap-3">
+              <span className="hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 sm:flex">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 3h8l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 9h6M9 13h6M9 17h3" />
+                </svg>
+              </span>
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {t("admin.invoices.list.recentTitle")}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {t("admin.invoices.list.count", { count: totalInvoices })}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {t("admin.invoices.list.showing", {
+                    count: pagedInvoices.length,
+                    total: totalInvoices,
+                  })}
+                </p>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">
@@ -618,11 +697,13 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                 return (
                   <div
                     key={invoice.id}
-                    className="rounded-2xl border border-slate-100 bg-gradient-to-br from-white via-white to-slate-50 px-4 py-4 shadow-sm"
+                    className={`rounded-2xl border border-l-4 border-slate-100 bg-gradient-to-br from-white via-white to-slate-50 px-4 py-4 shadow-sm transition hover:border-slate-200 hover:shadow-md ${
+                      statusAccent[invoice.status] ?? "border-l-slate-300"
+                    }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-sm font-semibold tracking-tight text-slate-900">
                           {invoice.number}
                         </p>
                         <p className="text-xs text-slate-500">
@@ -630,7 +711,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-lg font-semibold text-slate-900">
                           ${invoice.total.toFixed(2)}
                         </p>
                         <p className="text-xs text-slate-500">
@@ -643,14 +724,8 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Badge
-                        label={invoice.status}
-                        tone={
-                          invoice.status === "PAID"
-                            ? "success"
-                            : invoice.status === "OVERDUE"
-                              ? "warning"
-                              : "neutral"
-                        }
+                        label={statusLabels[invoice.status] ?? invoice.status}
+                        tone={statusTone[invoice.status] ?? "neutral"}
                       />
                       <Badge
                         label={`${t("admin.invoices.list.type")}: ${

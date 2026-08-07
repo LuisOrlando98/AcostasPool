@@ -1662,6 +1662,16 @@
         "paid": "Pagada",
         "overdue": "Vencida"
       },
+      "stats": {
+        "outstanding": "Por cobrar",
+        "outstandingHelper": "{{count}} factura(s) pendiente(s) de pago",
+        "paid": "Cobrado",
+        "paidHelper": "{{count}} factura(s) pagada(s)",
+        "overdue": "Vencido",
+        "overdueHelper": "{{count}} factura(s) vencida(s)",
+        "drafts": "Borradores",
+        "draftsHelper": "Aun no enviadas al cliente"
+      },
       "list": {
         "title": "Billing",
         "recentTitle": "Facturas recientes",
@@ -1853,6 +1863,13 @@
         "notFoundTitle": "Editor de factura",
         "notFoundSubtitle": "Factura no encontrada",
         "back": "Volver a Billing",
+        "hero": {
+          "status": "Estado",
+          "total": "Total",
+          "paid": "Pagado",
+          "balance": "Saldo pendiente",
+          "fullyPaid": "Pagada por completo"
+        },
         "defaults": {
           "service": "Servicio"
         },

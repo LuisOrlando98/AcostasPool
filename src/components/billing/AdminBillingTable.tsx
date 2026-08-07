@@ -892,20 +892,35 @@ export default function AdminBillingTable({
     <>
       <section className="app-card p-6 shadow-contrast">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {t("admin.invoices.servicePayment.title")}
-            </h2>
-            <p className="text-sm text-slate-500">
-              {t("admin.invoices.servicePayment.subtitle")}
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              {t("admin.invoices.servicePayment.pagination.showing", {
-                from: showingFrom,
-                to: showingTo,
-                total: filteredRows.length,
-              })}
-            </p>
+          <div className="flex items-start gap-3">
+            <span className="hidden h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 sm:flex">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <rect x="3" y="6" width="18" height="13" rx="2" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h4" />
+              </svg>
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold">
+                {t("admin.invoices.servicePayment.title")}
+              </h2>
+              <p className="text-sm text-slate-500">
+                {t("admin.invoices.servicePayment.subtitle")}
+              </p>
+              <p className="mt-1 text-xs text-slate-400">
+                {t("admin.invoices.servicePayment.pagination.showing", {
+                  from: showingFrom,
+                  to: showingTo,
+                  total: filteredRows.length,
+                })}
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

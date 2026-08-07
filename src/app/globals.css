@@ -1033,6 +1033,62 @@ h3 {
   box-shadow: none;
 }
 
+.accounting-tabs {
+  display: inline-flex;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 5px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.accounting-tabs-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.accounting-tabs-item:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.accounting-tabs-item[data-active="true"] {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.accounting-tabs-item-icon {
+  display: inline-flex;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.accounting-tabs-item[data-active="true"] .accounting-tabs-item-icon {
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .accounting-tabs-item {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.66rem;
+  }
+}
+
 .settings-top-nav {
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.24);

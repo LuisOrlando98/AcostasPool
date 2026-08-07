@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
+import Badge from "@/components/ui/Badge";
 import InvoiceEditForm from "@/components/invoices/InvoiceEditForm";
 import InvoicePaymentsPanel from "@/components/invoices/InvoicePaymentsPanel";
 import { prisma } from "@/lib/db";
@@ -49,6 +50,20 @@ function parseTheme(value: string): InvoiceTheme {
   }
   return "STANDARD";
 }
+
+function money(cents: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
+
+const STATUS_TONE: Record<InvoiceStatus, "neutral" | "info" | "success" | "danger"> = {
+  DRAFT: "neutral",
+  SENT: "info",
+  PAID: "success",
+  OVERDUE: "danger",
+};
 
 function parseEditorMode(value: string | undefined) {
   if (value === "editor" || value === "code" || value === "web") {
@@ -351,6 +366,17 @@ export default async function InvoiceEditorPage({
   const previewLabel = t("admin.invoices.editor.modes.preview");
   const splitLabel = t("admin.invoices.editor.modes.split");
 
+  const statusLabels: Record<InvoiceStatus, string> = {
+    DRAFT: t("admin.invoices.status.draft"),
+    SENT: t("admin.invoices.status.sent"),
+    PAID: t("admin.invoices.status.paid"),
+    OVERDUE: t("admin.invoices.status.overdue"),
+  };
+  const totalCentsValue = toCents(Number(invoice.total));
+  const paidSoFarCents = invoice.payments.reduce((sum, payment) => sum + payment.amountCents, 0);
+  const balanceCents = Math.max(0, totalCentsValue - paidSoFarCents);
+  const isFullyPaid = invoice.status === "PAID" || balanceCents === 0;
+
   return (
     <AppShell
       title={t("admin.invoices.editor.title", { number: invoice.number })}
@@ -391,6 +417,45 @@ export default async function InvoiceEditorPage({
               >
                 {splitLabel}
               </Link>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {t("admin.invoices.editor.hero.status")}
+              </p>
+              <div className="mt-1.5">
+                <Badge label={statusLabels[invoice.status]} tone={STATUS_TONE[invoice.status]} />
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {t("admin.invoices.editor.hero.total")}
+              </p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">
+                {money(totalCentsValue, locale)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {t("admin.invoices.editor.hero.paid")}
+              </p>
+              <p className="mt-1 text-lg font-semibold text-emerald-600">
+                {money(paidSoFarCents, locale)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                {t("admin.invoices.editor.hero.balance")}
+              </p>
+              <p
+                className={`mt-1 text-lg font-semibold ${
+                  isFullyPaid ? "text-emerald-600" : "text-rose-600"
+                }`}
+              >
+                {isFullyPaid ? t("admin.invoices.editor.hero.fullyPaid") : money(balanceCents, locale)}
+              </p>
             </div>
           </div>
         </div>

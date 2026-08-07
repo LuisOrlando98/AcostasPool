@@ -1662,6 +1662,16 @@
         "paid": "Paid",
         "overdue": "Overdue"
       },
+      "stats": {
+        "outstanding": "Outstanding",
+        "outstandingHelper": "{{count}} invoice(s) awaiting payment",
+        "paid": "Paid",
+        "paidHelper": "{{count}} invoice(s) paid",
+        "overdue": "Overdue",
+        "overdueHelper": "{{count}} invoice(s) past due",
+        "drafts": "Drafts",
+        "draftsHelper": "Not sent to the customer yet"
+      },
       "list": {
         "title": "Billing",
         "recentTitle": "Recent invoices",
@@ -1853,6 +1863,13 @@
         "notFoundTitle": "Invoice editor",
         "notFoundSubtitle": "Invoice not found",
         "back": "Back to Billing",
+        "hero": {
+          "status": "Status",
+          "total": "Total",
+          "paid": "Paid",
+          "balance": "Balance due",
+          "fullyPaid": "Fully paid"
+        },
         "defaults": {
           "service": "Service"
         },
