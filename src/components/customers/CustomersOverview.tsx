@@ -19,6 +19,7 @@ type CustomerRow = {
   properties: number;
   jobs: number;
   invoices: number;
+  healthFlag: "RED" | "YELLOW" | null;
 };
 
 type SortKey = "name" | "jobs" | "properties";
@@ -550,8 +551,20 @@ export default function CustomersOverview({
                             }}
                           >
                             <td className="min-w-[13.5rem] px-4 py-3.5">
-                              <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={customer.name}>
-                                {customer.name}
+                              <p className="flex max-w-[12rem] items-center gap-1.5 truncate font-semibold text-slate-900" title={customer.name}>
+                                {customer.healthFlag ? (
+                                  <span
+                                    className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                                      customer.healthFlag === "RED" ? "bg-rose-500" : "bg-amber-400"
+                                    }`}
+                                    title={
+                                      customer.healthFlag === "RED"
+                                        ? t("admin.customers.overview.health.RED")
+                                        : t("admin.customers.overview.health.YELLOW")
+                                    }
+                                  />
+                                ) : null}
+                                <span className="truncate">{customer.name}</span>
                               </p>
                               <p
                                 className="max-w-[12rem] truncate text-[11px] text-slate-400"

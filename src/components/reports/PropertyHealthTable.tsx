@@ -56,7 +56,13 @@ const FLAG_SEVERITY_ORDER: Record<Flag, number> = {
   GREEN: 3,
 };
 
-export default function PropertyHealthTable({ rows }: { rows: PropertyHealthRow[] }) {
+export default function PropertyHealthTable({
+  rows,
+  exportHref,
+}: {
+  rows: PropertyHealthRow[];
+  exportHref?: string;
+}) {
   const { t, locale } = useI18n();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -125,11 +131,18 @@ export default function PropertyHealthTable({ rows }: { rows: PropertyHealthRow[
             })}
           </p>
         </div>
-        {activeFilterCount > 0 ? (
-          <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-            {t("admin.reports.propertyHealth.table.activeCount", { count: activeFilterCount })}
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilterCount > 0 ? (
+            <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+              {t("admin.reports.propertyHealth.table.activeCount", { count: activeFilterCount })}
+            </span>
+          ) : null}
+          {exportHref ? (
+            <a href={exportHref} className="app-button-secondary px-3 py-2 text-xs font-semibold">
+              {t("admin.reports.exports.csv")}
+            </a>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

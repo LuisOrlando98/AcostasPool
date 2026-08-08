@@ -1143,6 +1143,10 @@
           "invoices": "Invoices",
           "action": "Action"
         },
+        "health": {
+          "RED": "Needs attention: critical issue open (see Reports)",
+          "YELLOW": "Needs attention: minor issue open (see Reports)"
+        },
         "empty": "No customers to display."
       },
       "new": {
@@ -2015,8 +2019,31 @@
       "subtitle": "Operational performance, team productivity, and billing insights.",
       "tabs": {
         "operations": "Operations",
+        "needsAttention": "Needs attention",
         "propertyHealth": "Property health",
         "contracts": "Contracts"
+      },
+      "needsAttention": {
+        "title": "Needs attention",
+        "subtitle": "Every customer with an open issue - broken pool components, stale contracts, or failed payments - ranked by urgency.",
+        "stats": {
+          "total": "Customers flagged",
+          "totalHelper": "At least one open issue",
+          "critical": "High priority",
+          "criticalHelper": "Multiple or severe issues open",
+          "payment": "Payment issues",
+          "paymentHelper": "Failed autopay or overdue invoices",
+          "property": "Property issues",
+          "propertyHelper": "{{count}} also have a stale or missing contract"
+        },
+        "table": {
+          "title": "Customers",
+          "showing": "Showing {{count}} of {{total}} customers.",
+          "searchPlaceholder": "Search customer...",
+          "empty": "Nobody needs attention right now.",
+          "autopayFailed": "Autopay failed: {{amount}}",
+          "overdueInvoices": "{{count}} overdue invoice(s): {{amount}}"
+        }
       },
       "propertyHealth": {
         "title": "Property health",
@@ -2158,7 +2185,8 @@
       },
       "exports": {
         "jobs": "Export jobs CSV",
-        "invoices": "Export invoices CSV"
+        "invoices": "Export invoices CSV",
+        "csv": "Export CSV"
       },
       "emails": {
         "title": "Sent emails",

@@ -7,6 +7,9 @@ import {
   getReportFilters,
 } from "@/lib/reports/filters";
 import { formatCustomerName } from "@/lib/customers/format";
+import { getPropertyHealthRows } from "@/lib/reports/property-health";
+import { getContractStatusRows } from "@/lib/reports/contracts-health";
+import { getNeedsAttentionRows } from "@/lib/reports/needs-attention";
 
 const escapeCsv = (value: unknown) => {
   const safe = String(value ?? "");
@@ -24,6 +27,78 @@ export async function GET(request: Request) {
   const filters = getReportFilters(
     Object.fromEntries(url.searchParams.entries())
   );
+
+  if (type === "property-health") {
+    const rows = await getPropertyHealthRows();
+    const headers = ["Customer", "Property", "Address", "Flag", "Issues", "Notes", "Updated At"];
+    const csvRows = rows.map((row) => [
+      row.customerName,
+      row.propertyName,
+      row.propertyAddress,
+      row.flag,
+      row.issues.map((issue) => `${issue.label}: ${issue.statusLabel}`).join("; "),
+      row.notes ?? "",
+      row.updatedAt,
+    ]);
+    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="property-health-report.csv"`,
+      },
+    });
+  }
+
+  if (type === "contracts") {
+    const rows = await getContractStatusRows();
+    const headers = ["Customer", "Status", "Category", "Period", "Sent At", "Signed At"];
+    const csvRows = rows.map((row) => [
+      row.customerName,
+      row.status,
+      row.category,
+      row.periodMonth ?? "",
+      row.sentAt ?? "",
+      row.signedAt ?? "",
+    ]);
+    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="contracts-report.csv"`,
+      },
+    });
+  }
+
+  if (type === "needs-attention") {
+    const rows = await getNeedsAttentionRows();
+    const headers = [
+      "Customer",
+      "Score",
+      "Property Issues",
+      "Contract Issue",
+      "Past Due Autopay",
+      "Overdue Invoices Count",
+      "Overdue Invoices Total",
+    ];
+    const csvRows = rows.map((row) => [
+      row.customerName,
+      row.score.toString(),
+      row.propertyIssues
+        .map((issue) => `${issue.propertyName} (${issue.issues.join(", ")})`)
+        .join("; "),
+      row.contractIssue ?? "",
+      row.pastDueMembershipCents !== null ? (row.pastDueMembershipCents / 100).toFixed(2) : "",
+      row.overdueInvoiceCount.toString(),
+      (row.overdueInvoiceTotalCents / 100).toFixed(2),
+    ]);
+    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
+    return new Response(csv, {
+      headers: {
+        "Content-Type": "text/csv",
+        "Content-Disposition": `attachment; filename="needs-attention-report.csv"`,
+      },
+    });
+  }
 
   if (type === "invoices") {
     const invoices = await prisma.invoice.findMany({

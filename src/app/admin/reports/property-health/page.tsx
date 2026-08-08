@@ -2,66 +2,15 @@ import AppShell from "@/components/layout/AppShell";
 import StatCard from "@/components/ui/StatCard";
 import ReportsSectionTabs from "@/components/reports/ReportsSectionTabs";
 import PropertyHealthTable from "@/components/reports/PropertyHealthTable";
-import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName } from "@/lib/customers/format";
-import { readPoolCondition } from "@/lib/customers/pool-condition";
+import { getPropertyHealthRows } from "@/lib/reports/property-health";
 import { getTranslations } from "@/i18n/server";
 
 export default async function PropertyHealthReportPage() {
   await requireRole("ADMIN");
   const t = await getTranslations();
 
-  const properties = await prisma.property.findMany({
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      address: true,
-      poolCondition: true,
-      poolConditionNotes: true,
-      updatedAt: true,
-      customerId: true,
-      customer: { select: { nombre: true, apellidos: true } },
-    },
-  });
-
-  const itemLabel = (key: string) =>
-    t(`admin.customers.detail.properties.condition.items.${key}`);
-  const statusLabel = (status: string) =>
-    t(`admin.customers.detail.properties.condition.status.${status}`);
-
-  const rows = properties.map((property) => {
-    const entries = readPoolCondition(property.poolCondition);
-    const broken = entries.filter((entry) => entry.status === "BROKEN");
-    const bad = entries.filter((entry) => entry.status === "BAD");
-    const unset = entries.filter((entry) => entry.status === null);
-    const flag: "RED" | "YELLOW" | "GREEN" | "UNSET" =
-      broken.length > 0
-        ? "RED"
-        : bad.length > 0
-          ? "YELLOW"
-          : unset.length === entries.length
-            ? "UNSET"
-            : "GREEN";
-
-    return {
-      propertyId: property.id,
-      customerId: property.customerId,
-      customerName: formatCustomerName(property.customer),
-      propertyName: property.name?.trim() || property.address.trim(),
-      propertyAddress: property.address,
-      flag,
-      issues: [...broken, ...bad].map((entry) => ({
-        key: entry.key,
-        label: itemLabel(entry.key),
-        statusLabel: statusLabel(entry.status as string),
-        severity: entry.status as "BROKEN" | "BAD",
-      })),
-      notes: property.poolConditionNotes,
-      updatedAt: property.updatedAt.toISOString(),
-    };
-  });
+  const rows = await getPropertyHealthRows();
 
   const redCount = rows.filter((row) => row.flag === "RED").length;
   const yellowCount = rows.filter((row) => row.flag === "YELLOW").length;
@@ -106,7 +55,7 @@ export default async function PropertyHealthReportPage() {
       </section>
 
       <div className="mt-6">
-        <PropertyHealthTable rows={rows} />
+        <PropertyHealthTable rows={rows} exportHref="/api/reports/export?type=property-health" />
       </div>
     </AppShell>
   );

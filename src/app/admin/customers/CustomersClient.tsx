@@ -21,6 +21,7 @@ type CustomerRow = {
   properties: number;
   jobs: number;
   invoices: number;
+  healthFlag: "RED" | "YELLOW" | null;
 };
 
 type BulkInviteTarget = {

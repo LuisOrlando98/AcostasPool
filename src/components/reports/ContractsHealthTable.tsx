@@ -37,7 +37,13 @@ const CATEGORY_TONE: Record<Category, "success" | "info" | "danger" | "warning">
   NONE: "warning",
 };
 
-export default function ContractsHealthTable({ rows }: { rows: ContractRow[] }) {
+export default function ContractsHealthTable({
+  rows,
+  exportHref,
+}: {
+  rows: ContractRow[];
+  exportHref?: string;
+}) {
   const { t, locale } = useI18n();
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -88,11 +94,18 @@ export default function ContractsHealthTable({ rows }: { rows: ContractRow[] }) 
             })}
           </p>
         </div>
-        {activeFilterCount > 0 ? (
-          <span className="app-chip px-3 py-1 text-xs" data-tone="info">
-            {t("admin.reports.contracts.table.activeCount", { count: activeFilterCount })}
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilterCount > 0 ? (
+            <span className="app-chip px-3 py-1 text-xs" data-tone="info">
+              {t("admin.reports.contracts.table.activeCount", { count: activeFilterCount })}
+            </span>
+          ) : null}
+          {exportHref ? (
+            <a href={exportHref} className="app-button-secondary px-3 py-2 text-xs font-semibold">
+              {t("admin.reports.exports.csv")}
+            </a>
+          ) : null}
+        </div>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">

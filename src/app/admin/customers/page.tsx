@@ -14,6 +14,7 @@ import {
   normalizeCustomerPortalFilter,
 } from "@/lib/customers/admin-filters";
 import { hasActiveCustomerPortal } from "@/lib/customers/portal-status";
+import { getNeedsAttentionRows } from "@/lib/reports/needs-attention";
 import { normalizeUsPhone } from "@/lib/phones";
 import { getTranslations } from "@/i18n/server";
 import type { Prisma } from "@prisma/client";
@@ -253,6 +254,13 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
       prisma.job.count(),
     ]);
 
+  const attentionRows = await getNeedsAttentionRows({
+    customerIds: customers.map((customer) => customer.id),
+  });
+  const healthFlagByCustomer = new Map<string, "RED" | "YELLOW">(
+    attentionRows.map((row) => [row.customerId, row.score >= 3 ? "RED" : "YELLOW"])
+  );
+
   return (
     <AppShell
       title={t("admin.customers.title")}
@@ -288,6 +296,7 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
           properties: customer._count.properties,
           jobs: customer._count.jobs,
           invoices: customer._count.invoices,
+          healthFlag: healthFlagByCustomer.get(customer.id) ?? null,
         }))}
         summary={{
           total: totalCustomers,

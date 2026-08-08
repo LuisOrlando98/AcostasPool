@@ -1143,6 +1143,10 @@
           "invoices": "Facturas",
           "action": "Accion"
         },
+        "health": {
+          "RED": "Necesita atencion: problema critico abierto (ver Reportes)",
+          "YELLOW": "Necesita atencion: problema menor abierto (ver Reportes)"
+        },
         "empty": "No hay clientes para mostrar."
       },
       "new": {
@@ -2015,8 +2019,31 @@
       "subtitle": "Rendimiento operativo, productividad del equipo y facturacion.",
       "tabs": {
         "operations": "Operaciones",
+        "needsAttention": "Necesita atencion",
         "propertyHealth": "Salud de propiedades",
         "contracts": "Contratos"
+      },
+      "needsAttention": {
+        "title": "Necesita atencion",
+        "subtitle": "Cada cliente con un problema abierto - componentes de piscina rotos, contratos vencidos o pagos fallidos - ordenados por urgencia.",
+        "stats": {
+          "total": "Clientes marcados",
+          "totalHelper": "Al menos un problema abierto",
+          "critical": "Alta prioridad",
+          "criticalHelper": "Multiples problemas o problemas severos abiertos",
+          "payment": "Problemas de pago",
+          "paymentHelper": "Autopay fallido o facturas vencidas",
+          "property": "Problemas de propiedad",
+          "propertyHelper": "{{count}} tambien tienen contrato vencido o sin registrar"
+        },
+        "table": {
+          "title": "Clientes",
+          "showing": "Mostrando {{count}} de {{total}} clientes.",
+          "searchPlaceholder": "Buscar cliente...",
+          "empty": "Nadie necesita atencion en este momento.",
+          "autopayFailed": "Autopay fallido: {{amount}}",
+          "overdueInvoices": "{{count}} factura(s) vencida(s): {{amount}}"
+        }
       },
       "propertyHealth": {
         "title": "Salud de propiedades",
@@ -2158,7 +2185,8 @@
       },
       "exports": {
         "jobs": "Exportar trabajos CSV",
-        "invoices": "Exportar facturas CSV"
+        "invoices": "Exportar facturas CSV",
+        "csv": "Exportar CSV"
       },
       "emails": {
         "title": "Emails enviados",
