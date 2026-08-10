@@ -9,6 +9,7 @@ import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import AddressAutocompleteSingle from "@/components/ui/AddressAutocompleteSingle";
 import AdminCustomerProperties from "@/components/customers/AdminCustomerProperties";
 import InlineActionButton from "@/components/customers/InlineActionButton";
+import SendServiceStartModal from "@/components/customers/SendServiceStartModal";
 import CollapsibleSection from "@/components/ui/CollapsibleSection";
 import CustomerInvoicesTable from "@/components/customers/CustomerInvoicesTable";
 import CustomerJobsTable from "@/components/customers/CustomerJobsTable";
@@ -52,7 +53,7 @@ import {
 } from "@/lib/customers/financial-info";
 import { cancelMembership } from "@/lib/payments/cancel";
 import { sendMembershipStartEmail } from "@/lib/payments/notify";
-import { applyFeeToMembership } from "@/lib/payments/fees";
+import { applyFeeToMembership, computeMembershipFeeCents } from "@/lib/payments/fees";
 import {
   parsePoolConditionInput,
   readPoolCondition,
@@ -531,51 +532,6 @@ async function generateServiceContract(formData: FormData) {
   redirect(redirectPath);
 }
 
-async function sendServiceContract(formData: FormData) {
-  "use server";
-  await requireRole("ADMIN");
-
-  const contractId = String(formData.get("contractId") ?? "");
-  const customerId = String(formData.get("customerId") ?? "");
-  if (!contractId || !customerId) {
-    return;
-  }
-
-  let redirectPath: string;
-  try {
-    await prisma.serviceContract.update({
-      where: { id: contractId },
-      data: { status: "SENT", sentAt: new Date() },
-    });
-
-    await createNotification({
-      customerId,
-      recipientRole: "CUSTOMER",
-      eventType: "CONTRACT_READY_TO_SIGN",
-      severity: "INFO",
-      payload: { contractId },
-    });
-
-    try {
-      const result = await sendContractReadyEmail(customerId);
-      if (!result.ok) {
-        console.error("Contract email failed:", result.error);
-      }
-    } catch (error) {
-      console.error("Contract email failed:", error);
-    }
-
-    redirectPath = customerDetailFeedbackPath(customerId, "contract-sent");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("service-contract: failed to send contract", contractId, error);
-    redirectPath = customerDetailErrorPath(customerId, "contract-send-failed", message);
-  }
-
-  revalidateAttentionPaths(customerId);
-  redirect(redirectPath);
-}
-
 async function signServiceContractInPerson(formData: FormData) {
   "use server";
   const session = await requireRole("ADMIN");
@@ -808,7 +764,38 @@ async function cancelMembershipAction(formData: FormData) {
   revalidateAttentionPaths(customerId);
 }
 
-async function sendMembershipStartEmailAction(
+async function updateContractedPlanAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const customerId = String(formData.get("customerId") ?? "");
+  const contractedServiceTierId = String(
+    formData.get("contractedServiceTierId") ?? ""
+  ).trim();
+  if (!customerId || !contractedServiceTierId) {
+    return { error: t("admin.customers.detail.sendStart.errors.planRequired") };
+  }
+
+  const tier = await prisma.serviceTier.findUnique({
+    where: { id: contractedServiceTierId },
+    select: { id: true },
+  });
+  if (!tier) {
+    return { error: t("admin.customers.detail.sendStart.errors.planRequired") };
+  }
+
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: { contractedServiceTierId },
+  });
+
+  revalidatePath(`/admin/customers/${customerId}`);
+}
+
+async function sendServiceStartAction(
   formData: FormData
 ): Promise<{ error?: string } | undefined> {
   "use server";
@@ -817,16 +804,46 @@ async function sendMembershipStartEmailAction(
 
   const customerId = String(formData.get("customerId") ?? "");
   const propertyId = String(formData.get("propertyId") ?? "");
+  const contractId = String(formData.get("contractId") ?? "").trim();
   if (!customerId || !propertyId) {
-    return { error: t("admin.customers.detail.membership.errors.generic") };
+    return { error: t("admin.customers.detail.sendStart.errors.generic") };
   }
 
-  const result = await sendMembershipStartEmail(customerId, propertyId);
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { contractedServiceTierId: true },
+  });
+  if (!customer?.contractedServiceTierId) {
+    return { error: t("admin.customers.detail.sendStart.errors.planRequired") };
+  }
+
+  const activeMembership = await prisma.membership.findFirst({
+    where: { customerId, propertyId, status: { in: ["ACTIVE", "PAST_DUE"] } },
+    select: { id: true },
+  });
+
+  if (contractId) {
+    await prisma.serviceContract.update({
+      where: { id: contractId },
+      data: { status: "SENT", sentAt: new Date() },
+    });
+    await createNotification({
+      customerId,
+      recipientRole: "CUSTOMER",
+      eventType: "CONTRACT_READY_TO_SIGN",
+      severity: "INFO",
+      payload: { contractId },
+    });
+  }
+
+  const result = activeMembership
+    ? await sendContractReadyEmail(customerId)
+    : await sendMembershipStartEmail(customerId, propertyId);
   if (!result.ok) {
     return { error: result.error };
   }
 
-  revalidatePath(`/admin/customers/${customerId}`);
+  revalidateAttentionPaths(customerId);
 }
 
 async function applyMembershipFeeAction(
@@ -1507,6 +1524,12 @@ export default async function CustomerDetailPage({
     currency: "USD",
   });
   const latestContract = customer.serviceContracts[0] ?? null;
+  const draftContractId = latestContract?.status === "DRAFT" ? latestContract.id : null;
+  const sendStartFeeBreakdown =
+    primaryProperty?.servicePrice != null
+      ? computeMembershipFeeCents(Math.round(Number(primaryProperty.servicePrice) * 100))
+      : null;
+  const sendStartPlanOptions = tierOptions.map((tier) => ({ id: tier.id, name: tier.name }));
   const contractHistory = customer.serviceContracts.slice(1, 6);
   const contractPdfHref = (contractId: string, updatedAt: Date) =>
     `/api/admin/customers/${customer.id}/contracts/${contractId}/pdf?v=${updatedAt.getTime()}`;
@@ -1537,11 +1560,6 @@ export default async function CustomerDetailPage({
       ) : feedback === "contract-generated" ? (
         <ActionFeedbackToast
           message={t("admin.customers.feedback.contractGenerated")}
-          dismissLabel={t("common.actions.close")}
-        />
-      ) : feedback === "contract-sent" ? (
-        <ActionFeedbackToast
-          message={t("admin.customers.feedback.contractSent")}
           dismissLabel={t("common.actions.close")}
         />
       ) : feedback === "contract-signed" ? (
@@ -1996,12 +2014,22 @@ export default async function CustomerDetailPage({
                     {t("admin.customers.detail.membership.notActive")}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <InlineActionButton
-                      action={sendMembershipStartEmailAction}
-                      fields={{ customerId: customer.id, propertyId: primaryProperty.id }}
-                      label={t("admin.customers.detail.membership.sendStartEmail")}
-                      pendingLabel={t("common.feedback.saving")}
-                      className="app-button-primary px-4 py-2 text-xs font-semibold"
+                    <SendServiceStartModal
+                      customerId={customer.id}
+                      customerName={customerName}
+                      propertyId={primaryProperty.id}
+                      propertyLabel={primaryProperty.name?.trim() || primaryProperty.address}
+                      contractId={draftContractId}
+                      hasActiveMembership={Boolean(activeMembership)}
+                      currentPlanId={customer.contractedServiceTierId}
+                      currentPlanName={customer.contractedServiceTier?.name ?? null}
+                      planOptions={sendStartPlanOptions}
+                      feeBreakdown={sendStartFeeBreakdown}
+                      paymentDay={primaryProperty.paymentDay}
+                      triggerLabel={t("admin.customers.detail.membership.sendStartEmail")}
+                      triggerClassName="app-button-primary px-4 py-2 text-xs font-semibold"
+                      updatePlanAction={updateContractedPlanAction}
+                      sendAction={sendServiceStartAction}
                     />
                     <a
                       href={`/api/admin/memberships/checkout?customerId=${customer.id}&propertyId=${primaryProperty.id}`}
@@ -2120,16 +2148,24 @@ export default async function CustomerDetailPage({
                                 : t("admin.customers.detail.contract.generateNew")}
                             </button>
                           </form>
-                          {latestContract.status === "DRAFT" ? (
-                            <form action={sendServiceContract}>
-                              <input type="hidden" name="contractId" value={latestContract.id} />
-                              <input type="hidden" name="customerId" value={customer.id} />
-                              <FormSubmitButton
-                                idleLabel={t("admin.customers.detail.contract.send")}
-                                pendingLabel={t("admin.customers.detail.contract.sending")}
-                                className="rounded-full px-3.5 py-2 text-xs"
-                              />
-                            </form>
+                          {latestContract.status === "DRAFT" && primaryProperty ? (
+                            <SendServiceStartModal
+                              customerId={customer.id}
+                              customerName={customerName}
+                              propertyId={primaryProperty.id}
+                              propertyLabel={primaryProperty.name?.trim() || primaryProperty.address}
+                              contractId={latestContract.id}
+                              hasActiveMembership={Boolean(activeMembership)}
+                              currentPlanId={customer.contractedServiceTierId}
+                              currentPlanName={customer.contractedServiceTier?.name ?? null}
+                              planOptions={sendStartPlanOptions}
+                              feeBreakdown={sendStartFeeBreakdown}
+                              paymentDay={primaryProperty.paymentDay}
+                              triggerLabel={t("admin.customers.detail.contract.send")}
+                              triggerClassName="rounded-full bg-sky-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-sky-700"
+                              updatePlanAction={updateContractedPlanAction}
+                              sendAction={sendServiceStartAction}
+                            />
                           ) : null}
                           <label
                             htmlFor="view-contract"

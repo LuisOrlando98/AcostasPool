@@ -2,6 +2,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { prisma } from "@/lib/db";
 import { toCents } from "@/lib/payments/service";
 import { computeMembershipFeeCents, MEMBERSHIP_TRANSACTION_FEE_PERCENT } from "@/lib/payments/fees";
+import { nextPaymentDayDate } from "@/lib/payments/membership";
 import { getPublicAppUrl } from "@/lib/app-url";
 
 function baseAppUrl() {
@@ -84,6 +85,7 @@ type MembershipCheckoutInput = {
   customerId: string;
   propertyId: string;
   baseAmountCents: number;
+  paymentDay?: number | null;
   authorizedVia: "PORTAL" | "IN_PERSON_ADMIN";
   authorizedByUserId?: string | null;
   authorizedIp?: string | null;
@@ -116,6 +118,8 @@ export async function createMembershipCheckoutSession(
     feeAmountCents: String(feeCents),
   };
 
+  const trialEnd = nextPaymentDayDate(input.paymentDay);
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: stripeCustomerId,
@@ -142,7 +146,10 @@ export async function createMembershipCheckoutSession(
       },
     ],
     metadata,
-    subscription_data: { metadata },
+    subscription_data: {
+      metadata,
+      ...(trialEnd ? { trial_end: Math.floor(trialEnd.getTime() / 1000) } : {}),
+    },
     success_url: `${appUrl}/client/invoices?membership=success`,
     cancel_url: `${appUrl}/client/membership/activate?propertyId=${input.propertyId}&membership=cancelled`,
   });

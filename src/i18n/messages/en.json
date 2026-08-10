@@ -1417,6 +1417,32 @@
             "feeFailed": "Could not add the fee to this membership. Please try again."
           }
         },
+        "sendStart": {
+          "kicker": "Send to customer",
+          "title": "Review before sending",
+          "planLabel": "Contracted plan",
+          "planPlaceholder": "Select a plan",
+          "planSaved": "Plan set to {{plan}}.",
+          "financialsLabel": "Monthly pricing",
+          "baseService": "Service price",
+          "fee": "Processing fee (3%)",
+          "total": "Total monthly",
+          "noPrice": "Set a service price on the primary property before sending.",
+          "paymentDay": "First charge is scheduled for day {{day}} of the month.",
+          "noPaymentDay": "No payment day set - the card will be charged as soon as it's activated.",
+          "previewLabel": "What the customer will be asked to do",
+          "preview": {
+            "signContract": "Sign the service contract.",
+            "activateAutopay": "Activate monthly autopay.",
+            "resignContract": "Sign the updated service contract (autopay is already active)."
+          },
+          "send": "Send",
+          "sending": "Sending...",
+          "errors": {
+            "planRequired": "Select a contracted plan before sending.",
+            "generic": "Something went wrong. Please try again."
+          }
+        },
         "contract": {
           "noContract": "This customer doesn't have a service contract generated yet.",
           "generate": "Generate contract",

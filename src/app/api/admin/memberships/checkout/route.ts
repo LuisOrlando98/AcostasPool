@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true, customerId: true, servicePrice: true },
+    select: { id: true, customerId: true, servicePrice: true, paymentDay: true },
   });
   if (!property || property.customerId !== customerId || property.servicePrice === null) {
     return NextResponse.json({ error: "Invalid property" }, { status: 400 });
@@ -46,6 +46,7 @@ export async function GET(request: Request) {
       customerId,
       propertyId: property.id,
       baseAmountCents: toCents(Number(property.servicePrice)),
+      paymentDay: property.paymentDay,
       authorizedVia: "IN_PERSON_ADMIN",
       authorizedByUserId: session.sub,
       authorizedIp: forwardedFor ? forwardedFor.split(",")[0].trim() : null,

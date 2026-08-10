@@ -1417,6 +1417,32 @@
             "feeFailed": "No se pudo agregar el cargo a esta membresia. Intenta de nuevo."
           }
         },
+        "sendStart": {
+          "kicker": "Enviar al cliente",
+          "title": "Revisa antes de enviar",
+          "planLabel": "Plan contratado",
+          "planPlaceholder": "Selecciona un plan",
+          "planSaved": "Plan asignado: {{plan}}.",
+          "financialsLabel": "Precio mensual",
+          "baseService": "Precio del servicio",
+          "fee": "Cargo por procesamiento (3%)",
+          "total": "Total mensual",
+          "noPrice": "Configura un precio de servicio en la propiedad principal antes de enviar.",
+          "paymentDay": "El primer cobro queda programado para el dia {{day}} del mes.",
+          "noPaymentDay": "No hay dia de pago configurado - se cobrara la tarjeta apenas se active.",
+          "previewLabel": "Lo que se le pedira al cliente",
+          "preview": {
+            "signContract": "Firmar el contrato de servicio.",
+            "activateAutopay": "Activar el pago automatico mensual.",
+            "resignContract": "Firmar el contrato actualizado (el autopay ya esta activo)."
+          },
+          "send": "Enviar",
+          "sending": "Enviando...",
+          "errors": {
+            "planRequired": "Selecciona un plan contratado antes de enviar.",
+            "generic": "Algo salio mal. Intenta de nuevo."
+          }
+        },
         "contract": {
           "noContract": "Este cliente todavia no tiene un contrato de servicio generado.",
           "generate": "Generar contrato",

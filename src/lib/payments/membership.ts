@@ -1,5 +1,7 @@
 import type { MembershipStatus } from "@prisma/client";
 import type Stripe from "stripe";
+import type { DateTime } from "luxon";
+import { getBusinessNow } from "@/lib/timezone";
 
 export function mapStripeSubscriptionStatus(
   status: Stripe.Subscription.Status
@@ -17,6 +19,36 @@ export function mapStripeSubscriptionStatus(
     default:
       return "INCOMPLETE";
   }
+}
+
+/**
+ * The next occurrence (business timezone, 9am) of a property's payment day.
+ * Passed to Stripe as `subscription_data.trial_end` so a customer who
+ * activates autopay isn't charged immediately - the card is saved/verified
+ * now, and the first real charge (and every renewal after it) lands on the
+ * day they were told to expect it.
+ */
+export function nextPaymentDayDate(paymentDay: number | null | undefined): Date | null {
+  if (!paymentDay || paymentDay < 1 || paymentDay > 31) {
+    return null;
+  }
+
+  const now = getBusinessNow();
+  const buildCandidate = (base: DateTime) =>
+    base.set({
+      day: Math.min(paymentDay, base.daysInMonth ?? paymentDay),
+      hour: 9,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    });
+
+  let candidate = buildCandidate(now);
+  if (candidate <= now) {
+    candidate = buildCandidate(now.plus({ months: 1 }));
+  }
+
+  return candidate.toUTC().toJSDate();
 }
 
 export function subscriptionPeriod(subscription: Stripe.Subscription) {

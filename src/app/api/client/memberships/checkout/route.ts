@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   });
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true, customerId: true, servicePrice: true },
+    select: { id: true, customerId: true, servicePrice: true, paymentDay: true },
   });
   if (
     !customer ||
@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       customerId: customer.id,
       propertyId: property.id,
       baseAmountCents: toCents(Number(property.servicePrice)),
+      paymentDay: property.paymentDay,
       authorizedVia: "PORTAL",
       authorizedByUserId: session.sub,
       authorizedIp: forwardedFor ? forwardedFor.split(",")[0].trim() : null,
