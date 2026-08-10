@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { storeSignatureDataUrl, renderAndStoreContractPdf } from "@/lib/contracts/service";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 import { resolveParams } from "@/lib/utils/params";
 
 type RouteContext = {
@@ -60,6 +61,7 @@ export async function POST(request: Request, context: RouteContext) {
   });
 
   await renderAndStoreContractPdf(updated);
+  revalidateAttentionPaths(customer.id);
 
   return NextResponse.json({ ok: true });
 }

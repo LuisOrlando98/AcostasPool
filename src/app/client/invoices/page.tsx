@@ -8,6 +8,7 @@ import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import { cancelMembership } from "@/lib/payments/cancel";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 
 async function cancelMembershipAction(formData: FormData) {
   "use server";
@@ -27,6 +28,7 @@ async function cancelMembershipAction(formData: FormData) {
 
   await cancelMembership(membershipId, "period_end");
   revalidatePath("/client/invoices");
+  revalidateAttentionPaths();
 }
 
 type ClientInvoicesPageProps = {

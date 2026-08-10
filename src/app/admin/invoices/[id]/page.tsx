@@ -6,6 +6,7 @@ import InvoiceEditForm from "@/components/invoices/InvoiceEditForm";
 import InvoicePaymentsPanel from "@/components/invoices/InvoicePaymentsPanel";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 import { resolveParams } from "@/lib/utils/params";
 import { formatCustomerAddress, formatCustomerName } from "@/lib/customers/format";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
@@ -190,7 +191,7 @@ async function updateInvoice(
 
   revalidatePath(`/admin/invoices/${invoiceId}`);
   revalidatePath("/admin/invoices");
-  revalidatePath(`/admin/customers/${currentInvoice.customerId}`);
+  revalidateAttentionPaths(currentInvoice.customerId);
 }
 
 async function recordManualPaymentAction(
@@ -240,7 +241,7 @@ async function recordManualPaymentAction(
 
   revalidatePath(`/admin/invoices/${invoiceId}`);
   revalidatePath("/admin/invoices");
-  revalidatePath(`/admin/customers/${invoice.customerId}`);
+  revalidateAttentionPaths(invoice.customerId);
 }
 
 type InvoiceEditorPageProps = {

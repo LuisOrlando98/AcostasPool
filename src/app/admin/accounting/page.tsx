@@ -17,6 +17,7 @@ import { getAccountingDashboardData } from "@/lib/payments/dashboard";
 import { getAccountingFilters, formatDateInput } from "@/lib/payments/dashboard-filters";
 import { retryMembershipCharge } from "@/lib/payments/retry";
 import { cancelMembership } from "@/lib/payments/cancel";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -39,6 +40,7 @@ async function retryMembershipChargeAction(
   }
 
   revalidatePath("/admin/accounting");
+  revalidateAttentionPaths();
 }
 
 async function cancelPastDueMembershipAction(
@@ -60,6 +62,7 @@ async function cancelPastDueMembershipAction(
   }
 
   revalidatePath("/admin/accounting");
+  revalidateAttentionPaths();
 }
 
 function money(cents: number, locale: string) {

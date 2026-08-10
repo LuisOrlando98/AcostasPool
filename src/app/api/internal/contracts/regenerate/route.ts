@@ -9,6 +9,7 @@ import {
   renderAndStoreContractPdf,
   startOfCurrentPeriodMonth,
 } from "@/lib/contracts/service";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 
 function hasValidCronSecret(request: Request) {
   const expected = process.env.CRON_SECRET?.trim();
@@ -76,6 +77,10 @@ export async function POST(request: Request) {
 
     await renderAndStoreContractPdf(created);
     regeneratedCount += 1;
+  }
+
+  if (regeneratedCount > 0) {
+    revalidateAttentionPaths();
   }
 
   return NextResponse.json({

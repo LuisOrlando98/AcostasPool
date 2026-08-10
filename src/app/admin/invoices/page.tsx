@@ -10,6 +10,7 @@ import DeleteInvoiceButton from "@/components/invoices/DeleteInvoiceButton";
 import AccountingSectionTabs from "@/components/accounting/AccountingSectionTabs";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 import { generateInvoicePdf } from "@/lib/invoices/pdf";
 import {
   normalizeInvoiceLineItems,
@@ -216,8 +217,8 @@ async function deleteInvoice(formData: FormData) {
 
   revalidatePath("/admin/invoices");
   revalidatePath(`/admin/invoices/${invoiceId}`);
-  revalidatePath(`/admin/customers/${invoice.customerId}`);
   revalidatePath("/client/invoices");
+  revalidateAttentionPaths(invoice.customerId);
 }
 
 async function updatePropertyBillingAction(

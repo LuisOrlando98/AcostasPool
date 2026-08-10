@@ -125,6 +125,7 @@ export default function AdminCustomerProperties({
       value: "Material alternativo",
       label: t("admin.customers.detail.properties.options.altMaterial"),
     },
+    { value: "Jacuzzi", label: t("admin.customers.detail.properties.options.jacuzzi") },
   ];
   const sanitizerOptions = [
     { value: "Sal", label: t("admin.customers.detail.properties.options.salt") },

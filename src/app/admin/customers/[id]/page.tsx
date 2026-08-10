@@ -17,6 +17,7 @@ import CustomerRepositoryExplorer from "@/components/customers/CustomerRepositor
 import DeleteCustomerButton from "@/components/customers/DeleteCustomerButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 import { resolveParams } from "@/lib/utils/params";
 import { addPlanFrequency, combineDateAndTime } from "@/lib/jobs/scheduling";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
@@ -526,7 +527,7 @@ async function generateServiceContract(formData: FormData) {
     redirectPath = customerDetailErrorPath(customerId, "contract-generate-failed", message);
   }
 
-  revalidatePath(`/admin/customers/${customerId}`);
+  revalidateAttentionPaths(customerId);
   redirect(redirectPath);
 }
 
@@ -571,7 +572,7 @@ async function sendServiceContract(formData: FormData) {
     redirectPath = customerDetailErrorPath(customerId, "contract-send-failed", message);
   }
 
-  revalidatePath(`/admin/customers/${customerId}`);
+  revalidateAttentionPaths(customerId);
   redirect(redirectPath);
 }
 
@@ -617,7 +618,7 @@ async function signServiceContractInPerson(formData: FormData) {
     redirectPath = customerDetailErrorPath(customerId, "contract-sign-failed", message);
   }
 
-  revalidatePath(`/admin/customers/${customerId}`);
+  revalidateAttentionPaths(customerId);
   redirect(redirectPath);
 }
 
@@ -755,10 +756,10 @@ async function deleteCustomer(formData: FormData) {
   });
 
   revalidatePath("/admin");
-  revalidatePath("/admin/customers");
   revalidatePath("/admin/invoices");
   revalidatePath("/admin/notifications");
   revalidatePath("/admin/reports");
+  revalidateAttentionPaths();
   redirect(withFeedbackParam("/admin/customers", "customer-deleted"));
 }
 
@@ -786,8 +787,8 @@ async function deleteProperty(formData: FormData) {
     where: { id: propertyId },
   });
 
-  revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  revalidateAttentionPaths(customerId);
   redirect(customerDetailFeedbackPath(customerId, "property-deleted"));
 }
 
@@ -803,7 +804,8 @@ async function cancelMembershipAction(formData: FormData) {
   }
 
   await cancelMembership(membershipId, mode === "immediate" ? "immediate" : "period_end");
-  revalidatePath(`/admin/customers/${customerId}`);
+  revalidatePath("/admin/accounting");
+  revalidateAttentionPaths(customerId);
 }
 
 async function sendMembershipStartEmailAction(
@@ -916,8 +918,8 @@ async function updateProperty(formData: FormData) {
     },
   });
 
-  revalidatePath(`/admin/customers/${customerId}`);
   revalidatePath("/admin/invoices");
+  revalidateAttentionPaths(customerId);
   redirect(customerDetailFeedbackPath(customerId, "property-saved"));
 }
 
@@ -2715,6 +2717,9 @@ export default async function CustomerDetailPage({
                   </option>
                   <option value="Material alternativo">
                     {t("admin.customers.detail.properties.options.altMaterial")}
+                  </option>
+                  <option value="Jacuzzi">
+                    {t("admin.customers.detail.properties.options.jacuzzi")}
                   </option>
                 </select>
               </div>

@@ -6,6 +6,7 @@ import { getStripeClient } from "@/lib/stripe/client";
 import { recordPayment, markInvoicePaid } from "@/lib/payments/service";
 import { mapStripeSubscriptionStatus, subscriptionPeriod } from "@/lib/payments/membership";
 import { createNotification } from "@/lib/notifications/create";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 
 function isUniqueConstraintError(error: unknown) {
   return (
@@ -51,6 +52,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         source: "Stripe",
       },
     });
+    revalidateAttentionPaths(invoice.customerId);
     return;
   }
 
@@ -106,6 +108,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         authorizedUserAgent: metadata.authorizedUserAgent || null,
       },
     });
+    revalidateAttentionPaths(customerId);
   }
 }
 
@@ -164,6 +167,7 @@ async function handleInvoicePaymentSucceeded(stripeInvoiceObject: Stripe.Invoice
       source: "Stripe autopay",
     },
   });
+  revalidateAttentionPaths(membership.customerId);
 }
 
 async function handleInvoicePaymentFailed(stripeInvoiceObject: Stripe.Invoice) {
@@ -205,6 +209,7 @@ async function handleInvoicePaymentFailed(stripeInvoiceObject: Stripe.Invoice) {
     severity: "CRITICAL",
     payload,
   });
+  revalidateAttentionPaths(membership.customerId);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -228,6 +233,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         : membership.canceledAt,
     },
   });
+  revalidateAttentionPaths(membership.customerId);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
@@ -245,6 +251,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       canceledAt: new Date(),
     },
   });
+  revalidateAttentionPaths(membership.customerId);
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge) {

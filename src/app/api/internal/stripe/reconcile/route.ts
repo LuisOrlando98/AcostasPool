@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { getStripeClient } from "@/lib/stripe/client";
 import { mapStripeSubscriptionStatus, subscriptionPeriod } from "@/lib/payments/membership";
 import { saveStripeReconcileStatus } from "@/lib/site-settings";
+import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
 
 function hasValidCronSecret(request: Request) {
   const expected = process.env.CRON_SECRET?.trim();
@@ -67,6 +68,10 @@ export async function POST(request: Request) {
     checkedCount,
     correctedCount,
   });
+
+  if (correctedCount > 0) {
+    revalidateAttentionPaths();
+  }
 
   return NextResponse.json({ ok: true, checkedCount, correctedCount });
 }
