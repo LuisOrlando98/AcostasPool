@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/guards";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import ClientContractSignForm from "@/components/contracts/ClientContractSignForm";
+import PdfPreviewLink from "@/components/ui/PdfPreviewLink";
 
 export default async function ClientContractPage() {
   const session = await requireRole("CUSTOMER");
@@ -168,14 +169,13 @@ export default async function ClientContractPage() {
                   </p>
                 </div>
                 {contract.pdfUrl ? (
-                  <a
+                  <PdfPreviewLink
                     href={`/api/client/contract/${contract.id}/pdf?v=${contract.updatedAt.getTime()}`}
-                    target="_blank"
-                    rel="noreferrer"
+                    label={t("client.invoices.list.viewPdf")}
+                    title={t("admin.customers.detail.contract.documentPreview")}
+                    closeLabel={t("common.actions.close")}
                     className="text-xs text-slate-600 underline"
-                  >
-                    {t("client.invoices.list.viewPdf")}
-                  </a>
+                  />
                 ) : null}
               </div>
             ))}

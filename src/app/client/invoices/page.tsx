@@ -5,6 +5,7 @@ import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { getAssetUrl } from "@/lib/assets";
+import PdfPreviewLink from "@/components/ui/PdfPreviewLink";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import { cancelMembership } from "@/lib/payments/cancel";
@@ -161,14 +162,13 @@ export default async function ClientInvoicesPage({
                 </div>
                 <div className="flex items-center gap-3">
                   {invoice.pdfUrl ? (
-                    <a
+                    <PdfPreviewLink
                       href={`${getAssetUrl(invoice.pdfUrl)}?v=${invoice.updatedAt.getTime()}`}
+                      label={t("client.invoices.list.viewPdf")}
+                      title={invoice.number}
+                      closeLabel={t("common.actions.close")}
                       className="text-xs text-slate-600 underline"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t("client.invoices.list.viewPdf")}
-                    </a>
+                    />
                   ) : null}
                   {invoice.status !== "PAID" ? (
                     <a
