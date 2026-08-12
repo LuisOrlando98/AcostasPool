@@ -130,17 +130,23 @@ export default async function JobDetailPage({
     );
   }
 
-  const job = await prisma.job.findUnique({
-    where: { id: jobId },
-    include: {
-      customer: true,
-      property: true,
-      technician: { include: { user: true } },
-      plan: true,
-      serviceTier: true,
-      photos: true,
-    },
-  });
+  const [job, technicians] = await Promise.all([
+    prisma.job.findUnique({
+      where: { id: jobId },
+      include: {
+        customer: true,
+        property: true,
+        technician: { include: { user: true } },
+        plan: true,
+        serviceTier: true,
+        photos: true,
+      },
+    }),
+    prisma.technician.findMany({
+      include: { user: true },
+      orderBy: { user: { fullName: "asc" } },
+    }),
+  ]);
 
   if (!job) {
     return (
@@ -155,11 +161,6 @@ export default async function JobDetailPage({
       </AppShell>
     );
   }
-
-  const technicians = await prisma.technician.findMany({
-    include: { user: true },
-    orderBy: { user: { fullName: "asc" } },
-  });
 
   const serviceOption = serviceTypeOptions.find(
     (option) => option.value === job.serviceType

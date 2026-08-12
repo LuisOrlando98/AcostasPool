@@ -34,7 +34,7 @@ export async function GET() {
       },
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: { customer: true },
+      include: { customer: { select: { nombre: true, apellidos: true } } },
     });
     return json({
       notifications: notifications.map((item) => ({

@@ -1323,56 +1323,63 @@ export default async function CustomerDetailPage({
     );
   }
 
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          createdAt: true,
-          passwordResetTokens: {
-            where: { purpose: "INVITE" },
-            orderBy: { createdAt: "desc" },
-            take: 5,
-            select: {
-              createdAt: true,
-              expiresAt: true,
-              usedAt: true,
+  const [customer, technicians, serviceTiers] = await Promise.all([
+    prisma.customer.findUnique({
+      where: { id: customerId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            createdAt: true,
+            passwordResetTokens: {
+              where: { purpose: "INVITE" },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                createdAt: true,
+                expiresAt: true,
+                usedAt: true,
+              },
             },
           },
         },
-      },
-      properties: true,
-      contractedServiceTier: { select: { id: true, name: true } },
-      serviceContracts: { orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }] },
-      jobs: {
-        orderBy: { scheduledDate: "desc" },
-        include: {
-          property: true,
-          technician: { include: { user: true } },
-          photos: true,
+        properties: true,
+        contractedServiceTier: { select: { id: true, name: true } },
+        serviceContracts: { orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }] },
+        jobs: {
+          orderBy: { scheduledDate: "desc" },
+          include: {
+            property: true,
+            technician: { include: { user: true } },
+            photos: true,
+          },
         },
-      },
-      servicePlans: {
-        orderBy: { nextRunAt: "asc" },
-        include: {
-          property: true,
-          technician: { include: { user: true } },
+        servicePlans: {
+          orderBy: { nextRunAt: "asc" },
+          include: {
+            property: true,
+            technician: { include: { user: true } },
+          },
         },
-      },
-      invoices: {
-        orderBy: { createdAt: "desc" },
-        include: {
-          job: {
-            include: {
-              technician: { include: { user: true } },
+        invoices: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            job: {
+              include: {
+                technician: { include: { user: true } },
+              },
             },
           },
         },
+        memberships: { orderBy: { createdAt: "desc" } },
       },
-      memberships: { orderBy: { createdAt: "desc" } },
-    },
-  });
+    }),
+    prisma.technician.findMany({
+      include: { user: true },
+      orderBy: { user: { fullName: "asc" } },
+    }),
+    getServiceTiers(),
+  ]);
 
   if (!customer) {
     return (
@@ -1409,11 +1416,6 @@ export default async function CustomerDetailPage({
     : hasCompletedInvite
     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
     : "border-indigo-200 bg-indigo-50 text-indigo-700";
-  const technicians = await prisma.technician.findMany({
-    include: { user: true },
-    orderBy: { user: { fullName: "asc" } },
-  });
-  const serviceTiers = await getServiceTiers();
   const activeServiceTiers = serviceTiers.filter((tier) => tier.isActive);
   const tierOptions =
     activeServiceTiers.length > 0 ? activeServiceTiers : serviceTiers;

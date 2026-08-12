@@ -18,7 +18,12 @@ export default async function TechHistoryPage() {
     ? await prisma.job.findMany({
         where: { technicianId: technician.id, status: "COMPLETED" },
         orderBy: { completedAt: "desc" },
-        include: { customer: true, property: true, photos: true },
+        take: 200,
+        include: {
+          customer: { select: { nombre: true, apellidos: true } },
+          property: { select: { address: true } },
+          photos: { select: { id: true } },
+        },
       })
     : [];
 

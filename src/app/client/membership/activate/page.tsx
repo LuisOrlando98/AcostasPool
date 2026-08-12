@@ -24,23 +24,24 @@ export default async function MembershipActivatePage({ searchParams }: PageProps
     currency: "USD",
   });
 
-  const customer = await prisma.customer.findUnique({
-    where: { userId: session.sub },
-    select: {
-      id: true,
-      serviceContracts: {
-        orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }],
-        take: 12,
+  const [customer, property] = await Promise.all([
+    prisma.customer.findUnique({
+      where: { userId: session.sub },
+      select: {
+        id: true,
+        serviceContracts: {
+          orderBy: [{ periodMonth: "desc" }, { createdAt: "desc" }],
+          take: 12,
+        },
       },
-    },
-  });
-
-  const property = propertyId
-    ? await prisma.property.findUnique({
-        where: { id: propertyId },
-        select: { id: true, name: true, address: true, servicePrice: true, customerId: true },
-      })
-    : null;
+    }),
+    propertyId
+      ? prisma.property.findUnique({
+          where: { id: propertyId },
+          select: { id: true, name: true, address: true, servicePrice: true, customerId: true },
+        })
+      : Promise.resolve(null),
+  ]);
 
   if (!customer || !property || property.customerId !== customer.id || property.servicePrice === null) {
     return (

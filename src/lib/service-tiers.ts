@@ -41,9 +41,20 @@ export const DEFAULT_SERVICE_TIERS: Array<{
   },
 ];
 
+// Module-scope, not per-request: once we've confirmed tiers exist in this
+// server process's lifetime, there's no need to keep re-checking on every
+// single call - this function is invoked from many hot paths (job creation,
+// customer detail, invoices...) and the "seed if empty" check is only ever
+// relevant once, right after a fresh deploy against an empty database.
+let serviceTiersEnsured = false;
+
 export async function ensureServiceTiers() {
+  if (serviceTiersEnsured) {
+    return;
+  }
   const existing = await prisma.serviceTier.count();
   if (existing > 0) {
+    serviceTiersEnsured = true;
     return;
   }
   await prisma.serviceTier.createMany({
@@ -52,6 +63,7 @@ export async function ensureServiceTiers() {
       checklist: tier.checklist,
     })),
   });
+  serviceTiersEnsured = true;
 }
 
 export async function getServiceTiers() {

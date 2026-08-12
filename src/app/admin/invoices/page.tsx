@@ -288,33 +288,51 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
   const currentView =
     rawView === "service-payment" ? "service-payment" : "invoices";
 
-  const customers = await prisma.customer.findMany({
-    orderBy: { nombre: "asc" },
-    select: {
-      id: true,
-      nombre: true,
-      apellidos: true,
-      email: true,
-      contractedServiceTier: { select: { name: true } },
-      memberships: {
-        where: { status: { in: ["ACTIVE", "PAST_DUE"] } },
-        select: { propertyId: true, status: true },
-      },
-      properties: {
-        orderBy: [{ name: "asc" }, { address: "asc" }],
-        select: {
-          id: true,
-          name: true,
-          address: true,
-          serviceStartDate: true,
-          paymentDay: true,
-          servicePrice: true,
-          paymentType: true,
-          paymentNotes: true,
+  const [customers, jobs] = await Promise.all([
+    prisma.customer.findMany({
+      orderBy: { nombre: "asc" },
+      select: {
+        id: true,
+        nombre: true,
+        apellidos: true,
+        email: true,
+        contractedServiceTier: { select: { name: true } },
+        memberships: {
+          where: { status: { in: ["ACTIVE", "PAST_DUE"] } },
+          select: { propertyId: true, status: true },
+        },
+        properties: {
+          orderBy: [{ name: "asc" }, { address: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            address: true,
+            serviceStartDate: true,
+            paymentDay: true,
+            servicePrice: true,
+            paymentType: true,
+            paymentNotes: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.job.findMany({
+      orderBy: { scheduledDate: "desc" },
+      take: 500,
+      select: {
+        id: true,
+        customerId: true,
+        scheduledDate: true,
+        status: true,
+        serviceType: true,
+        invoices: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { lineItems: true },
+        },
+      },
+    }),
+  ]);
   const customerIds = new Set(customers.map((customer) => customer.id));
 
   const isValidDateInput = (value: string) =>
@@ -371,13 +389,15 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     ...(createdAtFilter ? { createdAt: createdAtFilter } : {}),
   };
 
-  const totalInvoices = await prisma.invoice.count({ where });
-  const statusTotals = await prisma.invoice.groupBy({
-    by: ["status"],
-    where,
-    _sum: { total: true },
-    _count: { _all: true },
-  });
+  const [totalInvoices, statusTotals] = await Promise.all([
+    prisma.invoice.count({ where }),
+    prisma.invoice.groupBy({
+      by: ["status"],
+      where,
+      _sum: { total: true },
+      _count: { _all: true },
+    }),
+  ]);
   const totalsByStatus = Object.fromEntries(
     statusTotals.map((row) => [
       row.status,
@@ -417,22 +437,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           scheduledDate: true,
           technician: { select: { user: { select: { fullName: true } } } },
         },
-      },
-    },
-  });
-
-  const jobs = await prisma.job.findMany({
-    orderBy: { scheduledDate: "desc" },
-    select: {
-      id: true,
-      customerId: true,
-      scheduledDate: true,
-      status: true,
-      serviceType: true,
-      invoices: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        select: { lineItems: true },
       },
     },
   });

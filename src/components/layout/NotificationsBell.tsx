@@ -56,6 +56,12 @@ const ROW_SWIPE_MAX = -92;
 const NOTIFICATIONS_CACHE_KEY = "ap:notifications:recent:v1";
 const NOTIFICATIONS_CACHE_TTL_MS = 30 * 1000;
 
+// Module-scope, not component state: survives client-side navigations (the
+// module isn't re-evaluated on soft nav) for the lifetime of the tab, so a
+// logged-in user's id only ever needs to be looked up once instead of on
+// every remount of this component.
+let cachedUserId: string | null = null;
+
 function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
   const aTime = new Date(a.createdAt).getTime();
   const bTime = new Date(b.createdAt).getTime();
@@ -113,7 +119,7 @@ export default function NotificationsBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(cachedUserId);
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -191,10 +197,10 @@ export default function NotificationsBell() {
     []
   );
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (options?: { force?: boolean }) => {
     setLoading(true);
     try {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && !options?.force) {
         try {
           const cached = window.sessionStorage.getItem(NOTIFICATIONS_CACHE_KEY);
           if (cached) {
@@ -210,6 +216,9 @@ export default function NotificationsBell() {
             ) {
               setUnreadCount(typeof parsed.unread === "number" ? parsed.unread : 0);
               setNotifications([...parsed.notifications].sort(byCreatedDesc));
+              // Fresh enough - skip the network round trip entirely instead
+              // of re-fetching on every remount (e.g. every navigation).
+              return;
             }
           }
         } catch {
@@ -253,6 +262,7 @@ export default function NotificationsBell() {
         const meRes = await fetch("/api/auth/me", { cache: "no-store" });
         const meData = await meRes.json().catch(() => ({ user: null }));
         if (meData?.user?.id) {
+          cachedUserId = meData.user.id;
           setUserId(meData.user.id);
         }
       }
@@ -357,7 +367,7 @@ export default function NotificationsBell() {
         });
         channel = pusher.subscribe(`private-user-${userId}`);
         channel.bind("notification", () => {
-          void load();
+          void load({ force: true });
         });
       };
 
@@ -379,15 +389,15 @@ export default function NotificationsBell() {
       if (typeof window !== "undefined" && "EventSource" in window) {
         stream = new EventSource("/api/notifications/stream");
         stream.addEventListener("notification", () => {
-          void load();
+          void load({ force: true });
         });
       }
       const intervalId = window.setInterval(() => {
-        void load();
+        void load({ force: true });
       }, 20000);
       const onVisibilityChange = () => {
         if (!document.hidden) {
-          void load();
+          void load({ force: true });
         }
       };
       document.addEventListener("visibilitychange", onVisibilityChange);
@@ -552,7 +562,7 @@ export default function NotificationsBell() {
       return;
     }
 
-    await load();
+    await load({ force: true });
     setClearing(false);
   }, [clearing, load, notifications, t, unreadCount]);
 

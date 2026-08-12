@@ -536,6 +536,9 @@ export default function AppShell({
               parsed.user
             ) {
               setMobileUser(parsed.user);
+              // Fresh enough - skip the refetch instead of hitting
+              // /api/auth/me (and its DB round trip) on every navigation.
+              return;
             }
           }
         } catch {
