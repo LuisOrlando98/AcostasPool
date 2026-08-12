@@ -300,6 +300,8 @@ model Job {
   completedAt   DateTime?
   requestedAt   DateTime?
   requestedByUserId String?
+  requestCategory String?
+  requestIssue    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

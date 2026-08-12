@@ -6,11 +6,15 @@ export const POOL_CONDITION_ITEM_KEYS = [
   "pump",
   "filter",
   "heater",
-  "skimmer",
-  "ladder",
+  "timer",
+  "saltSystem",
   "lighting",
   "tileLiner",
   "deckCover",
+  "blower",
+  "smartSystem",
+  "hydraulicSystem",
+  "electricalSystem",
 ] as const;
 
 export type PoolConditionItemKey = (typeof POOL_CONDITION_ITEM_KEYS)[number];

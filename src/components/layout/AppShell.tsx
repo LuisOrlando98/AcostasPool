@@ -52,6 +52,30 @@ const adminNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
+    label: t("nav.admin.requests"),
+    href: "/admin/requests",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M4.5 6.5h15v11h-15z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M7.5 10.5h9M7.5 14h5"
+        />
+      </svg>
+    ),
+  },
+  {
     label: t("nav.admin.routes"),
     href: "/admin/routes",
     icon: (

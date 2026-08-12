@@ -12,11 +12,17 @@ import { combineDateAndTime } from "@/lib/jobs/scheduling";
 import { MIN_BOOKING_LEAD_DAYS, getLeadStartDate, toDateKey } from "@/lib/jobs/capacity";
 import { getBusinessTimeParts } from "@/lib/timezone";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
+import {
+  normalizeRequestCategory,
+  normalizeRequestIssue,
+} from "@/lib/customers/request-categories";
 
 const requestSchema = z.object({
   propertyId: z.string().min(1),
-  reason: z.string().min(3),
-  description: z.string().optional(),
+  category: z.string().min(1),
+  issue: z.string().optional(),
+  description: z.string().min(1),
+  urgent: z.boolean().optional(),
   availableWeekdays: z.array(z.number().int().min(0).max(6)).min(1),
 });
 
@@ -45,7 +51,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid data" }, { status: 400 });
   }
 
-  const { propertyId, reason, description, availableWeekdays } = parsed.data;
+  const { propertyId, description, availableWeekdays, urgent } = parsed.data;
+  const category = normalizeRequestCategory(parsed.data.category);
+  if (!category) {
+    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  }
+  const issue = parsed.data.issue ? normalizeRequestIssue(category, parsed.data.issue) : null;
 
   const customer = await prisma.customer.findUnique({
     where: { userId: session.sub },
@@ -109,11 +120,13 @@ export async function POST(request: Request) {
   };
   const availableDaysLabel = allowedWeekdays.slice().sort().map(weekdayLabel).join(", ");
 
+  const categoryLabel = t(`client.request.categories.${category}`);
+  const issueLabel = issue ? t(`client.request.issues.${issue}`) : null;
+  const reasonSummary = issueLabel ? `${categoryLabel} - ${issueLabel}` : categoryLabel;
+
   const customerNotes = [
-    `${t("client.request.fields.reason")}: ${reason}`,
-    description?.trim()
-      ? `${t("client.request.fields.description")}: ${description.trim()}`
-      : null,
+    `${t("client.request.fields.reason")}: ${reasonSummary}`,
+    `${t("client.request.fields.description")}: ${description.trim()}`,
     `${t("client.request.fields.availableDays")}: ${availableDaysLabel}`,
   ]
     .filter(Boolean)
@@ -132,9 +145,12 @@ export async function POST(request: Request) {
       sortOrder,
       status: "PENDING",
       type: "ON_DEMAND",
+      priority: urgent ? "URGENT" : "NORMAL",
       serviceTierId: defaultTierId,
       checklist,
       customerNotes,
+      requestCategory: category,
+      requestIssue: issue,
       requestedAt: now,
       requestedByUserId: session.sub,
     },
@@ -163,7 +179,7 @@ export async function POST(request: Request) {
       jobId: job.id,
       count: 1,
       requestedAt: now.toISOString(),
-      reason,
+      reason: reasonSummary,
       reviewRequired: true,
     },
   });
@@ -176,7 +192,10 @@ export async function POST(request: Request) {
       customerId: customer.id,
       propertyId,
       jobIds: [job.id],
-      reason,
+      reason: reasonSummary,
+      category,
+      issue,
+      urgent: Boolean(urgent),
       availableWeekdays: allowedWeekdays,
     },
   });

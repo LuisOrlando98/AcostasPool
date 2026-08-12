@@ -153,6 +153,7 @@
     "admin": {
       "dashboard": "Dashboard",
       "calendar": "Calendario",
+      "requests": "Solicitudes",
       "technicians": "Tecnicos",
       "customers": "Clientes",
       "accounting": "Contabilidad",
@@ -1370,11 +1371,15 @@
               "pump": "Bomba",
               "filter": "Filtro",
               "heater": "Calentador",
-              "skimmer": "Skimmer",
-              "ladder": "Escalera / barandas",
+              "timer": "Timer",
+              "saltSystem": "Sistema de sal",
               "lighting": "Iluminacion",
               "tileLiner": "Revestimiento / loza",
-              "deckCover": "Cubierta / deck"
+              "deckCover": "Cubierta / deck",
+              "blower": "Blower (jets del jacuzzi)",
+              "smartSystem": "Sistema inteligente / automatizacion",
+              "hydraulicSystem": "Sistema hidraulico",
+              "electricalSystem": "Sistema electrico"
             },
             "status": {
               "BROKEN": "Roto",
@@ -2254,6 +2259,40 @@
         }
       }
     },
+    "requests": {
+      "title": "Solicitudes",
+      "subtitle": "Todo lo que los clientes reportan desde la app, en un solo lugar.",
+      "stats": {
+        "unassigned": "Sin asignar",
+        "unassignedHelper": "Necesitan un tecnico",
+        "assigned": "Asignadas",
+        "assignedHelper": "En proceso",
+        "resolved": "Resueltas",
+        "resolvedHelper": "Completadas",
+        "urgent": "Urgentes",
+        "urgentHelper": "Marcadas como emergencia"
+      },
+      "filters": {
+        "UNASSIGNED": "Sin asignar",
+        "ASSIGNED": "Asignadas",
+        "RESOLVED": "Resueltas",
+        "ALL": "Todas"
+      },
+      "table": {
+        "title": "Registro de solicitudes",
+        "showing": "Mostrando {{count}} de {{total}}",
+        "searchPlaceholder": "Buscar cliente, propiedad, descripcion...",
+        "empty": "No hay solicitudes con este filtro.",
+        "viewInCalendar": "Ver en calendario",
+        "assignedTo": "Asignado a {{name}}",
+        "selectTechnician": "Selecciona un tecnico",
+        "assign": "Asignar",
+        "page": "Pagina {{page}} de {{total}}"
+      },
+      "errors": {
+        "generic": "Algo salio mal. Intenta de nuevo."
+      }
+    },
     "settings": {
       "title": "Ajustes",
       "subtitle": "Configuracion general del sistema.",
@@ -2806,12 +2845,15 @@
         "property": "Propiedad",
         "noProperty": "Sin propiedades registradas",
         "reason": "Motivo",
+        "category": "Que tipo de problema tienes?",
+        "issue": "Que es exactamente?",
         "availableDays": "Dias disponibles",
-        "description": "Descripcion"
+        "description": "Cuentanos que esta pasando",
+        "urgent": "Es una emergencia?",
+        "urgentHint": "Ej: fuga grave de agua, falla electrica peligrosa"
       },
       "placeholders": {
-        "description": "Explica el problema o el servicio requerido.",
-        "reasonOther": "Cuentanos que necesitas."
+        "description": "Explica el problema o el servicio requerido."
       },
       "availableDaysHint": "Necesitamos al menos {{days}} dias de antelacion antes de la visita.",
       "notice": "Te contactaremos para confirmar la fecha y hora exacta.",
@@ -2819,17 +2861,46 @@
       "loading": "Enviando...",
       "errors": {
         "property": "Selecciona una propiedad.",
+        "category": "Selecciona que tipo de problema es.",
+        "description": "Cuentanos brevemente que esta pasando.",
         "availableDays": "Selecciona al menos un dia disponible.",
-        "reasonOther": "Describe el motivo.",
         "submit": "No se pudo enviar la solicitud."
       },
-      "successThankYou": "Gracias por tu solicitud. La revisaremos y te estaremos contactando en menos de 24 horas.",
-      "reasons": {
-        "emergency": "Emergencia / Bomba",
-        "quickCleaning": "Limpieza rapida",
-        "chemBalance": "Balance quimico urgente",
-        "general": "Revision general",
+      "categories": {
+        "HYDRAULIC": "Hidraulica",
+        "ELECTRICAL": "Electricidad",
+        "STRUCTURE": "Estructura de la piscina",
+        "OTHER": "Otros"
+      },
+      "issues": {
+        "pump": "Bomba",
+        "filter": "Filtro",
+        "piping": "Tuberias / PVC",
+        "timer": "Timer",
+        "panel": "Panel electrico",
+        "leak": "Fuga de agua",
+        "skimmer": "Skimmer roto",
+        "tile": "Losas / azulejos",
         "other": "Otro"
+      },
+      "urgentBadge": "Urgente",
+      "progress": {
+        "title": "Tus solicitudes",
+        "subtitle": "Asi va el progreso de lo que reportaste.",
+        "submittedOn": "Enviada el {{date}}",
+        "technician": "Tecnico asignado: {{name}}",
+        "steps": {
+          "received": "Recibida",
+          "assigned": "Asignada",
+          "onTheWay": "En camino",
+          "completed": "Completada"
+        }
+      },
+      "confirmation": {
+        "kicker": "Solicitud enviada",
+        "title": "Tu solicitud fue registrada correctamente",
+        "body": "Puedes ver el progreso de tu solicitud aqui mismo, arriba de este formulario.",
+        "continue": "Continuar"
       }
     },
     "profile": {

@@ -153,6 +153,7 @@
     "admin": {
       "dashboard": "Dashboard",
       "calendar": "Calendar",
+      "requests": "Requests",
       "technicians": "Technicians",
       "customers": "Customers",
       "accounting": "Accounting",
@@ -1370,11 +1371,15 @@
               "pump": "Pump",
               "filter": "Filter",
               "heater": "Heater",
-              "skimmer": "Skimmer",
-              "ladder": "Ladder / handrails",
+              "timer": "Timer",
+              "saltSystem": "Salt system",
               "lighting": "Lighting",
               "tileLiner": "Tile / liner",
-              "deckCover": "Deck / cover"
+              "deckCover": "Deck / cover",
+              "blower": "Blower (spa jets)",
+              "smartSystem": "Smart / automation system",
+              "hydraulicSystem": "Hydraulic system",
+              "electricalSystem": "Electrical system"
             },
             "status": {
               "BROKEN": "Broken",
@@ -2254,6 +2259,40 @@
         }
       }
     },
+    "requests": {
+      "title": "Requests",
+      "subtitle": "Everything customers report from the app, in one place.",
+      "stats": {
+        "unassigned": "Unassigned",
+        "unassignedHelper": "Need a technician",
+        "assigned": "Assigned",
+        "assignedHelper": "In progress",
+        "resolved": "Resolved",
+        "resolvedHelper": "Completed",
+        "urgent": "Urgent",
+        "urgentHelper": "Marked as emergency"
+      },
+      "filters": {
+        "UNASSIGNED": "Unassigned",
+        "ASSIGNED": "Assigned",
+        "RESOLVED": "Resolved",
+        "ALL": "All"
+      },
+      "table": {
+        "title": "Request log",
+        "showing": "Showing {{count}} of {{total}}",
+        "searchPlaceholder": "Search customer, property, description...",
+        "empty": "No requests match this filter.",
+        "viewInCalendar": "View in calendar",
+        "assignedTo": "Assigned to {{name}}",
+        "selectTechnician": "Select a technician",
+        "assign": "Assign",
+        "page": "Page {{page}} of {{total}}"
+      },
+      "errors": {
+        "generic": "Something went wrong. Please try again."
+      }
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "General system configuration.",
@@ -2806,12 +2845,15 @@
         "property": "Property",
         "noProperty": "No properties registered",
         "reason": "Reason",
+        "category": "What kind of problem is it?",
+        "issue": "What exactly is going on?",
         "availableDays": "Available days",
-        "description": "Description"
+        "description": "Describe what's happening",
+        "urgent": "Is this an emergency?",
+        "urgentHint": "Ex: major water leak, dangerous electrical fault"
       },
       "placeholders": {
-        "description": "Describe the issue or requested service.",
-        "reasonOther": "Tell us what you need."
+        "description": "Describe the issue or requested service."
       },
       "availableDaysHint": "We need at least {{days}} days notice before the visit.",
       "notice": "We'll contact you to confirm the exact date and time.",
@@ -2819,17 +2861,46 @@
       "loading": "Sending...",
       "errors": {
         "property": "Select a property.",
+        "category": "Select what kind of problem it is.",
+        "description": "Tell us briefly what's happening.",
         "availableDays": "Select at least one available day.",
-        "reasonOther": "Describe the reason.",
         "submit": "Unable to submit the request."
       },
-      "successThankYou": "Thank you for your request. We'll review it and contact you within 24 hours.",
-      "reasons": {
-        "emergency": "Emergency / Pump",
-        "quickCleaning": "Quick cleaning",
-        "chemBalance": "Urgent chemical balance",
-        "general": "General checkup",
+      "categories": {
+        "HYDRAULIC": "Hydraulic",
+        "ELECTRICAL": "Electrical",
+        "STRUCTURE": "Pool structure",
+        "OTHER": "Other"
+      },
+      "issues": {
+        "pump": "Pump",
+        "filter": "Filter",
+        "piping": "Piping / PVC",
+        "timer": "Timer",
+        "panel": "Electrical panel",
+        "leak": "Water leak",
+        "skimmer": "Broken skimmer",
+        "tile": "Tile / pavers",
         "other": "Other"
+      },
+      "urgentBadge": "Urgent",
+      "progress": {
+        "title": "Your requests",
+        "subtitle": "Here's how what you reported is going.",
+        "submittedOn": "Sent on {{date}}",
+        "technician": "Assigned technician: {{name}}",
+        "steps": {
+          "received": "Received",
+          "assigned": "Assigned",
+          "onTheWay": "On the way",
+          "completed": "Completed"
+        }
+      },
+      "confirmation": {
+        "kicker": "Request sent",
+        "title": "Your request was submitted successfully",
+        "body": "You can see the progress of your request right here, above this form.",
+        "continue": "Continue"
       }
     },
     "profile": {
