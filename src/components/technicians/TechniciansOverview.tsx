@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useMemo, useState, useTransition } from "react";
 import { useI18n } from "@/i18n/client";
+import { useConfirm } from "@/lib/ui/use-confirm";
 import { formatUsPhone } from "@/lib/phones";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -29,16 +29,18 @@ type Props = {
 function DeleteTechnicianButton({
   idleLabel,
   pendingLabel,
+  pending,
+  onClick,
   className,
 }: {
   idleLabel: string;
   pendingLabel: string;
+  pending: boolean;
+  onClick: () => void;
   className: string;
 }) {
-  const { pending } = useFormStatus();
-
   return (
-    <button type="submit" disabled={pending} className={className}>
+    <button type="button" disabled={pending} onClick={onClick} className={className}>
       {pending ? pendingLabel : idleLabel}
     </button>
   );
@@ -47,16 +49,19 @@ function DeleteTechnicianButton({
 function DeleteTechnicianIconButton({
   idleLabel,
   pendingLabel,
+  pending,
+  onClick,
 }: {
   idleLabel: string;
   pendingLabel: string;
+  pending: boolean;
+  onClick: () => void;
 }) {
-  const { pending } = useFormStatus();
-
   return (
     <button
-      type="submit"
+      type="button"
       disabled={pending}
+      onClick={onClick}
       className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
       aria-label={pending ? pendingLabel : idleLabel}
       title={pending ? pendingLabel : idleLabel}
@@ -104,9 +109,12 @@ function getTelHref(value?: string | null) {
 export default function TechniciansOverview({ rows, deleteTechnicianAction }: Props) {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [sortKey, setSortKey] = useState<"pending" | "completed" | "name">("pending");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
   const deletingLabel = locale === "es" ? "Eliminando..." : "Deleting...";
@@ -114,6 +122,24 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
     locale === "es"
       ? "Se eliminara la cuenta del tecnico y se desasignaran sus trabajos. Deseas continuar?"
       : "This will delete the technician account and unassign their jobs. Do you want to continue?";
+
+  const handleDeleteTechnician = async (technicianId: string) => {
+    const confirmed = await confirm(confirmDeleteMessage, {
+      tone: "danger",
+      confirmLabel: t("common.actions.delete"),
+    });
+    if (!confirmed) {
+      return;
+    }
+    setDeletingId(technicianId);
+    const formData = new FormData();
+    formData.set("technicianId", technicianId);
+    startTransition(async () => {
+      await deleteTechnicianAction(formData);
+      setDeletingId(null);
+      router.refresh();
+    });
+  };
 
   const totals = useMemo(() => {
     const active = rows.filter((row) => row.isActive).length;
@@ -397,21 +423,13 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                       >
                         {t("admin.technicians.overview.actions.viewProfile")}
                       </Link>
-                      <form
-                        action={deleteTechnicianAction}
-                        onSubmit={(event) => {
-                          if (!window.confirm(confirmDeleteMessage)) {
-                            event.preventDefault();
-                          }
-                        }}
-                      >
-                        <input type="hidden" name="technicianId" value={row.id} />
-                        <DeleteTechnicianButton
-                          idleLabel={t("common.actions.delete")}
-                          pendingLabel={deletingLabel}
-                          className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
-                        />
-                      </form>
+                      <DeleteTechnicianButton
+                        idleLabel={t("common.actions.delete")}
+                        pendingLabel={deletingLabel}
+                        pending={deletingId === row.id}
+                        onClick={() => handleDeleteTechnician(row.id)}
+                        className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      />
                     </div>
                   </article>
                 ))}
@@ -573,20 +591,12 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                                   {t("admin.technicians.overview.actions.viewProfile")}
                                 </span>
                               </Link>
-                              <form
-                                action={deleteTechnicianAction}
-                                onSubmit={(event) => {
-                                  if (!window.confirm(confirmDeleteMessage)) {
-                                    event.preventDefault();
-                                  }
-                                }}
-                              >
-                                <input type="hidden" name="technicianId" value={row.id} />
-                                <DeleteTechnicianIconButton
-                                  idleLabel={t("common.actions.delete")}
-                                  pendingLabel={deletingLabel}
-                                />
-                              </form>
+                              <DeleteTechnicianIconButton
+                                idleLabel={t("common.actions.delete")}
+                                pendingLabel={deletingLabel}
+                                pending={deletingId === row.id}
+                                onClick={() => handleDeleteTechnician(row.id)}
+                              />
                             </div>
                           </td>
                         </tr>
@@ -599,6 +609,7 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
           )}
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

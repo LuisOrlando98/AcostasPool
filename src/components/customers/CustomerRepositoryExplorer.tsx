@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useI18n } from "@/i18n/client";
+import { useConfirm } from "@/lib/ui/use-confirm";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type RepositoryEntry = {
@@ -205,6 +206,7 @@ export default function CustomerRepositoryExplorer({
   customerId,
 }: CustomerRepositoryExplorerProps) {
   const { t, locale } = useI18n();
+  const { confirm, ConfirmDialog } = useConfirm();
   const rootLabel = t("admin.customers.repository.root");
   const loadingErrorLabel = t("admin.customers.repository.errors.load");
   const [currentPath, setCurrentPath] = useState("");
@@ -452,14 +454,15 @@ export default function CustomerRepositoryExplorer({
   };
 
   const handleDelete = async (entry: RepositoryEntry) => {
-    const confirmed = window.confirm(
+    const confirmed = await confirm(
       t("admin.customers.repository.prompts.deleteConfirm", {
         kind:
           entry.type === "folder"
             ? t("admin.customers.repository.table.folder")
             : t("admin.customers.repository.table.file"),
         name: entry.name,
-      })
+      }),
+      { tone: "danger", confirmLabel: t("common.actions.delete") }
     );
     if (!confirmed) {
       return;
@@ -883,6 +886,7 @@ export default function CustomerRepositoryExplorer({
           </section>
         </div>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

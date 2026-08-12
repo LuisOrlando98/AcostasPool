@@ -1,7 +1,9 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/i18n/client";
+import { useConfirm } from "@/lib/ui/use-confirm";
 
 type Props = {
   invoiceId: string;
@@ -9,51 +11,43 @@ type Props = {
   className: string;
 };
 
-function SubmitDeleteButton({
-  idleLabel,
-  pendingLabel,
-  className,
-}: {
-  idleLabel: string;
-  pendingLabel: string;
-  className: string;
-}) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button type="submit" disabled={pending} className={className}>
-      {pending ? pendingLabel : idleLabel}
-    </button>
-  );
-}
-
 export default function DeleteInvoiceButton({
   invoiceId,
   deleteInvoiceAction,
   className,
 }: Props) {
   const { locale, t } = useI18n();
+  const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [pending, startTransition] = useTransition();
   const pendingLabel = locale === "es" ? "Eliminando..." : "Deleting...";
   const confirmDeleteMessage =
     locale === "es"
       ? "Se eliminara esta factura de forma permanente. Deseas continuar?"
       : "This invoice will be permanently deleted. Do you want to continue?";
 
+  const handleClick = async () => {
+    const confirmed = await confirm(confirmDeleteMessage, {
+      tone: "danger",
+      confirmLabel: t("common.actions.delete"),
+    });
+    if (!confirmed) {
+      return;
+    }
+    const formData = new FormData();
+    formData.set("invoiceId", invoiceId);
+    startTransition(async () => {
+      await deleteInvoiceAction(formData);
+      router.refresh();
+    });
+  };
+
   return (
-    <form
-      action={deleteInvoiceAction}
-      onSubmit={(event) => {
-        if (!window.confirm(confirmDeleteMessage)) {
-          event.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="invoiceId" value={invoiceId} />
-      <SubmitDeleteButton
-        idleLabel={t("common.actions.delete")}
-        pendingLabel={pendingLabel}
-        className={className}
-      />
-    </form>
+    <>
+      <button type="button" disabled={pending} onClick={handleClick} className={className}>
+        {pending ? pendingLabel : t("common.actions.delete")}
+      </button>
+      {ConfirmDialog}
+    </>
   );
 }

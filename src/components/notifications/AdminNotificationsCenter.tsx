@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { useConfirm } from "@/lib/ui/use-confirm";
 import {
   getNotificationDetail,
   getNotificationSource,
@@ -106,6 +107,7 @@ export default function AdminNotificationsCenter({
   rows: NotificationRow[];
 }) {
   const { t, locale } = useI18n();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [notifications, setNotifications] = useState(rows);
   const [filters, setFilters] = useState<NotificationsFilters>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<NotificationsFilters>(DEFAULT_FILTERS);
@@ -351,7 +353,10 @@ export default function AdminNotificationsCenter({
       return;
     }
 
-    const confirmed = window.confirm(t("admin.notifications.actions.clearConfirm"));
+    const confirmed = await confirm(t("admin.notifications.actions.clearConfirm"), {
+      tone: "danger",
+      confirmLabel: t("admin.notifications.actions.clearAll"),
+    });
     if (!confirmed) {
       return;
     }
@@ -851,6 +856,7 @@ export default function AdminNotificationsCenter({
             document.body
           )
         : null}
+      {ConfirmDialog}
     </div>
   );
 }

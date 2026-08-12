@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/Badge";
 import { useI18n } from "@/i18n/client";
 import { buildPageItems } from "@/lib/ui/pagination";
+import { useConfirm } from "@/lib/ui/use-confirm";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import { getJobStatusLabel } from "@/lib/constants";
 
@@ -46,12 +48,14 @@ export default function RequestsTable({
   deleteAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
 }) {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>("UNASSIGNED");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [drafts, setDrafts] = useState<Record<string, AssignDraft>>({});
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const weekdayFormatter = useMemo(
     () =>
@@ -133,12 +137,18 @@ export default function RequestsTable({
       const result = await assignAction(formData);
       if (result?.error) {
         setError(result.error);
+        return;
       }
+      router.refresh();
     });
   };
 
-  const handleDelete = (jobId: string) => {
-    if (!window.confirm(t("admin.requests.table.confirmDelete"))) {
+  const handleDelete = async (jobId: string) => {
+    const confirmed = await confirm(t("admin.requests.table.confirmDelete"), {
+      tone: "danger",
+      confirmLabel: t("common.actions.delete"),
+    });
+    if (!confirmed) {
       return;
     }
     setError(null);
@@ -148,7 +158,9 @@ export default function RequestsTable({
       const result = await deleteAction(formData);
       if (result?.error) {
         setError(result.error);
+        return;
       }
+      router.refresh();
     });
   };
 
@@ -389,6 +401,7 @@ export default function RequestsTable({
           </div>
         </div>
       ) : null}
+      {ConfirmDialog}
     </section>
   );
 }
