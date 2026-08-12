@@ -302,6 +302,7 @@ model Job {
   requestedByUserId String?
   requestCategory String?
   requestIssue    String?
+  requestAvailableWeekdays Json?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -2285,12 +2285,20 @@
         "empty": "No hay solicitudes con este filtro.",
         "viewInCalendar": "Ver en calendario",
         "assignedTo": "Asignado a {{name}}",
+        "scheduledFor": "Programada para {{date}}",
+        "customerAvailable": "Cliente disponible:",
         "selectTechnician": "Selecciona un tecnico",
+        "selectDate": "Fecha",
+        "selectTime": "Hora",
         "assign": "Asignar",
+        "confirmDelete": "Esta solicitud se eliminara de forma permanente. Deseas continuar?",
         "page": "Pagina {{page}} de {{total}}"
       },
       "errors": {
-        "generic": "Algo salio mal. Intenta de nuevo."
+        "generic": "Algo salio mal. Intenta de nuevo.",
+        "assignFieldsRequired": "Selecciona un tecnico y una fecha antes de asignar.",
+        "invalidDate": "Ingresa una fecha valida.",
+        "deleteBlocked": "Esta solicitud ya tiene fotos o una factura asociada y no se puede eliminar."
       }
     },
     "settings": {

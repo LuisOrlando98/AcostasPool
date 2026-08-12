@@ -6,8 +6,10 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getTranslations } from "@/i18n/server";
+import { combineDateAndTime } from "@/lib/jobs/scheduling";
+import { getBusinessTimeParts } from "@/lib/timezone";
 
-async function assignTechnicianAction(
+async function assignRequestAction(
   formData: FormData
 ): Promise<{ error?: string } | undefined> {
   "use server";
@@ -16,25 +18,79 @@ async function assignTechnicianAction(
 
   const jobId = String(formData.get("jobId") ?? "");
   const technicianId = String(formData.get("technicianId") ?? "");
-  if (!jobId || !technicianId) {
+  const dateValue = String(formData.get("scheduledDate") ?? "");
+  const timeValue = String(formData.get("scheduledTime") ?? "09:00").trim() || "09:00";
+  if (!jobId || !technicianId || !dateValue) {
+    return { error: t("admin.requests.errors.assignFieldsRequired") };
+  }
+
+  const scheduledDate = combineDateAndTime(dateValue, timeValue);
+  if (Number.isNaN(scheduledDate.getTime())) {
+    return { error: t("admin.requests.errors.invalidDate") };
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: { status: true, type: true },
+  });
+  if (!job || job.type !== "ON_DEMAND") {
     return { error: t("admin.requests.errors.generic") };
   }
 
-  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { status: true } });
-  if (!job) {
-    return { error: t("admin.requests.errors.generic") };
-  }
+  const sortOrder =
+    (getBusinessTimeParts(scheduledDate)?.hour ?? 0) * 60 +
+    (getBusinessTimeParts(scheduledDate)?.minute ?? 0);
 
   await prisma.job.update({
     where: { id: jobId },
     data: {
       technicianId,
+      scheduledDate,
+      sortOrder,
       status: job.status === "PENDING" ? "SCHEDULED" : job.status,
     },
   });
 
   revalidatePath("/admin/requests");
   revalidatePath("/admin/routes");
+  revalidatePath("/admin");
+}
+
+async function deleteRequestAction(
+  formData: FormData
+): Promise<{ error?: string } | undefined> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const jobId = String(formData.get("jobId") ?? "");
+  if (!jobId) {
+    return { error: t("admin.requests.errors.generic") };
+  }
+
+  const job = await prisma.job.findUnique({
+    where: { id: jobId },
+    select: {
+      type: true,
+      _count: { select: { photos: true, invoices: true } },
+    },
+  });
+  if (!job || job.type !== "ON_DEMAND") {
+    return { error: t("admin.requests.errors.generic") };
+  }
+  if (job._count.photos > 0 || job._count.invoices > 0) {
+    return { error: t("admin.requests.errors.deleteBlocked") };
+  }
+
+  await prisma.$transaction([
+    prisma.techDigestItem.deleteMany({ where: { jobId } }),
+    prisma.emailLog.deleteMany({ where: { jobId } }),
+    prisma.job.delete({ where: { id: jobId } }),
+  ]);
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/admin/routes");
+  revalidatePath("/admin");
 }
 
 export default async function AdminRequestsPage() {
@@ -51,9 +107,11 @@ export default async function AdminRequestsPage() {
         priority: true,
         requestCategory: true,
         requestIssue: true,
+        requestAvailableWeekdays: true,
         customerNotes: true,
         requestedAt: true,
         createdAt: true,
+        scheduledDate: true,
         customerId: true,
         customer: { select: { nombre: true, apellidos: true } },
         property: { select: { name: true, address: true } },
@@ -75,8 +133,12 @@ export default async function AdminRequestsPage() {
     priority: job.priority,
     requestCategory: job.requestCategory,
     requestIssue: job.requestIssue,
+    availableWeekdays: Array.isArray(job.requestAvailableWeekdays)
+      ? (job.requestAvailableWeekdays as number[])
+      : [],
     notes: job.customerNotes,
     requestedAt: (job.requestedAt ?? job.createdAt).toISOString(),
+    scheduledDate: job.technician ? job.scheduledDate.toISOString() : null,
     technicianId: job.technician?.id ?? null,
     technicianName: job.technician?.user.fullName ?? null,
   }));
@@ -129,7 +191,8 @@ export default async function AdminRequestsPage() {
         <RequestsTable
           rows={rows}
           technicians={technicians.map((tech) => ({ id: tech.id, name: tech.user.fullName }))}
-          assignAction={assignTechnicianAction}
+          assignAction={assignRequestAction}
+          deleteAction={deleteRequestAction}
         />
       </div>
     </AppShell>

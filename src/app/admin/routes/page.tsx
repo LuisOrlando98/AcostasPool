@@ -71,6 +71,11 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
           gte: calendarStart,
           lte: calendarEnd,
         },
+        // Customer requests aren't placed on the calendar until an admin
+        // assigns them a real day and technician from /admin/requests - the
+        // scheduledDate on an unassigned request is just an internal
+        // placeholder, not a confirmed slot.
+        NOT: { type: "ON_DEMAND", technicianId: null },
       },
       orderBy: [{ scheduledDate: "asc" }, { sortOrder: "asc" }],
       select: {

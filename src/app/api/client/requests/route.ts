@@ -28,17 +28,6 @@ const requestSchema = z.object({
 
 const DEFAULT_REQUEST_TIME = "09:00";
 
-function findEarliestMatchingDate(leadStart: Date, weekdays: number[]) {
-  for (let offset = 0; offset < 14; offset += 1) {
-    const candidate = new Date(leadStart);
-    candidate.setUTCDate(candidate.getUTCDate() + offset);
-    if (weekdays.includes(candidate.getUTCDay())) {
-      return candidate;
-    }
-  }
-  return leadStart;
-}
-
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session || session.role !== "CUSTOMER") {
@@ -96,10 +85,15 @@ export async function POST(request: Request) {
     );
   }
 
+  // scheduledDate is a required column, but this job isn't actually placed
+  // on the calendar yet - the admin picks the real day (from the customer's
+  // available weekdays below) when assigning a technician in /admin/requests.
+  // technicianId stays null until then, and the routes calendar query
+  // excludes on-demand jobs in that state so this placeholder never shows up
+  // as if it were a confirmed slot.
   const leadStart = getLeadStartDate(new Date(), MIN_BOOKING_LEAD_DAYS);
-  const placeholderDate = findEarliestMatchingDate(leadStart, allowedWeekdays);
   const scheduledDate = combineDateAndTime(
-    toDateKey(placeholderDate),
+    toDateKey(leadStart),
     DEFAULT_REQUEST_TIME
   );
 
@@ -151,6 +145,7 @@ export async function POST(request: Request) {
       customerNotes,
       requestCategory: category,
       requestIssue: issue,
+      requestAvailableWeekdays: allowedWeekdays,
       requestedAt: now,
       requestedByUserId: session.sub,
     },

@@ -25,7 +25,10 @@ export default async function AdminPage() {
   ] =
     await Promise.all([
       prisma.job.findMany({
-        where: { scheduledDate: { gte: startOfDay, lte: endOfDay } },
+        where: {
+          scheduledDate: { gte: startOfDay, lte: endOfDay },
+          NOT: { type: "ON_DEMAND", technicianId: null },
+        },
         orderBy: { scheduledDate: "asc" },
         select: {
           id: true,
@@ -40,6 +43,7 @@ export default async function AdminPage() {
         where: {
           scheduledDate: { gte: startOfDay, lte: endOfDay },
           status: { in: ["PENDING", "ON_THE_WAY", "IN_PROGRESS"] },
+          NOT: { type: "ON_DEMAND", technicianId: null },
         },
       }),
       prisma.job.count({

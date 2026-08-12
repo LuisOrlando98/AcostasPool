@@ -2285,12 +2285,20 @@
         "empty": "No requests match this filter.",
         "viewInCalendar": "View in calendar",
         "assignedTo": "Assigned to {{name}}",
+        "scheduledFor": "Scheduled for {{date}}",
+        "customerAvailable": "Customer available:",
         "selectTechnician": "Select a technician",
+        "selectDate": "Date",
+        "selectTime": "Time",
         "assign": "Assign",
+        "confirmDelete": "This request will be permanently deleted. Do you want to continue?",
         "page": "Page {{page}} of {{total}}"
       },
       "errors": {
-        "generic": "Something went wrong. Please try again."
+        "generic": "Something went wrong. Please try again.",
+        "assignFieldsRequired": "Select a technician and a date before assigning.",
+        "invalidDate": "Enter a valid date.",
+        "deleteBlocked": "This request already has photos or an invoice attached and can't be deleted."
       }
     },
     "settings": {

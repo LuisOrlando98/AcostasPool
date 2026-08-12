@@ -17,8 +17,10 @@ type RequestRow = {
   priority: string;
   requestCategory: string | null;
   requestIssue: string | null;
+  availableWeekdays: number[];
   notes: string | null;
   requestedAt: string;
+  scheduledDate: string | null;
   technicianId: string | null;
   technicianName: string | null;
 };
@@ -27,29 +29,42 @@ type TechnicianOption = { id: string; name: string };
 
 type Filter = "UNASSIGNED" | "ASSIGNED" | "RESOLVED" | "ALL";
 
+type AssignDraft = { technicianId: string; date: string; time: string };
+
 const PAGE_SIZE = 12;
+const EMPTY_DRAFT: AssignDraft = { technicianId: "", date: "", time: "09:00" };
 
 export default function RequestsTable({
   rows,
   technicians,
   assignAction,
+  deleteAction,
 }: {
   rows: RequestRow[];
   technicians: TechnicianOption[];
   assignAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
+  deleteAction: (formData: FormData) => Promise<{ error?: string } | undefined>;
 }) {
   const { t, locale } = useI18n();
   const [filter, setFilter] = useState<Filter>("UNASSIGNED");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [assigning, setAssigning] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useState<Record<string, AssignDraft>>({});
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const categoryLabel = (category: string | null) =>
-    category ? t(`client.request.categories.${category}`) : null;
-  const issueLabel = (issue: string | null) =>
-    issue ? t(`client.request.issues.${issue}`) : null;
+  const weekdayFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale === "es" ? "es-US" : "en-US", {
+        weekday: "short",
+        timeZone: "UTC",
+      }),
+    [locale]
+  );
+  const weekdayLabel = (day: number) => {
+    const label = weekdayFormatter.format(new Date(Date.UTC(2024, 0, 7 + day)));
+    return label.charAt(0).toUpperCase() + label.slice(1).replace(".", "");
+  };
 
   const filteredRows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -96,17 +111,41 @@ export default function RequestsTable({
     ALL: rows.length,
   };
 
+  const updateDraft = (jobId: string, patch: Partial<AssignDraft>) => {
+    setDrafts((current) => ({
+      ...current,
+      [jobId]: { ...EMPTY_DRAFT, ...current[jobId], ...patch },
+    }));
+  };
+
   const handleAssign = (jobId: string) => {
-    const technicianId = assigning[jobId];
-    if (!technicianId) {
+    const draft = drafts[jobId] ?? EMPTY_DRAFT;
+    if (!draft.technicianId || !draft.date) {
       return;
     }
     setError(null);
     const formData = new FormData();
     formData.set("jobId", jobId);
-    formData.set("technicianId", technicianId);
+    formData.set("technicianId", draft.technicianId);
+    formData.set("scheduledDate", draft.date);
+    formData.set("scheduledTime", draft.time || "09:00");
     startTransition(async () => {
       const result = await assignAction(formData);
+      if (result?.error) {
+        setError(result.error);
+      }
+    });
+  };
+
+  const handleDelete = (jobId: string) => {
+    if (!window.confirm(t("admin.requests.table.confirmDelete"))) {
+      return;
+    }
+    setError(null);
+    const formData = new FormData();
+    formData.set("jobId", jobId);
+    startTransition(async () => {
+      const result = await deleteAction(formData);
       if (result?.error) {
         setError(result.error);
       }
@@ -161,77 +200,140 @@ export default function RequestsTable({
         {paginatedRows.length === 0 ? (
           <p className="text-sm text-slate-500">{t("admin.requests.table.empty")}</p>
         ) : (
-          paginatedRows.map((row) => (
-            <div key={row.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {categoryLabel(row.requestCategory) ? (
-                      <Badge label={categoryLabel(row.requestCategory) as string} tone="info" />
-                    ) : null}
-                    {row.priority === "URGENT" ? (
-                      <Badge label={t("client.request.urgentBadge")} tone="danger" />
-                    ) : null}
-                    <Badge label={getJobStatusLabel(row.status, t)} tone="neutral" />
-                  </div>
-                  <p className="mt-2 text-sm font-semibold text-slate-900">{row.customerName}</p>
-                  <p className="text-xs text-slate-500">
-                    {row.propertyLabel}
-                    {issueLabel(row.requestIssue) ? ` - ${issueLabel(row.requestIssue)}` : ""}
-                  </p>
-                  {row.notes ? (
-                    <p className="mt-2 max-w-2xl whitespace-pre-line text-xs text-slate-500">
-                      {row.notes}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex flex-col items-end gap-2 text-right">
-                  <p className="text-xs text-slate-400">
-                    {formatInBusinessTimeZone(new Date(row.requestedAt), locale, { dateStyle: "medium" })}
-                  </p>
-                  <Link
-                    href={`/admin/routes?highlight=${row.id}`}
-                    className="app-button-ghost px-3 py-1.5 text-xs font-semibold"
-                  >
-                    {t("admin.requests.table.viewInCalendar")}
-                  </Link>
-                </div>
-              </div>
+          paginatedRows.map((row) => {
+            const draft = drafts[row.id] ?? EMPTY_DRAFT;
+            const issueLabel = row.requestIssue ? t(`client.request.issues.${row.requestIssue}`) : null;
+            const categoryLabel = row.requestCategory
+              ? t(`client.request.categories.${row.requestCategory}`)
+              : null;
 
-              <div className="mt-3 border-t border-slate-200 pt-3">
-                {row.technicianName ? (
-                  <p className="text-xs font-semibold text-emerald-700">
-                    {t("admin.requests.table.assignedTo", { name: row.technicianName })}
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={assigning[row.id] ?? ""}
-                      onChange={(event) =>
-                        setAssigning((current) => ({ ...current, [row.id]: event.target.value }))
-                      }
-                      className="app-input bg-white px-3 py-2 text-xs"
-                    >
-                      <option value="">{t("admin.requests.table.selectTechnician")}</option>
-                      {technicians.map((tech) => (
-                        <option key={tech.id} value={tech.id}>
-                          {tech.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => handleAssign(row.id)}
-                      disabled={!assigning[row.id] || isPending}
-                      className="app-button-secondary px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {t("admin.requests.table.assign")}
-                    </button>
+            return (
+              <div key={row.id} className="rounded-2xl border border-slate-100 bg-slate-50/70 px-4 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {categoryLabel ? <Badge label={categoryLabel} tone="info" /> : null}
+                      {row.priority === "URGENT" ? (
+                        <Badge label={t("client.request.urgentBadge")} tone="danger" />
+                      ) : null}
+                      <Badge label={getJobStatusLabel(row.status, t)} tone="neutral" />
+                    </div>
+                    <p className="mt-2 text-sm font-semibold text-slate-900">{row.customerName}</p>
+                    <p className="text-xs text-slate-500">
+                      {row.propertyLabel}
+                      {issueLabel ? ` - ${issueLabel}` : ""}
+                    </p>
+                    {row.notes ? (
+                      <p className="mt-2 max-w-2xl whitespace-pre-line text-xs text-slate-500">
+                        {row.notes}
+                      </p>
+                    ) : null}
                   </div>
-                )}
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    <p className="text-xs text-slate-400">
+                      {formatInBusinessTimeZone(new Date(row.requestedAt), locale, { dateStyle: "medium" })}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/admin/routes?highlight=${row.id}`}
+                        className="app-button-ghost px-3 py-1.5 text-xs font-semibold"
+                      >
+                        {t("admin.requests.table.viewInCalendar")}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(row.id)}
+                        disabled={isPending}
+                        className="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:border-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {t("common.actions.delete")}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 border-t border-slate-200 pt-3">
+                  {row.technicianName ? (
+                    <div className="text-xs text-slate-600">
+                      <p className="font-semibold text-emerald-700">
+                        {t("admin.requests.table.assignedTo", { name: row.technicianName })}
+                      </p>
+                      {row.scheduledDate ? (
+                        <p className="mt-1">
+                          {t("admin.requests.table.scheduledFor", {
+                            date: formatInBusinessTimeZone(new Date(row.scheduledDate), locale, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }),
+                          })}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div>
+                      {row.availableWeekdays.length > 0 ? (
+                        <p className="mb-2 text-xs text-slate-500">
+                          {t("admin.requests.table.customerAvailable")}{" "}
+                          <span className="font-semibold text-slate-700">
+                            {row.availableWeekdays.map(weekdayLabel).join(", ")}
+                          </span>
+                        </p>
+                      ) : null}
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            {t("admin.requests.table.selectTechnician")}
+                          </span>
+                          <select
+                            value={draft.technicianId}
+                            onChange={(event) => updateDraft(row.id, { technicianId: event.target.value })}
+                            className="app-input bg-white px-3 py-2 text-xs"
+                          >
+                            <option value="">{t("admin.requests.table.selectTechnician")}</option>
+                            {technicians.map((tech) => (
+                              <option key={tech.id} value={tech.id}>
+                                {tech.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            {t("admin.requests.table.selectDate")}
+                          </span>
+                          <input
+                            type="date"
+                            value={draft.date}
+                            onChange={(event) => updateDraft(row.id, { date: event.target.value })}
+                            className="app-input bg-white px-3 py-2 text-xs"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                            {t("admin.requests.table.selectTime")}
+                          </span>
+                          <input
+                            type="time"
+                            value={draft.time}
+                            onChange={(event) => updateDraft(row.id, { time: event.target.value })}
+                            className="app-input bg-white px-3 py-2 text-xs"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleAssign(row.id)}
+                          disabled={!draft.technicianId || !draft.date || isPending}
+                          className="app-button-secondary px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {t("admin.requests.table.assign")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
