@@ -22,6 +22,7 @@ type TechnicianRow = {
   lastActivity?: string | null;
   transferableJobs: number;
   activePlans: number;
+  upcomingJobs: Array<{ date: string; label: string }>;
 };
 
 type Props = {

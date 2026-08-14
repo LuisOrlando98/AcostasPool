@@ -917,14 +917,23 @@
         "from": "From",
         "to": "To",
         "selectTechnician": "Select a technician",
-        "preview": "Has {{jobs}} pending job(s) and {{plans}} active route(s).",
+        "jobsCount": "{{count}} pending job(s)",
+        "plansCount": "{{count}} active route(s)",
+        "upcomingLabel": "Upcoming jobs",
+        "upcomingMore": "+{{count}} more",
         "deactivate": "Deactivate {{name}} after transferring",
         "deactivateGeneric": "Deactivate the source technician after transferring",
-        "action": "Transfer",
+        "continue": "Continue",
+        "back": "Back",
+        "action": "Transfer now",
         "transferring": "Transferring...",
         "confirm": {
-          "title": "Confirm transfer",
-          "body": "You're about to transfer {{jobs}} pending job(s) and {{plans}} active route(s) from {{from}} to {{to}}. Do you want to continue?"
+          "title": "This can't be undone from here",
+          "body": "You're about to move every pending job and active route from {{from}} to {{to}}:",
+          "jobsLine": "{{count}} pending job(s) will change technician",
+          "plansLine": "{{count}} active route(s) will change technician",
+          "deactivateLine": "{{name}}'s account will be deactivated",
+          "typeLabel": "Type \"{{name}}\" to confirm"
         },
         "success": {
           "title": "Transfer complete",

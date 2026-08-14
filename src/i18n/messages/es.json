@@ -917,14 +917,23 @@
         "from": "Desde",
         "to": "Hacia",
         "selectTechnician": "Selecciona un tecnico",
-        "preview": "Tiene {{jobs}} trabajo(s) pendiente(s) y {{plans}} ruta(s) activa(s).",
+        "jobsCount": "{{count}} trabajo(s) pendiente(s)",
+        "plansCount": "{{count}} ruta(s) activa(s)",
+        "upcomingLabel": "Proximos trabajos",
+        "upcomingMore": "+{{count}} mas",
         "deactivate": "Desactivar a {{name}} despues de transferir",
         "deactivateGeneric": "Desactivar al tecnico de origen despues de transferir",
-        "action": "Transferir",
+        "continue": "Continuar",
+        "back": "Atras",
+        "action": "Transferir ahora",
         "transferring": "Transfiriendo...",
         "confirm": {
-          "title": "Confirmar transferencia",
-          "body": "Vas a transferir {{jobs}} trabajo(s) pendiente(s) y {{plans}} ruta(s) activa(s) de {{from}} a {{to}}. Deseas continuar?"
+          "title": "Esto no se puede deshacer desde aqui",
+          "body": "Vas a mover todos los trabajos pendientes y rutas activas de {{from}} a {{to}}:",
+          "jobsLine": "{{count}} trabajo(s) pendiente(s) cambiaran de tecnico",
+          "plansLine": "{{count}} ruta(s) activa(s) cambiaran de tecnico",
+          "deactivateLine": "La cuenta de {{name}} quedara desactivada",
+          "typeLabel": "Escribe \"{{name}}\" para confirmar"
         },
         "success": {
           "title": "Transferencia completada",

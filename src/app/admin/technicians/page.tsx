@@ -10,7 +10,10 @@ import { getTranslations } from "@/i18n/server";
 import { normalizeEmail } from "@/lib/auth/email";
 import { normalizeUsPhone } from "@/lib/phones";
 import { sendTechnicianInvite } from "@/lib/technicians/invite";
+import { formatCustomerName } from "@/lib/customers/format";
 import { endOfBusinessDay, startOfBusinessDay } from "@/lib/timezone";
+
+const UPCOMING_JOBS_PREVIEW_LIMIT = 5;
 
 type CreateTechnicianActionState = {
   ok: boolean;
@@ -273,7 +276,8 @@ export default async function TechniciansPage() {
   const startOfDay = startOfBusinessDay(today) ?? new Date(today);
   const endOfDay = endOfBusinessDay(today) ?? new Date(today);
 
-  const [technicians, jobStats, todaysStats, activityStats, planStats] = await Promise.all([
+  const [technicians, jobStats, todaysStats, activityStats, planStats, upcomingJobsRaw] =
+    await Promise.all([
     prisma.technician.findMany({
       select: {
         id: true,
@@ -312,6 +316,16 @@ export default async function TechniciansPage() {
       where: { technicianId: { not: null } },
       _count: { _all: true },
     }),
+    prisma.job.findMany({
+      where: { technicianId: { not: null }, status: { not: "COMPLETED" } },
+      orderBy: [{ technicianId: "asc" }, { scheduledDate: "asc" }],
+      select: {
+        technicianId: true,
+        scheduledDate: true,
+        customer: { select: { nombre: true, apellidos: true } },
+        property: { select: { name: true, address: true } },
+      },
+    }),
   ]);
 
   const statsByTechnician = new Map<
@@ -345,6 +359,26 @@ export default async function TechniciansPage() {
       continue;
     }
     plansByTechnician.set(stat.technicianId, stat._count._all);
+  }
+
+  const upcomingByTechnician = new Map<
+    string,
+    Array<{ date: string; label: string }>
+  >();
+  for (const job of upcomingJobsRaw) {
+    if (!job.technicianId) {
+      continue;
+    }
+    const list = upcomingByTechnician.get(job.technicianId) ?? [];
+    if (list.length < UPCOMING_JOBS_PREVIEW_LIMIT) {
+      list.push({
+        date: job.scheduledDate.toISOString(),
+        label: `${formatCustomerName(job.customer)} - ${
+          job.property.name?.trim() || job.property.address
+        }`,
+      });
+    }
+    upcomingByTechnician.set(job.technicianId, list);
   }
 
   const todayByTechnician = new Map<string, number>();
@@ -382,6 +416,7 @@ export default async function TechniciansPage() {
       lastActivity: activityByTechnician.get(tech.id)?.toISOString() ?? null,
       transferableJobs: stats.transferable,
       activePlans: plansByTechnician.get(tech.id) ?? 0,
+      upcomingJobs: upcomingByTechnician.get(tech.id) ?? [],
     };
   });
 
