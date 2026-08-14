@@ -909,6 +909,33 @@
           "create": "Crear tecnico y enviar invitacion"
         }
       },
+      "transfer": {
+        "trigger": "Transferir trabajo",
+        "kicker": "Reasignacion masiva",
+        "title": "Transferir trabajo entre tecnicos",
+        "subtitle": "Mueve todos los trabajos pendientes y rutas activas de un tecnico a otro, manteniendo el mismo orden.",
+        "from": "Desde",
+        "to": "Hacia",
+        "selectTechnician": "Selecciona un tecnico",
+        "preview": "Tiene {{jobs}} trabajo(s) pendiente(s) y {{plans}} ruta(s) activa(s).",
+        "deactivate": "Desactivar a {{name}} despues de transferir",
+        "deactivateGeneric": "Desactivar al tecnico de origen despues de transferir",
+        "action": "Transferir",
+        "transferring": "Transfiriendo...",
+        "confirm": {
+          "title": "Confirmar transferencia",
+          "body": "Vas a transferir {{jobs}} trabajo(s) pendiente(s) y {{plans}} ruta(s) activa(s) de {{from}} a {{to}}. Deseas continuar?"
+        },
+        "success": {
+          "title": "Transferencia completada",
+          "body": "Se transfirieron {{jobs}} trabajo(s) y {{plans}} ruta(s)."
+        },
+        "errors": {
+          "selectBoth": "Selecciona el tecnico de origen y el de destino.",
+          "sameTechnician": "El tecnico de origen y de destino no pueden ser el mismo.",
+          "generic": "Algo salio mal. Intenta de nuevo."
+        }
+      },
       "overview": {
         "cards": {
           "technicians": "Tecnicos",

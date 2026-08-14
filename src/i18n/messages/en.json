@@ -909,6 +909,33 @@
           "create": "Create technician and send invite"
         }
       },
+      "transfer": {
+        "trigger": "Transfer work",
+        "kicker": "Bulk reassignment",
+        "title": "Transfer work between technicians",
+        "subtitle": "Move every pending job and active route from one technician to another, keeping the same order.",
+        "from": "From",
+        "to": "To",
+        "selectTechnician": "Select a technician",
+        "preview": "Has {{jobs}} pending job(s) and {{plans}} active route(s).",
+        "deactivate": "Deactivate {{name}} after transferring",
+        "deactivateGeneric": "Deactivate the source technician after transferring",
+        "action": "Transfer",
+        "transferring": "Transferring...",
+        "confirm": {
+          "title": "Confirm transfer",
+          "body": "You're about to transfer {{jobs}} pending job(s) and {{plans}} active route(s) from {{from}} to {{to}}. Do you want to continue?"
+        },
+        "success": {
+          "title": "Transfer complete",
+          "body": "{{jobs}} job(s) and {{plans}} route(s) were transferred."
+        },
+        "errors": {
+          "selectBoth": "Select both a source and a destination technician.",
+          "sameTechnician": "The source and destination technician can't be the same.",
+          "generic": "Something went wrong. Please try again."
+        }
+      },
       "overview": {
         "cards": {
           "technicians": "Technicians",

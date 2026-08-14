@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { useI18n } from "@/i18n/client";
 import { useConfirm } from "@/lib/ui/use-confirm";
+import TransferTechnicianWorkModal from "@/components/technicians/TransferTechnicianWorkModal";
 import { formatUsPhone } from "@/lib/phones";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -19,11 +20,16 @@ type TechnicianRow = {
   completed: number;
   todayCount: number;
   lastActivity?: string | null;
+  transferableJobs: number;
+  activePlans: number;
 };
 
 type Props = {
   rows: TechnicianRow[];
   deleteTechnicianAction: (formData: FormData) => Promise<void>;
+  transferWorkAction: (
+    formData: FormData
+  ) => Promise<{ error?: string; jobsMoved?: number; plansMoved?: number }>;
 };
 
 function DeleteTechnicianButton({
@@ -106,7 +112,11 @@ function getTelHref(value?: string | null) {
   return `tel:${value.replace(/\s+/g, "")}`;
 }
 
-export default function TechniciansOverview({ rows, deleteTechnicianAction }: Props) {
+export default function TechniciansOverview({
+  rows,
+  deleteTechnicianAction,
+  transferWorkAction,
+}: Props) {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { confirm, ConfirmDialog } = useConfirm();
@@ -288,11 +298,10 @@ export default function TechniciansOverview({ rows, deleteTechnicianAction }: Pr
                   {clearFiltersLabel}
                 </button>
               ) : null}
+              <TransferTechnicianWorkModal technicians={rows} transferAction={transferWorkAction} />
               <label
                 htmlFor="new-tech"
-                className={`app-button-primary cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em] ${
-                  hasActiveFilters ? "" : "sm:col-span-2"
-                }`}
+                className="app-button-primary cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em]"
               >
                 {t("admin.technicians.overview.actions.new")}
               </label>

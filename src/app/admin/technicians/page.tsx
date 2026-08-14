@@ -106,6 +106,59 @@ async function createTechnician(formData: FormData): Promise<CreateTechnicianAct
   return { ok: true } satisfies CreateTechnicianActionState;
 }
 
+async function transferTechnicianWork(
+  formData: FormData
+): Promise<{ error?: string; jobsMoved?: number; plansMoved?: number }> {
+  "use server";
+  await requireRole("ADMIN");
+  const t = await getTranslations();
+
+  const fromTechnicianId = String(formData.get("fromTechnicianId") ?? "").trim();
+  const toTechnicianId = String(formData.get("toTechnicianId") ?? "").trim();
+  const deactivateSource = String(formData.get("deactivateSource") ?? "") === "on";
+
+  if (!fromTechnicianId || !toTechnicianId) {
+    return { error: t("admin.technicians.transfer.errors.selectBoth") };
+  }
+  if (fromTechnicianId === toTechnicianId) {
+    return { error: t("admin.technicians.transfer.errors.sameTechnician") };
+  }
+
+  const [fromTech, toTech] = await Promise.all([
+    prisma.technician.findUnique({
+      where: { id: fromTechnicianId },
+      select: { id: true, userId: true },
+    }),
+    prisma.technician.findUnique({ where: { id: toTechnicianId }, select: { id: true } }),
+  ]);
+  if (!fromTech || !toTech) {
+    return { error: t("admin.technicians.transfer.errors.generic") };
+  }
+
+  const [jobsResult, plansResult] = await prisma.$transaction([
+    prisma.job.updateMany({
+      where: { technicianId: fromTechnicianId, status: { not: "COMPLETED" } },
+      data: { technicianId: toTechnicianId },
+    }),
+    prisma.servicePlan.updateMany({
+      where: { technicianId: fromTechnicianId },
+      data: { technicianId: toTechnicianId },
+    }),
+  ]);
+
+  if (deactivateSource && fromTech.userId) {
+    await prisma.user.update({
+      where: { id: fromTech.userId },
+      data: { isActive: false },
+    });
+  }
+
+  revalidatePath("/admin/technicians");
+  revalidatePath("/admin/routes");
+
+  return { jobsMoved: jobsResult.count, plansMoved: plansResult.count };
+}
+
 async function deleteTechnician(formData: FormData): Promise<void> {
   "use server";
   await requireRole("ADMIN");
@@ -220,7 +273,7 @@ export default async function TechniciansPage() {
   const startOfDay = startOfBusinessDay(today) ?? new Date(today);
   const endOfDay = endOfBusinessDay(today) ?? new Date(today);
 
-  const [technicians, jobStats, todaysStats, activityStats] = await Promise.all([
+  const [technicians, jobStats, todaysStats, activityStats, planStats] = await Promise.all([
     prisma.technician.findMany({
       select: {
         id: true,
@@ -254,11 +307,16 @@ export default async function TechniciansPage() {
       where: { technicianId: { not: null } },
       _max: { updatedAt: true },
     }),
+    prisma.servicePlan.groupBy({
+      by: ["technicianId"],
+      where: { technicianId: { not: null } },
+      _count: { _all: true },
+    }),
   ]);
 
   const statsByTechnician = new Map<
     string,
-    { pending: number; completed: number }
+    { pending: number; completed: number; transferable: number }
   >();
 
   for (const stat of jobStats) {
@@ -268,14 +326,25 @@ export default async function TechniciansPage() {
     const current = statsByTechnician.get(stat.technicianId) ?? {
       pending: 0,
       completed: 0,
+      transferable: 0,
     };
     if (stat.status === "COMPLETED") {
       current.completed += stat._count._all;
+    } else {
+      current.transferable += stat._count._all;
     }
     if (["PENDING", "ON_THE_WAY", "IN_PROGRESS"].includes(stat.status)) {
       current.pending += stat._count._all;
     }
     statsByTechnician.set(stat.technicianId, current);
+  }
+
+  const plansByTechnician = new Map<string, number>();
+  for (const stat of planStats) {
+    if (!stat.technicianId) {
+      continue;
+    }
+    plansByTechnician.set(stat.technicianId, stat._count._all);
   }
 
   const todayByTechnician = new Map<string, number>();
@@ -298,6 +367,7 @@ export default async function TechniciansPage() {
     const stats = statsByTechnician.get(tech.id) ?? {
       pending: 0,
       completed: 0,
+      transferable: 0,
     };
     return {
       id: tech.id,
@@ -310,6 +380,8 @@ export default async function TechniciansPage() {
       completed: stats.completed,
       todayCount: todayByTechnician.get(tech.id) ?? 0,
       lastActivity: activityByTechnician.get(tech.id)?.toISOString() ?? null,
+      transferableJobs: stats.transferable,
+      activePlans: plansByTechnician.get(tech.id) ?? 0,
     };
   });
 
@@ -322,7 +394,11 @@ export default async function TechniciansPage() {
     >
       <section className="space-y-6">
         <input id="new-tech" type="checkbox" className="peer hidden" />
-        <TechniciansOverview rows={rows} deleteTechnicianAction={deleteTechnician} />
+        <TechniciansOverview
+          rows={rows}
+          deleteTechnicianAction={deleteTechnician}
+          transferWorkAction={transferTechnicianWork}
+        />
 
         <div className="app-modal-layer fixed inset-0 z-[1300] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
           <label
