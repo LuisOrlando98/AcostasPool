@@ -160,8 +160,8 @@ export default function TransferTechnicianWorkModal({
             />
             <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
               <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                       {t("admin.technicians.transfer.kicker")}
                     </p>
@@ -175,7 +175,7 @@ export default function TransferTechnicianWorkModal({
                   <button
                     type="button"
                     onClick={resetAndClose}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
                     aria-label={t("common.actions.close")}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">

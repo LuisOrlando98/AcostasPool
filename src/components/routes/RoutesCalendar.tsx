@@ -3496,8 +3496,8 @@ export default function RoutesCalendar({
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="relative shrink-0 border-b border-slate-800/60 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 py-5 sm:px-6">
                       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.25),_transparent_45%)]" />
-                      <div className="relative flex flex-wrap items-start justify-between gap-3 text-white">
-                        <div>
+                      <div className="relative flex items-start justify-between gap-3 text-white">
+                        <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-100/70">
                             {t("admin.routes.sections.jobDetail")}
                           </p>
@@ -3508,25 +3508,27 @@ export default function RoutesCalendar({
                             {jobModal.propertyAddress}
                           </p>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {modalStatus ? (
-                            <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalStatus.className}`}
-                            >
-                              {modalStatus.label}
-                            </span>
-                          ) : null}
-                          {modalPriority ? (
-                            <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalPriority.className}`}
-                            >
-                              {modalPriority.label}
-                            </span>
-                          ) : null}
+                        <div className="flex flex-shrink-0 items-start gap-2">
+                          <div className="flex flex-wrap items-center justify-end gap-2">
+                            {modalStatus ? (
+                              <span
+                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalStatus.className}`}
+                              >
+                                {modalStatus.label}
+                              </span>
+                            ) : null}
+                            {modalPriority ? (
+                              <span
+                                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur ${modalPriority.className}`}
+                              >
+                                {modalPriority.label}
+                              </span>
+                            ) : null}
+                          </div>
                           <button
                             type="button"
                             onClick={() => setJobModal(null)}
-                            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white/90 transition hover:bg-white/20"
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white/90 transition hover:bg-white/20"
                             aria-label={t("common.actions.close")}
                             title={t("common.actions.close")}
                           >
