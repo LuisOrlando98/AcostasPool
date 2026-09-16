@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+
+const DEFAULT_SUCCESS_DURATION_MS = 1800;
+const SUBMIT_INTENT_RESET_MS = 3500;
 
 type FormSubmitButtonProps = {
   idleLabel: string;
@@ -15,42 +18,44 @@ export default function FormSubmitButton({
   idleLabel,
   pendingLabel = "Saving...",
   successLabel,
-  successDurationMs = 1800,
+  successDurationMs = DEFAULT_SUCCESS_DURATION_MS,
   className = "",
 }: FormSubmitButtonProps) {
   const { pending } = useFormStatus();
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitIntent, setSubmitIntent] = useState(false);
   const [pendingStarted, setPendingStarted] = useState(false);
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [previousPending, setPreviousPending] = useState(pending);
 
   const handleClick = () => {
     setSubmitIntent(true);
   };
 
-  useEffect(() => {
-    if (pending && submitIntent) {
-      setPendingStarted(true);
-      return;
-    }
-    if (!pending && submitIntent && pendingStarted) {
+  // `pending` comes from useFormStatus (an external system): its transitions
+  // are tracked during render instead of inside an effect.
+  if (pending !== previousPending) {
+    setPreviousPending(pending);
+    if (pending) {
+      setShowSuccess(false);
+      if (submitIntent) {
+        setPendingStarted(true);
+      }
+    } else if (submitIntent && pendingStarted) {
       setShowSuccess(true);
       setSubmitIntent(false);
       setPendingStarted(false);
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
-      }
-      successTimerRef.current = setTimeout(() => {
-        setShowSuccess(false);
-      }, successDurationMs);
     }
-  }, [pending, submitIntent, pendingStarted, successDurationMs]);
+  }
 
   useEffect(() => {
-    if (pending) {
-      setShowSuccess(false);
+    if (!showSuccess) {
+      return;
     }
-  }, [pending]);
+    const successTimer = setTimeout(() => {
+      setShowSuccess(false);
+    }, successDurationMs);
+    return () => clearTimeout(successTimer);
+  }, [showSuccess, successDurationMs]);
 
   useEffect(() => {
     if (!submitIntent || pending) {
@@ -59,18 +64,9 @@ export default function FormSubmitButton({
     const resetIntentTimer = setTimeout(() => {
       setSubmitIntent(false);
       setPendingStarted(false);
-    }, 3500);
+    }, SUBMIT_INTENT_RESET_MS);
     return () => clearTimeout(resetIntentTimer);
   }, [submitIntent, pending]);
-
-  useEffect(
-    () => () => {
-      if (successTimerRef.current) {
-        clearTimeout(successTimerRef.current);
-      }
-    },
-    []
-  );
 
   return (
     <button

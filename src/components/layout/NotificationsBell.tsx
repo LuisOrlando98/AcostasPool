@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import type { Channel, default as PusherClient } from "pusher-js";
 import { useI18n } from "@/i18n/client";
 import {
   getNotificationDetail,
@@ -342,8 +343,8 @@ export default function NotificationsBell() {
 
   useEffect(() => {
     if (usePusher && userId) {
-      let channel: any;
-      let pusher: any;
+      let channel: Channel | null = null;
+      let pusher: PusherClient | null = null;
       let cancelled = false;
 
       const setup = async () => {

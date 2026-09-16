@@ -24,16 +24,11 @@ export default function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const frameId = useId();
   const closeLabel = t("common.actions.close");
   const frameSrc = srcDoc ? undefined : src;
   const frameSrcDoc = srcDoc ?? undefined;
   const frameSandbox = srcDoc ? "" : undefined;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -85,7 +80,7 @@ export default function DocumentPreviewModal({
         </div>
       </button>
 
-      {mounted && open
+      {open
         ? createPortal(
         <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-950/75 p-2 sm:p-6">
           <button

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { getJobStatusLabel } from "@/lib/constants";
 import { useI18n } from "@/i18n/client";
+import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 import {
   endOfBusinessDay,
   formatInBusinessTimeZone,
@@ -81,15 +82,12 @@ export default function CustomerJobsTable({ rows, actionTargetId }: CustomerJobs
   const { t, locale } = useI18n();
   const router = useRouter();
 
-  const [isMounted, setIsMounted] = useState(false);
+  // false during SSR/hydration, true once rendered on the client.
+  const isMounted = useIsHydrated();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<JobsFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<JobsFilterState>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!isFiltersOpen) {
@@ -161,10 +159,6 @@ export default function CustomerJobsTable({ rows, actionTargetId }: CustomerJobs
       });
   }, [rows, filters]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [filters]);
-
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.search.trim()) {
@@ -216,7 +210,10 @@ export default function CustomerJobsTable({ rows, actionTargetId }: CustomerJobs
   };
 
   const applyFilters = () => {
-    setFilters(draftFilters);
+    if (!Object.is(draftFilters, filters)) {
+      setFilters(draftFilters);
+      setPage(1);
+    }
     setIsFiltersOpen(false);
   };
 

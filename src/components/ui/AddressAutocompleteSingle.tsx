@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
+import type { GoogleAutocomplete } from "@/lib/ui/google-maps-types";
 
 const GOOGLE_SCRIPT_ID = "google-maps-places";
 
@@ -15,12 +16,6 @@ type AddressAutocompleteSingleProps = {
   size?: "default" | "compact";
   showHelper?: boolean;
 };
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
 
 const loadGooglePlaces = (apiKey: string, locale: string) =>
   new Promise<void>((resolve, reject) => {
@@ -59,7 +54,7 @@ export default function AddressAutocompleteSingle({
   const { t, locale } = useI18n();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<any>(null);
+  const autocompleteRef = useRef<GoogleAutocomplete | null>(null);
 
   const [value, setValue] = useState(defaultValue ?? "");
   const [autocompleteReady, setAutocompleteReady] = useState(false);
@@ -117,7 +112,7 @@ export default function AddressAutocompleteSingle({
     }
 
     if (!autocompleteRef.current) {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+      const autocomplete = new window.google.maps.places.Autocomplete(
         inputRef.current,
         {
           types: ["address"],
@@ -125,9 +120,10 @@ export default function AddressAutocompleteSingle({
           fields: ["formatted_address"],
         }
       );
+      autocompleteRef.current = autocomplete;
 
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current?.getPlace();
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
         const formatted = place?.formatted_address?.trim();
         if (formatted) {
           setValue(formatted);

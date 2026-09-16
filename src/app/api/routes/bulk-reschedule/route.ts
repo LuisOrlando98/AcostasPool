@@ -74,14 +74,20 @@ export async function POST(request: Request) {
           ? "SCHEDULED"
           : "PENDING";
 
+    const technician =
+      update.technicianId === undefined
+        ? undefined
+        : update.technicianId === null
+          ? { disconnect: true }
+          : { connect: { id: update.technicianId } };
+
     await applyJobLifecycleUpdate({
       jobId: update.jobId,
       actorUserId: session.sub,
       data: {
         scheduledDate: nextScheduledDate,
         sortOrder: nextSortOrder,
-        technicianId:
-          update.technicianId !== undefined ? update.technicianId : undefined,
+        technician,
         status,
       },
     });

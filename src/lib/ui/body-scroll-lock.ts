@@ -3,7 +3,7 @@
 const LOCK_COUNT_ATTR = "data-ap-scroll-lock-count";
 const PREV_OVERFLOW_ATTR = "data-ap-scroll-lock-prev-overflow";
 
-function getLockCount(body: HTMLBodyElement) {
+function getLockCount(body: HTMLElement) {
   const raw = body.getAttribute(LOCK_COUNT_ATTR);
   const parsed = raw ? Number.parseInt(raw, 10) : 0;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;

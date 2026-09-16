@@ -25,6 +25,9 @@ type DraftPayload = {
   notes?: string;
 };
 
+const isDraftPayloadList = (value: unknown): value is DraftPayload[] =>
+  Array.isArray(value);
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session || session.role !== "ADMIN") {
@@ -33,7 +36,8 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const date = String(body?.date ?? "");
-  const drafts = Array.isArray(body?.jobs) ? body.jobs : [];
+  const rawDrafts: unknown = body?.jobs;
+  const drafts = isDraftPayloadList(rawDrafts) ? rawDrafts : [];
 
   if (!date || drafts.length === 0) {
     return NextResponse.json({ error: "Invalid data" }, { status: 400 });
@@ -42,8 +46,8 @@ export async function POST(request: Request) {
   const propertyIds = [
     ...new Set(
       drafts
-        .map((draft: DraftPayload) => draft.propertyId)
-        .filter((value): value is string => typeof value === "string" && value)
+        .map((draft) => draft.propertyId)
+        .filter((value) => typeof value === "string" && value !== "")
     ),
   ];
   const properties = await prisma.property.findMany({
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
     technician: { id: string; name: string } | null;
   }> = [];
 
-  for (const draft of drafts as DraftPayload[]) {
+  for (const draft of drafts) {
     if (!draft.customerId || !draft.propertyId) {
       continue;
     }

@@ -8,21 +8,20 @@ import { LANDING_LOCALE_STORAGE_KEY } from "@/components/landing/preferences";
 import { useI18n } from "@/i18n/client";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
-const emptyProfile = {
-  nombre: "",
-  apellidos: "",
-  email: "",
-  telefono: "",
-  telefonoSecundario: "",
-  idiomaPreferencia: "EN",
-  direccionLinea1: "",
-  direccionLinea2: "",
-  ciudad: "",
-  estadoProvincia: "",
-  codigoPostal: "",
+type ProfileData = {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  telefono: string;
+  telefonoSecundario: string;
+  idiomaPreferencia: string;
+  direccionLinea1: string;
+  direccionLinea2: string;
+  ciudad: string;
+  estadoProvincia: string;
+  codigoPostal: string;
 };
 
-type ProfileData = typeof emptyProfile;
 type InviteAccountType = "CUSTOMER" | "TECH";
 
 type ApiResponse = {
@@ -40,10 +39,12 @@ export default function CompleteProfilePage() {
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [accountType, setAccountType] = useState<InviteAccountType | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(() => Boolean(token));
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(() =>
+    token ? null : t("auth.complete.errors.token")
+  );
   const [submitting, setSubmitting] = useState(false);
   const [switchingLocale, setSwitchingLocale] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -101,10 +102,8 @@ export default function CompleteProfilePage() {
 
   useEffect(() => {
     if (!token) {
-      setMessage(t("auth.complete.errors.token"));
       return;
     }
-    setLoadingProfile(true);
     fetch(`/api/auth/complete-profile?token=${token}`)
       .then((res) => res.json() as Promise<ApiResponse>)
       .then((data) => {

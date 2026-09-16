@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DateTime } from "luxon";
@@ -13,6 +13,7 @@ import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
+import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 import {
@@ -279,22 +280,42 @@ const normalizeChecklist = (value?: { label?: string; completed?: boolean }[] | 
         .filter((item) => item.label)
     : [];
 
-const toRgba = (hex: string, alpha: number) => {
-  const normalized = hex.replace("#", "");
-  const full =
-    normalized.length === 3
-      ? normalized
-          .split("")
-          .map((char) => `${char}${char}`)
-          .join("")
-      : normalized;
-  if (full.length !== 6) {
-    return `rgba(56, 189, 248, ${alpha})`;
+const HIGHLIGHT_DURATION_MS = 7000;
+
+const resolveRangeStart = (
+  rangeFilter: ScheduledFiltersState["rangeFilter"],
+  customStart: string,
+  weekStart: Date,
+  monthStart: Date
+) => {
+  if (rangeFilter === "MONTH") {
+    return startOfBusinessDay(monthStart) ?? monthStart;
   }
-  const r = parseInt(full.slice(0, 2), 16);
-  const g = parseInt(full.slice(2, 4), 16);
-  const b = parseInt(full.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  if (rangeFilter === "CUSTOM") {
+    const date = parseBusinessDateInput(customStart);
+    if (date) {
+      return startOfBusinessDay(date) ?? date;
+    }
+  }
+  return weekStart;
+};
+
+const resolveRangeEnd = (
+  rangeFilter: ScheduledFiltersState["rangeFilter"],
+  customEnd: string,
+  weekEnd: Date,
+  monthEnd: Date
+) => {
+  if (rangeFilter === "MONTH") {
+    return endOfBusinessDay(monthEnd) ?? monthEnd;
+  }
+  if (rangeFilter === "CUSTOM") {
+    const date = parseBusinessDateInput(customEnd);
+    if (date) {
+      return endOfBusinessDay(date) ?? date;
+    }
+  }
+  return weekEnd;
 };
 
 export default function RoutesCalendar({
@@ -332,7 +353,7 @@ export default function RoutesCalendar({
   const [jobModal, setJobModal] = useState<JobModalState | null>(null);
   const [mobileDayKey, setMobileDayKey] = useState<string | null>(null);
   const [mobileDeleteConfirmId, setMobileDeleteConfirmId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsHydrated();
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [techFilter, setTechFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
@@ -387,27 +408,29 @@ export default function RoutesCalendar({
     return labelKey ? t(labelKey) : planName;
   };
 
-  useEffect(() => {
+  // Sincroniza estado derivado de la URL solo en cliente (tras hidratar),
+  // con la misma semantica que tenia el efecto previo.
+  const searchParamsKey = searchParams.toString();
+  const [syncedSearchParamsKey, setSyncedSearchParamsKey] = useState<string | null>(null);
+  if (mounted && searchParamsKey !== syncedSearchParamsKey) {
+    setSyncedSearchParamsKey(searchParamsKey);
     const highlight = searchParams.get("highlight");
-    if (!highlight) {
+    if (highlight) {
+      setHighlightJobId(highlight);
+    }
+    const techParam = searchParams.get("tech");
+    if (techParam) {
+      setTechFilter(techParam);
+    }
+  }
+
+  useEffect(() => {
+    if (!searchParams.get("highlight")) {
       return;
     }
-    setHighlightJobId(highlight);
-    const timeout = setTimeout(() => setHighlightJobId(null), 7000);
+    const timeout = setTimeout(() => setHighlightJobId(null), HIGHLIGHT_DURATION_MS);
     return () => clearTimeout(timeout);
   }, [searchParams]);
-
-  useEffect(() => {
-    const techParam = searchParams.get("tech");
-    if (!techParam) {
-      return;
-    }
-    setTechFilter(techParam);
-  }, [searchParams]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!filtersOpen) {
@@ -426,9 +449,16 @@ export default function RoutesCalendar({
     };
   }, [filtersOpen]);
 
-  useEffect(() => {
+  const [syncedMobileDayKey, setSyncedMobileDayKey] = useState(mobileDayKey);
+  if (mobileDayKey !== syncedMobileDayKey) {
+    setSyncedMobileDayKey(mobileDayKey);
     if (!mobileDayKey) {
       setMobileDeleteConfirmId(null);
+    }
+  }
+
+  useEffect(() => {
+    if (!mobileDayKey) {
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
@@ -464,16 +494,13 @@ export default function RoutesCalendar({
     };
   }, [selectedDate, jobModal]);
 
-  useEffect(() => {
-    if (!editMode) {
-      setActiveTechJobId(null);
-      setSelectedJobId(null);
-      setDraggingJobId(null);
-      setDragOverTarget(null);
-    }
-  }, [editMode]);
-
-  useEffect(() => {
+  // Reinicia el estado local cuando cambian las props del servidor
+  // (patron "adjust state during render"; sin key en el padre en esta fase).
+  const [syncedJobs, setSyncedJobs] = useState(jobs);
+  const [syncedMonthKey, setSyncedMonthKey] = useState(monthKey);
+  if (jobs !== syncedJobs || monthKey !== syncedMonthKey) {
+    setSyncedJobs(jobs);
+    setSyncedMonthKey(monthKey);
     setJobsState(
       sortJobsChronologically(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })))
     );
@@ -489,17 +516,11 @@ export default function RoutesCalendar({
     setSelectedJobId(null);
     setDraggingJobId(null);
     setDragOverTarget(null);
-  }, [jobs, monthKey]);
+  }
 
-  useEffect(() => {
-    if (!selectedJobId) {
-      return;
-    }
-    const exists = jobsState.some((job) => job.id === selectedJobId);
-    if (!exists) {
-      setSelectedJobId(null);
-    }
-  }, [jobsState, selectedJobId]);
+  if (selectedJobId && !jobsState.some((job) => job.id === selectedJobId)) {
+    setSelectedJobId(null);
+  }
 
   const businessNow = DateTime.now().setZone(BUSINESS_TIMEZONE);
   const today = businessNow.toUTC().toJSDate();
@@ -573,14 +594,13 @@ export default function RoutesCalendar({
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const summary = useMemo(() => {
-    const todayJobs = jobsState.filter(
+  const summary = {
+    todayJobs: jobsState.filter(
       (job) => toDateKey(new Date(job.scheduledDate)) === todayKey
-    ).length;
-    const urgent = jobsState.filter((job) => job.priority === "URGENT").length;
-    const unassigned = jobsState.filter((job) => !job.technicianId).length;
-    return { todayJobs, urgent, unassigned };
-  }, [jobsState, todayKey]);
+    ).length,
+    urgent: jobsState.filter((job) => job.priority === "URGENT").length,
+    unassigned: jobsState.filter((job) => !job.technicianId).length,
+  };
 
   const todayBusinessStart = businessNow.startOf("day");
   const weekStart = todayBusinessStart
@@ -595,43 +615,15 @@ export default function RoutesCalendar({
     .toUTC()
     .toJSDate();
 
-  useEffect(() => {
-    if (rangeFilter !== "CUSTOM") {
-      return;
-    }
-    if (!customStart) {
-      setCustomStart(toDateKey(weekStart));
-    }
-    if (!customEnd) {
-      setCustomEnd(toDateKey(weekEnd));
-    }
-  }, [rangeFilter, customStart, customEnd, weekStart, weekEnd]);
+  if (rangeFilter === "CUSTOM" && !customStart) {
+    setCustomStart(toDateKey(weekStart));
+  }
+  if (rangeFilter === "CUSTOM" && !customEnd) {
+    setCustomEnd(toDateKey(weekEnd));
+  }
 
-  const rangeStart = useMemo(() => {
-    if (rangeFilter === "MONTH") {
-      return startOfBusinessDay(monthStart) ?? monthStart;
-    }
-    if (rangeFilter === "CUSTOM") {
-      const date = parseBusinessDateInput(customStart);
-      if (date) {
-        return startOfBusinessDay(date) ?? date;
-      }
-    }
-    return weekStart;
-  }, [rangeFilter, customStart, weekStart, monthStart]);
-
-  const rangeEnd = useMemo(() => {
-    if (rangeFilter === "MONTH") {
-      return endOfBusinessDay(monthEnd) ?? monthEnd;
-    }
-    if (rangeFilter === "CUSTOM") {
-      const date = parseBusinessDateInput(customEnd);
-      if (date) {
-        return endOfBusinessDay(date) ?? date;
-      }
-    }
-    return weekEnd;
-  }, [rangeFilter, customEnd, weekEnd, monthEnd]);
+  const rangeStart = resolveRangeStart(rangeFilter, customStart, weekStart, monthStart);
+  const rangeEnd = resolveRangeEnd(rangeFilter, customEnd, weekEnd, monthEnd);
 
   const rangeJobs = jobsState.filter((job) => {
     const date = new Date(job.scheduledDate);
@@ -724,44 +716,40 @@ export default function RoutesCalendar({
     },
   };
 
-  const sortedRangeJobs = useMemo(() => {
-    const list = [...filteredRangeJobs];
-    const direction = sortDir === "asc" ? 1 : -1;
-    const getValue = (job: JobItem) => {
-      switch (sortKey) {
-        case "status":
-          return statusOrder.indexOf(job.status);
-        case "priority":
-          return priorityOrder.indexOf(job.priority);
-        case "technician":
-          return job.technician?.name ?? "";
-        case "customer":
-          return job.customer.name;
-        case "service": {
-          const serviceOption = serviceTypeOptions.find(
-            (option) => option.value === job.serviceType
-          );
-          return serviceOption?.labelKey
-            ? t(serviceOption.labelKey)
-            : serviceOption?.label ?? job.serviceType;
-        }
-        case "address":
-          return job.property.address;
-        case "date":
-        default:
-          return new Date(job.scheduledDate).getTime();
+  const sortDirection = sortDir === "asc" ? 1 : -1;
+  const getSortValue = (job: JobItem) => {
+    switch (sortKey) {
+      case "status":
+        return statusOrder.indexOf(job.status);
+      case "priority":
+        return priorityOrder.indexOf(job.priority);
+      case "technician":
+        return job.technician?.name ?? "";
+      case "customer":
+        return job.customer.name;
+      case "service": {
+        const serviceOption = serviceTypeOptions.find(
+          (option) => option.value === job.serviceType
+        );
+        return serviceOption?.labelKey
+          ? t(serviceOption.labelKey)
+          : serviceOption?.label ?? job.serviceType;
       }
-    };
-    list.sort((a, b) => {
-      const aValue = getValue(a);
-      const bValue = getValue(b);
-      if (typeof aValue === "number" && typeof bValue === "number") {
-        return (aValue - bValue) * direction;
-      }
-      return String(aValue).localeCompare(String(bValue)) * direction;
-    });
-    return list;
-  }, [filteredRangeJobs, sortKey, sortDir]);
+      case "address":
+        return job.property.address;
+      case "date":
+      default:
+        return new Date(job.scheduledDate).getTime();
+    }
+  };
+  const sortedRangeJobs = [...filteredRangeJobs].sort((a, b) => {
+    const aValue = getSortValue(a);
+    const bValue = getSortValue(b);
+    if (typeof aValue === "number" && typeof bValue === "number") {
+      return (aValue - bValue) * sortDirection;
+    }
+    return String(aValue).localeCompare(String(bValue)) * sortDirection;
+  });
 
   const formatRangeDate = (value: Date) =>
     value.toLocaleDateString(locale, {
@@ -923,12 +911,7 @@ export default function RoutesCalendar({
     }));
   };
 
-  const moveJobToDate = (
-    targetDate: Date,
-    jobId: string,
-    _targetJobId?: string,
-    _targetPosition?: "before" | "after"
-  ) => {
+  const moveJobToDate = (targetDate: Date, jobId: string) => {
     if (!editMode) {
       return;
     }
@@ -1136,41 +1119,44 @@ export default function RoutesCalendar({
     return false;
   };
 
-  const deleteJobById = async (jobId: string) => {
-    if (!jobId) {
-      return false;
-    }
-    setErrorMessage(null);
-    setSaving(true);
-    const res = await fetch(`/api/jobs/${jobId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => null);
-      setSaving(false);
-      setErrorMessage(
-        error?.error || t("admin.routes.errors.deleteJobFailed")
-      );
-      return false;
-    }
-    setJobsState((current) => current.filter((job) => job.id !== jobId));
-    setPendingChanges((current) => {
-      if (!current[jobId]) {
-        return current;
+  const deleteJobById = useCallback(
+    async (jobId: string) => {
+      if (!jobId) {
+        return false;
       }
-      const next = { ...current };
-      delete next[jobId];
-      return next;
-    });
-    setSelectedJobId((current) => (current === jobId ? null : current));
-    setHighlightJobId((current) => (current === jobId ? null : current));
-    setActiveTechJobId((current) => (current === jobId ? null : current));
-    setSaving(false);
-    setSaveSuccess(true);
-    window.setTimeout(() => setSaveSuccess(false), 1600);
-    return true;
-  };
+      setErrorMessage(null);
+      setSaving(true);
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        setSaving(false);
+        setErrorMessage(
+          error?.error || t("admin.routes.errors.deleteJobFailed")
+        );
+        return false;
+      }
+      setJobsState((current) => current.filter((job) => job.id !== jobId));
+      setPendingChanges((current) => {
+        if (!current[jobId]) {
+          return current;
+        }
+        const next = { ...current };
+        delete next[jobId];
+        return next;
+      });
+      setSelectedJobId((current) => (current === jobId ? null : current));
+      setHighlightJobId((current) => (current === jobId ? null : current));
+      setActiveTechJobId((current) => (current === jobId ? null : current));
+      setSaving(false);
+      setSaveSuccess(true);
+      window.setTimeout(() => setSaveSuccess(false), 1600);
+      return true;
+    },
+    [t]
+  );
 
   const handleTechnicianAssign = async (
     jobId: string,
@@ -1310,6 +1296,10 @@ export default function RoutesCalendar({
         setEditMode(false);
         setSelectedDate(null);
         setDrafts([]);
+        setActiveTechJobId(null);
+        setSelectedJobId(null);
+        setDraggingJobId(null);
+        setDragOverTarget(null);
       }
       return;
     }
@@ -1889,10 +1879,6 @@ export default function RoutesCalendar({
                     const techTone = !job.technicianId
                       ? "text-rose-600 hover:text-rose-700"
                       : "text-slate-600 hover:text-slate-900";
-                    const techStyle =
-                      job.technicianId && techColor
-                        ? { color: techColor }
-                        : undefined;
                     const techDotStyle =
                       job.technicianId && techColor
                         ? { backgroundColor: techColor }
@@ -1944,7 +1930,7 @@ export default function RoutesCalendar({
                           const draggedId =
                             event.dataTransfer.getData("text/plain");
                           if (draggedId) {
-                            moveJobToDate(day, draggedId, job.id, dropPosition);
+                            moveJobToDate(day, draggedId);
                           }
                           setDraggingJobId(null);
                           setDragOverTarget(null);

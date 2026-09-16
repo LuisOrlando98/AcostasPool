@@ -153,7 +153,7 @@ export async function POST(request: Request) {
   const isUrgentRequest =
     mode === "SINGLE" &&
     urgentOverride &&
-    Boolean(parsedPreferredDate) &&
+    parsedPreferredDate !== null &&
     parsedPreferredDate.getTime() < leadStartDate.getTime();
 
   const defaultTierId = await getDefaultServiceTierId();

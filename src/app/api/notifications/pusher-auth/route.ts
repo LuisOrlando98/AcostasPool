@@ -1,34 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import type Pusher from "pusher";
-
-let pusherClient: Pusher | null = null;
-
-const getPusher = () => {
-  if (pusherClient) {
-    return pusherClient;
-  }
-
-  const appId = process.env.PUSHER_APP_ID;
-  const key = process.env.PUSHER_KEY;
-  const secret = process.env.PUSHER_SECRET;
-  const cluster = process.env.PUSHER_CLUSTER;
-
-  if (!appId || !key || !secret || !cluster) {
-    return null;
-  }
-
-  const PusherLib = require("pusher") as typeof Pusher;
-  pusherClient = new PusherLib({
-    appId,
-    key,
-    secret,
-    cluster,
-    useTLS: true,
-  });
-
-  return pusherClient;
-};
+import { getPusher } from "@/lib/notifications/realtime";
 
 export async function POST(request: Request) {
   const session = await getSession();

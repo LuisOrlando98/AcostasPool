@@ -573,6 +573,26 @@ function ServicePillarIcon({ id }: { id: ServicePillarIconName }) {
   );
 }
 
+function isServicesVideoPlaybackAllowed(): boolean {
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const connection = (
+    navigator as Navigator & {
+      connection?: {
+        saveData?: boolean;
+        effectiveType?: string;
+      };
+    }
+  ).connection;
+  const saveData = Boolean(connection?.saveData);
+  const effectiveType = connection?.effectiveType?.toLowerCase() ?? "";
+  const slowConnection =
+    effectiveType.includes("slow-2g") ||
+    effectiveType.includes("2g") ||
+    effectiveType.includes("3g");
+
+  return !reducedMotion && !saveData && !slowConnection;
+}
+
 export default function ClientLanding({
   socialLinks,
   landingConfig,
@@ -684,31 +704,6 @@ export default function ClientLanding({
   }, []);
 
   useEffect(() => {
-    if (!SERVICES_BACKGROUND_VIDEO_ENABLED) {
-      setServicesVideoAllowed(false);
-      return;
-    }
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const connection = (
-      navigator as Navigator & {
-        connection?: {
-          saveData?: boolean;
-          effectiveType?: string;
-        };
-      }
-    ).connection;
-    const saveData = Boolean(connection?.saveData);
-    const effectiveType = connection?.effectiveType?.toLowerCase() ?? "";
-    const slowConnection =
-      effectiveType.includes("slow-2g") ||
-      effectiveType.includes("2g") ||
-      effectiveType.includes("3g");
-
-    setServicesVideoAllowed(!reducedMotion && !saveData && !slowConnection);
-  }, []);
-
-  useEffect(() => {
     if (!servicesVideoAllowed) {
       return;
     }
@@ -720,10 +715,15 @@ export default function ClientLanding({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setServicesVideoVisible(true);
-          observer.disconnect();
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
         }
+        observer.disconnect();
+        if (!isServicesVideoPlaybackAllowed()) {
+          setServicesVideoAllowed(false);
+          return;
+        }
+        setServicesVideoVisible(true);
       },
       {
         rootMargin: "240px 0px",

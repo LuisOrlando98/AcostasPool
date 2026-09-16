@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
@@ -95,16 +95,23 @@ export default function InvoiceCreateForm({
     return map;
   }, [jobs]);
 
-  const visibleJobs = jobsByCustomer.get(selectedCustomerId) ?? [];
+  const visibleJobs = useMemo(
+    () => jobsByCustomer.get(selectedCustomerId) ?? [],
+    [jobsByCustomer, selectedCustomerId]
+  );
 
-  const jobLabel = (job: JobOption) => {
-    const serviceLabel =
-      serviceCatalog.find((item) => item.value === job.serviceType)?.label ?? job.serviceType;
-    const dateLabel = formatInBusinessTimeZone(job.scheduledDate, locale, {
-      dateStyle: "short",
-    });
-    return `${serviceLabel} - ${dateLabel}`;
-  };
+  const jobLabel = useCallback(
+    (job: JobOption) => {
+      const serviceLabel =
+        serviceCatalog.find((item) => item.value === job.serviceType)?.label ??
+        job.serviceType;
+      const dateLabel = formatInBusinessTimeZone(job.scheduledDate, locale, {
+        dateStyle: "short",
+      });
+      return `${serviceLabel} - ${dateLabel}`;
+    },
+    [serviceCatalog, locale]
+  );
 
   const pickDefaultJob = (customerId: string) => {
     const options = jobsByCustomer.get(customerId) ?? [];
@@ -151,7 +158,7 @@ export default function InvoiceCreateForm({
     serviceCatalog.forEach((item) => options.add(item.label));
     visibleJobs.forEach((job) => options.add(jobLabel(job)));
     return [...options];
-  }, [serviceCatalog, visibleJobs, locale]);
+  }, [serviceCatalog, visibleJobs, jobLabel]);
 
   const normalizedLines = useMemo(() => {
     return lines

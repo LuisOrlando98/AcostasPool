@@ -18,7 +18,7 @@ type DigestItemInput = {
   jobId: string;
   routeDate: Date;
   changeType: string;
-  payload?: Prisma.JsonValue;
+  payload?: Prisma.InputJsonValue;
 };
 
 export const queueTechDigestItem = async ({

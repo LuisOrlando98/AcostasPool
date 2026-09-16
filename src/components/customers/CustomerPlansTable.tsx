@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
 import { getRecurringPlanLabelKey } from "@/lib/jobs/recurring-plan-templates";
@@ -114,10 +114,6 @@ export default function CustomerPlansTable({
     t,
   ]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter, frequencyFilter, serviceFilter, techFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedRows = useMemo(() => {
@@ -156,14 +152,20 @@ export default function CustomerPlansTable({
           <span className="ui-search-icon">{t("common.actions.search")}</span>
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder={t("admin.customers.plans.placeholders.search")}
             className="ui-search-input w-full"
           />
         </label>
         <select
           value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
+          onChange={(event) => {
+            setStatusFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.status")}</option>
@@ -172,7 +174,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={frequencyFilter}
-          onChange={(event) => setFrequencyFilter(event.target.value)}
+          onChange={(event) => {
+            setFrequencyFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.frequency")}</option>
@@ -182,7 +187,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={serviceFilter}
-          onChange={(event) => setServiceFilter(event.target.value)}
+          onChange={(event) => {
+            setServiceFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.service")}</option>
@@ -194,7 +202,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={techFilter}
-          onChange={(event) => setTechFilter(event.target.value)}
+          onChange={(event) => {
+            setTechFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">

@@ -233,9 +233,11 @@ export default function AdminNotificationsCenter({
     });
   }, [decorated, filters]);
 
-  useEffect(() => {
+  const [pagedFilters, setPagedFilters] = useState(filters);
+  if (pagedFilters !== filters) {
+    setPagedFilters(filters);
     setPage(1);
-  }, [filters]);
+  }
 
   useEffect(() => {
     if (!filtersOpen) {

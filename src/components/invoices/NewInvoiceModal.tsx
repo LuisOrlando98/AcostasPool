@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import InvoiceCreateForm from "@/components/invoices/InvoiceCreateForm";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 
 type CustomerOption = {
   id: string;
@@ -39,11 +40,8 @@ export default function NewInvoiceModal({
   closeLabel,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  const [portalReady, setPortalReady] = useState(false);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
+  // false during SSR/hydration, true once rendered on the client.
+  const portalReady = useIsHydrated();
 
   useEffect(() => {
     if (!isOpen) {

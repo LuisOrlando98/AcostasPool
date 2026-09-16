@@ -9,6 +9,10 @@ export type InvoiceTemplateThemeConfig = {
   watermarkText?: string;
 };
 
+export type NormalizedInvoiceTemplateThemeConfig = InvoiceTemplateThemeConfig & {
+  watermarkText: string;
+};
+
 export type InvoiceTemplateConfig = {
   companyName: string;
   companyPhone: string;
@@ -32,6 +36,10 @@ export type InvoiceTemplateConfig = {
   legalClauses: string[];
   showEstimateWatermark: boolean;
   themes: Record<InvoiceTemplateTheme, InvoiceTemplateThemeConfig>;
+};
+
+export type NormalizedInvoiceTemplateConfig = Omit<InvoiceTemplateConfig, "themes"> & {
+  themes: Record<InvoiceTemplateTheme, NormalizedInvoiceTemplateThemeConfig>;
 };
 
 type InvoiceTemplateLocaleCopy = {
@@ -159,7 +167,7 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
 
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
-export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
+export const DEFAULT_INVOICE_TEMPLATE: NormalizedInvoiceTemplateConfig = {
   companyName: "ACOSTASPOOL",
   companyPhone: "+1 (305) 555-0199",
   companyEmail: "contact@acostaspool.com",
@@ -221,9 +229,9 @@ export function getInvoiceTemplateLocaleCopy(
 }
 
 export function localizeInvoiceTemplate(
-  template: InvoiceTemplateConfig,
+  template: NormalizedInvoiceTemplateConfig,
   locale: InvoiceTemplateLocale
-): InvoiceTemplateConfig {
+): NormalizedInvoiceTemplateConfig {
   const copy = getInvoiceTemplateLocaleCopy(locale);
   return {
     ...template,
@@ -298,8 +306,8 @@ function normalizeHex(value: unknown, fallback: string) {
 
 function normalizeThemeConfig(
   value: unknown,
-  fallback: InvoiceTemplateThemeConfig
-): InvoiceTemplateThemeConfig {
+  fallback: NormalizedInvoiceTemplateThemeConfig
+): NormalizedInvoiceTemplateThemeConfig {
   if (!value || typeof value !== "object") {
     return fallback;
   }
@@ -312,11 +320,11 @@ function normalizeThemeConfig(
     watermarkText:
       typeof source.watermarkText === "string"
         ? source.watermarkText.trim()
-        : fallback.watermarkText ?? "",
+        : fallback.watermarkText,
   };
 }
 
-export function normalizeInvoiceTemplateConfig(value: unknown): InvoiceTemplateConfig {
+export function normalizeInvoiceTemplateConfig(value: unknown): NormalizedInvoiceTemplateConfig {
   if (!value || typeof value !== "object") {
     return DEFAULT_INVOICE_TEMPLATE;
   }

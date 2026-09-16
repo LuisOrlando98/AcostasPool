@@ -5,6 +5,7 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
+  type ListObjectsV2CommandOutput,
 } from "@aws-sdk/client-s3";
 import { copyFile, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
@@ -196,7 +197,7 @@ export async function listStoredAssets(prefixPath: string): Promise<StoredAssetI
     let continuationToken: string | undefined = undefined;
 
     do {
-      const response = await getS3Client().send(
+      const response: ListObjectsV2CommandOutput = await getS3Client().send(
         new ListObjectsV2Command({
           Bucket: getS3Bucket(),
           Prefix: normalizedPrefix,

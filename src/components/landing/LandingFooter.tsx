@@ -214,14 +214,16 @@ export default function LandingFooter({
   socialLinks?: LandingSocialLinks;
 }) {
   const copy = FOOTER_COPY[language];
-  const socialItems: SocialItem[] = [
-    { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
-    { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
-    { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
-    { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
-    { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
-    { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
-  ].filter((item) => Boolean(item.href));
+  const socialItems = (
+    [
+      { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
+      { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
+      { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
+      { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
+      { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
+      { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
+    ] satisfies SocialItem[]
+  ).filter((item) => Boolean(item.href));
 
   const contactItems = [
     { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },

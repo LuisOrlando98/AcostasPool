@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { useI18n } from "@/i18n/client";
 
@@ -55,7 +55,7 @@ export default function ServiceTiersManager() {
   const { t } = useI18n();
   const [tiers, setTiers] = useState<ServiceTierDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [savedTierId, setSavedTierId] = useState<string | null>(null);
 
@@ -68,12 +68,9 @@ export default function ServiceTiersManager() {
     [showInactive, tiers]
   );
 
-  const loadTiers = async () => {
-    setLoading(true);
-    setError(null);
-    const res = await fetch("/api/admin/service-tiers");
+  const applyLoadedTiers = useCallback(async (res: Response) => {
     if (!res.ok) {
-      setError(t("admin.settings.tiers.errors.load"));
+      setErrorKey("admin.settings.tiers.errors.load");
       setLoading(false);
       return;
     }
@@ -101,11 +98,11 @@ export default function ServiceTiersManager() {
     });
     lastSavedPayload.current = nextSaved;
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    loadTiers();
-  }, []);
+    void fetch("/api/admin/service-tiers").then(applyLoadedTiers);
+  }, [applyLoadedTiers]);
 
   const updateTier = (
     id: string,
@@ -146,7 +143,7 @@ export default function ServiceTiersManager() {
       isActive: tier.isActive,
     };
     if (!payload.name) {
-      setError(t("admin.settings.tiers.errors.name"));
+      setErrorKey("admin.settings.tiers.errors.name");
       return;
     }
     updateTier(tier.id, { saving: true }, { silent: true });
@@ -159,7 +156,7 @@ export default function ServiceTiersManager() {
       }
     );
     if (!res.ok) {
-      setError(t("admin.settings.tiers.errors.save"));
+      setErrorKey("admin.settings.tiers.errors.save");
       updateTier(tier.id, { saving: false }, { silent: true });
       return;
     }
@@ -190,7 +187,7 @@ export default function ServiceTiersManager() {
     savedBadgeTimer.current = setTimeout(() => {
       setSavedTierId(null);
     }, 1600);
-    setError(null);
+    setErrorKey(null);
   };
 
   const tiersRef = useRef<ServiceTierDraft[]>([]);
@@ -367,9 +364,9 @@ export default function ServiceTiersManager() {
         </button>
       </div>
 
-      {error ? (
+      {errorKey ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-          {error}
+          {t(errorKey)}
         </div>
       ) : null}
 

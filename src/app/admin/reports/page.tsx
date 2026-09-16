@@ -215,6 +215,8 @@ async function getReportSnapshot(filters: ReportFilters) {
   };
 }
 
+type ReportSnapshot = Awaited<ReturnType<typeof getReportSnapshot>>;
+
 function buildLogsWhere(filters: ReportFilters, logsFilters: LogsFilters) {
   const query = logsFilters.query.trim();
   const where: Prisma.EmailLogWhereInput = {
@@ -321,7 +323,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : Number(logsPageRaw);
   const logsPageSize = 15;
   const emptySnapshot = {
-    technicians: [] as Awaited<ReturnType<typeof prisma.technician.findMany>>,
+    technicians: [] as ReportSnapshot["technicians"],
     jobStatusGroups: [] as Array<{ status: string; _count: { _all: number } }>,
     jobTypeGroups: [] as Array<{ type: string; _count: { _all: number } }>,
     serviceGroups: [] as Array<{ serviceType: string; _count: { _all: number } }>,

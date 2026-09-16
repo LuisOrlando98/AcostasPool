@@ -58,6 +58,28 @@ function normalizeRangeLabel(range: string) {
   return "custom";
 }
 
+function toFilterState(defaults: ReportsFiltersBarProps["defaults"]): FilterState {
+  return {
+    range: defaults.range,
+    from: defaults.from,
+    to: defaults.to,
+    technicianId: defaults.technicianId ?? "",
+    serviceType: defaults.serviceType ?? "",
+    priority: defaults.priority ?? "",
+  };
+}
+
+function isSameFilterState(a: FilterState, b: FilterState) {
+  return (
+    a.range === b.range &&
+    a.from === b.from &&
+    a.to === b.to &&
+    a.technicianId === b.technicianId &&
+    a.serviceType === b.serviceType &&
+    a.priority === b.priority
+  );
+}
+
 export default function ReportsFiltersBar({
   technicians,
   defaults,
@@ -68,38 +90,20 @@ export default function ReportsFiltersBar({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
-  const [state, setState] = useState<FilterState>({
-    range: defaults.range,
-    from: defaults.from,
-    to: defaults.to,
-    technicianId: defaults.technicianId ?? "",
-    serviceType: defaults.serviceType ?? "",
-    priority: defaults.priority ?? "",
-  });
-  const [draft, setDraft] = useState<FilterState>(state);
+  const defaultsState = toFilterState(defaults);
+  const [state, setState] = useState<FilterState>(defaultsState);
+  const [draft, setDraft] = useState<FilterState>(defaultsState);
+  const [syncedDefaults, setSyncedDefaults] = useState<FilterState>(defaultsState);
+  const [syncedOpen, setSyncedOpen] = useState(open);
 
-  useEffect(() => {
-    const nextState: FilterState = {
-      range: defaults.range,
-      from: defaults.from,
-      to: defaults.to,
-      technicianId: defaults.technicianId ?? "",
-      serviceType: defaults.serviceType ?? "",
-      priority: defaults.priority ?? "",
-    };
-    setState(nextState);
+  if (!isSameFilterState(syncedDefaults, defaultsState) || syncedOpen !== open) {
+    setSyncedDefaults(defaultsState);
+    setSyncedOpen(open);
+    setState(defaultsState);
     if (!open) {
-      setDraft(nextState);
+      setDraft(defaultsState);
     }
-  }, [
-    defaults.from,
-    defaults.priority,
-    defaults.range,
-    defaults.serviceType,
-    defaults.technicianId,
-    defaults.to,
-    open,
-  ]);
+  }
 
   useEffect(() => {
     if (!open) {

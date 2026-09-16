@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "@/i18n/client";
 
 type RouteStopPreview = {
@@ -69,8 +69,9 @@ export default function TechRoutePlannerButton({
 }: TechRoutePlannerButtonProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
-  const [preferredProvider, setPreferredProvider] =
-    useState<MapProvider>("GOOGLE");
+  const [preferredProvider] = useState<MapProvider>(() =>
+    isAppleDevice() ? "APPLE" : "GOOGLE"
+  );
 
   const addresses = useMemo(
     () =>
@@ -79,10 +80,6 @@ export default function TechRoutePlannerButton({
         .filter((address) => address.length > 0),
     [stops]
   );
-
-  useEffect(() => {
-    setPreferredProvider(isAppleDevice() ? "APPLE" : "GOOGLE");
-  }, []);
 
   const links = useMemo(
     () => ({

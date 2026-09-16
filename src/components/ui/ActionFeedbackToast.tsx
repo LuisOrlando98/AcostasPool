@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+const AUTO_DISMISS_MS = 3200;
+
 type ActionFeedbackToastProps = {
   message: string;
   dismissLabel?: string;
@@ -12,21 +14,27 @@ export default function ActionFeedbackToast({
   message,
   dismissLabel = "Close",
 }: ActionFeedbackToastProps) {
-  const [visible, setVisible] = useState(Boolean(message));
+  const [dismissed, setDismissed] = useState(false);
+  const [previousMessage, setPreviousMessage] = useState(message);
+
+  // A new message re-opens the toast: derive it from the previous render
+  // instead of syncing state inside an effect.
+  if (message !== previousMessage) {
+    setPreviousMessage(message);
+    setDismissed(false);
+  }
 
   useEffect(() => {
     if (!message) {
-      setVisible(false);
       return;
     }
-
-    setVisible(true);
-    const timer = setTimeout(() => setVisible(false), 3200);
-
+    const timer = setTimeout(() => setDismissed(true), AUTO_DISMISS_MS);
     return () => clearTimeout(timer);
   }, [message]);
 
-  if (!message || !visible || typeof document === "undefined") {
+  const visible = Boolean(message) && !dismissed;
+
+  if (!visible || typeof document === "undefined") {
     return null;
   }
 
@@ -50,7 +58,7 @@ export default function ActionFeedbackToast({
         </div>
         <button
           type="button"
-          onClick={() => setVisible(false)}
+          onClick={() => setDismissed(true)}
           className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
           aria-label={dismissLabel}
         >

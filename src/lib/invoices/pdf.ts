@@ -13,6 +13,7 @@ import {
   type InvoiceTemplateConfig,
   type InvoiceTemplateLocale,
   type InvoiceTemplateTheme,
+  type NormalizedInvoiceTemplateConfig,
 } from "@/lib/invoice-template";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -126,7 +127,7 @@ function normalizeItems(items: InvoiceLineItem[], serviceFallbackLabel: string) 
 async function generateInvoicePdfWithPdfLibBytes(
   input: InvoicePdfRenderInput,
   items: ReturnType<typeof normalizeItems>,
-  template: InvoiceTemplateConfig,
+  template: NormalizedInvoiceTemplateConfig,
   theme: InvoiceTemplateTheme,
   locale: InvoiceTemplateLocale
 ) {

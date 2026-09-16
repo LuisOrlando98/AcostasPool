@@ -408,6 +408,7 @@ export default function AppShell({
     : "lg:peer-checked:[&_.app-content]:max-w-[112rem]";
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileNavPathname, setMobileNavPathname] = useState(pathname);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
@@ -429,9 +430,10 @@ export default function AppShell({
     );
   }, [collapsed]);
 
-  useEffect(() => {
+  if (mobileNavPathname !== pathname) {
+    setMobileNavPathname(pathname);
     setMobileNavOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     if (!mobileNavOpen || typeof window === "undefined") {

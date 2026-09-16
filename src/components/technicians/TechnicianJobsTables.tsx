@@ -523,9 +523,10 @@ const UpcomingCalendarSection = ({
       )
     : 7;
 
+  const calendarStartTime = calendarStart.getTime();
   const calendarDays = useMemo(
-    () => buildCalendarDays(calendarStart, daysCount, locale),
-    [calendarStart.getTime(), daysCount, locale]
+    () => buildCalendarDays(new Date(calendarStartTime), daysCount, locale),
+    [calendarStartTime, daysCount, locale]
   );
 
   const grouped = useMemo(() => {

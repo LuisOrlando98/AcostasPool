@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Channel, default as PusherClient } from "pusher-js";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
@@ -97,8 +98,8 @@ export default function UserMenu() {
 
   useEffect(() => {
     if (usePusher && user?.id) {
-      let channel: any;
-      let pusher: any;
+      let channel: Channel | null = null;
+      let pusher: PusherClient | null = null;
       let cancelled = false;
 
       const setup = async () => {

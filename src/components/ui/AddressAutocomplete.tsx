@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
+import type {
+  GoogleAddressComponent,
+  GoogleAutocomplete,
+} from "@/lib/ui/google-maps-types";
 
 const GOOGLE_SCRIPT_ID = "google-maps-places";
 
@@ -23,18 +27,6 @@ type AddressAutocompleteProps = {
   required?: boolean;
   theme?: "light" | "dark";
 };
-
-type GoogleAddressComponent = {
-  long_name: string;
-  short_name: string;
-  types: string[];
-};
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
 
 const loadGooglePlaces = (apiKey: string, locale: string) =>
   new Promise<void>((resolve, reject) => {
@@ -85,7 +77,7 @@ export default function AddressAutocomplete({
   const { t, locale } = useI18n();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const autocompleteRef = useRef<any>(null);
+  const autocompleteRef = useRef<GoogleAutocomplete | null>(null);
 
   const [line1, setLine1] = useState(defaultValue?.line1 ?? "");
   const [line2, setLine2] = useState(defaultValue?.line2 ?? "");
@@ -142,7 +134,7 @@ export default function AddressAutocomplete({
     }
 
     if (!autocompleteRef.current) {
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(
+      const autocomplete = new window.google.maps.places.Autocomplete(
         inputRef.current,
         {
           types: ["address"],
@@ -150,9 +142,10 @@ export default function AddressAutocomplete({
           fields: ["address_components", "formatted_address"],
         }
       );
+      autocompleteRef.current = autocomplete;
 
-      autocompleteRef.current.addListener("place_changed", () => {
-        const place = autocompleteRef.current?.getPlace();
+      autocomplete.addListener("place_changed", () => {
+        const place = autocomplete.getPlace();
         const components = place?.address_components ?? [];
         const streetNumber = getComponentValue(components, "street_number");
         const route = getComponentValue(components, "route");

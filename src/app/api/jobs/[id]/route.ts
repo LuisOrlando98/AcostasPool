@@ -74,17 +74,17 @@ export async function PATCH(
 
   const serviceTierProvided = body.serviceTierId !== undefined;
   if (body.serviceTierId === null || body.serviceTierId === "") {
-    data.serviceTierId = null;
+    data.serviceTier = { disconnect: true };
     data.checklist = await getServiceTierChecklist(null);
   } else if (typeof body.serviceTierId === "string") {
-    data.serviceTierId = body.serviceTierId;
+    data.serviceTier = { connect: { id: body.serviceTierId } };
     data.checklist = await getServiceTierChecklist(body.serviceTierId);
   }
 
   if (body.technicianId === null || body.technicianId === "") {
-    data.technicianId = null;
+    data.technician = { disconnect: true };
   } else if (typeof body.technicianId === "string") {
-    data.technicianId = body.technicianId;
+    data.technician = { connect: { id: body.technicianId } };
   }
 
   if (typeof body.notes === "string" || body.notes === null) {

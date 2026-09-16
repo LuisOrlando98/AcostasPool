@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { ROLE_REDIRECTS } from "@/lib/auth/config";
@@ -198,10 +199,10 @@ export default function LoginPage() {
             </article>
           </div>
 
-          <a href="/" className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700 hover:text-sky-800">
+          <Link href="/" className="mt-6 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-sky-700 hover:text-sky-800">
             {t("auth.login.publicLink")}
             <span aria-hidden="true">&rarr;</span>
-          </a>
+          </Link>
           </section>
 
           <section className="order-1 app-card w-full max-w-md p-6 sm:p-8 lg:order-2">

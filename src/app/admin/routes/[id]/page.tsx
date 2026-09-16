@@ -60,7 +60,11 @@ async function updateJobTechnician(formData: FormData) {
   await applyJobLifecycleUpdate({
     jobId,
     actorUserId: session.sub,
-    data: { technicianId: technicianId || null },
+    data: {
+      technician: technicianId
+        ? { connect: { id: technicianId } }
+        : { disconnect: true },
+    },
   });
 
   revalidatePath(`/admin/routes/${jobId}`);

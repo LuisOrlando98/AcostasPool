@@ -906,42 +906,6 @@ async function deleteServicePlan(formData: FormData) {
   redirect(`/admin/customers/${customerId}`);
 }
 
-async function createJobFromPlan(formData: FormData) {
-  "use server";
-  await requireRole("ADMIN");
-
-  const planId = String(formData.get("planId"));
-  const scheduledDateRaw = String(formData.get("scheduledDate") ?? "");
-  const scheduledTime = String(formData.get("scheduledTime") ?? "");
-
-  if (!planId) {
-    return;
-  }
-
-  const plan = await prisma.servicePlan.findUnique({
-    where: { id: planId },
-  });
-
-  if (!plan || !plan.isActive) {
-    return;
-  }
-
-  const scheduledDate = scheduledDateRaw
-    ? combineDateAndTime(
-        scheduledDateRaw,
-        scheduledTime || plan.preferredTime || "09:00"
-      )
-    : plan.nextRunAt;
-  await materializeServicePlanJob(plan.id, {
-    scheduledDate,
-    advancePlan: true,
-  });
-
-  revalidatePath(`/admin/customers/${plan.customerId}`);
-  revalidatePath("/admin/routes");
-  redirect(customerDetailFeedbackPath(plan.customerId, "job-created"));
-}
-
 export default async function CustomerDetailPage({
   params,
   searchParams,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
@@ -150,10 +150,6 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
     return list;
   }, [filteredRows, sortKey]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter, themeFilter, sortKey]);
-
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedRows = useMemo(() => {
@@ -176,7 +172,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
       return;
     }
     if (canEdit) {
-      window.location.href = `/admin/invoices/${invoice.id}`;
+      window.location.assign(`/admin/invoices/${invoice.id}`);
     }
   };
 
@@ -212,7 +208,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
             </svg>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder={t("admin.invoices.filters.invoiceNumberPlaceholder")}
               className="ui-search-input w-full"
             />
@@ -220,7 +219,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="ALL">
@@ -235,7 +237,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={themeFilter}
-            onChange={(event) => setThemeFilter(event.target.value)}
+            onChange={(event) => {
+              setThemeFilter(event.target.value);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="ALL">
@@ -254,7 +259,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={sortKey}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
+            onChange={(event) => {
+              setSortKey(event.target.value as SortKey);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="date_desc">{sortDateDescLabel}</option>
@@ -275,6 +283,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                 setStatusFilter("ALL");
                 setThemeFilter("ALL");
                 setSortKey("date_desc");
+                setPage(1);
               }}
               className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
             >

@@ -1,11 +1,11 @@
 import type { NotificationEventPayload } from "@/lib/notifications/bus";
 import { broadcastNotification } from "@/lib/notifications/bus";
 import { prisma } from "@/lib/db";
-import type Pusher from "pusher";
+import Pusher from "pusher";
 
 let pusherClient: Pusher | null = null;
 
-const getPusher = () => {
+export const getPusher = () => {
   if (pusherClient) {
     return pusherClient;
   }
@@ -19,8 +19,7 @@ const getPusher = () => {
     return null;
   }
 
-  const PusherLib = require("pusher") as typeof Pusher;
-  pusherClient = new PusherLib({
+  pusherClient = new Pusher({
     appId,
     key,
     secret,
