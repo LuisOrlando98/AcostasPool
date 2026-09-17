@@ -19,7 +19,8 @@
       "view": "Ver",
       "edit": "Editar",
       "send": "Enviar",
-      "search": "Buscar"
+      "search": "Buscar",
+      "confirm": "Confirmar"
     },
     "feedback": {
       "saving": "Guardando...",

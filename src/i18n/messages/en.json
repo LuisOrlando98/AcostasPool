@@ -19,7 +19,8 @@
       "view": "View",
       "edit": "Edit",
       "send": "Send",
-      "search": "Search"
+      "search": "Search",
+      "confirm": "Confirm"
     },
     "feedback": {
       "saving": "Saving...",
