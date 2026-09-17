@@ -18,13 +18,13 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 3. Define estas variables en el worker (`acostaspool-cron-worker`):
    - `APP_URL` y `CRON_SECRET`
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `CONTACT_INBOX_EMAIL`
-   - `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `GOOGLE_MAPS_SERVER_API_KEY`, `BUSINESS_TIMEZONE` (declaradas para que un worker basado en los modulos de `src/` funcione; el script `.cjs` actual solo usa `DATABASE_URL`, `APP_URL`, `CRON_SECRET` y `SMTP_*`)
+   - `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `GOOGLE_MAPS_SERVER_API_KEY`, `BUSINESS_TIMEZONE` (el worker usa los modulos de `src/`: publica en Pusher las notificaciones que crea y calcula el dia de negocio con `BUSINESS_TIMEZONE`)
 4. Base de datos: `render.yaml` la deja en `plan: free`, que no incluye backups ni point-in-time recovery. Para produccion usa un plan de pago con backups.
 5. Haz deploy y valida:
    - Logs del servicio web al arrancar: las lineas `[env]` avisan de integraciones sin configurar; en produccion el arranque aborta si falta una variable obligatoria.
    - `GET /api/health`
    - `GET /api/health/db` (requiere sesion de administrador con acceso developer)
-   - Logs del worker: ejecuciones cada 2 minutos para procesar notificaciones a clientes
+   - Logs del worker: al arrancar imprime las advertencias `[env]` y las tareas programadas; despues solo registra los ticks con actividad (envios, reintentos, trabajos creados) y los errores. Ver "Worker cron".
 
 ## Instalacion como app (PWA)
 1. Publica la app en HTTPS (por ejemplo Render).
@@ -39,6 +39,22 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 2. Haz deploy en Render.
 3. Render ejecuta `preDeployCommand` con `npx prisma migrate deploy` y aplica migraciones antes de iniciar la app.
 
+## Worker cron
+`npm run worker:cron` ejecuta `scripts/cron-worker.ts` con `tsx` (dependencia de desarrollo; Render instala con `npm install --include=dev`). La logica vive en `src/lib/worker/` y reutiliza los modulos de `src/lib`: plantillas de correo (`email-templates.ts`, con los textos que edita el administrador en `SiteSettings.emailTemplates`), zona horaria (`timezone.ts`), materializacion de planes (`jobs/materialize.ts`) y envio SMTP (`mail/transport.ts`, que siempre deja una fila `EmailLog`). Al arrancar valida el entorno con `src/lib/config/env.ts` (advertencias `[env]`; con `NODE_ENV=production` aborta si falta o es invalida `DATABASE_URL`, `APP_URL` o la zona horaria; `AUTH_SECRET` no es necesaria en el worker) y ejecuta una vez los planes recurrentes.
+
+Tareas (cron evaluado en `BUSINESS_TIMEZONE`):
+| Tarea | Cron | Que hace |
+| --- | --- | --- |
+| `customer-notifications` | `*/2 * * * *` | Envia por correo las `Notification` QUEUED de clientes (`SERVICE_SCHEDULED`, `SERVICE_RESCHEDULED`, `JOB_COMPLETED`). Reclama el lote con un `updateMany` atomico (`PROCESSING`, `attempts + 1`, `lastAttemptAt`) y procesa solo las filas reclamadas; devuelve a QUEUED los `PROCESSING` huerfanos (mas de 10 minutos) y reintenta los `FAILED` con backoff exponencial (2, 4, 8, 16 minutos) hasta 5 intentos. |
+| `digest-retry` | `*/2 * * * *` | Reintenta los digests de tecnicos del dia en `FAILED` (o `PROCESSING` huerfanos) con el mismo backoff; los intentos se cuentan por las filas `EmailLog` del digest. |
+| `recurring-plans` | `*/10 * * * *` y al arrancar | Materializa las visitas de los planes activos para los proximos 28 dias con `materializeServicePlanJob` (nunca duplica una fecha del plan), encola los avisos al cliente y al tecnico y avanza `nextRunAt`. |
+| `route-assistant-auto` | `0 7 * * *` | `POST /api/internal/routes/assistant/auto-optimize` con la cabecera `x-cron-secret` (requiere `APP_URL` y `CRON_SECRET`). |
+| `morning-digest` | `30 6 * * *` | Plan diario (`TechDigest` MORNING) a cada tecnico con trabajos hoy. |
+| `midday-digest` / `evening-digest` | `0 12 * * *` / `0 21 * * *` | Cambios de ruta del dia (`TechDigestItem` sin digest) agrupados por tecnico. |
+
+Los digests se buscan por `(technicianId, routeDate, window)` y se reutilizan: uno ya enviado no se repite y los items que lleguen despues quedan para la siguiente ventana. Un tick que llega mientras la misma tarea sigue en curso se omite y se registra.
+
+- `npm run worker:cron -- --once`: ejecuta cada tarea una vez, en orden, y termina (codigo de salida 1 si alguna fallo). Prueba de humo local: `set -a; . ./.env; set +a; npm run worker:cron -- --once`.
 ## Variables de entorno
 La referencia completa, agrupada y comentada, esta en `.env.example`; copialo a `.env` para desarrollo local. El inventario y las reglas de validacion viven en `src/lib/config/env.ts` y se ejecutan al arrancar el servidor desde `src/instrumentation.ts`:
 - En cualquier entorno se imprimen advertencias `[env]` por cada integracion sin configurar o incompleta.
@@ -117,7 +133,7 @@ El proyecto usa **dos contextos** para Google Maps:
 - `npm run db:studio`
 - `npm run db:create-admin`
 - `npm run db:seed`
-- `npm run worker:cron`
+- `npm run worker:cron` (`npm run worker:cron -- --once` ejecuta cada tarea una vez y sale)
 
 ## Credenciales demo (seed)
 - Admin: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`

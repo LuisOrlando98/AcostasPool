@@ -130,7 +130,7 @@ services:
         sync: false
       # Server-side integrations shared with the web service so that a worker
       # built on the src/ modules (Pusher publishing, geocoding, business time
-      # zone) works without extra dashboard changes. scripts/cron-worker.cjs
+      # zone) works without extra dashboard changes. scripts/cron-worker.ts
       # currently reads only DATABASE_URL, APP_URL, CRON_SECRET and SMTP_*.
       - key: PUSHER_APP_ID
         sync: false

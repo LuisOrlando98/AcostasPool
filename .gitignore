@@ -49,3 +49,6 @@ next-env.d.ts
 # test artifacts
 /test-results
 /playwright-report
+
+# graphify knowledge graph
+/graphify-out
