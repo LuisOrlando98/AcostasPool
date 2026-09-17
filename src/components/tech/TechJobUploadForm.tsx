@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/client";
 import {
@@ -9,6 +9,14 @@ import {
 } from "@/lib/storage/paths";
 
 type ChecklistItem = { label?: string; completed?: boolean };
+
+type MessageTone = "error" | "success";
+
+const BYTES_PER_MB = 1024 * 1024;
+// Keep aligned with MAX_FILE_SIZE_BYTES in src/app/api/jobs/[id]/photos/route.ts.
+const MAX_PHOTO_MB = 10;
+const MAX_PHOTO_BYTES = MAX_PHOTO_MB * BYTES_PER_MB;
+const SUCCESS_REDIRECT_DELAY_MS = 900;
 
 type TechJobUploadData = {
   id: string;
@@ -38,6 +46,7 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
   const [internalNotes, setInternalNotes] = useState(job.internalNotes ?? "");
   const [customerNotes, setCustomerNotes] = useState(job.customerNotes ?? "");
   const [message, setMessage] = useState<string | null>(null);
+  const [messageTone, setMessageTone] = useState<MessageTone>("error");
   const [loading, setLoading] = useState(false);
   const [uploadDate] = useState(() => new Date());
 
@@ -73,22 +82,29 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
     [job.customerId, uploadDate]
   );
 
-  const handleSubmit = async () => {
-    if (isCompleted) {
-      setMessage(t("tech.jobs.upload.errors.completed"));
-      return;
-    }
-    if (files.length === 0) {
-      setMessage(t("tech.jobs.upload.errors.file"));
-      return;
-    }
-    if (checklist.length > 0 && !checklistCompleted) {
-      setMessage(t("tech.jobs.upload.errors.checklist"));
-      return;
-    }
+  const showError = (text: string) => {
+    setMessageTone("error");
+    setMessage(text);
+  };
 
-    setLoading(true);
+  const buildTooLargeMessage = (oversized: File[]) =>
+    t("tech.jobs.upload.errors.fileTooLarge", {
+      names: oversized.map((file) => file.name).join(", "),
+      maxMb: MAX_PHOTO_MB,
+    });
+
+  const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files ?? []);
+    const oversized = selected.filter((file) => file.size > MAX_PHOTO_BYTES);
+    setFiles(selected.filter((file) => file.size <= MAX_PHOTO_BYTES));
+    if (oversized.length > 0) {
+      showError(buildTooLargeMessage(oversized));
+      return;
+    }
     setMessage(null);
+  };
+
+  const buildFormData = () => {
     const formData = new FormData();
     files.forEach((file) => formData.append("files", file));
     formData.append("checklist", JSON.stringify(checklist));
@@ -98,23 +114,52 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
     if (customerNotes.trim()) {
       formData.append("customerNotes", customerNotes.trim());
     }
+    return formData;
+  };
 
-    const res = await fetch(`/api/jobs/${job.id}/photos`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!res.ok) {
-      setMessage(t("tech.jobs.upload.errors.submit"));
-      setLoading(false);
+  const handleSubmit = async () => {
+    if (isCompleted) {
+      showError(t("tech.jobs.upload.errors.completed"));
+      return;
+    }
+    if (files.length === 0) {
+      showError(t("tech.jobs.upload.errors.file"));
+      return;
+    }
+    if (checklist.length > 0 && !checklistCompleted) {
+      showError(t("tech.jobs.upload.errors.checklist"));
+      return;
+    }
+    const oversized = files.filter((file) => file.size > MAX_PHOTO_BYTES);
+    if (oversized.length > 0) {
+      showError(buildTooLargeMessage(oversized));
       return;
     }
 
-    setMessage(t("tech.jobs.upload.success"));
-    setLoading(false);
-    window.setTimeout(() => {
-      window.location.href = "/tech";
-    }, 900);
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/jobs/${job.id}/photos`, {
+        method: "POST",
+        body: buildFormData(),
+      });
+
+      if (!res.ok) {
+        showError(t("tech.jobs.upload.errors.submit"));
+        return;
+      }
+
+      setMessageTone("success");
+      setMessage(t("tech.jobs.upload.success"));
+      window.setTimeout(() => {
+        window.location.href = "/tech";
+      }, SUCCESS_REDIRECT_DELAY_MS);
+    } catch {
+      // Files, notes and checklist stay in state so the technician can retry as-is.
+      showError(t("tech.jobs.upload.errors.network"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -260,12 +305,14 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
             accept="image/*"
             multiple
             capture="environment"
-            onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
+            onChange={handleFilesSelected}
             className="app-input w-full bg-white px-4 py-3 text-sm"
           />
 
           <p className="text-[11px] text-slate-500">
             {t("tech.jobs.upload.photoCount", { count: files.length })}
+            {" · "}
+            {t("tech.jobs.upload.photoMaxSize", { maxMb: MAX_PHOTO_MB })}
           </p>
 
           {renamedFilePreview.length > 0 ? (
@@ -328,7 +375,14 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
       {message || isCompleted ? (
         <div className="app-card p-6 shadow-contrast">
           {message ? (
-            <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            <div
+              role={messageTone === "error" ? "alert" : "status"}
+              className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+                messageTone === "error"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+            >
               {message}
             </div>
           ) : null}

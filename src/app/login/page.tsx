@@ -16,6 +16,38 @@ type LoginResponse = {
 
 type PasswordCredentialCtor = new (form: HTMLFormElement) => Credential;
 
+const storePasswordCredential = async (form: HTMLFormElement) => {
+  const PasswordCredentialCtor = (
+    window as Window & { PasswordCredential?: PasswordCredentialCtor }
+  ).PasswordCredential;
+  if (!PasswordCredentialCtor || !navigator.credentials?.store) {
+    return;
+  }
+  try {
+    const credential = new PasswordCredentialCtor(form);
+    await navigator.credentials.store(credential);
+  } catch {
+    // Ignore password manager errors.
+  }
+};
+
+/**
+ * Accepts `?next=` only when it is a same-origin path inside the area the
+ * role can actually open; anything else falls back to the role home. This
+ * avoids open redirects and the /unauthorized bounce a CUSTOMER would get
+ * after logging in from /login?next=/admin.
+ */
+function resolvePostLoginPath(next: string | null, roleRedirect: string): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) {
+    return roleRedirect;
+  }
+  const insideRoleArea =
+    next === roleRedirect ||
+    next.startsWith(`${roleRedirect}/`) ||
+    next.startsWith(`${roleRedirect}?`);
+  return insideRoleArea ? next : roleRedirect;
+}
+
 export default function LoginPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -48,39 +80,38 @@ export default function LoginPage() {
     event.preventDefault();
     setLoading(true);
     setError(null);
+    let redirecting = false;
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, remember }),
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, remember }),
+      });
 
-    const data = (await res.json().catch(() => ({}))) as LoginResponse;
+      const data = (await res.json().catch(() => ({}))) as LoginResponse;
 
-    if (!res.ok) {
-      setError(data.error ?? t("auth.login.error"));
-      setLoading(false);
-      return;
-    }
+      if (!res.ok) {
+        setError(data.error ?? t("auth.login.error"));
+        return;
+      }
 
-    if (formRef.current && typeof window !== "undefined") {
-      const PasswordCredentialCtor = (
-        window as Window & { PasswordCredential?: PasswordCredentialCtor }
-      ).PasswordCredential;
-      if (PasswordCredentialCtor && navigator.credentials?.store) {
-        try {
-          const credential = new PasswordCredentialCtor(formRef.current);
-          await navigator.credentials.store(credential);
-        } catch {
-          // Ignore password manager errors.
-        }
+      if (formRef.current && typeof window !== "undefined") {
+        await storePasswordCredential(formRef.current);
+      }
+
+      const roleRedirect = data.role ? ROLE_REDIRECTS[data.role] : "/admin";
+      redirecting = true;
+      router.push(resolvePostLoginPath(searchParams.get("next"), roleRedirect));
+      router.refresh();
+    } catch {
+      setError(t("auth.login.error"));
+    } finally {
+      // Keep the submit button in its loading state while the redirect is in flight.
+      if (!redirecting) {
+        setLoading(false);
       }
     }
-
-    const next = searchParams.get("next");
-    const roleRedirect = data.role ? ROLE_REDIRECTS[data.role] : "/admin";
-    router.push(next || roleRedirect);
-    router.refresh();
   };
 
   const legalLinks = [
@@ -307,7 +338,10 @@ export default function LoginPage() {
               </div>
 
               {error ? (
-                <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div
+                  role="alert"
+                  className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                >
                   {error}
                 </div>
               ) : null}

@@ -1,6 +1,10 @@
-import type { Prisma } from "@prisma/client";
+import type { NotificationSeverity, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { createNotification } from "@/lib/notifications/create";
+import {
+  createNotification,
+  type CreateNotificationInput,
+  type DeferredNotification,
+} from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
 import {
   getRouteDayRange,
@@ -8,55 +12,128 @@ import {
 } from "@/lib/notifications/techDigest";
 import { formatCustomerName } from "@/lib/customers/format";
 
+/**
+ * Ciclo de vida de un job (reprogramación, cambio de técnico, reorden, estado, notas...).
+ *
+ * `applyJobLifecycleUpdate` ejecuta en UNA transacción: la actualización del job, los items del
+ * digest de técnicos, las notificaciones (creadas con `tx`) y la auditoría. La publicación en
+ * tiempo real se hace después del commit y nunca hace fallar la operación.
+ *
+ * `preloaded`: snapshot previo del job ya cargado por el llamante con
+ * `JOB_LIFECYCLE_SNAPSHOT_SELECT` (evita una segunda lectura en lotes). Si se omite, el job se lee
+ * dentro de la transacción.
+ */
+
+export const JOB_LIFECYCLE_SNAPSHOT_SELECT = {
+  id: true,
+  scheduledDate: true,
+  technicianId: true,
+  sortOrder: true,
+  status: true,
+  priority: true,
+  serviceType: true,
+  notes: true,
+  customerNotes: true,
+} satisfies Prisma.JobSelect;
+
+export type JobLifecycleSnapshot = Prisma.JobGetPayload<{
+  select: typeof JOB_LIFECYCLE_SNAPSHOT_SELECT;
+}>;
+
+const UPDATED_JOB_INCLUDE = {
+  customer: true,
+  property: true,
+  technician: {
+    select: {
+      id: true,
+      userId: true,
+      user: { select: { fullName: true } },
+    },
+  },
+} satisfies Prisma.JobInclude;
+
+export type UpdatedLifecycleJob = Prisma.JobGetPayload<{
+  include: typeof UPDATED_JOB_INCLUDE;
+}>;
+
 type ApplyJobLifecycleUpdateInput = {
   jobId: string;
   data: Prisma.JobUpdateInput;
   actorUserId?: string | null;
+  preloaded?: JobLifecycleSnapshot | null;
 };
 
-export async function applyJobLifecycleUpdate({
-  jobId,
-  data,
-  actorUserId,
-}: ApplyJobLifecycleUpdateInput) {
-  const existing = await prisma.job.findUnique({
-    where: { id: jobId },
-    include: {
-      customer: true,
-      property: true,
-    },
-  });
-  if (!existing) {
-    return null;
-  }
+type JobChanges = {
+  scheduleChanged: boolean;
+  technicianChanged: boolean;
+  sortOrderChanged: boolean;
+  /** Alguno de los tres anteriores. */
+  routeChanged: boolean;
+};
 
-  const updated = await prisma.job.update({
-    where: { id: jobId },
-    data,
-    include: {
-      customer: true,
-      property: true,
-      technician: {
-        select: {
-          id: true,
-          userId: true,
-          user: { select: { fullName: true } },
-        },
-      },
-    },
-  });
+type LifecycleContext = {
+  tx: Prisma.TransactionClient;
+  existing: JobLifecycleSnapshot;
+  updated: UpdatedLifecycleJob;
+  changes: JobChanges;
+  customerName: string;
+  address: string;
+  actorUserId: string | null;
+};
 
+type PreviousTechnician = { id: string; userId: string };
+
+type LifecycleResult = {
+  updated: UpdatedLifecycleJob;
+  notifications: DeferredNotification[];
+};
+
+const AUDIT_ACTION = "JOB_LIFECYCLE_UPDATED";
+const ROUTE_UPDATED_EVENT = "ROUTE_UPDATED";
+
+function detectJobChanges(
+  existing: JobLifecycleSnapshot,
+  updated: UpdatedLifecycleJob
+): JobChanges {
   const scheduleChanged =
     updated.scheduledDate.getTime() !== existing.scheduledDate.getTime();
   const technicianChanged = updated.technicianId !== existing.technicianId;
   const sortOrderChanged =
     (updated.sortOrder ?? null) !== (existing.sortOrder ?? null);
+  return {
+    scheduleChanged,
+    technicianChanged,
+    sortOrderChanged,
+    routeChanged: scheduleChanged || technicianChanged || sortOrderChanged,
+  };
+}
 
-  const customerName = formatCustomerName(updated.customer);
-  const address = updated.property.address;
+function resolveDigestChangeType(changes: JobChanges, otherJobsOnRoute: number) {
+  if (changes.scheduleChanged) {
+    return "JOB_RESCHEDULED";
+  }
+  if (changes.technicianChanged) {
+    return otherJobsOnRoute === 0 ? "ROUTE_ASSIGNED" : "JOB_ASSIGNED";
+  }
+  return "ROUTE_REORDERED";
+}
 
-  if (technicianChanged && existing.technicianId) {
+function resolveTechChangeType(changes: JobChanges) {
+  if (changes.technicianChanged) {
+    return "ASSIGNED";
+  }
+  if (changes.scheduleChanged) {
+    return "RESCHEDULED";
+  }
+  return "REORDERED";
+}
+
+async function queueDigestItems(context: LifecycleContext) {
+  const { tx, existing, updated, changes, customerName, address } = context;
+
+  if (changes.technicianChanged && existing.technicianId) {
     await queueTechDigestItem({
+      tx,
       technicianId: existing.technicianId,
       jobId: updated.id,
       routeDate: existing.scheduledDate,
@@ -69,169 +146,277 @@ export async function applyJobLifecycleUpdate({
     });
   }
 
-  if (updated.technicianId && (scheduleChanged || technicianChanged || sortOrderChanged)) {
-    const { start, end } = getRouteDayRange(updated.scheduledDate);
-    const existingCount = await prisma.job.count({
-      where: {
-        technicianId: updated.technicianId,
-        scheduledDate: { gte: start, lte: end },
-        NOT: { id: updated.id },
-      },
-    });
-    await queueTechDigestItem({
+  if (!updated.technicianId || !changes.routeChanged) {
+    return;
+  }
+
+  const { start, end } = getRouteDayRange(updated.scheduledDate);
+  const otherJobsOnRoute = await tx.job.count({
+    where: {
       technicianId: updated.technicianId,
-      jobId: updated.id,
-      routeDate: updated.scheduledDate,
-      changeType: scheduleChanged
-        ? "JOB_RESCHEDULED"
-        : technicianChanged
-          ? existingCount === 0
-            ? "ROUTE_ASSIGNED"
-            : "JOB_ASSIGNED"
-          : "ROUTE_REORDERED",
-      payload: {
-        fromScheduledDate: existing.scheduledDate.toISOString(),
-        toScheduledDate: updated.scheduledDate.toISOString(),
-        fromOrder: existing.sortOrder,
-        toOrder: updated.sortOrder,
-        customerName,
-        address,
-      },
-    });
-  }
+      scheduledDate: { gte: start, lte: end },
+      NOT: { id: updated.id },
+    },
+  });
+  await queueTechDigestItem({
+    tx,
+    technicianId: updated.technicianId,
+    jobId: updated.id,
+    routeDate: updated.scheduledDate,
+    changeType: resolveDigestChangeType(changes, otherJobsOnRoute),
+    payload: {
+      fromScheduledDate: existing.scheduledDate.toISOString(),
+      toScheduledDate: updated.scheduledDate.toISOString(),
+      fromOrder: existing.sortOrder,
+      toOrder: updated.sortOrder,
+      customerName,
+      address,
+    },
+  });
+}
 
-  if (updated.technicianId && (technicianChanged || scheduleChanged)) {
-    await createNotification({
-      customerId: updated.customerId,
-      recipientRole: "CUSTOMER",
-      eventType: "ROUTE_UPDATED",
-      severity: "INFO",
-      actorUserId,
-      payload: {
-        jobId: updated.id,
-        technicianId: updated.technicianId,
-        scheduledDate: updated.scheduledDate.toISOString(),
-      },
-    });
-  }
-
-  if (scheduleChanged) {
-    await createNotification({
-      customerId: updated.customerId,
-      recipientRole: "CUSTOMER",
-      eventType: "SERVICE_RESCHEDULED",
-      severity: "WARNING",
-      actorUserId,
-      payload: {
-        jobId: updated.id,
-        scheduledDate: updated.scheduledDate.toISOString(),
-      },
-    });
-  }
-
-  if (updated.technician?.userId && (scheduleChanged || technicianChanged || sortOrderChanged)) {
-    await createNotification({
-      customerId: updated.customerId,
-      recipientRole: "TECH",
-      recipientUserId: updated.technician.userId,
-      eventType: "ROUTE_UPDATED",
-      severity: scheduleChanged ? "WARNING" : "INFO",
-      actorUserId,
-      payload: {
-        jobId: updated.id,
-        technicianId: updated.technician.id,
-        customerName,
-        address,
-        scheduledDate: updated.scheduledDate.toISOString(),
-        changeType: technicianChanged
-          ? "ASSIGNED"
-          : scheduleChanged
-            ? "RESCHEDULED"
-            : "REORDERED",
-      },
-    });
-  }
-
-  if (technicianChanged && existing.technicianId) {
-    const previousTech = await prisma.technician.findUnique({
-      where: { id: existing.technicianId },
-      select: { id: true, userId: true },
-    });
-    if (
-      previousTech?.userId &&
-      previousTech.userId !== updated.technician?.userId
-    ) {
-      await createNotification({
-        customerId: updated.customerId,
-        recipientRole: "TECH",
-        recipientUserId: previousTech.userId,
-        eventType: "ROUTE_UPDATED",
-        severity: "INFO",
-        actorUserId,
-        payload: {
-          jobId: updated.id,
-          technicianId: previousTech.id,
-          customerName,
-          address,
-          scheduledDate: existing.scheduledDate.toISOString(),
-          changeType: "UNASSIGNED",
+function buildCustomerNotificationSpecs(
+  context: LifecycleContext
+): CreateNotificationInput[] {
+  const { updated, changes, actorUserId } = context;
+  const scheduledDate = updated.scheduledDate.toISOString();
+  const base = {
+    customerId: updated.customerId,
+    recipientRole: "CUSTOMER" as const,
+    actorUserId,
+  };
+  const routeUpdated =
+    updated.technicianId && (changes.technicianChanged || changes.scheduleChanged)
+      ? [
+          {
+            ...base,
+            eventType: ROUTE_UPDATED_EVENT,
+            severity: "INFO" as const,
+            payload: {
+              jobId: updated.id,
+              technicianId: updated.technicianId,
+              scheduledDate,
+            },
+          },
+        ]
+      : [];
+  const rescheduled = changes.scheduleChanged
+    ? [
+        {
+          ...base,
+          eventType: "SERVICE_RESCHEDULED",
+          severity: "WARNING" as const,
+          payload: { jobId: updated.id, scheduledDate },
         },
-      });
-    }
-  }
+      ]
+    : [];
+  return [...routeUpdated, ...rescheduled];
+}
 
-  if (actorUserId) {
-    const changes: Record<string, unknown> = {};
-    if (scheduleChanged) {
-      changes.scheduledDate = {
-        from: existing.scheduledDate.toISOString(),
-        to: updated.scheduledDate.toISOString(),
-      };
-    }
-    if (technicianChanged) {
-      changes.technicianId = {
-        from: existing.technicianId,
-        to: updated.technicianId,
-      };
-    }
-    if (sortOrderChanged) {
-      changes.sortOrder = {
-        from: existing.sortOrder ?? null,
-        to: updated.sortOrder ?? null,
-      };
-    }
-    if (existing.status !== updated.status) {
-      changes.status = { from: existing.status, to: updated.status };
-    }
-    if (existing.priority !== updated.priority) {
-      changes.priority = { from: existing.priority, to: updated.priority };
-    }
-    if (existing.serviceType !== updated.serviceType) {
-      changes.serviceType = {
-        from: existing.serviceType,
-        to: updated.serviceType,
-      };
-    }
-    if ((existing.notes ?? null) !== (updated.notes ?? null)) {
-      changes.notesChanged = true;
-    }
-    if ((existing.customerNotes ?? null) !== (updated.customerNotes ?? null)) {
-      changes.customerNotesChanged = true;
-    }
-    if (Object.keys(changes).length > 0) {
-      await logAuditEvent({
-        userId: actorUserId,
-        action: "JOB_LIFECYCLE_UPDATED",
-        entity: "Job",
-        entityId: updated.id,
-        metadata: {
-          customerId: updated.customerId,
-          propertyId: updated.propertyId,
-          changes,
+function buildTechNotificationSpecs(
+  context: LifecycleContext,
+  previousTechnician: PreviousTechnician | null
+): CreateNotificationInput[] {
+  const { existing, updated, changes, customerName, address, actorUserId } =
+    context;
+  const base = {
+    customerId: updated.customerId,
+    recipientRole: "TECH" as const,
+    eventType: ROUTE_UPDATED_EVENT,
+    actorUserId,
+  };
+  const currentSeverity: NotificationSeverity = changes.scheduleChanged
+    ? "WARNING"
+    : "INFO";
+  const current =
+    updated.technician?.userId && changes.routeChanged
+      ? [
+          {
+            ...base,
+            recipientUserId: updated.technician.userId,
+            severity: currentSeverity,
+            payload: {
+              jobId: updated.id,
+              technicianId: updated.technician.id,
+              customerName,
+              address,
+              scheduledDate: updated.scheduledDate.toISOString(),
+              changeType: resolveTechChangeType(changes),
+            },
+          },
+        ]
+      : [];
+  const previous = previousTechnician
+    ? [
+        {
+          ...base,
+          recipientUserId: previousTechnician.userId,
+          severity: "INFO" as const,
+          payload: {
+            jobId: updated.id,
+            technicianId: previousTechnician.id,
+            customerName,
+            address,
+            scheduledDate: existing.scheduledDate.toISOString(),
+            changeType: "UNASSIGNED",
+          },
         },
-      });
-    }
+      ]
+    : [];
+  return [...current, ...previous];
+}
+
+async function findPreviousTechnician(
+  context: LifecycleContext
+): Promise<PreviousTechnician | null> {
+  const { tx, existing, updated, changes } = context;
+  if (!changes.technicianChanged || !existing.technicianId) {
+    return null;
+  }
+  const previous = await tx.technician.findUnique({
+    where: { id: existing.technicianId },
+    select: { id: true, userId: true },
+  });
+  if (!previous?.userId || previous.userId === updated.technician?.userId) {
+    return null;
+  }
+  return { id: previous.id, userId: previous.userId };
+}
+
+async function createLifecycleNotifications(
+  context: LifecycleContext
+): Promise<DeferredNotification[]> {
+  const previousTechnician = await findPreviousTechnician(context);
+  const specs = [
+    ...buildCustomerNotificationSpecs(context),
+    ...buildTechNotificationSpecs(context, previousTechnician),
+  ];
+  let created: DeferredNotification[] = [];
+  for (const spec of specs) {
+    created = [...created, await createNotification({ ...spec, tx: context.tx })];
+  }
+  return created;
+}
+
+function buildAuditChanges(
+  existing: JobLifecycleSnapshot,
+  updated: UpdatedLifecycleJob,
+  changes: JobChanges
+): Record<string, unknown> {
+  return {
+    ...(changes.scheduleChanged
+      ? {
+          scheduledDate: {
+            from: existing.scheduledDate.toISOString(),
+            to: updated.scheduledDate.toISOString(),
+          },
+        }
+      : {}),
+    ...(changes.technicianChanged
+      ? { technicianId: { from: existing.technicianId, to: updated.technicianId } }
+      : {}),
+    ...(changes.sortOrderChanged
+      ? {
+          sortOrder: {
+            from: existing.sortOrder ?? null,
+            to: updated.sortOrder ?? null,
+          },
+        }
+      : {}),
+    ...(existing.status !== updated.status
+      ? { status: { from: existing.status, to: updated.status } }
+      : {}),
+    ...(existing.priority !== updated.priority
+      ? { priority: { from: existing.priority, to: updated.priority } }
+      : {}),
+    ...(existing.serviceType !== updated.serviceType
+      ? { serviceType: { from: existing.serviceType, to: updated.serviceType } }
+      : {}),
+    ...((existing.notes ?? null) !== (updated.notes ?? null)
+      ? { notesChanged: true }
+      : {}),
+    ...((existing.customerNotes ?? null) !== (updated.customerNotes ?? null)
+      ? { customerNotesChanged: true }
+      : {}),
+  };
+}
+
+async function logLifecycleAudit(context: LifecycleContext) {
+  const { tx, existing, updated, changes, actorUserId } = context;
+  if (!actorUserId) {
+    return;
+  }
+  const auditChanges = buildAuditChanges(existing, updated, changes);
+  if (Object.keys(auditChanges).length === 0) {
+    return;
+  }
+  await logAuditEvent({
+    tx,
+    userId: actorUserId,
+    action: AUDIT_ACTION,
+    entity: "Job",
+    entityId: updated.id,
+    metadata: {
+      customerId: updated.customerId,
+      propertyId: updated.propertyId,
+      changes: auditChanges,
+    },
+  });
+}
+
+async function runLifecycleTransaction(
+  tx: Prisma.TransactionClient,
+  { jobId, data, actorUserId, preloaded }: ApplyJobLifecycleUpdateInput
+): Promise<LifecycleResult | null> {
+  const existing =
+    preloaded ??
+    (await tx.job.findUnique({
+      where: { id: jobId },
+      select: JOB_LIFECYCLE_SNAPSHOT_SELECT,
+    }));
+  if (!existing) {
+    return null;
   }
 
-  return updated;
+  const updated = await tx.job.update({
+    where: { id: jobId },
+    data,
+    include: UPDATED_JOB_INCLUDE,
+  });
+
+  const context: LifecycleContext = {
+    tx,
+    existing,
+    updated,
+    changes: detectJobChanges(existing, updated),
+    customerName: formatCustomerName(updated.customer),
+    address: updated.property.address,
+    actorUserId: actorUserId ?? null,
+  };
+
+  await queueDigestItems(context);
+  const notifications = await createLifecycleNotifications(context);
+  await logLifecycleAudit(context);
+  return { updated, notifications };
+}
+
+export async function applyJobLifecycleUpdate(
+  input: ApplyJobLifecycleUpdateInput
+): Promise<UpdatedLifecycleJob | null> {
+  if (input.preloaded && input.preloaded.id !== input.jobId) {
+    throw new Error(
+      `Preloaded job ${input.preloaded.id} does not match jobId ${input.jobId}`
+    );
+  }
+
+  const result = await prisma.$transaction((tx) =>
+    runLifecycleTransaction(tx, input)
+  );
+  if (!result) {
+    return null;
+  }
+
+  // Tiempo real solo tras el commit; cada publish() aísla sus propios fallos.
+  await Promise.all(result.notifications.map((item) => item.publish()));
+  return result.updated;
 }

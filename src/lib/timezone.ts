@@ -12,6 +12,11 @@ const businessTimePartsFormatter = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const DEFAULT_TIME_INPUT = "00:00";
+const TIME_INPUT_PATTERN = /^(\d{2}):(\d{2})$/;
+
 function asDate(value: Date | string | number) {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
@@ -91,11 +96,32 @@ export function parseBusinessDateInput(value: string) {
   return parsed.startOf("day").toUTC().toJSDate();
 }
 
+/**
+ * Hora a combinar con la fecha: la entrada si es HH:mm dentro de rango, 00:00 si no
+ * tiene formato HH:mm y null si tiene el formato pero está fuera de rango. Luxon
+ * aceptaría "24:00" como medianoche del día siguiente, por eso se valida aquí.
+ */
+function normalizeBusinessTimeInput(timeValue: string) {
+  const match = TIME_INPUT_PATTERN.exec(timeValue);
+  if (!match) {
+    return DEFAULT_TIME_INPUT;
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour >= HOURS_PER_DAY || minute >= MINUTES_PER_HOUR) {
+    return null;
+  }
+  return timeValue;
+}
+
 export function parseBusinessDateTimeInput(dateValue: string, timeValue: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
     return null;
   }
-  const normalizedTime = /^\d{2}:\d{2}$/.test(timeValue) ? timeValue : "00:00";
+  const normalizedTime = normalizeBusinessTimeInput(timeValue);
+  if (!normalizedTime) {
+    return null;
+  }
   const parsed = DateTime.fromFormat(
     `${dateValue} ${normalizedTime}`,
     "yyyy-MM-dd HH:mm",

@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { formatCustomerName } from "@/lib/customers/format";
@@ -11,6 +10,7 @@ import {
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { normalizeEmail } from "@/lib/auth/email";
 import { hashPasswordResetToken } from "@/lib/auth/reset-token";
+import { sendMailAndLog } from "@/lib/mail/transport";
 
 const DEFAULT_INVITE_HOURS = 48;
 
@@ -44,8 +44,9 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
 
   if (!user) {
-    const existing = await prisma.user.findFirst({
-      where: { email: { equals: normalizedCustomerEmail, mode: "insensitive" } },
+    // User emails are stored normalized (lower-case), so an exact match is enough.
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedCustomerEmail },
       include: { customer: true },
     });
 
@@ -128,16 +129,6 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
   }
   const inviteLink = `${baseUrl}/complete-profile?token=${token}`;
 
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const smtpUser = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || smtpUser;
-
-  if (!host || !smtpUser || !pass || !from) {
-    return { ok: false, error: "SMTP no configurado" };
-  }
-
   const customerName = formatCustomerName(customer);
   const templates = await getEmailTemplatesConfig(
     resolveEmailTemplateLocale(customer.idiomaPreferencia)
@@ -149,20 +140,30 @@ export async function sendCustomerInvite(customerId: string): Promise<InviteResu
     invite_hours: String(DEFAULT_INVITE_HOURS),
   });
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user: smtpUser, pass },
-  });
-
-  await transporter.sendMail({
-    from,
+  const sent = await sendMailAndLog({
     to: normalizedCustomerEmail,
+    recipientName: customerName,
+    recipientRole: "CUSTOMER",
+    template: "CUSTOMER_INVITE",
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,
+    customerId: customer.id,
+    metadata: {
+      category: "CUSTOMER_INVITE",
+      customerId: customer.id,
+      userId: user.id,
+    },
   });
+
+  if (!sent.ok) {
+    if (sent.reason === "not_configured") {
+      return { ok: false, error: "SMTP no configurado" };
+    }
+    // Same contract as before: an SMTP failure propagates to the caller
+    // (the invite API route answers 500 "Invite failed"; server actions log it).
+    throw new Error(sent.error);
+  }
 
   return { ok: true };
 }

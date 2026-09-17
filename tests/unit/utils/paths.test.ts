@@ -7,6 +7,8 @@ import {
   buildInvoicePdfAssetPath,
   buildJobPhotoAssetPath,
   buildTechJobPhotoFileName,
+  hasDotSegment,
+  isDotSegment,
 } from "@/lib/storage/paths";
 
 const FROZEN_NOW = new Date(Date.UTC(2024, 5, 15, 12, 0, 0));
@@ -236,5 +238,25 @@ describe("buildCustomerDocumentAssetPath", () => {
     expect(buildCustomerDocumentAssetPath("c/1", "Contrato Final.pdf")).toBe(
       `uploads/customers/c_1/documents/2024/06/${FROZEN_TS}-Contrato_Final.pdf`
     );
+  });
+});
+
+describe("isDotSegment / hasDotSegment", () => {
+  it("flags only segments that are exactly '.' or '..'", () => {
+    expect(isDotSegment(".")).toBe(true);
+    expect(isDotSegment("..")).toBe(true);
+    expect(isDotSegment("...")).toBe(false);
+    expect(isDotSegment("my..photo.png")).toBe(false);
+    expect(isDotSegment("")).toBe(false);
+  });
+
+  it("detects traversal segments anywhere in a slash-separated path", () => {
+    expect(hasDotSegment("../etc/passwd")).toBe(true);
+    expect(hasDotSegment("uploads/../x")).toBe(true);
+    expect(hasDotSegment("uploads/..")).toBe(true);
+    expect(hasDotSegment("./x")).toBe(true);
+    expect(hasDotSegment("uploads/my..photo.png")).toBe(false);
+    expect(hasDotSegment("a/.../b")).toBe(false);
+    expect(hasDotSegment("")).toBe(false);
   });
 });

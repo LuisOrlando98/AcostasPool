@@ -191,6 +191,15 @@ export default function AddressAutocomplete({
         }
       });
     }
+
+    return () => {
+      const autocomplete = autocompleteRef.current;
+      if (!autocomplete) {
+        return;
+      }
+      window.google?.maps?.event?.clearInstanceListeners(autocomplete);
+      autocompleteRef.current = null;
+    };
   }, [autocompleteReady]);
 
   return (

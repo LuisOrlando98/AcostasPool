@@ -289,14 +289,18 @@ describe("parseBusinessDateTimeInput", () => {
     expect(parseBusinessDateTimeInput("2026-06-15", "24:30")).toBeNull();
   });
 
-  it("acepta 24:00 y lo convierte en la medianoche del día siguiente (comportamiento actual)", () => {
-    expect(iso(parseBusinessDateTimeInput("2026-06-15", "24:00"))).toBe(
-      "2026-06-16T04:00:00.000Z"
-    );
+  it("rechaza 24:00 igual que 25:00 (luxon lo aceptaría como medianoche del día siguiente)", () => {
+    expect(parseBusinessDateTimeInput("2026-06-15", "24:00")).toBeNull();
+    expect(parseBusinessDateTimeInput("2026-06-15", "24:59")).toBeNull();
   });
 
-  it.fails("debería rechazar 24:00 igual que rechaza 25:00 (bug sospechado)", () => {
-    expect(parseBusinessDateTimeInput("2026-06-15", "24:00")).toBeNull();
+  it("acepta los límites del rango 00:00 y 23:59", () => {
+    expect(iso(parseBusinessDateTimeInput("2026-06-15", "00:00"))).toBe(
+      "2026-06-15T04:00:00.000Z"
+    );
+    expect(iso(parseBusinessDateTimeInput("2026-06-15", "23:59"))).toBe(
+      "2026-06-16T03:59:00.000Z"
+    );
   });
 
   it("devuelve null cuando la fecha es inválida o no tiene formato estricto", () => {

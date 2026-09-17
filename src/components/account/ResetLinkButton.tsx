@@ -32,15 +32,19 @@ export default function ResetLinkButton({
     setLoading(true);
     setSent(false);
     setError(null);
-    const res = await fetch("/api/auth/reset-link", { method: "POST" });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setError(data.error ?? resolvedErrorLabel);
+    try {
+      const res = await fetch("/api/auth/reset-link", { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data?.error === "string" ? data.error : resolvedErrorLabel);
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError(resolvedErrorLabel);
+    } finally {
       setLoading(false);
-      return;
     }
-    setSent(true);
-    setLoading(false);
   };
 
   return (
@@ -58,7 +62,11 @@ export default function ResetLinkButton({
           {resolvedSentLabel}
         </div>
       ) : null}
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+      {error ? (
+        <p role="alert" className="text-sm text-rose-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

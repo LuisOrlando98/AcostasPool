@@ -314,19 +314,19 @@ describe("parseWorkbookXlsx", () => {
     expect(parseWorkbookXlsx(buildWorkbookZip(sheet)).headers).toEqual(["h"]);
   });
 
-  it.fails(
-    "reads the cell that follows a self-closing empty cell (currently swallowed)",
-    () => {
-      // Excel emits styled empty cells as <c r="A2" s="1"/>. The cell regex
-      // treats the "/>" as a normal ">" and consumes everything until the
-      // next </c>, so B2 is lost and the whole row becomes blank.
-      const sheet =
-        "<worksheet><sheetData>" +
-        `<row r="1">${inlineCell("A1", "h1")}${inlineCell("B1", "h2")}</row>` +
-        `<row r="2"><c r="A2" s="1"/>${inlineCell("B2", "x")}</row>` +
-        "</sheetData></worksheet>";
+  it("reads the cell that follows a self-closing empty cell", () => {
+    // Excel emits styled empty cells as <c r="A2" s="1"/>: they have no body and
+    // must not consume the next cell up to its </c>.
+    const sheet =
+      "<worksheet><sheetData>" +
+      `<row r="1">${inlineCell("A1", "h1")}${inlineCell("B1", "h2")}</row>` +
+      `<row r="2"><c r="A2" s="1"/>${inlineCell("B2", "x")}</row>` +
+      `<row r="3"><c r="A3" s="1" />${inlineCell("B3", "y")}<c r="C3"/></row>` +
+      "</sheetData></worksheet>";
 
-      expect(parseWorkbookXlsx(buildWorkbookZip(sheet)).rows).toEqual([["", "x"]]);
-    }
-  );
+    expect(parseWorkbookXlsx(buildWorkbookZip(sheet)).rows).toEqual([
+      ["", "x"],
+      ["", "y"],
+    ]);
+  });
 });

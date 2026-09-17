@@ -22,7 +22,7 @@ type NotificationRow = {
   id: string;
   eventType: string;
   severity: "INFO" | "WARNING" | "CRITICAL";
-  status: "QUEUED" | "SENT" | "FAILED";
+  status: "QUEUED" | "PROCESSING" | "SENT" | "FAILED";
   createdAt: string;
   readAt: string | null;
   payload: Record<string, unknown> | null;
@@ -301,26 +301,30 @@ export default function AdminNotificationsCenter({
 
     setBusyReadId(id);
     setActionError(null);
-    const response = await fetch(`/api/notifications/${id}/read`, {
-      method: "POST",
-    });
-    setBusyReadId(null);
-    if (!response.ok) {
-      setActionError(t("notifications.preferences.saveError"));
-      return;
-    }
+    try {
+      const response = await fetch(`/api/notifications/${id}/read`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Mark as read failed with status ${response.status}`);
+      }
 
-    const nowIso = new Date().toISOString();
-    setNotifications((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              readAt: nowIso,
-            }
-          : item
-      )
-    );
+      const nowIso = new Date().toISOString();
+      setNotifications((current) =>
+        current.map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                readAt: nowIso,
+              }
+            : item
+        )
+      );
+    } catch {
+      setActionError(t("notifications.preferences.saveError"));
+    } finally {
+      setBusyReadId(null);
+    }
   };
 
   const deleteNotification = async (id: string) => {
@@ -338,13 +342,18 @@ export default function AdminNotificationsCenter({
     setActionError(null);
     const previous = notifications;
     setNotifications((current) => current.filter((item) => item.id !== id));
-    const response = await fetch(`/api/notifications/${id}`, {
-      method: "DELETE",
-    });
-    setBusyDeleteId(null);
-    if (!response.ok) {
+    try {
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error(`Delete failed with status ${response.status}`);
+      }
+    } catch {
       setNotifications(previous);
       setActionError(t("notifications.preferences.saveError"));
+    } finally {
+      setBusyDeleteId(null);
     }
   };
 
@@ -363,13 +372,18 @@ export default function AdminNotificationsCenter({
     setActionError(null);
     const previous = notifications;
     setNotifications([]);
-    const response = await fetch("/api/notifications/clear", {
-      method: "POST",
-    });
-    setClearing(false);
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/notifications/clear", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Clear failed with status ${response.status}`);
+      }
+    } catch {
       setNotifications(previous);
       setActionError(t("notifications.preferences.saveError"));
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -475,7 +489,10 @@ export default function AdminNotificationsCenter({
         </div>
 
         {actionError ? (
-          <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <p
+            role="alert"
+            className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+          >
             {actionError}
           </p>
         ) : null}

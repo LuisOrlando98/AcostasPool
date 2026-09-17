@@ -1,3 +1,5 @@
+import { isDotSegment } from "@/lib/storage/paths";
+
 const PATH_SEGMENT_PATTERN = /[^a-zA-Z0-9 _.-]/g;
 
 function sanitizeSegment(value: string, fallback: string) {
@@ -20,16 +22,14 @@ export function sanitizeRepositoryPath(value: string | null | undefined) {
     .replace(/^\/+/, "")
     .replace(/\/+$/, "");
 
-  if (!normalized || normalized === ".") {
+  if (!normalized) {
     return "";
   }
-  if (normalized.includes("..")) {
+  const segments = normalized.split("/");
+  if (segments.some(isDotSegment)) {
     return "";
   }
-  return normalized
-    .split("/")
-    .map((segment) => sanitizeSegment(segment, "item"))
-    .join("/");
+  return segments.map((segment) => sanitizeSegment(segment, "item")).join("/");
 }
 
 export function sanitizeRepositoryName(value: string, fallback = "item") {

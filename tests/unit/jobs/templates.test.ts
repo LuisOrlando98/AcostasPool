@@ -83,19 +83,22 @@ describe("getChecklistTemplate", () => {
     expect(getChecklistTemplate(" FILTER_CHECK")).toEqual(weekly);
   });
 
-  it("devuelve la misma referencia compartida en cada llamada (no clona la plantilla)", () => {
-    expect(getChecklistTemplate("FILTER_CHECK")).toBe(getChecklistTemplate("FILTER_CHECK"));
-    expect(getChecklistTemplate("UNKNOWN")).toBe(getChecklistTemplate("WEEKLY_CLEANING"));
+  it("devuelve una copia nueva (array e ítems) en cada llamada, también para el fallback", () => {
+    const first = getChecklistTemplate("FILTER_CHECK");
+    const second = getChecklistTemplate("FILTER_CHECK");
+
+    expect(first).not.toBe(second);
+    expect(first).toEqual(second);
+    expect(first[0]).not.toBe(second[0]);
+    expect(getChecklistTemplate("UNKNOWN")).not.toBe(getChecklistTemplate("WEEKLY_CLEANING"));
   });
 
-  it.fails(
-    "debería usar el fallback para claves heredadas de Object.prototype como 'constructor' (bug sospechado)",
-    () => {
-      const weekly = getChecklistTemplate("WEEKLY_CLEANING");
+  it("usa el fallback para claves heredadas de Object.prototype como 'constructor'", () => {
+    const weekly = getChecklistTemplate("WEEKLY_CLEANING");
 
-      expect(getChecklistTemplate("constructor")).toEqual(weekly);
-      expect(getChecklistTemplate("toString")).toEqual(weekly);
-      expect(getChecklistTemplate("__proto__")).toEqual(weekly);
-    }
-  );
+    expect(getChecklistTemplate("constructor")).toEqual(weekly);
+    expect(getChecklistTemplate("toString")).toEqual(weekly);
+    expect(getChecklistTemplate("__proto__")).toEqual(weekly);
+    expect(getChecklistTemplate("hasOwnProperty")).toEqual(weekly);
+  });
 });

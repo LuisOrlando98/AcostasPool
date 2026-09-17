@@ -141,16 +141,24 @@ export async function PATCH(request: Request) {
 
   const existing = await prisma.property.findUnique({
     where: { id: propertyId },
-    select: { id: true, customerId: true },
+    select: { id: true, customerId: true, address: true },
   });
 
   if (!existing || existing.customerId !== customer.id) {
     return NextResponse.json({ error: "Property not found" }, { status: 404 });
   }
 
+  // A changed address invalidates the coordinates persisted by the route
+  // assistant so the property is geocoded again on the next plan.
+  const addressChanged = existing.address !== normalizedAddress;
+  const coordinateReset = addressChanged
+    ? { lat: null, lng: null, geocodedAt: null }
+    : {};
+
   const property = await prisma.property.update({
     where: { id: existing.id },
     data: {
+      ...coordinateReset,
       name: normalizeOptional(body.name),
       address: normalizedAddress,
       poolType: normalizeOptional(body.poolType),

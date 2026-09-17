@@ -17,12 +17,22 @@ export default function SidebarAccount() {
   const { t } = useI18n();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userLoadFailed, setUserLoadFailed] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch("/api/auth/me");
-      const data = await res.json().catch(() => ({ user: null }));
-      setUser(data.user ?? null);
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) {
+          throw new Error(`Account request failed with status ${res.status}`);
+        }
+        const data = (await res.json()) as { user?: UserInfo | null };
+        setUser(data.user ?? null);
+        setUserLoadFailed(false);
+      } catch {
+        setUserLoadFailed(true);
+      }
     };
     load();
   }, []);
@@ -40,8 +50,18 @@ export default function SidebarAccount() {
 
   const handleLogout = async () => {
     setLoading(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    setLogoutError(null);
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
+      }
+      window.location.href = "/login";
+    } catch {
+      // Only the failure path re-enables the button: on success we navigate away.
+      setLogoutError(t("layout.logout.error"));
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,6 +83,11 @@ export default function SidebarAccount() {
             {user?.name ?? t("userMenu.fallbackUser")}
           </p>
           <p className="sidebar-account-email">{user?.email ?? ""}</p>
+          {userLoadFailed ? (
+            <p role="alert" className="mt-1 text-[11px] leading-snug text-rose-300">
+              {t("layout.account.loadError")}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="sidebar-account-actions">
@@ -160,6 +185,11 @@ export default function SidebarAccount() {
             {loading ? t("userMenu.signingOut") : t("userMenu.signOut")}
           </span>
         </button>
+        {logoutError ? (
+          <p role="alert" className="text-[11px] leading-snug text-rose-300">
+            {logoutError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

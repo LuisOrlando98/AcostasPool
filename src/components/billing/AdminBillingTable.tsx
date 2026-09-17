@@ -111,6 +111,7 @@ export default function AdminBillingTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [editing, setEditing] = useState<BillingDraft | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
@@ -272,6 +273,7 @@ export default function AdminBillingTable({
 
   const openEditor = (row: BillingRow) => {
     setConfirmOpen(false);
+    setSaveError(null);
     setEditing(toDraft(row));
   };
 
@@ -280,6 +282,7 @@ export default function AdminBillingTable({
       return;
     }
     setConfirmOpen(false);
+    setSaveError(null);
     setEditing(null);
   };
 
@@ -314,11 +317,16 @@ export default function AdminBillingTable({
     formData.set("paymentType", editing.paymentType);
     formData.set("paymentNotes", editing.paymentNotes);
 
+    setSaveError(null);
     startTransition(async () => {
-      await updatePropertyBillingAction(formData);
-      setConfirmOpen(false);
-      setEditing(null);
-      router.refresh();
+      try {
+        await updatePropertyBillingAction(formData);
+        setConfirmOpen(false);
+        setEditing(null);
+        router.refresh();
+      } catch {
+        setSaveError(t("admin.invoices.servicePayment.errors.save"));
+      }
     });
   };
 
@@ -846,6 +854,15 @@ export default function AdminBillingTable({
                         </p>
                       </div>
                     </div>
+
+                    {saveError ? (
+                      <div
+                        role="alert"
+                        className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                      >
+                        {saveError}
+                      </div>
+                    ) : null}
 
                     <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                       <button

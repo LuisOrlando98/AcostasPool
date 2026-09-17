@@ -74,6 +74,7 @@ enum InvoiceTheme {
 
 enum NotificationStatus {
   QUEUED
+  PROCESSING
   SENT
   FAILED
 }
@@ -114,8 +115,8 @@ model User {
   isActive     Boolean  @default(true)
   isDeveloper  Boolean  @default(false)
   avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
   technician Technician?
   customer   Customer?
@@ -136,7 +137,7 @@ model Technician {
   notes  String?
   colorHex String?
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs Job[]
   servicePlans ServicePlan[]
   digests TechDigest[]
@@ -156,17 +157,17 @@ model Customer {
   estadoCuenta  AccountStatus @default(ACTIVE)
   tipoCliente   CustomerType @default(RESIDENTIAL)
   allowWeekendBooking Boolean @default(false)
-  pauseServicesFrom DateTime?
+  pauseServicesFrom DateTime? @db.Timestamptz(3)
   direccionLinea1 String?
   direccionLinea2 String?
   ciudad        String?
   estadoProvincia String?
   codigoPostal  String?
   notas         String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(3)
 
-  user          User?          @relation(fields: [userId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   properties    Property[]
   jobs          Job[]
   invoices      Invoice[]
@@ -174,6 +175,8 @@ model Customer {
   notifications Notification[]
   servicePlans  ServicePlan[]
   emailLogs     EmailLog[]
+
+  @@index([email])
 }
 
 model Property {
@@ -192,19 +195,24 @@ model Property {
   sanitizerType    String?
   accessInfo       String?
   locationNotes    String?
-  serviceStartDate DateTime?
+  serviceStartDate DateTime? @db.Timestamptz(3)
   paymentDay       Int?
   servicePrice     Decimal? @db.Decimal(10, 2)
   paymentType      String?
   paymentNotes     String?
   equipmentDetails String?
   referencePhotos  Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  lat              Float?
+  lng              Float?
+  geocodedAt       DateTime? @db.Timestamptz(3)
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 
-  customer Customer @relation(fields: [customerId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   jobs     Job[]
   servicePlans ServicePlan[]
+
+  @@index([customerId])
 }
 
 model Job {
@@ -213,7 +221,7 @@ model Job {
     propertyId    String
     technicianId  String?
     serviceTierId String?
-    scheduledDate DateTime
+    scheduledDate DateTime @db.Timestamptz(3)
     status        JobStatus @default(SCHEDULED)
     type          JobType   @default(ROUTINE)
     priority      JobPriority @default(NORMAL)
@@ -224,19 +232,19 @@ model Job {
   customerNotes String?
   checklist     Json?
   planId        String?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  requestedAt   DateTime?
+  startedAt     DateTime? @db.Timestamptz(3)
+  completedAt   DateTime? @db.Timestamptz(3)
+  requestedAt   DateTime? @db.Timestamptz(3)
   requestedByUserId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
 
-    customer   Customer   @relation(fields: [customerId], references: [id])
-    property   Property   @relation(fields: [propertyId], references: [id])
-    technician Technician? @relation(fields: [technicianId], references: [id])
-    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
-    plan       ServicePlan? @relation(fields: [planId], references: [id])
-    requestedBy User? @relation("UserRequestedJobs", fields: [requestedByUserId], references: [id])
+    customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+    property   Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+    technician Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id], onDelete: SetNull)
+    plan       ServicePlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+    requestedBy User? @relation("UserRequestedJobs", fields: [requestedByUserId], references: [id], onDelete: SetNull)
   photos     JobPhoto[]
   invoices   Invoice[]
   digestItems TechDigestItem[]
@@ -254,8 +262,8 @@ model Job {
     name      String
     checklist Json?
     isActive  Boolean  @default(true)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now()) @db.Timestamptz(3)
+    updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
     jobs  Job[]
     plans ServicePlan[]
@@ -273,32 +281,37 @@ model Job {
     frequency     PlanFrequency
     serviceType   ServiceType
   priority      JobPriority  @default(NORMAL)
-  nextRunAt     DateTime
+  nextRunAt     DateTime @db.Timestamptz(3)
   preferredTime String?
   estimatedDurationMinutes Int?
   checklist     Json?
   notes         String?
   isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime     @updatedAt @db.Timestamptz(3)
 
-    customer   Customer   @relation(fields: [customerId], references: [id])
-    property   Property   @relation(fields: [propertyId], references: [id])
-    technician Technician? @relation(fields: [technicianId], references: [id])
-    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
+    customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+    property   Property   @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+    technician Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id], onDelete: SetNull)
     jobs       Job[]
+
+    @@index([isActive, nextRunAt])
+    @@index([customerId])
+    @@index([propertyId])
+    @@index([technicianId])
   }
 
 model JobPhoto {
   id                String   @id @default(cuid())
   jobId             String
-  takenAt           DateTime @default(now())
-  uploadedAt        DateTime @default(now())
+  takenAt           DateTime @default(now()) @db.Timestamptz(3)
+  uploadedAt        DateTime @default(now()) @db.Timestamptz(3)
   url               String
   visibleToCustomer Boolean  @default(true)
   uploadedByUserId  String?
 
-  job Job @relation(fields: [jobId], references: [id])
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
 }
@@ -316,13 +329,13 @@ model Invoice {
   tax       Decimal       @db.Decimal(10, 2) @default(0)
   total     Decimal       @db.Decimal(10, 2)
   pdfUrl    String?
-  sentAt    DateTime?
-  paidAt    DateTime?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  sentAt    DateTime? @db.Timestamptz(3)
+  paidAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  job      Job?     @relation(fields: [jobId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  job      Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([customerId])
@@ -339,11 +352,11 @@ model CustomerDocument {
   fileUrl          String
   mimeType         String?
   sizeBytes        Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 
-  customer   Customer @relation(fields: [customerId], references: [id])
-  uploadedBy User?    @relation("CustomerDocumentUploader", fields: [uploadedByUserId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  uploadedBy User?    @relation("CustomerDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
 
   @@index([customerId, createdAt])
   @@index([uploadedByUserId, createdAt])
@@ -351,23 +364,27 @@ model CustomerDocument {
 
 model Notification {
   id        String             @id @default(cuid())
-  customerId String
+  customerId String?
+  recipientUserId String?
   recipientRole Role            @default(CUSTOMER)
   channel   NotificationChannel @default(EMAIL)
   eventType String
   severity  NotificationSeverity @default(INFO)
   status    NotificationStatus @default(QUEUED)
+  attempts  Int                @default(0)
+  lastAttemptAt DateTime?      @db.Timestamptz(3)
   payload   Json?
-  sentAt    DateTime?
-  readAt    DateTime?
-  createdAt DateTime           @default(now())
+  sentAt    DateTime? @db.Timestamptz(3)
+  readAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime           @default(now()) @db.Timestamptz(3)
   actorUserId String?
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([recipientRole, createdAt])
   @@index([customerId, createdAt])
+  @@index([recipientUserId, createdAt])
   @@index([actorUserId])
 }
 
@@ -376,10 +393,10 @@ model NotificationPreference {
   userId    String
   eventType String
   enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventType])
 }
@@ -387,32 +404,35 @@ model NotificationPreference {
 model TechDigest {
   id           String       @id @default(cuid())
   technicianId String
-  routeDate    DateTime
+  routeDate    DateTime @db.Timestamptz(3)
   window       DigestWindow
-  scheduledFor DateTime
+  scheduledFor DateTime @db.Timestamptz(3)
   status       NotificationStatus @default(QUEUED)
-  sentAt       DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  sentAt       DateTime? @db.Timestamptz(3)
+  createdAt    DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime     @updatedAt @db.Timestamptz(3)
 
-  technician Technician @relation(fields: [technicianId], references: [id])
+  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
   items       TechDigestItem[]
   emailLogs   EmailLog[]
+
+  @@unique([technicianId, routeDate, window])
+  @@index([technicianId, routeDate])
 }
 
 model TechDigestItem {
   id           String   @id @default(cuid())
   technicianId String
   jobId        String
-  routeDate    DateTime
+  routeDate    DateTime @db.Timestamptz(3)
   changeType   String
   payload      Json?
   digestId     String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
 
-  technician Technician @relation(fields: [technicianId], references: [id])
-  job        Job        @relation(fields: [jobId], references: [id])
-  digest     TechDigest? @relation(fields: [digestId], references: [id])
+  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  digest     TechDigest? @relation(fields: [digestId], references: [id], onDelete: SetNull)
 
   @@index([technicianId, routeDate])
   @@index([jobId])
@@ -427,36 +447,43 @@ model EmailLog {
   bodyText       String
   bodyHtml       String?
   status         NotificationStatus @default(QUEUED)
+  attempts       Int                @default(0)
   errorMessage   String?
-  sentAt         DateTime?
-  createdAt      DateTime           @default(now())
+  sentAt         DateTime? @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
   customerId     String?
   technicianId   String?
   jobId          String?
   digestId       String?
   metadata       Json?
 
-  customer   Customer?  @relation(fields: [customerId], references: [id])
-  technician Technician? @relation(fields: [technicianId], references: [id])
-  job        Job?       @relation(fields: [jobId], references: [id])
-  digest     TechDigest? @relation(fields: [digestId], references: [id])
+  customer   Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  job        Job?       @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  digest     TechDigest? @relation(fields: [digestId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([jobId])
 }
 
 model AuditLog {
   id       String   @id @default(cuid())
-  userId   String
+  userId   String?
+  actorEmail String?
+  actorName  String?
   action   String
   entity   String
   entityId String?
   metadata Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([userId, createdAt])
+  @@index([entity, entityId])
 }
 
 model PasswordResetToken {
@@ -464,11 +491,11 @@ model PasswordResetToken {
   userId    String
   token     String   @unique
   purpose   ResetTokenPurpose @default(PASSWORD_RESET)
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
+  expiresAt DateTime @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([purpose, userId, createdAt])
@@ -478,9 +505,9 @@ model PasswordResetToken {
 model RateLimitBucket {
   key       String   @id
   count     Int
-  resetAt   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  resetAt   DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
 
   @@index([resetAt])
 }
@@ -499,8 +526,8 @@ model SiteSettings {
   invoiceTemplate  Json?
   routeAssistantConfig Json?
   complianceContent Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 }
 
 model PublicIntegrationResponse {
@@ -515,8 +542,8 @@ model PublicIntegrationResponse {
   signatureDataUrl String                 @db.Text
   userAgent     String?
   ipAddress     String?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  createdAt     DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime                  @updatedAt @db.Timestamptz(3)
 
   @@unique([token, clientEmail])
   @@index([token, createdAt])

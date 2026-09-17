@@ -139,38 +139,27 @@ export async function DELETE(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
+  // Las reglas onDelete del esquema (migración on_delete_rules) resuelven las filas hijas:
+  // JobPhoto y TechDigestItem en cascada; Invoice.jobId y EmailLog.jobId pasan a NULL.
+  // Solo queda el borrado y su auditoría, en la misma transacción.
   await prisma.$transaction(async (tx) => {
-    await tx.invoice.updateMany({
-      where: { jobId },
-      data: { jobId: null },
+    await tx.job.delete({ where: { id: jobId } });
+    await logAuditEvent({
+      tx,
+      userId: session.sub,
+      actorEmail: session.email,
+      actorName: session.name,
+      action: "JOB_DELETED",
+      entity: "Job",
+      entityId: jobId,
+      metadata: {
+        customerId: existing.customerId,
+        propertyId: existing.propertyId,
+        technicianId: existing.technicianId,
+        scheduledDate: existing.scheduledDate.toISOString(),
+        status: existing.status,
+      },
     });
-    await tx.emailLog.updateMany({
-      where: { jobId },
-      data: { jobId: null },
-    });
-    await tx.techDigestItem.deleteMany({
-      where: { jobId },
-    });
-    await tx.jobPhoto.deleteMany({
-      where: { jobId },
-    });
-    await tx.job.delete({
-      where: { id: jobId },
-    });
-  });
-
-  await logAuditEvent({
-    userId: session.sub,
-    action: "JOB_DELETED",
-    entity: "Job",
-    entityId: jobId,
-    metadata: {
-      customerId: existing.customerId,
-      propertyId: existing.propertyId,
-      technicianId: existing.technicianId,
-      scheduledDate: existing.scheduledDate.toISOString(),
-      status: existing.status,
-    },
   });
 
   return NextResponse.json({ deleted: true, jobId });

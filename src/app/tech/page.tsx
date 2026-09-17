@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
-import { geocodeAddresses } from "@/lib/routing/geo";
+import { geocodeProperties } from "@/lib/routing/geo";
 import { BUSINESS_TIMEZONE, toDateKey } from "@/lib/jobs/capacity";
 import {
   getAddressPairKey,
@@ -85,7 +85,9 @@ export default async function TechPage() {
       priority: true,
       serviceType: true,
       customer: { select: { nombre: true, apellidos: true, telefono: true } },
-      property: { select: { address: true } },
+      property: {
+        select: { id: true, address: true, lat: true, lng: true, geocodedAt: true },
+      },
       photos: { select: { id: true } },
     },
   });
@@ -129,8 +131,8 @@ export default async function TechPage() {
   const toMinutes = (from: Date, to: Date) =>
     Math.max(1, Math.round((to.getTime() - from.getTime()) / 60000));
 
-  const geocodedByAddress = await geocodeAddresses(
-    routeJobs.map((job) => job.property.address)
+  const coordinatesByPropertyId = await geocodeProperties(
+    routeJobs.map((job) => job.property)
   );
   const routePairMetrics = await getTravelMetricsForPairs(
     routeJobs.slice(1).map((job, index) => {
@@ -138,8 +140,8 @@ export default async function TechPage() {
       return {
         fromAddress: previous.property.address,
         toAddress: job.property.address,
-        fromCoordinates: geocodedByAddress.get(previous.property.address) ?? null,
-        toCoordinates: geocodedByAddress.get(job.property.address) ?? null,
+        fromCoordinates: coordinatesByPropertyId.get(previous.property.id) ?? null,
+        toCoordinates: coordinatesByPropertyId.get(job.property.id) ?? null,
       };
     })
   );

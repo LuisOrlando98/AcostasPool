@@ -38,6 +38,9 @@ export default function UserMenu() {
   const { t, locale } = useI18n();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [openNotifications, setOpenNotifications] = useState(false);
@@ -51,28 +54,43 @@ export default function UserMenu() {
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
 
   const load = useCallback(async () => {
-    const [userRes, unreadRes] = await Promise.all([
-      fetch("/api/auth/me"),
-      fetch("/api/notifications/unread"),
-    ]);
+    try {
+      const [userRes, unreadRes] = await Promise.all([
+        fetch("/api/auth/me"),
+        fetch("/api/notifications/unread"),
+      ]);
+      if (!userRes.ok || !unreadRes.ok) {
+        throw new Error(
+          `Menu requests failed with status ${userRes.status}/${unreadRes.status}`
+        );
+      }
 
-    const userData = await userRes.json().catch(() => ({ user: null }));
-    setUser(userData.user);
+      const userData = (await userRes.json()) as { user?: UserInfo | null };
+      setUser(userData.user ?? null);
 
-    const unreadData = await unreadRes.json().catch(() => ({ unread: 0 }));
-    setUnreadCount(
-      typeof unreadData.unread === "number" ? unreadData.unread : 0
-    );
+      const unreadData = (await unreadRes.json()) as { unread?: unknown };
+      setUnreadCount(
+        typeof unreadData.unread === "number" ? unreadData.unread : 0
+      );
 
-    const notificationsRes = await fetch("/api/notifications/recent");
-    const notificationsData = await notificationsRes
-      .json()
-      .catch(() => ({ notifications: [] }));
-    setNotifications(
-      Array.isArray(notificationsData.notifications)
-        ? notificationsData.notifications
-        : []
-    );
+      const notificationsRes = await fetch("/api/notifications/recent");
+      if (!notificationsRes.ok) {
+        throw new Error(
+          `Notifications request failed with status ${notificationsRes.status}`
+        );
+      }
+      const notificationsData = (await notificationsRes.json()) as {
+        notifications?: unknown;
+      };
+      setNotifications(
+        Array.isArray(notificationsData.notifications)
+          ? (notificationsData.notifications as NotificationItem[])
+          : []
+      );
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -199,8 +217,57 @@ export default function UserMenu() {
 
   const handleLogout = async () => {
     setLoading(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    setLogoutError(null);
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
+      }
+      window.location.href = "/login";
+    } catch {
+      // Only the failure path re-enables the button: on success we navigate away.
+      setLogoutError(t("layout.logout.error"));
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (item: NotificationItem) => {
+    if (item.readAt) {
+      return true;
+    }
+    try {
+      const response = await fetch(`/api/notifications/${item.id}/read`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Mark as read failed with status ${response.status}`);
+      }
+      setNotifications((current) =>
+        current.map((entry) =>
+          entry.id === item.id
+            ? { ...entry, readAt: new Date().toISOString() }
+            : entry
+        )
+      );
+      setUnreadCount((current) => (current > 0 ? current - 1 : 0));
+      return true;
+    } catch {
+      setActionError(t("notifications.preferences.saveError"));
+      return false;
+    }
+  };
+
+  const openNotification = async (item: NotificationItem) => {
+    setActionError(null);
+    const marked = await markAsRead(item);
+    if (!marked && !item.link) {
+      // Keep the panel open so the error stays visible.
+      return;
+    }
+    setOpenNotifications(false);
+    if (item.link) {
+      window.location.href = item.link;
+    }
   };
   const accountHref = user?.role === "CUSTOMER" ? "/client/profile" : "/account";
   const isAdmin = user?.role === "ADMIN";
@@ -266,24 +333,49 @@ export default function UserMenu() {
                 onClick={async () => {
                   const previous = notifications;
                   const previousUnread = unreadCount;
+                  setActionError(null);
                   setNotifications([]);
                   setUnreadCount(0);
-                  const response = await fetch("/api/notifications/clear", {
-                    method: "POST",
-                  }).catch(() => null);
-                  if (!response?.ok) {
+                  try {
+                    const response = await fetch("/api/notifications/clear", {
+                      method: "POST",
+                    });
+                    if (!response.ok) {
+                      throw new Error(`Clear failed with status ${response.status}`);
+                    }
+                    await load();
+                  } catch {
                     setNotifications(previous);
                     setUnreadCount(previousUnread);
-                    return;
+                    setActionError(t("notifications.preferences.saveError"));
                   }
-                  void load();
                 }}
                 className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
               >
                 {t("notifications.clear")}
               </button>
             </div>
-            {notifications.length === 0 ? (
+            {loadFailed ? (
+              <div
+                role="alert"
+                className="flex items-center justify-between gap-2 px-4 pb-3 text-xs text-rose-600"
+              >
+                <span>{t("layout.notifications.loadError")}</span>
+                <button
+                  type="button"
+                  onClick={() => void load()}
+                  className="rounded-full border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                >
+                  {t("layout.notifications.retry")}
+                </button>
+              </div>
+            ) : null}
+            {actionError ? (
+              <p role="alert" className="px-4 pb-3 text-xs text-rose-600">
+                {actionError}
+              </p>
+            ) : null}
+            {notifications.length === 0 && !loadFailed ? (
               <div className="px-4 pb-4 text-sm text-slate-600">
                 {t("userMenu.empty")}
               </div>
@@ -308,33 +400,7 @@ export default function UserMenu() {
                               <button
                                 key={item.id}
                                 type="button"
-                                onClick={async () => {
-                                  if (!isRead) {
-                                    await fetch(
-                                      `/api/notifications/${item.id}/read`,
-                                      {
-                                        method: "POST",
-                                      }
-                                    );
-                                    setNotifications((current) =>
-                                      current.map((entry) =>
-                                        entry.id === item.id
-                                          ? {
-                                              ...entry,
-                                              readAt: new Date().toISOString(),
-                                            }
-                                          : entry
-                                      )
-                                    );
-                                    setUnreadCount((current) =>
-                                      current > 0 ? current - 1 : 0
-                                    );
-                                  }
-                                  setOpenNotifications(false);
-                                  if (item.link) {
-                                    window.location.href = item.link;
-                                  }
-                                }}
+                                onClick={() => void openNotification(item)}
                                 data-severity={item.severity ?? "INFO"}
                                 className={`notification-item w-full px-4 py-3 text-left transition ${
                                   isRead
@@ -411,6 +477,11 @@ export default function UserMenu() {
             <div className="px-4 pb-3 text-xs text-slate-400">
               {user?.email ?? ""}
             </div>
+            {loadFailed && !user ? (
+              <p role="alert" className="px-4 pb-3 text-xs text-rose-600">
+                {t("layout.account.loadError")}
+              </p>
+            ) : null}
             <a
               href={accountHref}
               className="block border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
@@ -442,6 +513,14 @@ export default function UserMenu() {
             >
               {loading ? t("userMenu.signingOut") : t("userMenu.signOut")}
             </button>
+            {logoutError ? (
+              <p
+                role="alert"
+                className="border-t border-[var(--border)] px-4 py-2 text-xs text-rose-600"
+              >
+                {logoutError}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>

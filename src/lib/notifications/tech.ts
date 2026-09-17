@@ -1,29 +1,35 @@
 import type { Prisma } from "@prisma/client";
 
-export function getTechRecipientUserId(payload: unknown) {
-  if (!payload || typeof payload !== "object") {
-    return null;
-  }
-  const value = (payload as Record<string, unknown>).recipientUserId;
-  return typeof value === "string" ? value : null;
-}
+/**
+ * Destinatario TECH de una notificación.
+ *
+ * Se usa la columna `Notification.recipientUserId` (indexada). La migración
+ * notification_recipient_column hizo backfill desde `payload.recipientUserId`, así que no hace
+ * falta consultar el payload.
+ */
 
-export function isTechNotificationForUser(payload: unknown, userId: string) {
-  return getTechRecipientUserId(payload) === userId;
-}
+/** Campos mínimos de una fila Notification para comprobar el destinatario TECH. */
+export type TechRecipientRow = { recipientUserId: string | null };
 
-export function filterTechNotificationsForUser<T extends { payload: unknown }>(
-  items: T[],
+export function isTechNotificationForUser(
+  notification: TechRecipientRow,
   userId: string
 ) {
-  return items.filter((item) => isTechNotificationForUser(item.payload, userId));
+  return (
+    notification.recipientUserId !== null &&
+    notification.recipientUserId === userId
+  );
 }
 
-export function buildTechRecipientWhere(userId: string): Prisma.NotificationWhereInput {
-  return {
-    payload: {
-      path: ["recipientUserId"],
-      equals: userId,
-    },
-  };
+export function filterTechNotificationsForUser<T extends TechRecipientRow>(
+  items: readonly T[],
+  userId: string
+) {
+  return items.filter((item) => isTechNotificationForUser(item, userId));
+}
+
+export function buildTechRecipientWhere(
+  userId: string
+): Prisma.NotificationWhereInput {
+  return { recipientUserId: userId };
 }

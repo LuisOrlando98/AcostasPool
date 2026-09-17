@@ -69,6 +69,7 @@ export default function InvoiceCreateForm({
   const [invoiceType, setInvoiceType] = useState<InvoiceType>("STANDARD");
   const [taxExempt, setTaxExempt] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([createLine()]);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const serviceCatalog = useMemo(
     () =>
@@ -208,9 +209,14 @@ export default function InvoiceCreateForm({
   return (
     <form
       action={async (formData) => {
-        await createInvoiceAction(formData);
-        onCreated?.();
-        router.refresh();
+        setFormError(null);
+        try {
+          await createInvoiceAction(formData);
+          onCreated?.();
+          router.refresh();
+        } catch {
+          setFormError(t("admin.invoices.new.errors.create"));
+        }
       }}
       className="mt-5"
     >
@@ -484,7 +490,15 @@ export default function InvoiceCreateForm({
             />
           </div>
 
+          {formError ? (
+            <p role="alert" className="text-sm text-rose-600">
+              {formError}
+            </p>
+          ) : null}
+
           <FormSubmitButton
+            // Remount after a failed submit so the button does not flash its success label.
+            key={formError ? "submit-after-error" : "submit"}
             idleLabel={t("admin.invoices.new.actions.create")}
             pendingLabel={t("common.feedback.creating")}
             successLabel={t("common.feedback.created")}

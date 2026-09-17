@@ -57,14 +57,8 @@ test.describe("route protection", () => {
   test("keeps the requested path in ?next= when redirecting to /login", async ({
     page,
   }) => {
-    // Suspected bug: middleware.ts sits at the project root while the app lives
-    // under src/, so the production build does not bundle it
-    // (.next/server/middleware-manifest.json has no middleware entry). Only the
-    // server guard (requireAuth) redirects, and it drops the ?next= parameter.
-    test.fail(
-      true,
-      "middleware.ts is not bundled (expected at src/middleware.ts or src/proxy.ts)"
-    );
+    // Route protection lives in src/proxy.ts (Next 16 proxy convention); the
+    // former root-level middleware.ts was never bundled and dropped ?next=.
     await page.goto(ROLE_HOME.ADMIN);
 
     const url = new URL(page.url());

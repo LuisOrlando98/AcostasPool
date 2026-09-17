@@ -87,13 +87,52 @@ describe("toDateKey", () => {
     expect(toDateKey(new Date("2026-03-09T04:00:00Z"))).toBe("2026-03-09");
   });
 
-  it("lanza RangeError desde Intl con una Date inválida (el fallback UTC nunca se alcanza)", () => {
-    expect(() => toDateKey(new Date(Number.NaN))).toThrow(RangeError);
+  it("devuelve una clave vacía, sin lanzar, para una Date inválida", () => {
+    expect(toDateKey(new Date(Number.NaN))).toBe("");
+  });
+});
+
+describe("callers de toDateKey con una Date inválida", () => {
+  const invalidDate = new Date(Number.NaN);
+
+  it("isSunday devuelve false sin lanzar", () => {
+    expect(isSunday(invalidDate)).toBe(false);
   });
 
-  it.todo(
-    "decidir si toDateKey debe devolver null o usar el fallback UTC con Date inválida en vez de lanzar"
-  );
+  it("getStartOfDay y getLeadStartDate propagan una Invalid Date sin lanzar", () => {
+    expect(Number.isNaN(getStartOfDay(invalidDate).getTime())).toBe(true);
+    expect(Number.isNaN(getLeadStartDate(invalidDate).getTime())).toBe(true);
+  });
+
+  it("getWeekStartKey devuelve la clave vacía sin lanzar", () => {
+    expect(getWeekStartKey(invalidDate)).toBe("");
+  });
+
+  it("buildAvailabilityDays ignora las fechas programadas inválidas sin lanzar", () => {
+    const availability = buildAvailabilityDays({
+      startDate: MONDAY_NOON_UTC,
+      days: 1,
+      techniciansCount: 1,
+      scheduledDates: [invalidDate, new Date(MONDAY_8AM_EDT)],
+    });
+
+    const [monday] = availability;
+    expect(availability).toHaveLength(1);
+    expect(monday.date).toBe("2026-06-15");
+    expect(monday.usedCapacity).toBe(1);
+    expect(slotRemainingByValue(monday)["08:00"]).toBe(0);
+  });
+
+  it("buildAvailabilityDays devuelve vacío sin lanzar cuando la fecha de inicio es inválida", () => {
+    expect(
+      buildAvailabilityDays({
+        startDate: invalidDate,
+        days: 3,
+        techniciansCount: 1,
+        scheduledDates: [],
+      })
+    ).toEqual([]);
+  });
 });
 
 describe("parseDateOnly", () => {
@@ -114,13 +153,14 @@ describe("parseDateOnly", () => {
     }
   });
 
-  it("acepta días inexistentes del calendario y los desborda al mes siguiente (comportamiento actual)", () => {
-    expect(parseDateOnly("2026-02-30")?.toISOString()).toBe("2026-03-02T12:00:00.000Z");
-    expect(parseDateOnly("2026-04-31")?.toISOString()).toBe("2026-05-01T12:00:00.000Z");
+  it("devuelve null para días inexistentes del calendario en vez de desbordarlos al mes siguiente", () => {
+    for (const value of ["2026-02-30", "2026-04-31", "2026-02-29", "2100-02-29"]) {
+      expect(parseDateOnly(value)).toBeNull();
+    }
   });
 
-  it.fails("debería devolver null para 2026-02-30 (bug sospechado)", () => {
-    expect(parseDateOnly("2026-02-30")).toBeNull();
+  it("devuelve null para años que Date.UTC remapearía (0026 -> 1926)", () => {
+    expect(parseDateOnly("0026-06-15")).toBeNull();
   });
 });
 
@@ -266,14 +306,15 @@ describe("timeValueToMinutes", () => {
     }
   });
 
-  it("no valida el rango de minutos ni partes vacías (comportamiento actual)", () => {
-    expect(timeValueToMinutes("08:60")).toBe(9 * MINUTES_PER_HOUR);
+  it("no valida partes vacías: Number('') es 0 (comportamiento actual)", () => {
     expect(timeValueToMinutes("08:")).toBe(FIRST_SLOT_MINUTES);
     expect(timeValueToMinutes(":")).toBe(0);
   });
 
-  it.fails("debería devolver null para minutos >= 60 como 08:60 (bug sospechado)", () => {
-    expect(timeValueToMinutes("08:60")).toBeNull();
+  it("devuelve null cuando los minutos están fuera de 0..59", () => {
+    for (const value of ["08:60", "08:99", "23:60", "08:-5"]) {
+      expect(timeValueToMinutes(value)).toBeNull();
+    }
   });
 });
 

@@ -405,19 +405,25 @@ export default function CustomerRepositoryExplorer({
     setSubmitting(true);
     setError(null);
     setMessage(null);
-    const response = await fetch(`/api/customers/${customerId}/repository`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    setSubmitting(false);
-    if (!response.ok) {
-      setError(data?.error ?? t("admin.customers.repository.errors.action"));
+    try {
+      const response = await fetch(`/api/customers/${customerId}/repository`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setError(data?.error ?? t("admin.customers.repository.errors.action"));
+        return false;
+      }
+      refresh();
+      return true;
+    } catch {
+      setError(t("common.errors.network"));
       return false;
+    } finally {
+      setSubmitting(false);
     }
-    refresh();
-    return true;
   };
 
   const handleCreateFolder = async () => {
@@ -488,21 +494,27 @@ export default function CustomerRepositoryExplorer({
     const formData = new FormData();
     formData.append("path", currentPath || "files");
     Array.from(files).forEach((file) => formData.append("files", file));
-    const response = await fetch(`/api/customers/${customerId}/repository/upload`, {
-      method: "POST",
-      body: formData,
-    });
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
-    setSubmitting(false);
-    if (!response.ok) {
-      setError(data?.error ?? t("admin.customers.repository.errors.upload"));
-      return;
+    try {
+      const response = await fetch(`/api/customers/${customerId}/repository/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setError(data?.error ?? t("admin.customers.repository.errors.upload"));
+        return;
+      }
+      setMessage(t("admin.customers.repository.feedback.uploaded"));
+      refresh();
+    } catch {
+      setError(t("common.errors.network"));
+    } finally {
+      setSubmitting(false);
+      // Reset the hidden input so re-selecting the same files fires onChange again (retry).
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    setMessage(t("admin.customers.repository.feedback.uploaded"));
-    refresh();
   };
 
   const handleOpenEntry = (entry: RepositoryEntry) => {
@@ -679,13 +691,19 @@ export default function CustomerRepositoryExplorer({
       </div>
 
       {error ? (
-        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <div
+          role="alert"
+          className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700"
+        >
           {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+        <div
+          role="status"
+          className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700"
+        >
           {message}
         </div>
       ) : null}

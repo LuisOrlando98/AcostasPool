@@ -1,4 +1,3 @@
-import { createRequire } from "node:module";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
 import { storePublicAsset } from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
@@ -16,8 +15,6 @@ import {
   type NormalizedInvoiceTemplateConfig,
 } from "@/lib/invoice-template";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
-
-const require = createRequire(import.meta.url);
 
 type ChromiumLauncher = {
   launch: (options?: {
@@ -43,11 +40,10 @@ type ChromiumLauncher = {
   }>;
 };
 
-function loadChromium(): ChromiumLauncher {
+async function loadChromium(): Promise<ChromiumLauncher> {
   try {
-    const moduleName = `play${"wright"}`;
-    const mod = require(moduleName) as { chromium?: ChromiumLauncher };
-    if (!mod?.chromium) {
+    const mod = await import("playwright");
+    if (!mod.chromium) {
       throw new Error("Chromium launcher not available.");
     }
     return mod.chromium;
@@ -807,7 +803,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfRenderInput) {
   });
 
   try {
-    const chromium = loadChromium();
+    const chromium = await loadChromium();
     const browser = await chromium.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],

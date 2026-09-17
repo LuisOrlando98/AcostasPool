@@ -413,6 +413,7 @@ export default function AppShell({
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -516,8 +517,18 @@ export default function AppShell({
       return;
     }
     setLoggingOut(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    setLogoutError(null);
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
+      }
+      window.location.href = "/login";
+    } catch {
+      // Only the failure path re-enables the button: on success we navigate away.
+      setLogoutError(t("layout.logout.error"));
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -887,6 +898,11 @@ export default function AppShell({
                     {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
                   </span>
                 </button>
+                {logoutError ? (
+                  <p role="alert" className="mt-2 px-3 text-xs text-rose-300">
+                    {logoutError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">

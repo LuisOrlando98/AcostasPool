@@ -60,9 +60,7 @@ export async function POST(request: Request) {
 
     const password = result.data.password;
     const remember = result.data.remember ?? false;
-    const user = await prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !user.isActive) {
       return NextResponse.json(

@@ -60,31 +60,37 @@ export default function CustomerDocumentUploader({
       formData.append("description", description.trim());
     }
 
-    const response = await fetch(`/api/customers/${customerId}/documents`, {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const response = await fetch(`/api/customers/${customerId}/documents`, {
+        method: "POST",
+        body: formData,
+      });
 
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
 
-    if (!response.ok) {
+      if (!response.ok) {
+        setIsError(true);
+        setMessage(data.error ?? t("admin.customers.repository.uploader.messages.uploadFailed"));
+        return;
+      }
+
+      setMessage(t("admin.customers.repository.uploader.messages.uploaded"));
+      setFiles([]);
+      setDescription("");
+
+      if (onUploaded) {
+        onUploaded();
+        return;
+      }
+
+      window.location.reload();
+    } catch {
+      // Selected files, category and description are kept so the user can retry.
       setIsError(true);
-      setMessage(data.error ?? t("admin.customers.repository.uploader.messages.uploadFailed"));
+      setMessage(t("common.errors.network"));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setMessage(t("admin.customers.repository.uploader.messages.uploaded"));
-    setFiles([]);
-    setDescription("");
-    setLoading(false);
-
-    if (onUploaded) {
-      onUploaded();
-      return;
-    }
-
-    window.location.reload();
   };
 
   return (
@@ -149,6 +155,7 @@ export default function CustomerDocumentUploader({
 
         {message ? (
           <div
+            role={isError ? "alert" : "status"}
             className={`rounded-xl border px-3 py-2 text-xs ${
               isError
                 ? "border-rose-200 bg-rose-50 text-rose-700"

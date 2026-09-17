@@ -28,7 +28,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   if (session.role !== "ADMIN") {
     if (session.role === "TECH") {
-      if (!isTechNotificationForUser(notification.payload, session.sub)) {
+      if (!isTechNotificationForUser(notification, session.sub)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
     } else {

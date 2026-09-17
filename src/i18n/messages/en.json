@@ -55,9 +55,11 @@
     "language": {
       "en": "English",
       "es": "Spanish"
+    },
+    "errors": {
+      "network": "We couldn't reach the server. Check your connection and try again."
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Pool Operations Platform",
     "nav": {
@@ -146,8 +148,7 @@
       "value4": "Client-first operations",
       "note": "We blend field expertise with modern systems to deliver measurable results."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
@@ -713,7 +714,8 @@
         "createFailed": "Unable to create the jobs.",
         "saveFailed": "Unable to save the changes.",
         "saveJobFailed": "Unable to save the job changes.",
-        "deleteJobFailed": "Unable to delete the selected job."
+        "deleteJobFailed": "Unable to delete the selected job.",
+        "network": "Connection problem. Check your internet connection and try again."
       },
       "filters": {
         "toolbar": "Filters",
@@ -804,7 +806,8 @@
         "waterType": "Water type",
         "order": "Order",
         "jobNumber": "Job #{{count}}",
-        "completedNoEvidence": "Job completed without evidence."
+        "completedNoEvidence": "Job completed without evidence.",
+        "saveSuccess": "Changes saved."
       }
     },
     "technicians": {
@@ -1272,6 +1275,30 @@
           "modalKicker": "New job",
           "modalTitle": "Schedule job",
           "modalSubtitle": "Set date, technician, and checklist."
+        },
+        "errors": {
+          "invalidInput": "Some fields are missing or invalid. Review the form and try again.",
+          "customerNotFound": "Customer not found.",
+          "propertyNotFound": "The selected property does not belong to this customer.",
+          "planNotFound": "The recurring plan was not found for this customer.",
+          "emailInUse": "That email already belongs to another user.",
+          "inviteFailed": "The portal invite could not be sent. Check the customer's email and try again.",
+          "propertyHasJobs": "This property has jobs linked to it and cannot be deleted.",
+          "propertyHasPlans": "This property has recurring plans linked to it and cannot be deleted.",
+          "confirmationMismatch": "Type the confirmation word to delete this customer.",
+          "firstNameRequired": "First name is required.",
+          "phoneInvalid": "The phone number is not a valid US number.",
+          "secondaryPhoneInvalid": "The secondary phone number is not a valid US number.",
+          "addressIncomplete": "Complete street, city, state and ZIP code, or leave the address empty.",
+          "propertyAddressRequired": "The property address is required.",
+          "accessNotesRequired": "Access and location notes are required.",
+          "poolVolumeInvalid": "Pool volume must be a whole number of gallons.",
+          "paymentInfoInvalid": "Check the service start date, payment day, price and payment type.",
+          "propertyRequired": "Select a property.",
+          "dateRequired": "Select a date.",
+          "dateInvalid": "The date or time is not valid.",
+          "technicianRequired": "Select a technician.",
+          "durationInvalid": "The estimated duration must be a whole number of minutes (0 or more)."
         }
       },
       "repository": {
@@ -1567,6 +1594,9 @@
           "subtitle": "Review the updated information for {{property}} under {{customer}} before saving.",
           "back": "Back",
           "confirm": "Save changes"
+        },
+        "errors": {
+          "save": "Unable to save the billing changes. Please try again."
         }
       },
       "filters": {
@@ -1618,13 +1648,19 @@
           "create": "Create invoice",
           "addLine": "Add line",
           "removeLine": "Remove"
+        },
+        "errors": {
+          "create": "Unable to create the invoice. Please try again."
         }
       },
       "send": {
         "submit": "Send",
         "loading": "Sending...",
         "success": "Sent.",
-        "error": "Unable to send."
+        "error": "Unable to send.",
+        "alreadySent": "This invoice was already sent. Send it again?",
+        "resend": "Send again",
+        "postSendWarning": "The email was sent, but a follow-up step failed. Check the invoice status."
       },
       "editor": {
         "title": "Invoice {{number}}",
@@ -1930,7 +1966,13 @@
           "modalTitle": "Invoice preview - {{theme}}",
           "previewLabel": "Full page",
           "previewHint": "The full sheet is shown as a thumbnail. Tap to open fullscreen.",
-          "open": "Open"
+          "open": "Open",
+          "frameTitle": "Invoice PDF preview ({{theme}})",
+          "loading": "Generating the PDF preview...",
+          "refresh": "Refresh preview",
+          "error": "The preview could not be generated. Try again.",
+          "unsupported": "If your browser does not display the PDF here, open it in a new tab.",
+          "openInNewTab": "Open PDF in a new tab"
         }
       },
       "compliance": {
@@ -2017,13 +2059,13 @@
           "active": "Active",
           "inactive": "Inactive"
         },
-      "actions": {
-        "add": "Add tier",
-        "showInactive": "Show inactive",
-        "hideInactive": "Hide inactive",
-        "saving": "Saving...",
-        "deactivate": "Deactivate"
-      },
+        "actions": {
+          "add": "Add tier",
+          "showInactive": "Show inactive",
+          "hideInactive": "Hide inactive",
+          "saving": "Saving...",
+          "deactivate": "Deactivate"
+        },
         "errors": {
           "load": "Unable to load service tiers.",
           "save": "Unable to save the service tier.",
@@ -2577,9 +2619,24 @@
           "file": "Select a photo.",
           "checklist": "Complete the checklist before finishing the job.",
           "completed": "This job is already completed.",
-          "submit": "Unable to upload evidence."
-        }
+          "submit": "Unable to upload evidence.",
+          "network": "The photos couldn't be uploaded. Check your connection and try again; your photos and notes are still here.",
+          "fileTooLarge": "These photos exceed {{maxMb}} MB and were skipped: {{names}}"
+        },
+        "photoMaxSize": "Max {{maxMb}} MB per photo."
       }
+    }
+  },
+  "layout": {
+    "logout": {
+      "error": "We couldn't sign you out. Please try again."
+    },
+    "account": {
+      "loadError": "We couldn't load your account details."
+    },
+    "notifications": {
+      "loadError": "We couldn't load your notifications.",
+      "retry": "Retry"
     }
   }
 }

@@ -71,7 +71,6 @@ export default function ServiceTiersManager() {
   const applyLoadedTiers = useCallback(async (res: Response) => {
     if (!res.ok) {
       setErrorKey("admin.settings.tiers.errors.load");
-      setLoading(false);
       return;
     }
     const data = await res.json().catch(() => ({ tiers: [] }));
@@ -97,11 +96,20 @@ export default function ServiceTiersManager() {
       );
     });
     lastSavedPayload.current = nextSaved;
-    setLoading(false);
   }, []);
 
   useEffect(() => {
-    void fetch("/api/admin/service-tiers").then(applyLoadedTiers);
+    const loadTiers = async () => {
+      try {
+        const res = await fetch("/api/admin/service-tiers");
+        await applyLoadedTiers(res);
+      } catch {
+        setErrorKey("admin.settings.tiers.errors.load");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadTiers();
   }, [applyLoadedTiers]);
 
   const updateTier = (
@@ -147,47 +155,51 @@ export default function ServiceTiersManager() {
       return;
     }
     updateTier(tier.id, { saving: true }, { silent: true });
-    const res = await fetch(
-      tier.isNew ? "/api/admin/service-tiers" : `/api/admin/service-tiers/${tier.id}`,
-      {
-        method: tier.isNew ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!res.ok) {
-      setErrorKey("admin.settings.tiers.errors.save");
-      updateTier(tier.id, { saving: false }, { silent: true });
-      return;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (tier.isNew && data?.tier?.id) {
-      updateTier(
-        tier.id,
+    try {
+      const res = await fetch(
+        tier.isNew ? "/api/admin/service-tiers" : `/api/admin/service-tiers/${tier.id}`,
         {
-          id: data.tier.id,
-          isNew: false,
-          saving: false,
-        },
-        { silent: true }
+          method: tier.isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
       );
-      const nextKey = data.tier.id as string;
-      const payloadKey = JSON.stringify(payload);
-      lastSavedPayload.current.delete(tier.id);
-      lastSavedPayload.current.set(nextKey, payloadKey);
-      setSavedTierId(nextKey);
-    } else {
+      if (!res.ok) {
+        setErrorKey("admin.settings.tiers.errors.save");
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (tier.isNew && data?.tier?.id) {
+        updateTier(
+          tier.id,
+          {
+            id: data.tier.id,
+            isNew: false,
+            saving: false,
+          },
+          { silent: true }
+        );
+        const nextKey = data.tier.id as string;
+        const payloadKey = JSON.stringify(payload);
+        lastSavedPayload.current.delete(tier.id);
+        lastSavedPayload.current.set(nextKey, payloadKey);
+        setSavedTierId(nextKey);
+      } else {
+        lastSavedPayload.current.set(tier.id, JSON.stringify(payload));
+        setSavedTierId(tier.id);
+      }
+      if (savedBadgeTimer.current) {
+        clearTimeout(savedBadgeTimer.current);
+      }
+      savedBadgeTimer.current = setTimeout(() => {
+        setSavedTierId(null);
+      }, 1600);
+      setErrorKey(null);
+    } catch {
+      setErrorKey("admin.settings.tiers.errors.save");
+    } finally {
       updateTier(tier.id, { saving: false }, { silent: true });
-      lastSavedPayload.current.set(tier.id, JSON.stringify(payload));
-      setSavedTierId(tier.id);
     }
-    if (savedBadgeTimer.current) {
-      clearTimeout(savedBadgeTimer.current);
-    }
-    savedBadgeTimer.current = setTimeout(() => {
-      setSavedTierId(null);
-    }, 1600);
-    setErrorKey(null);
   };
 
   const tiersRef = useRef<ServiceTierDraft[]>([]);
@@ -365,7 +377,10 @@ export default function ServiceTiersManager() {
       </div>
 
       {errorKey ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+        >
           {t(errorKey)}
         </div>
       ) : null}

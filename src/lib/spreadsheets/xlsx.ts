@@ -359,6 +359,13 @@ function extractWorkbookSheetPath(files: Map<string, Buffer>) {
   return target.startsWith("xl/") ? target : `xl/${target}`;
 }
 
+/**
+ * `<c ...>cuerpo</c>` o `<c .../>`. Excel serializa las celdas vacías con estilo como
+ * etiqueta autocerrada (<c r="A2" s="1"/>): no tienen cuerpo (grupo 2 indefinido) y no
+ * hay que buscar `</c>`, que sería el cierre de la celda siguiente.
+ */
+const CELL_PATTERN = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+
 function parseSharedStrings(xml: string) {
   const items = Array.from(xml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g));
 
@@ -420,7 +427,7 @@ export function parseWorkbookXlsx(buffer: Buffer): WorksheetMatrix {
     const rowNumber = Number(rowMatch[1]);
     const rowCells = rowMatch[2];
     const values = rowsByNumber.get(rowNumber) ?? [];
-    const cellMatches = rowCells.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g);
+    const cellMatches = rowCells.matchAll(CELL_PATTERN);
 
     for (const cellMatch of cellMatches) {
       const attributes = cellMatch[1];
@@ -430,7 +437,7 @@ export function parseWorkbookXlsx(buffer: Buffer): WorksheetMatrix {
       }
 
       const columnIndex = columnIndexFromName(referenceMatch[1]);
-      values[columnIndex] = parseCellValue(attributes, cellMatch[2], sharedStrings);
+      values[columnIndex] = parseCellValue(attributes, cellMatch[2] ?? "", sharedStrings);
     }
 
     rowsByNumber.set(rowNumber, values);

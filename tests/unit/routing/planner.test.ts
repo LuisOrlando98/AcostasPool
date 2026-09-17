@@ -412,9 +412,9 @@ describe("buildRouteAssistantPlans: asignación de técnicos", () => {
     expect(plan.updates).toEqual([{ jobId: "solo", technicianId: TECH_A.id, sortOrder: SORT_ORDER_STEP }]);
   });
 
-  // Sospecha de bug: loadSpread se calcula solo sobre las rutas con paradas, por
-  // lo que un técnico que se queda sin trabajos no cuenta como desequilibrio.
-  it.fails("loadSpread cuenta a los técnicos que quedan sin paradas", async () => {
+  // Bug corregido: loadSpread se calcula sobre todos los técnicos antes de
+  // descartar las rutas vacías, así que un técnico sin trabajos sí cuenta.
+  it("loadSpread cuenta a los técnicos que quedan sin paradas", async () => {
     const jobs = [
       makeJob({ id: "l1", lockedTechnicianId: TECH_B.id }),
       makeJob({ id: "l2", lockedTechnicianId: TECH_B.id }),
@@ -558,9 +558,9 @@ describe("buildRouteAssistantPlans: integración con métricas de travel", () =>
     expect(firstPair).toMatchObject({ fromCoordinates: ORIGIN.point, toCoordinates: NEAR.point });
   });
 
-  // Sospecha de bug: con una sola parada solo se pide el tramo origen→parada, así
-  // que el regreso nunca puede usar tráfico en vivo aunque haya API key.
-  it.fails("con una sola parada también solicita el tramo de regreso al origen", async () => {
+  // Bug corregido: con una sola parada se piden origen→parada y parada→origen,
+  // así que el regreso puede usar tráfico en vivo cuando hay API key.
+  it("con una sola parada también solicita el tramo de regreso al origen", async () => {
     await buildRouteAssistantPlans({
       jobs: [placeJob("single", NEAR)],
       technicians: [TECH_A],
@@ -569,7 +569,39 @@ describe("buildRouteAssistantPlans: integración con métricas de travel", () =>
       strategies: ["BALANCED"],
     });
 
-    expect(requestedPairs()).toContainEqual({ from: NEAR.address, to: ORIGIN.address });
+    expect(requestedPairs()).toEqual([
+      { from: ORIGIN.address, to: NEAR.address },
+      { from: NEAR.address, to: ORIGIN.address },
+    ]);
+  });
+
+  it("con una sola parada usa la métrica LIVE_TRAFFIC de travel también para el regreso", async () => {
+    const yard = "Single Yard";
+    const stopA = "Single Stop A";
+    stubTravelTable([
+      [yard, stopA, liveMetric(9, 3.3)],
+      [stopA, yard, liveMetric(11, 4.4)],
+    ]);
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [makeJob({ id: "a", address: stopA })],
+      technicians: [TECH_A],
+      originAddress: yard,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(route.stops[0]).toMatchObject({
+      estimatedDriveMinutesFromPrevious: 9,
+      driveSource: "LIVE_TRAFFIC",
+    });
+    expect(route).toMatchObject({
+      returnDriveMinutes: 11,
+      returnDistanceMiles: 4.4,
+      returnDriveSource: "LIVE_TRAFFIC",
+      totalDriveMinutes: 9 + 11,
+      estimatedReturnTime: "10:11",
+    });
   });
 
   it("prefiere las métricas LIVE_TRAFFIC de travel sobre la estimación propia", async () => {

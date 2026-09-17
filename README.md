@@ -7,25 +7,23 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 
 ## Deploy en Render
 1. Crea servicios con `render.yaml` (web + worker + postgres).
-2. Define estas variables en el servicio web:
-   - `AUTH_SECRET`
-   - `APP_URL`
+2. Define estas variables en el servicio web (las marcadas con `sync: false` se cargan desde el dashboard):
+   - Obligatorias: `DATABASE_URL` (la aporta la base de datos), `AUTH_SECRET`, `APP_URL`
    - `CRON_SECRET`
-   - `STORAGE_DRIVER` (`local` o `s3`)
-   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+   - `STORAGE_DRIVER` (`local` o `s3`) y, con `s3`, `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` y opcionalmente `NEXT_PUBLIC_CDN_URL`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `CONTACT_INBOX_EMAIL`
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` y `GOOGLE_MAPS_SERVER_API_KEY`
+   - `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` (ver "Notificaciones en tiempo real")
+   - `BUSINESS_TIMEZONE`
 3. Define estas variables en el worker (`acostaspool-cron-worker`):
-   - `APP_URL`
-   - `CRON_SECRET`
-   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
-4. Si activas S3, agrega:
-   - `AWS_REGION`
-   - `AWS_S3_BUCKET`
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `NEXT_PUBLIC_CDN_URL`
+   - `APP_URL` y `CRON_SECRET`
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `CONTACT_INBOX_EMAIL`
+   - `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `GOOGLE_MAPS_SERVER_API_KEY`, `BUSINESS_TIMEZONE` (declaradas para que un worker basado en los modulos de `src/` funcione; el script `.cjs` actual solo usa `DATABASE_URL`, `APP_URL`, `CRON_SECRET` y `SMTP_*`)
+4. Base de datos: `render.yaml` la deja en `plan: free`, que no incluye backups ni point-in-time recovery. Para produccion usa un plan de pago con backups.
 5. Haz deploy y valida:
+   - Logs del servicio web al arrancar: las lineas `[env]` avisan de integraciones sin configurar; en produccion el arranque aborta si falta una variable obligatoria.
    - `GET /api/health`
-   - `GET /api/health/db`
+   - `GET /api/health/db` (requiere sesion de administrador con acceso developer)
    - Logs del worker: ejecuciones cada 2 minutos para procesar notificaciones a clientes
 
 ## Instalacion como app (PWA)
@@ -42,25 +40,51 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
 3. Render ejecuta `preDeployCommand` con `npx prisma migrate deploy` y aplica migraciones antes de iniciar la app.
 
 ## Variables de entorno
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `APP_URL`
-- `CRON_SECRET`
-- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-- `GOOGLE_MAPS_SERVER_API_KEY`
-- `GOOGLE_MAPS_API_KEY` (alias opcional)
-- `STORAGE_DRIVER` (`local` o `s3`)
-- `NEXT_PUBLIC_CDN_URL`
-- `AWS_REGION`
-- `AWS_S3_BUCKET`
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `SEED_ADMIN_EMAIL`
-- `SEED_ADMIN_PASSWORD`
-- `SEED_TECH_EMAIL`
-- `SEED_TECH_PASSWORD`
-- `SEED_CUSTOMER_EMAIL`
-- `SEED_CUSTOMER_PASSWORD`
+La referencia completa, agrupada y comentada, esta en `.env.example`; copialo a `.env` para desarrollo local. El inventario y las reglas de validacion viven en `src/lib/config/env.ts` y se ejecutan al arrancar el servidor desde `src/instrumentation.ts`:
+- En cualquier entorno se imprimen advertencias `[env]` por cada integracion sin configurar o incompleta.
+- Con `NODE_ENV=production` el arranque aborta si falta o es invalida una variable obligatoria (o una `AWS_*` cuando `STORAGE_DRIVER=s3`). El build nunca se ve afectado.
+
+### Obligatorias
+| Variable | Uso |
+| --- | --- |
+| `DATABASE_URL` | Cadena de conexion PostgreSQL para Prisma (`postgresql://...`). |
+| `AUTH_SECRET` | Secreto para firmar los tokens de sesion; minimo 32 caracteres. Rotarlo cierra todas las sesiones. |
+| `APP_URL` | Origen publico de la app; se usa en enlaces de e-mail y desde el worker. |
+
+### Recomendadas
+| Variable | Uso | Sin ella |
+| --- | --- | --- |
+| `CRON_SECRET` | Cabecera `x-cron-secret` entre el worker y `/api/internal/routes/assistant/auto-optimize`. | El endpoint rechaza todas las llamadas y el worker omite la optimizacion diaria. |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Correo transaccional (invitaciones, reset de password, facturas, fotos, cotizaciones, digests). | No se envia ningun correo. `SMTP_PORT` por defecto 587; `SMTP_FROM` por defecto `SMTP_USER`. |
+| `CONTACT_INBOX_EMAIL` | Buzon de cotizaciones y respuestas de integraciones publicas. | Se usa `SMTP_USER`. |
+| `STORAGE_DRIVER` | `local` (archivos bajo `public/`, una sola instancia) o `s3`. | Se comporta como `local`. |
+| `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Credenciales S3. Obligatorias cuando `STORAGE_DRIVER=s3`. | Fallan subidas, avatares y PDFs de facturas. |
+| `NEXT_PUBLIC_CDN_URL` | Base publica (CDN) de los assets en S3. | Se usa la URL del bucket. |
+| `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` | Publicacion de notificaciones en tiempo real desde el servidor. | Bus en memoria por instancia (ver abajo). |
+| `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` | Suscripcion desde el navegador; deben coincidir con `PUSHER_KEY`/`PUSHER_CLUSTER`. Se incrustan en el build. | El navegador usa el stream SSE de la instancia. |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Autocompletado de direcciones en el navegador. | Autocompletado desactivado. |
+| `GOOGLE_MAPS_SERVER_API_KEY` (alias `GOOGLE_MAPS_API_KEY`) | Geocoding y Route Assistant en el servidor. | Geocoding y asistente de rutas desactivados. |
+| `BUSINESS_TIMEZONE` / `NEXT_PUBLIC_BUSINESS_TIMEZONE` | Zona horaria IANA del negocio; `NEXT_PUBLIC_*` tiene prioridad. Un valor invalido impide arrancar. | `America/New_York`. |
+
+### Opcionales
+| Variable | Uso |
+| --- | --- |
+| `NEXT_PUBLIC_NOTIFICATION_SOUND_URL` | Sonido de alerta personalizado (por defecto `/sounds/notification.mp3`). |
+| `NEXT_PUBLIC_LANDING_YOUTUBE_ID`, `NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC`, `NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED` | Contenido multimedia de la landing. |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_TECH_EMAIL`, `SEED_TECH_PASSWORD`, `SEED_CUSTOMER_EMAIL`, `SEED_CUSTOMER_PASSWORD` | Cuentas demo de `npm run db:seed` (solo desarrollo y CI). |
+| `E2E_BASE_URL` | URL base para Playwright (por defecto `http://localhost:3000`). |
+
+## Notificaciones en tiempo real
+Las notificaciones se publican por Pusher cuando `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET` y `PUSHER_CLUSTER` estan definidas, y el navegador se suscribe con `NEXT_PUBLIC_PUSHER_KEY` y `NEXT_PUBLIC_PUSHER_CLUSTER`. Sin ellas la app cae a un bus en memoria por instancia (`src/lib/notifications/bus.ts`) servido por SSE en `/api/notifications/stream`: solo llegan a los navegadores conectados a la misma instancia, no sobreviven a un reinicio y no reciben nada publicado por otros procesos (por ejemplo el worker). En produccion, o con mas de una instancia, configura Pusher.
+
+## Proteccion de rutas
+`src/proxy.ts` (convencion `proxy` de Next 16, antes `middleware`) se ejecuta antes de renderizar `/admin`, `/tech` y `/client`: sin cookie de sesion valida redirige a `/login?next=<ruta>` y con un rol distinto al de la seccion redirige a `/unauthorized?next=<inicio del rol>`. Los guards de servidor de `src/lib/auth/guards.ts` siguen siendo la fuente de verdad (usuario activo, rol en base de datos, acceso developer); el proxy solo adelanta la redireccion y conserva `?next=`.
+
+## Verificacion y pruebas
+- `npm run verify`: typecheck (`tsc --noEmit`), lint (`eslint`) y tests unitarios (`vitest run`). Es el mismo conjunto que exige la CI antes del build.
+- `npm run test:unit` / `npm run test:watch`: solo Vitest (`tests/unit/**`).
+- `npm run test:e2e`: Playwright (`tests/e2e/**`). Necesita una base de datos migrada y sembrada (`npx prisma migrate deploy` y `npm run db:seed`) y las variables de `.env` (`DATABASE_URL`, `AUTH_SECRET`, `APP_URL`, `SEED_*`). `playwright.config.ts` levanta `npm run dev` (o `next start` cuando `CI` esta definida) y espera a `/api/health`; con `E2E_BASE_URL` se apunta a un servidor ya levantado. Mas detalles en `tests/e2e/README.md`.
+- CI (`.github/workflows/ci.yml`): en cada push a `main` y en cada pull request levanta PostgreSQL 16, ejecuta `prisma generate` y `prisma validate`, `npm run typecheck`, `npm run lint`, `npm run test:unit`, aplica migraciones, siembra datos, hace `npm run build`, instala Chromium y corre `npm run test:e2e`. Si falla, sube `test-results` (trazas y capturas) como artefacto.
 
 ## Google Maps keys (importante)
 El proyecto usa **dos contextos** para Google Maps:
@@ -86,11 +110,14 @@ El proyecto usa **dos contextos** para Google Maps:
 - Si una key fue compartida por captura o chat, **rotala**.
 
 ## Scripts utiles
+- `npm run dev` / `npm run build` / `npm run start`
+- `npm run verify`
 - `npm run db:generate`
 - `npm run db:migrate`
 - `npm run db:studio`
 - `npm run db:create-admin`
 - `npm run db:seed`
+- `npm run worker:cron`
 
 ## Credenciales demo (seed)
 - Admin: `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`
@@ -103,6 +130,7 @@ El proyecto usa **dos contextos** para Google Maps:
 - `docs/Architecture.md`
 - `docs/DataModel.md`
 - `docs/Backlog.md`
+- `tests/e2e/README.md`
 
 ## Storage S3
 - Avatares: `uploads/avatars/{userId}/{YYYY}/{MM}/...`

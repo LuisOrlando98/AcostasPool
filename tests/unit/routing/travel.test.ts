@@ -394,3 +394,85 @@ describe("getTravelMetricsForPairs: caché con TTL", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("helpers exportados para el planificador", () => {
+  const HALF_TURN_DEGREES = 180;
+
+  it("expone 15 minutos como conducción por defecto", () => {
+    expect(travel.DEFAULT_DRIVE_MINUTES).toBe(DEFAULT_DRIVE_MINUTES);
+  });
+
+  it("toRadians convierte grados a radianes", () => {
+    expect(travel.toRadians(HALF_TURN_DEGREES)).toBeCloseTo(Math.PI, 10);
+    expect(travel.toRadians(0)).toBe(0);
+  });
+
+  it("haversineMiles mide ≈ 69.09 millas por grado de latitud", () => {
+    expect(travel.haversineMiles(EQUATOR, ONE_DEGREE_NORTH)).toBeCloseTo(ONE_DEGREE_MILES, 2);
+    expect(travel.haversineMiles(EQUATOR, EQUATOR)).toBe(0);
+  });
+
+  it("estimateDriveMinutes devuelve 15 minutos cuando falta alguna coordenada", () => {
+    expect(travel.estimateDriveMinutes(null, ONE_DEGREE_NORTH)).toBe(DEFAULT_DRIVE_MINUTES);
+    expect(travel.estimateDriveMinutes(EQUATOR, null)).toBe(DEFAULT_DRIVE_MINUTES);
+  });
+
+  it("estimateDriveMinutes aplica 27 mph, factor 1.15 y un mínimo de 4 minutos", () => {
+    expect(travel.estimateDriveMinutes(EQUATOR, ONE_DEGREE_NORTH)).toBe(ONE_DEGREE_MINUTES);
+    expect(travel.estimateDriveMinutes(EQUATOR, SHORT_HOP)).toBe(MIN_ESTIMATED_MINUTES);
+    expect(travel.estimateDriveMinutes(EQUATOR, NEGLIGIBLE_HOP)).toBe(MIN_ESTIMATED_MINUTES);
+  });
+});
+
+describe("mapWithConcurrency", () => {
+  const CONCURRENCY = 3;
+  const TASK_DELAY_MS = 5;
+  const ITEM_COUNT = 10;
+
+  it("devuelve una lista vacía sin ejecutar tareas cuando no hay elementos", async () => {
+    const task = vi.fn(async (value: number) => value);
+
+    const result = await travel.mapWithConcurrency([], CONCURRENCY, task);
+
+    expect(result).toEqual([]);
+    expect(task).not.toHaveBeenCalled();
+  });
+
+  it("conserva el orden de los resultados aunque las tareas terminen desordenadas", async () => {
+    const delays = [30, 5, 15, 1];
+
+    const result = await travel.mapWithConcurrency(delays, CONCURRENCY, async (delay) => {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return delay * 2;
+    });
+
+    expect(result).toEqual([60, 10, 30, 2]);
+  });
+
+  it("nunca supera la concurrencia indicada y procesa todos los elementos", async () => {
+    const tracker = { inFlight: 0, maxInFlight: 0 };
+    const items = Array.from({ length: ITEM_COUNT }, (_, index) => index);
+
+    const result = await travel.mapWithConcurrency(items, CONCURRENCY, async (item) => {
+      tracker.inFlight += 1;
+      tracker.maxInFlight = Math.max(tracker.maxInFlight, tracker.inFlight);
+      await new Promise((resolve) => setTimeout(resolve, TASK_DELAY_MS));
+      tracker.inFlight -= 1;
+      return item;
+    });
+
+    expect(result).toEqual(items);
+    expect(tracker.maxInFlight).toBe(CONCURRENCY);
+  });
+
+  it("propaga el error cuando una tarea rechaza", async () => {
+    await expect(
+      travel.mapWithConcurrency([1, 2], CONCURRENCY, async (value) => {
+        if (value === 2) {
+          throw new Error("boom");
+        }
+        return value;
+      })
+    ).rejects.toThrow("boom");
+  });
+});

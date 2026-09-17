@@ -55,9 +55,11 @@
     "language": {
       "en": "Ingles",
       "es": "Espanol"
+    },
+    "errors": {
+      "network": "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo."
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Plataforma de Operaciones",
     "nav": {
@@ -81,7 +83,7 @@
     "hero": {
       "kicker": "Operacion premium para piscinas",
       "title": "Controla cada ruta con claridad, confianza y evidencia.",
-    "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
+      "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
       "primaryCta": "Abrir panel admin",
       "secondaryCta": "Explorar portal cliente",
       "badge1": "Rutas optimizadas",
@@ -112,7 +114,7 @@
       },
       "billing": {
         "title": "Facturacion inteligente",
-      "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
+        "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
       },
       "clients": {
         "title": "Experiencia del cliente",
@@ -146,8 +148,7 @@
       "value4": "Operacion centrada en el cliente",
       "note": "Combinamos experiencia de campo con sistemas modernos para resultados medibles."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
@@ -713,7 +714,8 @@
         "createFailed": "No se pudieron crear los trabajos.",
         "saveFailed": "No se pudieron guardar los cambios.",
         "saveJobFailed": "No se pudieron guardar los cambios del trabajo.",
-        "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado."
+        "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado.",
+        "network": "Problema de conexion. Revisa tu conexion a internet e intentalo de nuevo."
       },
       "filters": {
         "toolbar": "Filtros",
@@ -804,7 +806,8 @@
         "waterType": "Agua",
         "order": "Orden",
         "jobNumber": "Trabajo #{{count}}",
-        "completedNoEvidence": "Trabajo completado sin evidencia."
+        "completedNoEvidence": "Trabajo completado sin evidencia.",
+        "saveSuccess": "Cambios guardados."
       }
     },
     "technicians": {
@@ -1272,6 +1275,30 @@
           "modalKicker": "Nuevo trabajo",
           "modalTitle": "Programar trabajo",
           "modalSubtitle": "Configura fecha, tecnico y checklist."
+        },
+        "errors": {
+          "invalidInput": "Faltan datos o hay campos no válidos. Revisa el formulario e inténtalo de nuevo.",
+          "customerNotFound": "Cliente no encontrado.",
+          "propertyNotFound": "La propiedad seleccionada no pertenece a este cliente.",
+          "planNotFound": "No se encontró el plan recurrente de este cliente.",
+          "emailInUse": "Ese email ya pertenece a otro usuario.",
+          "inviteFailed": "No se pudo enviar la invitación al portal. Revisa el email del cliente e inténtalo de nuevo.",
+          "propertyHasJobs": "Esta propiedad tiene trabajos vinculados y no se puede eliminar.",
+          "propertyHasPlans": "Esta propiedad tiene planes recurrentes vinculados y no se puede eliminar.",
+          "confirmationMismatch": "Escribe la palabra de confirmación para eliminar este cliente.",
+          "firstNameRequired": "El nombre es obligatorio.",
+          "phoneInvalid": "El teléfono no es un número válido de EE. UU.",
+          "secondaryPhoneInvalid": "El teléfono secundario no es un número válido de EE. UU.",
+          "addressIncomplete": "Completa calle, ciudad, estado y código postal, o deja la dirección vacía.",
+          "propertyAddressRequired": "La dirección de la propiedad es obligatoria.",
+          "accessNotesRequired": "Las notas de acceso y ubicación son obligatorias.",
+          "poolVolumeInvalid": "El volumen de la piscina debe ser un número entero de galones.",
+          "paymentInfoInvalid": "Revisa la fecha de inicio del servicio, el día de pago, el precio y el tipo de pago.",
+          "propertyRequired": "Selecciona una propiedad.",
+          "dateRequired": "Selecciona una fecha.",
+          "dateInvalid": "La fecha o la hora no son válidas.",
+          "technicianRequired": "Selecciona un técnico.",
+          "durationInvalid": "La duración estimada debe ser un número entero de minutos (0 o más)."
         }
       },
       "repository": {
@@ -1567,6 +1594,9 @@
           "subtitle": "Revisa la informacion actualizada de {{property}} para {{customer}} antes de guardar.",
           "back": "Volver",
           "confirm": "Guardar cambios"
+        },
+        "errors": {
+          "save": "No se pudieron guardar los cambios de billing. Intentalo de nuevo."
         }
       },
       "filters": {
@@ -1618,13 +1648,19 @@
           "create": "Crear factura",
           "addLine": "Agregar linea",
           "removeLine": "Quitar"
+        },
+        "errors": {
+          "create": "No se pudo crear la factura. Intentalo de nuevo."
         }
       },
       "send": {
         "submit": "Enviar",
         "loading": "Enviando...",
         "success": "Enviada.",
-        "error": "No se pudo enviar."
+        "error": "No se pudo enviar.",
+        "alreadySent": "Esta factura ya fue enviada. Enviarla de nuevo?",
+        "resend": "Enviar de nuevo",
+        "postSendWarning": "El correo se envio, pero fallo un paso posterior. Revisa el estado de la factura."
       },
       "editor": {
         "title": "Factura {{number}}",
@@ -1930,7 +1966,13 @@
           "modalTitle": "Preview de factura - {{theme}}",
           "previewLabel": "Pagina completa",
           "previewHint": "Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa.",
-          "open": "Abrir"
+          "open": "Abrir",
+          "frameTitle": "Vista previa PDF de la factura ({{theme}})",
+          "loading": "Generando la vista previa en PDF...",
+          "refresh": "Actualizar vista previa",
+          "error": "No se pudo generar la vista previa. Inténtalo de nuevo.",
+          "unsupported": "Si tu navegador no muestra el PDF aquí, ábrelo en una pestaña nueva.",
+          "openInNewTab": "Abrir el PDF en una pestaña nueva"
         }
       },
       "compliance": {
@@ -2577,9 +2619,24 @@
           "file": "Selecciona una foto.",
           "checklist": "Completa el checklist antes de finalizar.",
           "completed": "Este trabajo ya esta completado.",
-          "submit": "No se pudo subir la evidencia."
-        }
+          "submit": "No se pudo subir la evidencia.",
+          "network": "No se pudieron subir las fotos. Revisa tu conexión e inténtalo de nuevo; tus fotos y notas siguen aquí.",
+          "fileTooLarge": "Estas fotos superan {{maxMb}} MB y se omitieron: {{names}}"
+        },
+        "photoMaxSize": "Máximo {{maxMb}} MB por foto."
       }
+    }
+  },
+  "layout": {
+    "logout": {
+      "error": "No se pudo cerrar sesion. Intenta de nuevo."
+    },
+    "account": {
+      "loadError": "No se pudo cargar tu cuenta."
+    },
+    "notifications": {
+      "loadError": "No se pudieron cargar las notificaciones.",
+      "retry": "Reintentar"
     }
   }
 }

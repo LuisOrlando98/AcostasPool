@@ -508,6 +508,21 @@ function money(value: number) {
   return `$${value.toFixed(2)}`;
 }
 
+const PERCENT_SCALE = 100;
+const TAX_RATE_MAX_DECIMALS = 1;
+
+/**
+ * Sufijo " (7%)" / " (8.5%)" calculado desde el impuesto y el subtotal reales, con un
+ * decimal como máximo y sin decimales si es entero. Vacío si no hay base o impuesto.
+ */
+export function formatTaxRateLabelSuffix(subtotal: number, tax: number) {
+  if (!Number.isFinite(subtotal) || !Number.isFinite(tax) || subtotal === 0 || tax === 0) {
+    return "";
+  }
+  const percent = Number(((tax / subtotal) * PERCENT_SCALE).toFixed(TAX_RATE_MAX_DECIMALS));
+  return ` (${percent}%)`;
+}
+
 export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
   const { template, theme } = input;
   const locale = resolveInvoiceTemplateLocale(input.locale);
@@ -1073,9 +1088,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
             <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
               input.subtotal
             )}</strong></p>
-            <p class="totals-row"><span>${escapeHtml(template.taxLabel)} (7%):</span><strong>${money(
+            <p class="totals-row"><span>${escapeHtml(template.taxLabel)}${formatTaxRateLabelSuffix(
+              input.subtotal,
               input.tax
-            )}</strong></p>
+            )}:</span><strong>${money(input.tax)}</strong></p>
             <p class="totals-row totals-row-total"><span>${escapeHtml(
               template.totalLabel
             )}:</span><strong>${money(input.total)}</strong></p>

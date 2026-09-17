@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INVOICE_TEMPLATE,
+  formatTaxRateLabelSuffix,
   getInvoiceTemplateLocaleCopy,
   localizeInvoiceNotes,
   localizeInvoiceTemplate,
@@ -467,15 +468,41 @@ describe("renderInvoiceTemplateHtml", () => {
     const html = renderInvoiceTemplateHtml(buildRenderInput({ subtotal: 1234.5, tax: 0, total: 1234.5 }));
 
     expect(html).toContain("<span>Subtotal:</span><strong>$1234.50</strong>");
-    expect(html).toContain("<span>Tax (7%):</span><strong>$0.00</strong>");
+    expect(html).toContain("<span>Tax:</span><strong>$0.00</strong>");
     expect(html).toContain("<span>Total:</span><strong>$1234.50</strong>");
   });
 
-  it.fails("la etiqueta de impuesto no deberia afirmar '7%' cuando el impuesto recibido no es el 7%", () => {
-    // Comportamiento actual: el porcentaje esta fijo en la plantilla, independientemente de input.tax.
-    const html = renderInvoiceTemplateHtml(buildRenderInput({ subtotal: 100, tax: 10, total: 110 }));
+  it("calcula el porcentaje de la etiqueta de impuesto desde tax/subtotal en vez de fijar 7%", () => {
+    const tenPercent = renderInvoiceTemplateHtml(
+      buildRenderInput({ subtotal: 100, tax: 10, total: 110 })
+    );
+    expect(tenPercent).toContain("<span>Tax (10%):</span><strong>$10.00</strong>");
+    expect(tenPercent).not.toContain("(7%)");
 
-    expect(html).not.toContain("(7%)");
+    const sevenPercent = renderInvoiceTemplateHtml(buildRenderInput());
+    expect(sevenPercent).toContain("<span>Tax (7%):</span><strong>$12.15</strong>");
+
+    const withDecimal = renderInvoiceTemplateHtml(
+      buildRenderInput({ subtotal: 200, tax: 17, total: 217 })
+    );
+    expect(withDecimal).toContain("<span>Tax (8.5%):</span>");
+  });
+
+  it("omite el porcentaje cuando no hay subtotal o el impuesto es cero, en ambos idiomas", () => {
+    const noSubtotal = renderInvoiceTemplateHtml(
+      buildRenderInput({ subtotal: 0, tax: 5, total: 5 })
+    );
+    expect(noSubtotal).toContain("<span>Tax:</span><strong>$5.00</strong>");
+
+    const es = renderInvoiceTemplateHtml(
+      buildRenderInput({
+        locale: "ES",
+        template: localizeInvoiceTemplate(DEFAULT_INVOICE_TEMPLATE, "ES"),
+        tax: 0,
+        total: 173.5,
+      })
+    );
+    expect(es).toContain("<span>Impuesto:</span><strong>$0.00</strong>");
   });
 
   it("incluye el propietario fijo y los metodos de pago localizados", () => {
@@ -485,6 +512,22 @@ describe("renderInvoiceTemplateHtml", () => {
     expect(html).toContain('<p class="owner-role">Presidente / Propietario</p>');
     expect(html).toContain("Credito | Debito | ACH | Cheque | Zelle | Efectivo");
     expect(html).toContain("Aceptamos: Visa, MasterCard, Zelle, Efectivo");
+  });
+});
+
+describe("formatTaxRateLabelSuffix", () => {
+  it("redondea a un decimal como maximo y omite los decimales cuando el porcentaje es entero", () => {
+    expect(formatTaxRateLabelSuffix(100, 7)).toBe(" (7%)");
+    expect(formatTaxRateLabelSuffix(173.5, 12.145)).toBe(" (7%)");
+    expect(formatTaxRateLabelSuffix(200, 17)).toBe(" (8.5%)");
+    expect(formatTaxRateLabelSuffix(300, 20)).toBe(" (6.7%)");
+  });
+
+  it("devuelve cadena vacia sin subtotal, sin impuesto o con valores no finitos", () => {
+    expect(formatTaxRateLabelSuffix(0, 7)).toBe("");
+    expect(formatTaxRateLabelSuffix(100, 0)).toBe("");
+    expect(formatTaxRateLabelSuffix(Number.NaN, 7)).toBe("");
+    expect(formatTaxRateLabelSuffix(100, Number.POSITIVE_INFINITY)).toBe("");
   });
 });
 

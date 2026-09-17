@@ -58,6 +58,5 @@ the dev server, so `npm run build` must run first.
   5 min per e-mail, so keep re-runs to about two per minute.
 - Write flows leave data behind on purpose: a customer named `E2E Smoke <timestamp>`
   and a `DRAFT` invoice (plus its PDF) for the seed customer.
-- `auth.spec.ts` documents with `test.fail` that `?next=` is dropped on the
-  `/login` redirect because `middleware.ts` at the project root is not bundled
-  (the app lives under `src/`).
+- `auth.spec.ts` checks that `?next=` survives the `/login` redirect; that is
+  handled by `src/proxy.ts` (the old root-level `middleware.ts` was never bundled).

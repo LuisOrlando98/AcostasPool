@@ -59,11 +59,8 @@ export async function POST(request: Request) {
     return json(GENERIC_RESPONSE);
   }
 
-  const user = await prisma.user.findFirst({
-    where: {
-      email: { equals: email, mode: "insensitive" },
-      isActive: true,
-    },
+  const user = await prisma.user.findUnique({
+    where: { email, isActive: true },
     select: {
       id: true,
       email: true,

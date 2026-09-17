@@ -53,6 +53,20 @@ const checklistTemplates: Record<string, ChecklistItem[]> = {
   ],
 };
 
-export function getChecklistTemplate(serviceType: string) {
-  return checklistTemplates[serviceType] ?? checklistTemplates.WEEKLY_CLEANING;
+const FALLBACK_SERVICE_TYPE = "WEEKLY_CLEANING";
+
+function cloneChecklist(items: ChecklistItem[]): ChecklistItem[] {
+  return items.map((item) => ({ ...item }));
+}
+
+/**
+ * Devuelve una copia nueva de la plantilla (ítems incluidos) para que marcar un ítem
+ * como completado nunca altere la plantilla compartida. Solo se consultan claves
+ * propias: "constructor", "__proto__" o "toString" caen al fallback.
+ */
+export function getChecklistTemplate(serviceType: string): ChecklistItem[] {
+  const template = Object.hasOwn(checklistTemplates, serviceType)
+    ? checklistTemplates[serviceType]
+    : checklistTemplates[FALLBACK_SERVICE_TYPE];
+  return cloneChecklist(template);
 }

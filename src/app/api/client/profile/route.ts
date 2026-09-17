@@ -76,10 +76,11 @@ export async function PATCH(request: Request) {
     }
 
     if (customer.userId) {
+      // Emails are stored normalized (lower-case), so an exact match is enough.
       const duplicate = await prisma.user.findFirst({
         where: {
           id: { not: customer.userId },
-          email: { equals: email, mode: "insensitive" },
+          email,
         },
         select: { id: true },
       });
@@ -88,28 +89,32 @@ export async function PATCH(request: Request) {
       }
     }
 
-    await prisma.customer.update({
-      where: { id: customer.id },
-      data: {
-        nombre,
-        apellidos,
-        email,
-        telefono,
-        telefonoSecundario,
-        idiomaPreferencia,
-      },
-    });
-
-    if (customer.userId) {
-      await prisma.user.update({
-        where: { id: customer.userId },
+    // The customer record and its linked user must change together.
+    await prisma.$transaction([
+      prisma.customer.update({
+        where: { id: customer.id },
         data: {
-          fullName: `${nombre} ${apellidos}`.trim(),
+          nombre,
+          apellidos,
           email,
-          locale: idiomaPreferencia,
+          telefono,
+          telefonoSecundario,
+          idiomaPreferencia,
         },
-      });
-    }
+      }),
+      ...(customer.userId
+        ? [
+            prisma.user.update({
+              where: { id: customer.userId },
+              data: {
+                fullName: `${nombre} ${apellidos}`.trim(),
+                email,
+                locale: idiomaPreferencia,
+              },
+            }),
+          ]
+        : []),
+    ]);
 
     const response = NextResponse.json({ ok: true });
     response.cookies.set(LOCALE_COOKIE, normalizeLocale(idiomaPreferencia), {

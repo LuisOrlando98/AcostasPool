@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
@@ -10,6 +9,7 @@ import {
   renderEmailTemplate,
   resolveEmailTemplateLocale,
 } from "@/lib/email-templates";
+import { getMailConfig, sendMailAndLog } from "@/lib/mail/transport";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import sharp from "sharp";
 import {
@@ -75,13 +75,8 @@ async function sendCompletedJobEmailNow(input: {
   propertyAddress: string;
   customerLocale: "EN" | "ES";
 }) {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
-
-  if (!host || !user || !pass || !from) {
+  // Without SMTP the notification simply stays QUEUED for the worker (no immediate attempt).
+  if (!getMailConfig()) {
     return false;
   }
 
@@ -103,66 +98,25 @@ async function sendCompletedJobEmailNow(input: {
     job_address_html: escapeHtml(input.propertyAddress),
   });
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: false,
-      auth: { user, pass },
-    });
+  // A failed send returns false so the notification stays QUEUED for the worker.
+  const sent = await sendMailAndLog({
+    to: input.customerEmail,
+    recipientName: input.customerName,
+    recipientRole: "CUSTOMER",
+    template: "CUSTOMER_JOB_COMPLETED",
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    customerId: input.customerId,
+    jobId: input.jobId,
+    metadata: {
+      notificationId: input.notificationId,
+      eventType: "JOB_COMPLETED",
+      immediate: true,
+    },
+  });
 
-    await transporter.sendMail({
-      from,
-      to: input.customerEmail,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
-    });
-
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail: input.customerEmail,
-        recipientName: input.customerName,
-        recipientRole: "CUSTOMER",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "SENT",
-        sentAt: new Date(),
-        customerId: input.customerId,
-        jobId: input.jobId,
-        metadata: {
-          notificationId: input.notificationId,
-          eventType: "JOB_COMPLETED",
-          immediate: true,
-        },
-      },
-    });
-
-    return true;
-  } catch (error) {
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail: input.customerEmail,
-        recipientName: input.customerName,
-        recipientRole: "CUSTOMER",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "FAILED",
-        errorMessage: error instanceof Error ? error.message : String(error),
-        customerId: input.customerId,
-        jobId: input.jobId,
-        metadata: {
-          notificationId: input.notificationId,
-          eventType: "JOB_COMPLETED",
-          immediate: true,
-        },
-      },
-    });
-
-    return false;
-  }
+  return sent.ok;
 }
 
 export async function POST(

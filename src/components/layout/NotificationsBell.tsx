@@ -116,6 +116,7 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -223,25 +224,31 @@ export default function NotificationsBell() {
         fetch(`/api/notifications/unread?cb=${cacheBust}`, { cache: "no-store" }),
         fetch(`/api/notifications/recent?cb=${cacheBust}`, { cache: "no-store" }),
       ]);
-      const unreadData = await unreadRes.json().catch(() => ({ unread: 0 }));
-      const notificationsData = await notificationsRes
-        .json()
-        .catch(() => ({ notifications: [] }));
+      if (!unreadRes.ok || !notificationsRes.ok) {
+        throw new Error(
+          `Notifications requests failed with status ${unreadRes.status}/${notificationsRes.status}`
+        );
+      }
+      const unreadData = (await unreadRes.json()) as { unread?: unknown };
+      const notificationsData = (await notificationsRes.json()) as {
+        notifications?: unknown;
+      };
 
-      setUnreadCount(
-        typeof unreadData.unread === "number" ? unreadData.unread : 0
-      );
+      const unread =
+        typeof unreadData.unread === "number" ? unreadData.unread : 0;
+      setUnreadCount(unread);
       const resolved = Array.isArray(notificationsData.notifications)
         ? (notificationsData.notifications as NotificationItem[])
         : [];
       setNotifications([...resolved].sort(byCreatedDesc));
+      setLoadFailed(false);
       if (typeof window !== "undefined") {
         try {
           window.sessionStorage.setItem(
             NOTIFICATIONS_CACHE_KEY,
             JSON.stringify({
               ts: Date.now(),
-              unread: typeof unreadData.unread === "number" ? unreadData.unread : 0,
+              unread,
               notifications: resolved,
             })
           );
@@ -257,6 +264,9 @@ export default function NotificationsBell() {
           setUserId(meData.user.id);
         }
       }
+    } catch {
+      // Keep whatever is already shown (cache or previous load) and surface the failure.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -455,33 +465,46 @@ export default function NotificationsBell() {
     previousUnreadRef.current = unreadCount;
   }, [locale, notifications, showLiveAlert, t, unreadCount]);
 
-  const markAsRead = useCallback(async (item: NotificationItem) => {
-    if (item.readAt) {
-      return;
-    }
-    const response = await fetch(`/api/notifications/${item.id}/read`, {
-      method: "POST",
-    });
-    if (!response.ok) {
-      return;
-    }
-    setNotifications((current) =>
-      current.map((entry) =>
-        entry.id === item.id
-          ? {
-              ...entry,
-              readAt: new Date().toISOString(),
-            }
-          : entry
-      )
-    );
-    setUnreadCount((current) => (current > 0 ? current - 1 : 0));
-  }, []);
+  const markAsRead = useCallback(
+    async (item: NotificationItem) => {
+      if (item.readAt) {
+        return true;
+      }
+      try {
+        const response = await fetch(`/api/notifications/${item.id}/read`, {
+          method: "POST",
+        });
+        if (!response.ok) {
+          throw new Error(`Mark as read failed with status ${response.status}`);
+        }
+        setNotifications((current) =>
+          current.map((entry) =>
+            entry.id === item.id
+              ? {
+                  ...entry,
+                  readAt: new Date().toISOString(),
+                }
+              : entry
+          )
+        );
+        setUnreadCount((current) => (current > 0 ? current - 1 : 0));
+        return true;
+      } catch {
+        setActionError(t("notifications.preferences.saveError"));
+        return false;
+      }
+    },
+    [t]
+  );
 
   const openNotification = useCallback(
     async (item: NotificationItem) => {
       setActionError(null);
-      await markAsRead(item);
+      const marked = await markAsRead(item);
+      if (!marked && !item.link) {
+        // Keep the panel open so the error stays visible.
+        return;
+      }
       setOpen(false);
       if (item.link) {
         window.location.href = item.link;
@@ -505,25 +528,28 @@ export default function NotificationsBell() {
         setUnreadCount((current) => (current > 0 ? current - 1 : 0));
       }
 
-      const response = await fetch(`/api/notifications/${item.id}`, {
-        method: "DELETE",
-      }).catch(() => null);
-
-      if (!response?.ok) {
+      try {
+        const response = await fetch(`/api/notifications/${item.id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          throw new Error(`Delete failed with status ${response.status}`);
+        }
+      } catch {
         setNotifications(previousNotifications);
         setUnreadCount(previousUnreadCount);
         setActionError(t("notifications.preferences.saveError"));
+      } finally {
+        setDeletingId(null);
+        setSwipeOffsets((current) => {
+          if (!(item.id in current)) {
+            return current;
+          }
+          const next = { ...current };
+          delete next[item.id];
+          return next;
+        });
       }
-
-      setDeletingId(null);
-      setSwipeOffsets((current) => {
-        if (!(item.id in current)) {
-          return current;
-        }
-        const next = { ...current };
-        delete next[item.id];
-        return next;
-      });
     },
     [deletingId, notifications, t, unreadCount]
   );
@@ -541,20 +567,21 @@ export default function NotificationsBell() {
     setUnreadCount(0);
     setSwipeOffsets({});
 
-    const response = await fetch("/api/notifications/clear", {
-      method: "POST",
-    }).catch(() => null);
-
-    if (!response?.ok) {
+    try {
+      const response = await fetch("/api/notifications/clear", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Clear failed with status ${response.status}`);
+      }
+      await load();
+    } catch {
       setNotifications(previousNotifications);
       setUnreadCount(previousUnreadCount);
       setActionError(t("notifications.preferences.saveError"));
+    } finally {
       setClearing(false);
-      return;
     }
-
-    await load();
-    setClearing(false);
   }, [clearing, load, notifications, t, unreadCount]);
 
   const handleRowPointerDown = (
@@ -692,27 +719,47 @@ export default function NotificationsBell() {
                       <p className="text-sm font-semibold text-slate-900">
                         {t("userMenu.notifications")}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {unreadCount > 0
-                          ? `${unreadCount} ${t("notifications.unread").toLowerCase()}`
-                          : t("userMenu.empty")}
-                      </p>
+                      {loadFailed ? (
+                        <p role="alert" className="mt-0.5 text-xs text-rose-600">
+                          {t("layout.notifications.loadError")}
+                        </p>
+                      ) : (
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {unreadCount > 0
+                            ? `${unreadCount} ${t("notifications.unread").toLowerCase()}`
+                            : t("userMenu.empty")}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void handleClearAll()}
-                      disabled={clearing || notifications.length === 0}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
-                    >
-                      {clearing ? t("common.feedback.saving") : t("notifications.clear")}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {loadFailed ? (
+                        <button
+                          type="button"
+                          onClick={() => void load()}
+                          disabled={loading}
+                          className="rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-60"
+                        >
+                          {t("layout.notifications.retry")}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => void handleClearAll()}
+                        disabled={clearing || notifications.length === 0}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
+                      >
+                        {clearing ? t("common.feedback.saving") : t("notifications.clear")}
+                      </button>
+                    </div>
                   </div>
                   {actionError ? (
-                    <p className="mt-2 text-xs text-rose-600">{actionError}</p>
+                    <p role="alert" className="mt-2 text-xs text-rose-600">
+                      {actionError}
+                    </p>
                   ) : null}
                 </div>
 
-                {notifications.length === 0 && !loading ? (
+                {notifications.length === 0 && !loading && !loadFailed ? (
                   <div className="px-4 py-4 text-sm text-slate-600">
                     {t("userMenu.empty")}
                   </div>

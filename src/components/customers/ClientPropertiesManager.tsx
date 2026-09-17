@@ -77,6 +77,8 @@ const toDraft = (p: ClientPropertyItem): Draft => ({
 
 const show = (v: string | null | undefined) => (v && v.trim() ? v : "-");
 
+const SAVE_SUCCESS_CLOSE_DELAY_MS = 850;
+
 export default function ClientPropertiesManager({ initialProperties, initialJobs }: Props) {
   const router = useRouter();
   const { t, locale } = useI18n();
@@ -193,53 +195,59 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       locationNotes: draft.locationNotes.trim(),
     };
 
-    const res = await fetch("/api/client/properties", {
-      method: mode === "create" ? "POST" : "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("/api/client/properties", {
+        method: mode === "create" ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.property) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.property) {
+        setError(typeof data?.error === "string" ? data.error : t("client.properties.editor.saveFailed"));
+        setSaveSuccess(false);
+        return;
+      }
+
+      const p: ClientPropertyItem = {
+        id: data.property.id,
+        name: data.property.name ?? null,
+        address: data.property.address,
+        poolType: data.property.poolType ?? null,
+        sanitizerType: data.property.sanitizerType ?? null,
+        filterType: data.property.filterType ?? null,
+        poolVolumeGallons: typeof data.property.poolVolumeGallons === "number" ? data.property.poolVolumeGallons : null,
+        hasSpa: Boolean(data.property.hasSpa),
+        accessInfo: data.property.accessInfo ?? null,
+        locationNotes: data.property.locationNotes ?? null,
+      };
+
+      setProperties((curr) => (mode === "create" ? [...curr, p] : curr.map((x) => (x.id === p.id ? p : x))));
+      setJobs((curr) =>
+        curr.map((j) =>
+          j.propertyId === p.id ? { ...j, propertyName: p.name, propertyAddress: p.address } : j
+        )
+      );
+
+      setSaveSuccess(true);
+      setDraft(emptyDraft);
+      setNotice(mode === "create" ? t("client.properties.editor.createdOk") : t("client.properties.editor.updatedOk"));
+      if (saveSuccessTimerRef.current) {
+        clearTimeout(saveSuccessTimerRef.current);
+      }
+      saveSuccessTimerRef.current = setTimeout(() => {
+        setSaveSuccess(false);
+        setEditorOpen(false);
+        setConfirmOpen(false);
+      }, SAVE_SUCCESS_CLOSE_DELAY_MS);
+      router.refresh();
+    } catch {
+      // Draft is untouched on failure so the customer can retry without retyping.
+      setError(t("common.errors.network"));
+      setSaveSuccess(false);
+    } finally {
       setSaving(false);
-      setError(typeof data?.error === "string" ? data.error : t("client.properties.editor.saveFailed"));
-      setSaveSuccess(false);
-      return;
     }
-
-    const p: ClientPropertyItem = {
-      id: data.property.id,
-      name: data.property.name ?? null,
-      address: data.property.address,
-      poolType: data.property.poolType ?? null,
-      sanitizerType: data.property.sanitizerType ?? null,
-      filterType: data.property.filterType ?? null,
-      poolVolumeGallons: typeof data.property.poolVolumeGallons === "number" ? data.property.poolVolumeGallons : null,
-      hasSpa: Boolean(data.property.hasSpa),
-      accessInfo: data.property.accessInfo ?? null,
-      locationNotes: data.property.locationNotes ?? null,
-    };
-
-    setProperties((curr) => (mode === "create" ? [...curr, p] : curr.map((x) => (x.id === p.id ? p : x))));
-    setJobs((curr) =>
-      curr.map((j) =>
-        j.propertyId === p.id ? { ...j, propertyName: p.name, propertyAddress: p.address } : j
-      )
-    );
-
-    setSaveSuccess(true);
-    setSaving(false);
-    setDraft(emptyDraft);
-    setNotice(mode === "create" ? t("client.properties.editor.createdOk") : t("client.properties.editor.updatedOk"));
-    if (saveSuccessTimerRef.current) {
-      clearTimeout(saveSuccessTimerRef.current);
-    }
-    saveSuccessTimerRef.current = setTimeout(() => {
-      setSaveSuccess(false);
-      setEditorOpen(false);
-      setConfirmOpen(false);
-    }, 850);
-    router.refresh();
   };
 
   const goJob = (jobId: string) => router.push(`/client/jobs/${jobId}`);
@@ -321,7 +329,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
         </div>
 
         {notice ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>
+          <div role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>
         ) : null}
 
         {properties.length === 0 ? (
@@ -519,7 +527,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                 </div>
               </div>
 
-              {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+              {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
               <div className="mt-5 flex flex-wrap justify-end gap-2">
                 <button type="button" onClick={closeModals} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400">
@@ -560,7 +568,7 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
                 <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.locationNotes")}:</span> {show(draft.locationNotes)}</p>
               </div>
 
-              {error ? <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+              {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
               <div className="mt-5 flex flex-wrap justify-end gap-2">
                 <button type="button" onClick={() => setConfirmOpen(false)} disabled={saving || saveSuccess} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60">

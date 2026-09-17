@@ -134,24 +134,31 @@ describe("getReportFilters", () => {
     expect(filters.priority).toBeUndefined();
   });
 
-  it.fails(
-    "honours a lone 'from' param (currently reports 'custom' but ignores the date)",
-    () => {
-      // With only `from`, the code marks the range as "custom" yet falls back
-      // to the default 30-day window, discarding the provided date.
-      const filters = getReportFilters({ from: "2024-05-10" });
+  it("honours a lone 'from' param and closes the window today", () => {
+    const filters = getReportFilters({ from: "2024-05-10" });
 
-      expect(filters.range).toBe("custom");
-      expect(filters.from).toEqual(startOf(businessDate("2024-05-10")));
-    }
-  );
+    expect(filters.range).toBe("custom");
+    expect(filters.from).toEqual(startOf(businessDate("2024-05-10")));
+    expect(filters.to).toEqual(endOf(NOW));
+  });
 
-  it("reports 'custom' with the default window when only one bound is given", () => {
+  it("honours a lone 'to' param and opens a default-length window ending on it", () => {
+    const to = businessDate("2024-05-10");
+    const expectedFrom = addBusinessDays(to, -(DEFAULT_RANGE_DAYS - 1)) as Date;
+
     const filters = getReportFilters({ to: "2024-05-10" });
 
     expect(filters.range).toBe("custom");
-    expect(filters.from).toEqual(startOf(daysAgo(DEFAULT_RANGE_DAYS - 1)));
-    expect(filters.to).toEqual(endOf(NOW));
+    expect(filters.from).toEqual(startOf(expectedFrom));
+    expect(filters.to).toEqual(endOf(to));
+  });
+
+  it("swaps a lone 'from' in the future so the window runs from today until that date", () => {
+    const filters = getReportFilters({ from: "2027-01-10" });
+
+    expect(filters.range).toBe("custom");
+    expect(filters.from).toEqual(startOf(NOW));
+    expect(filters.to).toEqual(endOf(businessDate("2027-01-10")));
   });
 });
 

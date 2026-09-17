@@ -9,6 +9,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { copyFile, mkdir, readFile, readdir, rename, rm, stat, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { hasDotSegment } from "@/lib/storage/paths";
 
 type StoreAssetInput = {
   relativePath: string;
@@ -85,7 +86,7 @@ const normalizeStoragePath = (value: string) => {
     normalized = normalized.slice(bucket.length + 1);
   }
 
-  if (!normalized || normalized.includes("..")) {
+  if (!normalized || hasDotSegment(normalized)) {
     throw new Error("Invalid storage path");
   }
   return normalized;

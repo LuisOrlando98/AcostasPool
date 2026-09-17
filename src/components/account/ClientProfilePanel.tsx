@@ -30,6 +30,8 @@ type Props = {
   initialData: ProfileData;
 };
 
+const SAVE_SUCCESS_CLOSE_DELAY_MS = 850;
+
 type PersonalDraft = {
   nombre: string;
   apellidos: string;
@@ -192,49 +194,54 @@ export default function ClientProfilePanel({ initialData }: Props) {
         ? { kind: "personal", ...personalDraft }
         : { kind: "address", ...addressDraft };
 
-    const response = await fetch("/api/client/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const body = await response.json().catch(() => ({}));
+    try {
+      const response = await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
+      if (!response.ok) {
+        setError(
+          typeof body?.error === "string"
+            ? body.error
+            : t("client.profile.editor.saveFailed")
+        );
+        setSaveSuccess(false);
+        return;
+      }
+
+      if (editor === "personal") {
+        setData((current) => ({
+          ...current,
+          ...personalDraft,
+          displayName: `${personalDraft.nombre} ${personalDraft.apellidos}`.trim(),
+        }));
+        setNotice(t("client.profile.editor.personalSaved"));
+      } else {
+        setData((current) => ({
+          ...current,
+          ...addressDraft,
+        }));
+        setNotice(t("client.profile.editor.addressSaved"));
+      }
+
+      setSaveSuccess(true);
+      if (saveSuccessTimerRef.current) {
+        clearTimeout(saveSuccessTimerRef.current);
+      }
+      saveSuccessTimerRef.current = setTimeout(() => {
+        setSaveSuccess(false);
+        setEditor(null);
+        setConfirmOpen(false);
+      }, SAVE_SUCCESS_CLOSE_DELAY_MS);
+    } catch {
+      setError(t("client.profile.editor.saveFailed"));
+      setSaveSuccess(false);
+    } finally {
       setSaving(false);
-      setError(
-        typeof body?.error === "string"
-          ? body.error
-          : t("client.profile.editor.saveFailed")
-      );
-      setSaveSuccess(false);
-      return;
     }
-
-    if (editor === "personal") {
-      setData((current) => ({
-        ...current,
-        ...personalDraft,
-        displayName: `${personalDraft.nombre} ${personalDraft.apellidos}`.trim(),
-      }));
-      setNotice(t("client.profile.editor.personalSaved"));
-    } else {
-      setData((current) => ({
-        ...current,
-        ...addressDraft,
-      }));
-      setNotice(t("client.profile.editor.addressSaved"));
-    }
-
-    setSaveSuccess(true);
-    setSaving(false);
-    if (saveSuccessTimerRef.current) {
-      clearTimeout(saveSuccessTimerRef.current);
-    }
-    saveSuccessTimerRef.current = setTimeout(() => {
-      setSaveSuccess(false);
-      setEditor(null);
-      setConfirmOpen(false);
-    }, 850);
   };
 
   const toggle2fa = async () => {
@@ -243,25 +250,30 @@ export default function ClientProfilePanel({ initialData }: Props) {
     }
     const nextValue = !data.email2faEnabled;
     setSecuritySaving(true);
-    const response = await fetch("/api/client/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind: "security", email2faEnabled: nextValue }),
-    });
+    setError(null);
+    try {
+      const response = await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: "security", email2faEnabled: nextValue }),
+      });
 
-    if (!response.ok) {
-      setSecuritySaving(false);
+      if (!response.ok) {
+        setError(t("client.profile.security.twoFaError"));
+        return;
+      }
+
+      setData((current) => ({ ...current, email2faEnabled: nextValue }));
+      setNotice(
+        nextValue
+          ? t("client.profile.security.twoFaEnabled")
+          : t("client.profile.security.twoFaDisabled")
+      );
+    } catch {
       setError(t("client.profile.security.twoFaError"));
-      return;
+    } finally {
+      setSecuritySaving(false);
     }
-
-    setData((current) => ({ ...current, email2faEnabled: nextValue }));
-    setSecuritySaving(false);
-    setNotice(
-      nextValue
-        ? t("client.profile.security.twoFaEnabled")
-        : t("client.profile.security.twoFaDisabled")
-    );
   };
 
   const applyServicePause = async () => {
@@ -270,30 +282,34 @@ export default function ClientProfilePanel({ initialData }: Props) {
     }
     setServiceControlSaving(true);
     setError(null);
-    const response = await fetch("/api/client/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: "serviceControl",
-        action: "PAUSE",
-        pauseFrom: pauseFromInput,
-      }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "serviceControl",
+          action: "PAUSE",
+          pauseFrom: pauseFromInput,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(
+          typeof body?.error === "string"
+            ? body.error
+            : t("client.profile.serviceControl.pauseError")
+        );
+        return;
+      }
+      const pauseIso =
+        typeof body?.pauseServicesFrom === "string" ? body.pauseServicesFrom : null;
+      setData((current) => ({ ...current, pauseServicesFrom: pauseIso }));
+      setNotice(t("client.profile.serviceControl.pausedOk", { date: pauseFromInput }));
+    } catch {
+      setError(t("client.profile.serviceControl.pauseError"));
+    } finally {
       setServiceControlSaving(false);
-      setError(
-        typeof body?.error === "string"
-          ? body.error
-          : t("client.profile.serviceControl.pauseError")
-      );
-      return;
     }
-    const pauseIso =
-      typeof body?.pauseServicesFrom === "string" ? body.pauseServicesFrom : null;
-    setData((current) => ({ ...current, pauseServicesFrom: pauseIso }));
-    setNotice(t("client.profile.serviceControl.pausedOk", { date: pauseFromInput }));
-    setServiceControlSaving(false);
   };
 
   const resumeServices = async () => {
@@ -302,27 +318,31 @@ export default function ClientProfilePanel({ initialData }: Props) {
     }
     setServiceControlSaving(true);
     setError(null);
-    const response = await fetch("/api/client/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        kind: "serviceControl",
-        action: "RESUME",
-      }),
-    });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
+    try {
+      const response = await fetch("/api/client/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "serviceControl",
+          action: "RESUME",
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(
+          typeof body?.error === "string"
+            ? body.error
+            : t("client.profile.serviceControl.resumeError")
+        );
+        return;
+      }
+      setData((current) => ({ ...current, pauseServicesFrom: null }));
+      setNotice(t("client.profile.serviceControl.resumedOk"));
+    } catch {
+      setError(t("client.profile.serviceControl.resumeError"));
+    } finally {
       setServiceControlSaving(false);
-      setError(
-        typeof body?.error === "string"
-          ? body.error
-          : t("client.profile.serviceControl.resumeError")
-      );
-      return;
     }
-    setData((current) => ({ ...current, pauseServicesFrom: null }));
-    setNotice(t("client.profile.serviceControl.resumedOk"));
-    setServiceControlSaving(false);
   };
 
   return (
@@ -330,6 +350,14 @@ export default function ClientProfilePanel({ initialData }: Props) {
       {notice ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {notice}
+        </div>
+      ) : null}
+      {error && !editor ? (
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+        >
+          {error}
         </div>
       ) : null}
 
@@ -727,7 +755,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
               )}
 
               {error ? (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {error}
                 </div>
               ) : null}
@@ -794,7 +822,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
               </div>
 
               {error ? (
-                <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   {error}
                 </div>
               ) : null}

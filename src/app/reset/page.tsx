@@ -7,6 +7,8 @@ import { LANDING_LOCALE_STORAGE_KEY } from "@/components/landing/preferences";
 import { useI18n } from "@/i18n/client";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
+const LOGIN_REDIRECT_DELAY_MS = 1200;
+
 export default function ResetPasswordPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -95,27 +97,34 @@ export default function ResetPasswordPage() {
     setMessage(null);
     setMessageTone(null);
 
-    const res = await fetch("/api/auth/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-    });
+    try {
+      const res = await fetch("/api/auth/reset", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMessage(data.error ?? t("auth.reset.errors.generic"));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMessage(
+          typeof data?.error === "string" ? data.error : t("auth.reset.errors.generic")
+        );
+        setMessageTone("error");
+        return;
+      }
+
+      setMessage(t("auth.reset.success"));
+      setMessageTone("success");
+      window.setTimeout(() => {
+        router.push("/login?reset=success");
+        router.refresh();
+      }, LOGIN_REDIRECT_DELAY_MS);
+    } catch {
+      setMessage(t("auth.reset.errors.generic"));
       setMessageTone("error");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setMessage(t("auth.reset.success"));
-    setMessageTone("success");
-    setLoading(false);
-    window.setTimeout(() => {
-      router.push("/login?reset=success");
-      router.refresh();
-    }, 1200);
   };
 
   const handleRequestReset = async () => {
@@ -129,23 +138,30 @@ export default function ResetPasswordPage() {
     setMessage(null);
     setMessageTone(null);
 
-    const res = await fetch("/api/auth/forgot", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    try {
+      const res = await fetch("/api/auth/forgot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setMessage(data.error ?? t("auth.reset.errors.generic"));
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMessage(
+          typeof data?.error === "string" ? data.error : t("auth.reset.errors.generic")
+        );
+        setMessageTone("error");
+        return;
+      }
+
+      setMessage(t("auth.reset.requestSent"));
+      setMessageTone("success");
+    } catch {
+      setMessage(t("auth.reset.errors.generic"));
       setMessageTone("error");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setMessage(t("auth.reset.requestSent"));
-    setMessageTone("success");
-    setLoading(false);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -299,6 +315,7 @@ export default function ResetPasswordPage() {
 
               {message ? (
                 <div
+                  role={messageTone === "error" ? "alert" : "status"}
                   className={`rounded-xl border px-4 py-3 text-sm ${
                     messageTone === "success"
                       ? "border-emerald-300 bg-emerald-50 text-emerald-700"

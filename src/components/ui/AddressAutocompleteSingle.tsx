@@ -130,6 +130,15 @@ export default function AddressAutocompleteSingle({
         }
       });
     }
+
+    return () => {
+      const autocomplete = autocompleteRef.current;
+      if (!autocomplete) {
+        return;
+      }
+      window.google?.maps?.event?.clearInstanceListeners(autocomplete);
+      autocompleteRef.current = null;
+    };
   }, [autocompleteReady]);
 
   const resolvedPlaceholder = placeholder ?? t("address.placeholders.line1");

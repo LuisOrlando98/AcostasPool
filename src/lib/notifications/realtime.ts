@@ -3,6 +3,9 @@ import { broadcastNotification } from "@/lib/notifications/bus";
 import { prisma } from "@/lib/db";
 import Pusher from "pusher";
 
+const USER_CHANNEL_PREFIX = "private-user-";
+const NOTIFICATION_EVENT_NAME = "notification";
+
 let pusherClient: Pusher | null = null;
 
 export const getPusher = () => {
@@ -30,57 +33,84 @@ export const getPusher = () => {
   return pusherClient;
 };
 
-async function triggerForUser(userId: string, payload: NotificationEventPayload) {
-  const client = getPusher();
-  if (!client) {
-    return false;
-  }
-  await client.trigger(`private-user-${userId}`, "notification", payload);
-  return true;
-}
-
-export async function publishNotification(payload: NotificationEventPayload) {
-  const client = getPusher();
-  if (!client) {
-    broadcastNotification(payload);
-    return;
-  }
-
+async function resolveRecipientUserIds(
+  payload: NotificationEventPayload
+): Promise<string[]> {
   if (payload.recipientRole === "ADMIN") {
     const admins = await prisma.user.findMany({
       where: { role: "ADMIN", isActive: true },
       select: { id: true },
     });
-    await Promise.all(
-      admins
-        .filter((admin) => admin.id !== payload.actorUserId)
-        .map((admin) => triggerForUser(admin.id, payload))
-    );
-    return;
+    return admins
+      .map((admin) => admin.id)
+      .filter((adminId) => adminId !== payload.actorUserId);
   }
 
   if (payload.recipientRole === "CUSTOMER") {
-    if (payload.customerId) {
-      const customer = await prisma.customer.findUnique({
-        where: { id: payload.customerId },
-        select: { userId: true },
-      });
-      if (customer?.userId) {
-        await triggerForUser(customer.userId, payload);
-      }
+    if (!payload.customerId) {
+      return [];
     }
-    return;
+    const customer = await prisma.customer.findUnique({
+      where: { id: payload.customerId },
+      select: { userId: true },
+    });
+    return customer?.userId ? [customer.userId] : [];
   }
 
-  if (payload.recipientRole === "TECH") {
-    if (payload.recipientUserId) {
-      await triggerForUser(payload.recipientUserId, payload);
-    } else {
-      console.warn("TECH notification skipped: missing recipientUserId", {
+  if (!payload.recipientUserId) {
+    console.warn("TECH notification skipped: missing recipientUserId", {
+      notificationId: payload.id,
+      eventType: payload.eventType,
+    });
+    return [];
+  }
+  return [payload.recipientUserId];
+}
+
+async function triggerForUsers(
+  client: Pusher,
+  userIds: readonly string[],
+  payload: NotificationEventPayload
+) {
+  const results = await Promise.allSettled(
+    userIds.map((userId) =>
+      client.trigger(`${USER_CHANNEL_PREFIX}${userId}`, NOTIFICATION_EVENT_NAME, payload)
+    )
+  );
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error("Realtime notification trigger failed", {
         notificationId: payload.id,
-        eventType: payload.eventType,
+        userId: userIds[index],
+        error: result.reason,
       });
     }
-    return;
+  });
+}
+
+/**
+ * Publica una notificación en tiempo real (Pusher, o el bus SSE si Pusher no está configurado).
+ *
+ * Nunca lanza: los fallos del canal (Pusher caído, error al resolver destinatarios) se registran
+ * con console.error y se aísla cada destinatario, de modo que un trigger fallido no impide los
+ * demás ni rompe la operación de negocio que originó la notificación.
+ */
+export async function publishNotification(
+  payload: NotificationEventPayload
+): Promise<void> {
+  try {
+    const client = getPusher();
+    if (!client) {
+      broadcastNotification(payload);
+      return;
+    }
+    const userIds = await resolveRecipientUserIds(payload);
+    await triggerForUsers(client, userIds, payload);
+  } catch (error) {
+    console.error("Realtime notification publish failed", {
+      notificationId: payload.id,
+      eventType: payload.eventType,
+      error,
+    });
   }
 }

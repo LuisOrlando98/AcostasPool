@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { normalizeEmail } from "@/lib/auth/email";
 import { escapeHtml } from "@/lib/email-templates";
+import { getMailConfig, sendMailAndLog } from "@/lib/mail/transport";
 import { isAllowedPublicIntegrationToken } from "@/lib/public-integrations";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
@@ -37,6 +37,18 @@ function getAppLoginUrl() {
     ? appUrl
     : `https://${appUrl}`;
   return `${normalizedAppUrl.replace(/\/+$/, "")}/login`;
+}
+
+/** Internal copies of the confirmation, never duplicating the client's own address. */
+function buildBccRecipients(clientEmail: string, internalInbox: string): string[] {
+  const normalizedClientEmail = normalizeEmail(clientEmail);
+  const candidates = [normalizeEmail(internalInbox), normalizeEmail(DEV_NOTIFICATION_EMAIL)];
+  return candidates.filter(
+    (candidate, index) =>
+      candidate.length > 0 &&
+      candidate !== normalizedClientEmail &&
+      candidates.indexOf(candidate) === index
+  );
 }
 
 function getDecisionLabel(decision: "ACCEPT" | "DECLINE") {
@@ -218,39 +230,7 @@ export async function POST(request: Request) {
     },
   });
 
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  const smtpFrom = process.env.SMTP_FROM || smtpUser;
-  const internalInbox = process.env.CONTACT_INBOX_EMAIL || smtpUser;
-
-  if (!host || !smtpUser || !smtpPass || !smtpFrom) {
-    await prisma.emailLog
-      .create({
-        data: {
-          recipientEmail: clientEmail,
-          recipientName: payload.clientName,
-          recipientRole: "CUSTOMER",
-          subject: "Public integration confirmation (not sent)",
-          bodyText: "SMTP not configured",
-          status: "FAILED",
-          errorMessage: "SMTP not configured",
-          metadata: {
-            category: "PUBLIC_INTEGRATION_RESPONSE",
-            responseId: record.id,
-            decision: record.decision,
-            token: payload.token,
-          },
-        },
-      })
-      .catch(() => null);
-
-    return NextResponse.json(
-      { error: "Email service is not configured. Please try again later." },
-      { status: 500 }
-    );
-  }
+  const internalInbox = process.env.CONTACT_INBOX_EMAIL || getMailConfig()?.user || "";
 
   const rendered = buildClientEmailPayload({
     clientName: payload.clientName,
@@ -263,84 +243,33 @@ export async function POST(request: Request) {
     updatedAtIso: record.updatedAt.toISOString(),
   });
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user: smtpUser, pass: smtpPass },
-    });
+  // The transport records the EmailLog row (FAILED with "SMTP not configured" when unconfigured).
+  const sent = await sendMailAndLog({
+    to: clientEmail,
+    recipientName: payload.clientName,
+    recipientRole: "CUSTOMER",
+    template: "PUBLIC_INTEGRATION_RESPONSE",
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    replyTo: internalInbox || null,
+    bcc: buildBccRecipients(clientEmail, internalInbox),
+    metadata: {
+      category: "PUBLIC_INTEGRATION_RESPONSE",
+      responseId: record.id,
+      decision: record.decision,
+      token: payload.token,
+    },
+  });
 
-    const bccRecipients = new Set<string>();
-    const normalizedClientEmail = normalizeEmail(clientEmail);
-    const normalizedInternalInbox = normalizeEmail(internalInbox || "");
-    const normalizedDevEmail = normalizeEmail(DEV_NOTIFICATION_EMAIL);
-
-    if (normalizedInternalInbox && normalizedInternalInbox !== normalizedClientEmail) {
-      bccRecipients.add(normalizedInternalInbox);
-    }
-    if (normalizedDevEmail && normalizedDevEmail !== normalizedClientEmail) {
-      bccRecipients.add(normalizedDevEmail);
-    }
-
-    const bccList = Array.from(bccRecipients);
-
-    await transporter.sendMail({
-      from: smtpFrom,
-      to: clientEmail,
-      bcc: bccList.length > 0 ? bccList.join(",") : undefined,
-      replyTo: internalInbox || undefined,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
-    });
-
-    await prisma.emailLog
-      .create({
-        data: {
-          recipientEmail: clientEmail,
-          recipientName: payload.clientName,
-          recipientRole: "CUSTOMER",
-          subject: rendered.subject,
-          bodyText: rendered.text,
-          bodyHtml: rendered.html,
-          status: "SENT",
-          sentAt: new Date(),
-          metadata: {
-            category: "PUBLIC_INTEGRATION_RESPONSE",
-            responseId: record.id,
-            decision: record.decision,
-            token: payload.token,
-          },
-        },
-      })
-      .catch(() => null);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown send error";
-    await prisma.emailLog
-      .create({
-        data: {
-          recipientEmail: clientEmail,
-          recipientName: payload.clientName,
-          recipientRole: "CUSTOMER",
-          subject: rendered.subject,
-          bodyText: rendered.text,
-          bodyHtml: rendered.html,
-          status: "FAILED",
-          errorMessage: message,
-          metadata: {
-            category: "PUBLIC_INTEGRATION_RESPONSE",
-            responseId: record.id,
-            decision: record.decision,
-            token: payload.token,
-          },
-        },
-      })
-      .catch(() => null);
-
-    console.error("Public integration response email failed:", error);
+  if (!sent.ok) {
     return NextResponse.json(
-      { error: "Could not send confirmation email. Please try again." },
+      {
+        error:
+          sent.reason === "not_configured"
+            ? "Email service is not configured. Please try again later."
+            : "Could not send confirmation email. Please try again.",
+      },
       { status: 500 }
     );
   }

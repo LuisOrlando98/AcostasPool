@@ -365,58 +365,63 @@ export default function ClientRequestPage() {
     setLoading(true);
     setMessage(null);
 
-    const res = await fetch("/api/client/requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        propertyId,
-        reason: resolvedReason,
-        preferredDate,
-        preferredTime: resolvedPreferredTime,
-        description,
-        mode,
-        visitsPerWeek: resolvedVisitsPerWeek,
-        urgentOverride,
-      }),
-    });
+    try {
+      const res = await fetch("/api/client/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId,
+          reason: resolvedReason,
+          preferredDate,
+          preferredTime: resolvedPreferredTime,
+          description,
+          mode,
+          visitsPerWeek: resolvedVisitsPerWeek,
+          urgentOverride,
+        }),
+      });
 
-    const data = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      reviewRequired?: boolean;
-      partial?: boolean;
-      createdCount?: number;
-      createdPlanCount?: number;
-      mode?: "SINGLE" | "RECURRING";
-    };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        reviewRequired?: boolean;
+        partial?: boolean;
+        createdCount?: number;
+        createdPlanCount?: number;
+        mode?: "SINGLE" | "RECURRING";
+      };
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setMessageTone("error");
+        setMessage(data.error ?? t("client.request.errors.submit"));
+        return;
+      }
+
+      const successCopy = data.reviewRequired
+        ? t("client.request.successReview")
+        : mode === "RECURRING"
+          ? t("client.request.successRecurringConfigured", {
+              visits: String(resolvedVisitsPerWeek),
+              plans: String(data.createdPlanCount ?? 0),
+            })
+          : data.partial
+            ? t("client.request.successPartial", {
+                count: String(data.createdCount ?? 0),
+              })
+            : t("client.request.successCount", {
+                count: String(data.createdCount ?? 1),
+              });
+
+      setMessageTone(data.reviewRequired || data.partial ? "warning" : "success");
+      setMessage(null);
+      setConfirmationMessage(successCopy);
+      setShowConfirmationModal(true);
+    } catch {
+      // The form keeps every selected value so the customer can simply retry.
       setMessageTone("error");
-      setMessage(data.error ?? t("client.request.errors.submit"));
+      setMessage(t("common.errors.network"));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const successCopy = data.reviewRequired
-      ? t("client.request.successReview")
-      : mode === "RECURRING"
-        ? t("client.request.successRecurringConfigured", {
-            visits: String(resolvedVisitsPerWeek),
-            plans: String(data.createdPlanCount ?? 0),
-          })
-      : data.partial
-        ? t("client.request.successPartial", {
-            count: String(data.createdCount ?? 0),
-          })
-        : t("client.request.successCount", {
-            count: String(data.createdCount ?? 1),
-          });
-
-    setMessageTone(data.reviewRequired || data.partial ? "warning" : "success");
-    setMessage(null);
-    setConfirmationMessage(successCopy);
-    setShowConfirmationModal(true);
-
-    setLoading(false);
   };
 
   const messageClass =
@@ -443,7 +448,14 @@ export default function ClientRequestPage() {
           </span>
         </div>
 
-        <div className="mt-5 grid gap-3.5 md:grid-cols-2">
+        <form
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSubmit();
+          }}
+          className="mt-5 grid gap-3.5 md:grid-cols-2"
+        >
           <div className="md:col-span-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("client.request.fields.property")}
@@ -762,7 +774,10 @@ export default function ClientRequestPage() {
           </div>
 
           {message ? (
-            <div className={`md:col-span-2 rounded-xl border px-4 py-3 text-sm ${messageClass}`}>
+            <div
+              role={messageTone === "error" ? "alert" : "status"}
+              className={`md:col-span-2 rounded-xl border px-4 py-3 text-sm ${messageClass}`}
+            >
               {message}
             </div>
           ) : null}
@@ -772,15 +787,14 @@ export default function ClientRequestPage() {
               {urgentOverride ? t("client.request.noticeUrgent") : t("client.request.notice")}
             </p>
             <button
-              type="button"
-              onClick={handleSubmit}
+              type="submit"
               disabled={loading || (mode === "RECURRING" && recurringPaused)}
               className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-70"
             >
               {loading ? t("client.request.loading") : t("client.request.submit")}
             </button>
           </div>
-        </div>
+        </form>
       </section>
 
       {showConfirmationModal ? (

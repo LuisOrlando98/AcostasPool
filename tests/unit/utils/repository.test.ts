@@ -60,20 +60,17 @@ describe("sanitizeRepositoryPath", () => {
     expect(sanitizeRepositoryPath(raw)).toBe("");
   });
 
-  it("rejects any path containing '..' (path traversal guard)", () => {
+  it("rejects any path with a '..' segment (path traversal guard)", () => {
     expect(sanitizeRepositoryPath("../x")).toBe("");
     expect(sanitizeRepositoryPath("a/../b")).toBe("");
     expect(sanitizeRepositoryPath("a/..")).toBe("");
+    expect(sanitizeRepositoryPath("a\\..\\b")).toBe("");
   });
 
-  it.fails(
-    "keeps a file name that merely contains '..' inside a segment (currently rejected)",
-    () => {
-      // The guard uses includes("..") instead of checking whole segments,
-      // so a legitimate name like "report..pdf" is thrown away.
-      expect(sanitizeRepositoryPath("docs/report..pdf")).toBe("docs/report..pdf");
-    }
-  );
+  it("keeps a file name that merely contains '..' inside a segment", () => {
+    expect(sanitizeRepositoryPath("docs/report..pdf")).toBe("docs/report..pdf");
+    expect(sanitizeRepositoryPath("a/.../b")).toBe("a/.../b");
+  });
 
   it("replaces empty inner segments with 'item'", () => {
     expect(sanitizeRepositoryPath("a//b")).toBe("a/item/b");
@@ -84,8 +81,9 @@ describe("sanitizeRepositoryPath", () => {
     expect(sanitizeRepositoryPath("My Docs/Año 2024")).toBe("My Docs/A_o 2024");
   });
 
-  it("keeps a leading './' segment as a literal dot segment", () => {
-    expect(sanitizeRepositoryPath("./x")).toBe("./x");
+  it("rejects '.' segments like '..' (a literal '.' folder would diverge between local and S3)", () => {
+    expect(sanitizeRepositoryPath("./x")).toBe("");
+    expect(sanitizeRepositoryPath("a/./b")).toBe("");
   });
 });
 

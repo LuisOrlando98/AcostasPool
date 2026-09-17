@@ -89,17 +89,18 @@ describe("getPublicAssetUrl (local driver) - normalizeStoragePath", () => {
     expect(getPublicAssetUrl("https://host/a/../b")).toBe("/b");
   });
 
-  it.fails(
-    "accepts a file name that merely contains '..' (currently rejected)",
-    async () => {
-      // includes("..") rejects any dotted-dotted substring, so a valid upload
-      // named "my..photo.png" cannot be stored or resolved.
-      const { getPublicAssetUrl } = await loadObjectStore({ STORAGE_DRIVER: "local" });
-      expect(getPublicAssetUrl("uploads/my..photo.png")).toBe(
-        "/uploads/my..photo.png"
-      );
-    }
-  );
+  it("accepts a file name that merely contains '..' inside a segment", async () => {
+    const { getPublicAssetUrl } = await loadObjectStore({ STORAGE_DRIVER: "local" });
+    expect(getPublicAssetUrl("uploads/my..photo.png")).toBe("/uploads/my..photo.png");
+    expect(getPublicAssetUrl("uploads/.../x.png")).toBe("/uploads/.../x.png");
+  });
+
+  it("rejects '.' segments (only the URL parser may resolve them)", async () => {
+    const { getPublicAssetUrl } = await loadObjectStore({ STORAGE_DRIVER: "local" });
+    expect(() => getPublicAssetUrl("./uploads/x.png")).toThrow("Invalid storage path");
+    expect(() => getPublicAssetUrl("uploads/./x.png")).toThrow("Invalid storage path");
+    expect(getPublicAssetUrl("https://host/uploads/./x.png")).toBe("/uploads/x.png");
+  });
 
   it("strips the bucket name prefix when AWS_S3_BUCKET is configured", async () => {
     const { getPublicAssetUrl } = await loadObjectStore({

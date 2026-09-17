@@ -109,6 +109,7 @@ type Customer = {
 };
 
 type JobDraft = {
+  id: string;
   customerId: string;
   propertyId: string;
   technicianId: string;
@@ -250,6 +251,17 @@ const sortJobsChronologically = <T extends { id: string; scheduledDate: string; 
     return a.id.localeCompare(b.id);
   });
 
+// Contador de respaldo para entornos sin crypto.randomUUID (ids solo de cliente).
+let draftIdFallbackCounter = 0;
+
+const createDraftId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  draftIdFallbackCounter += 1;
+  return `draft-${draftIdFallbackCounter}`;
+};
+
 const createDraft = (
   customers: Customer[],
   serviceTiers: ServiceTier[]
@@ -257,6 +269,7 @@ const createDraft = (
   const firstCustomer = customers[0];
   const firstProperty = firstCustomer?.properties[0];
   return {
+    id: createDraftId(),
     customerId: firstCustomer?.id ?? "",
     propertyId: firstProperty?.id ?? "",
     technicianId: "",
@@ -270,6 +283,22 @@ const createDraft = (
   };
 };
 
+// Payload que espera /api/jobs/bulk-create: excluye el id local del borrador.
+const toDraftPayload = (draft: JobDraft) => ({
+  customerId: draft.customerId,
+  propertyId: draft.propertyId,
+  technicianId: draft.technicianId,
+  scheduledTime: draft.scheduledTime,
+  serviceTierId: draft.serviceTierId,
+  serviceType: draft.serviceType,
+  priority: draft.priority,
+  type: draft.type,
+  notes: draft.notes,
+  estimatedDurationMinutes: draft.estimatedDuration
+    ? Number(draft.estimatedDuration)
+    : null,
+});
+
 const normalizeChecklist = (value?: { label?: string; completed?: boolean }[] | null) =>
   Array.isArray(value)
     ? value
@@ -281,6 +310,7 @@ const normalizeChecklist = (value?: { label?: string; completed?: boolean }[] | 
     : [];
 
 const HIGHLIGHT_DURATION_MS = 7000;
+const SAVE_SUCCESS_FEEDBACK_MS = 1600;
 
 const resolveRangeStart = (
   rangeFilter: ScheduledFiltersState["rangeFilter"],
@@ -494,29 +524,9 @@ export default function RoutesCalendar({
     };
   }, [selectedDate, jobModal]);
 
-  // Reinicia el estado local cuando cambian las props del servidor
-  // (patron "adjust state during render"; sin key en el padre en esta fase).
-  const [syncedJobs, setSyncedJobs] = useState(jobs);
-  const [syncedMonthKey, setSyncedMonthKey] = useState(monthKey);
-  if (jobs !== syncedJobs || monthKey !== syncedMonthKey) {
-    setSyncedJobs(jobs);
-    setSyncedMonthKey(monthKey);
-    setJobsState(
-      sortJobsChronologically(jobs.map((job) => ({ ...job, scheduledDate: job.scheduledDate })))
-    );
-    setPendingChanges({});
-    setEditMode(false);
-    setSelectedDate(null);
-    setDrafts([]);
-    setErrorMessage(null);
-    setSaveSuccess(false);
-    setJobModal(null);
-    setMobileDayKey(null);
-    setActiveTechJobId(null);
-    setSelectedJobId(null);
-    setDraggingJobId(null);
-    setDragOverTarget(null);
-  }
+  // El estado local se reinicia al cambiar de mes o cuando el servidor trae datos
+  // nuevos: el padre monta el componente con `key={monthKey:dataVersion}`
+  // (ver src/app/admin/routes/page.tsx).
 
   if (selectedJobId && !jobsState.some((job) => job.id === selectedJobId)) {
     setSelectedJobId(null);
@@ -1036,15 +1046,15 @@ export default function RoutesCalendar({
     });
   };
 
-  const updateDraft = (index: number, patch: Partial<JobDraft>) => {
+  const updateDraft = (draftId: string, patch: Partial<JobDraft>) => {
     setDrafts((current) =>
-      current.map((draft, idx) => (idx === index ? { ...draft, ...patch } : draft))
+      current.map((draft) => (draft.id === draftId ? { ...draft, ...patch } : draft))
     );
   };
 
-  const handleCustomerChange = (index: number, customerId: string) => {
+  const handleCustomerChange = (draftId: string, customerId: string) => {
     const customer = customers.find((item) => item.id === customerId);
-    updateDraft(index, {
+    updateDraft(draftId, {
       customerId,
       propertyId: customer?.properties[0]?.id ?? "",
     });
@@ -1054,8 +1064,8 @@ export default function RoutesCalendar({
     setDrafts((current) => [...current, createDraft(customers, tierOptions)]);
   };
 
-  const removeDraft = (index: number) => {
-    setDrafts((current) => current.filter((_, idx) => idx !== index));
+  const removeDraft = (draftId: string) => {
+    setDrafts((current) => current.filter((draft) => draft.id !== draftId));
   };
 
   const handleCreateJobs = async () => {
@@ -1073,28 +1083,33 @@ export default function RoutesCalendar({
     setCreating(true);
     const payload = {
       date: selectedDate,
-      jobs: drafts.map((draft) => ({
-        ...draft,
-        estimatedDurationMinutes: draft.estimatedDuration
-          ? Number(draft.estimatedDuration)
-          : null,
-      })),
+      jobs: drafts.map(toDraftPayload),
     };
-    const res = await fetch("/api/jobs/bulk-create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({ jobs: [] }));
-    if (res.ok && Array.isArray(data.jobs)) {
-      setJobsState((current) => sortJobsChronologically([...data.jobs, ...current]));
-      setSelectedDate(null);
-      setDrafts([]);
-    } else {
-      setErrorMessage(t("admin.routes.errors.createFailed"));
+    try {
+      const res = await fetch("/api/jobs/bulk-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({ jobs: [] }));
+      if (res.ok && Array.isArray(data.jobs)) {
+        setJobsState((current) => sortJobsChronologically([...data.jobs, ...current]));
+        setSelectedDate(null);
+        setDrafts([]);
+      } else {
+        setErrorMessage(t("admin.routes.errors.createFailed"));
+      }
+    } catch {
+      setErrorMessage(t("admin.routes.errors.network"));
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
+
+  const showSaveSuccess = useCallback(() => {
+    setSaveSuccess(true);
+    window.setTimeout(() => setSaveSuccess(false), SAVE_SUCCESS_FEEDBACK_MS);
+  }, []);
 
   const saveSingleUpdate = async (
     jobId: string,
@@ -1102,21 +1117,25 @@ export default function RoutesCalendar({
   ) => {
     setErrorMessage(null);
     setSaving(true);
-    const res = await fetch("/api/routes/bulk-reschedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ updates: [{ jobId, ...patch }] }),
-    });
-    if (res.ok) {
-      setSaving(false);
-      setSaveSuccess(true);
-      window.setTimeout(() => setSaveSuccess(false), 1600);
+    try {
+      const res = await fetch("/api/routes/bulk-reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ updates: [{ jobId, ...patch }] }),
+      });
+      if (!res.ok) {
+        setErrorMessage(t("admin.routes.errors.saveFailed"));
+        return false;
+      }
+      showSaveSuccess();
       return true;
+    } catch {
+      setErrorMessage(t("admin.routes.errors.network"));
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setErrorMessage(t("admin.routes.errors.saveFailed"));
-    return false;
   };
 
   const deleteJobById = useCallback(
@@ -1126,36 +1145,40 @@ export default function RoutesCalendar({
       }
       setErrorMessage(null);
       setSaving(true);
-      const res = await fetch(`/api/jobs/${jobId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const error = await res.json().catch(() => null);
-        setSaving(false);
-        setErrorMessage(
-          error?.error || t("admin.routes.errors.deleteJobFailed")
-        );
-        return false;
-      }
-      setJobsState((current) => current.filter((job) => job.id !== jobId));
-      setPendingChanges((current) => {
-        if (!current[jobId]) {
-          return current;
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const error = await res.json().catch(() => null);
+          setErrorMessage(
+            error?.error || t("admin.routes.errors.deleteJobFailed")
+          );
+          return false;
         }
-        const next = { ...current };
-        delete next[jobId];
-        return next;
-      });
-      setSelectedJobId((current) => (current === jobId ? null : current));
-      setHighlightJobId((current) => (current === jobId ? null : current));
-      setActiveTechJobId((current) => (current === jobId ? null : current));
-      setSaving(false);
-      setSaveSuccess(true);
-      window.setTimeout(() => setSaveSuccess(false), 1600);
-      return true;
+        setJobsState((current) => current.filter((job) => job.id !== jobId));
+        setPendingChanges((current) => {
+          if (!current[jobId]) {
+            return current;
+          }
+          const next = { ...current };
+          delete next[jobId];
+          return next;
+        });
+        setSelectedJobId((current) => (current === jobId ? null : current));
+        setHighlightJobId((current) => (current === jobId ? null : current));
+        setActiveTechJobId((current) => (current === jobId ? null : current));
+        showSaveSuccess();
+        return true;
+      } catch {
+        setErrorMessage(t("admin.routes.errors.network"));
+        return false;
+      } finally {
+        setSaving(false);
+      }
     },
-    [t]
+    [t, showSaveSuccess]
   );
 
   const handleTechnicianAssign = async (
@@ -1167,6 +1190,8 @@ export default function RoutesCalendar({
       ? techniciansById.get(nextTechnicianId)
       : null;
     const techName = techInfo?.name ?? null;
+    // Snapshot para revertir la asignacion optimista si el guardado falla.
+    const previousJob = jobsState.find((job) => job.id === jobId);
     setJobsState((current) =>
       current.map((job) =>
         job.id === jobId
@@ -1186,7 +1211,20 @@ export default function RoutesCalendar({
     if (editMode) {
       setPendingForJob(jobId, { technicianId: nextTechnicianId });
     } else {
-      await saveSingleUpdate(jobId, { technicianId: nextTechnicianId });
+      const saved = await saveSingleUpdate(jobId, { technicianId: nextTechnicianId });
+      if (!saved && previousJob) {
+        setJobsState((current) =>
+          current.map((job) =>
+            job.id === jobId
+              ? {
+                  ...job,
+                  technicianId: previousJob.technicianId,
+                  technician: previousJob.technician,
+                }
+              : job
+          )
+        );
+      }
     }
     setActiveTechJobId(null);
   };
@@ -1205,61 +1243,65 @@ export default function RoutesCalendar({
     }
     setErrorMessage(null);
     setSaving(true);
-    const res = await fetch(`/api/jobs/${jobModal.jobId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        jobId: jobModal.jobId,
-        scheduledDate: scheduledDateTime.toISOString(),
-        status: jobModal.status,
-        priority: jobModal.priority,
-        serviceTierId: jobModal.serviceTierId,
-        serviceType: jobModal.serviceType,
-        technicianId: jobModal.technicianId || null,
-        notes: jobModal.notes || null,
-        checklist: jobModal.checklist,
-      }),
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => null);
-      setSaving(false);
-      setErrorMessage(
-        error?.error || t("admin.routes.errors.saveJobFailed")
+    try {
+      const res = await fetch(`/api/jobs/${jobModal.jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          jobId: jobModal.jobId,
+          scheduledDate: scheduledDateTime.toISOString(),
+          status: jobModal.status,
+          priority: jobModal.priority,
+          serviceTierId: jobModal.serviceTierId,
+          serviceType: jobModal.serviceType,
+          technicianId: jobModal.technicianId || null,
+          notes: jobModal.notes || null,
+          checklist: jobModal.checklist,
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        setErrorMessage(
+          error?.error || t("admin.routes.errors.saveJobFailed")
+        );
+        return;
+      }
+      const techInfo = jobModal.technicianId
+        ? techniciansById.get(jobModal.technicianId)
+        : null;
+      const timeParts = getBusinessTimeParts(scheduledDateTime);
+      const nextSortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
+      setJobsState((current) =>
+        sortJobsChronologically(current.map((job) =>
+          job.id === jobModal.jobId
+            ? {
+                ...job,
+                scheduledDate: scheduledDateTime.toISOString(),
+                sortOrder: nextSortOrder,
+                status: jobModal.status,
+                priority: jobModal.priority,
+                serviceTierId: jobModal.serviceTierId || null,
+                serviceType: jobModal.serviceType,
+                technicianId: jobModal.technicianId || null,
+                technician: jobModal.technicianId
+                  ? {
+                      id: jobModal.technicianId,
+                      name: techInfo?.name ?? t("admin.routes.labels.technicianFallback"),
+                    }
+                  : null,
+                notes: jobModal.notes || null,
+                checklist: jobModal.checklist,
+              }
+            : job
+        ))
       );
-      return;
+      setJobModal(null);
+    } catch {
+      setErrorMessage(t("admin.routes.errors.network"));
+    } finally {
+      setSaving(false);
     }
-    const techInfo = jobModal.technicianId
-      ? techniciansById.get(jobModal.technicianId)
-      : null;
-    const timeParts = getBusinessTimeParts(scheduledDateTime);
-    const nextSortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
-    setJobsState((current) =>
-      sortJobsChronologically(current.map((job) =>
-        job.id === jobModal.jobId
-          ? {
-              ...job,
-              scheduledDate: scheduledDateTime.toISOString(),
-              sortOrder: nextSortOrder,
-              status: jobModal.status,
-              priority: jobModal.priority,
-              serviceTierId: jobModal.serviceTierId || null,
-              serviceType: jobModal.serviceType,
-              technicianId: jobModal.technicianId || null,
-              technician: jobModal.technicianId
-                ? {
-                    id: jobModal.technicianId,
-                    name: techInfo?.name ?? t("admin.routes.labels.technicianFallback"),
-                  }
-                : null,
-              notes: jobModal.notes || null,
-              checklist: jobModal.checklist,
-            }
-          : job
-      ))
-    );
-    setSaving(false);
-    setJobModal(null);
   };
 
   const handleSaveChanges = async () => {
@@ -1272,21 +1314,25 @@ export default function RoutesCalendar({
     }
     setErrorMessage(null);
     setSaving(true);
-    const res = await fetch("/api/routes/bulk-reschedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ updates }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/routes/bulk-reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates }),
+      });
+      if (!res.ok) {
+        setErrorMessage(t("admin.routes.errors.saveFailed"));
+        return false;
+      }
       setPendingChanges({});
-      setSaving(false);
-      setSaveSuccess(true);
-      window.setTimeout(() => setSaveSuccess(false), 1600);
+      showSaveSuccess();
       return true;
+    } catch {
+      setErrorMessage(t("admin.routes.errors.network"));
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-      setErrorMessage(t("admin.routes.errors.saveFailed"));
-    return false;
   };
 
   const toggleEditMode = async () => {
@@ -1630,10 +1676,16 @@ export default function RoutesCalendar({
           ))}
         </div>
         {errorMessage ? (
-          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          <div
+            role="alert"
+            className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+          >
             {errorMessage}
           </div>
         ) : null}
+        <div role="status" aria-live="polite" className="sr-only">
+          {saveSuccess ? t("admin.routes.labels.saveSuccess") : ""}
+        </div>
 
         <div className="mt-6 lg:hidden">
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
@@ -3203,7 +3255,7 @@ export default function RoutesCalendar({
                   const properties = customer?.properties ?? [];
                   return (
                     <div
-                      key={`draft-${index}`}
+                      key={draft.id}
                       className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
                     >
                       <div className="flex items-center justify-between">
@@ -3215,7 +3267,7 @@ export default function RoutesCalendar({
                         {drafts.length > 1 ? (
                           <button
                             type="button"
-                            onClick={() => removeDraft(index)}
+                            onClick={() => removeDraft(draft.id)}
                             className="text-xs text-slate-500"
                           >
                             {t("common.actions.delete")}
@@ -3230,7 +3282,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.customerId}
                             onChange={(event) =>
-                              handleCustomerChange(index, event.target.value)
+                              handleCustomerChange(draft.id, event.target.value)
                             }
                             className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                           >
@@ -3251,7 +3303,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.propertyId}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 propertyId: event.target.value,
                               })
                             }
@@ -3279,7 +3331,7 @@ export default function RoutesCalendar({
                           <input
                             value={draft.scheduledTime}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 scheduledTime: event.target.value,
                               })
                             }
@@ -3294,7 +3346,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.technicianId}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 technicianId: event.target.value,
                               })
                             }
@@ -3317,7 +3369,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.priority}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 priority: event.target.value,
                               })
                             }
@@ -3338,7 +3390,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.serviceTierId}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 serviceTierId: event.target.value,
                               })
                             }
@@ -3358,7 +3410,7 @@ export default function RoutesCalendar({
                           <select
                             value={draft.serviceType}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 serviceType: event.target.value,
                               })
                             }
@@ -3378,7 +3430,7 @@ export default function RoutesCalendar({
                           <input
                             value={draft.estimatedDuration}
                             onChange={(event) =>
-                              updateDraft(index, {
+                              updateDraft(draft.id, {
                                 estimatedDuration: event.target.value,
                               })
                             }
@@ -3395,7 +3447,7 @@ export default function RoutesCalendar({
                         <textarea
                           value={draft.notes}
                           onChange={(event) =>
-                            updateDraft(index, { notes: event.target.value })
+                            updateDraft(draft.id, { notes: event.target.value })
                           }
                           className="mt-2 min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm"
                         />

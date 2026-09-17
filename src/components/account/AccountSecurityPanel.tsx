@@ -26,25 +26,29 @@ export default function AccountSecurityPanel({
     setError(null);
     setNotice(null);
 
-    const response = await fetch("/api/account/security", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email2faEnabled: nextValue }),
-    }).catch(() => null);
+    try {
+      const response = await fetch("/api/account/security", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email2faEnabled: nextValue }),
+      });
 
-    if (!response?.ok) {
-      setSaving(false);
+      if (!response.ok) {
+        setError(t("client.profile.security.twoFaError"));
+        return;
+      }
+
+      setEmail2faEnabled(nextValue);
+      setNotice(
+        nextValue
+          ? t("client.profile.security.twoFaEnabled")
+          : t("client.profile.security.twoFaDisabled")
+      );
+    } catch {
       setError(t("client.profile.security.twoFaError"));
-      return;
+    } finally {
+      setSaving(false);
     }
-
-    setEmail2faEnabled(nextValue);
-    setSaving(false);
-    setNotice(
-      nextValue
-        ? t("client.profile.security.twoFaEnabled")
-        : t("client.profile.security.twoFaDisabled")
-    );
   };
 
   return (
@@ -91,7 +95,10 @@ export default function AccountSecurityPanel({
         </div>
       ) : null}
       {error ? (
-        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div
+          role="alert"
+          className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+        >
           {error}
         </div>
       ) : null}

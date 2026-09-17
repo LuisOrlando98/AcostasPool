@@ -26,8 +26,13 @@ export type GoogleAutocomplete = {
   getPlace: () => GooglePlaceResult | undefined;
 };
 
+export type GoogleMapsEventApi = {
+  clearInstanceListeners: (instance: object) => void;
+};
+
 export type GoogleMapsGlobal = {
   maps?: {
+    event?: GoogleMapsEventApi;
     places?: {
       Autocomplete: new (
         input: HTMLInputElement,
