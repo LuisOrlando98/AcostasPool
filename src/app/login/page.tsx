@@ -48,6 +48,34 @@ function resolvePostLoginPath(next: string | null, roleRedirect: string): string
   return insideRoleArea ? next : roleRedirect;
 }
 
+const LEGAL_LINKS = [
+  {
+    href: "/legal/terms-of-service",
+    labelKey: "auth.legal.links.terms",
+    shortLabelKey: "auth.legal.links.termsShort",
+  },
+  {
+    href: "/legal/privacy-policy",
+    labelKey: "auth.legal.links.privacy",
+    shortLabelKey: "auth.legal.links.privacyShort",
+  },
+  {
+    href: "/legal/payment-cancellation-policy",
+    labelKey: "auth.legal.links.payments",
+    shortLabelKey: "auth.legal.links.paymentsShort",
+  },
+  {
+    href: "/legal/disclaimer-limitation-of-liability",
+    labelKey: "auth.legal.links.liability",
+    shortLabelKey: "auth.legal.links.liabilityShort",
+  },
+  {
+    href: "/legal/cookie-notice",
+    labelKey: "auth.legal.links.cookies",
+    shortLabelKey: "auth.legal.links.cookiesShort",
+  },
+] as const;
+
 export default function LoginPage() {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -113,44 +141,6 @@ export default function LoginPage() {
       }
     }
   };
-
-  const legalLinks = [
-    {
-      href: "/legal/terms-of-service",
-      en: "Terms of Service",
-      es: "Terminos de Servicio",
-      shortEn: "Terms",
-      shortEs: "Terminos",
-    },
-    {
-      href: "/legal/privacy-policy",
-      en: "Privacy Policy",
-      es: "Politica de Privacidad",
-      shortEn: "Privacy",
-      shortEs: "Privacidad",
-    },
-    {
-      href: "/legal/payment-cancellation-policy",
-      en: "Payment & Cancellation",
-      es: "Pago y Cancelacion",
-      shortEn: "Payments",
-      shortEs: "Pagos",
-    },
-    {
-      href: "/legal/disclaimer-limitation-of-liability",
-      en: "Disclaimer & Liability",
-      es: "Descargo y Responsabilidad",
-      shortEn: "Liability",
-      shortEs: "Responsabilidad",
-    },
-    {
-      href: "/legal/cookie-notice",
-      en: "Cookie Notice",
-      es: "Aviso de Cookies",
-      shortEn: "Cookies",
-      shortEs: "Cookies",
-    },
-  ] as const;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_#d9f2ff,_#f6f7fb_48%,_#ecf2f8)] text-slate-900">
@@ -302,21 +292,11 @@ export default function LoginPage() {
                     className="absolute inset-y-0 right-2 my-2 inline-flex items-center rounded-md px-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
                     aria-label={
                       showPassword
-                        ? locale === "es"
-                          ? "Ocultar contrasena"
-                          : "Hide password"
-                        : locale === "es"
-                          ? "Mostrar contrasena"
-                          : "Show password"
+                        ? t("auth.login.hidePassword")
+                        : t("auth.login.showPassword")
                     }
                   >
-                    {showPassword
-                      ? locale === "es"
-                        ? "Ocultar"
-                        : "Hide"
-                      : locale === "es"
-                        ? "Mostrar"
-                        : "Show"}
+                    {showPassword ? t("auth.login.hide") : t("auth.login.show")}
                   </button>
                 </div>
               </div>
@@ -346,7 +326,11 @@ export default function LoginPage() {
                 </div>
               ) : null}
               {!error && resetSuccess ? (
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+                >
                   {t("auth.reset.success")}
                 </div>
               ) : null}
@@ -364,23 +348,23 @@ export default function LoginPage() {
 
         <div className="mt-8 border-t border-slate-200/80 pt-3">
           <p className="text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Legal
+            {t("auth.legal.title")}
           </p>
           <nav
-            aria-label={locale === "es" ? "Enlaces legales" : "Legal links"}
+            aria-label={t("auth.legal.navLabel")}
             className="mx-auto mt-2 max-w-3xl rounded-2xl border border-sky-200/70 bg-[linear-gradient(135deg,rgba(4,36,58,0.95),rgba(5,68,96,0.88))] px-3 py-2"
           >
             <ul className="flex flex-wrap items-center justify-center gap-y-1 text-center">
-              {legalLinks.map((item, index) => (
+              {LEGAL_LINKS.map((item, index) => (
                 <li key={item.href} className="inline-flex items-center">
                   <a
                     href={item.href}
                     className="px-2 text-[10px] font-medium text-sky-50/92 transition hover:text-white sm:text-[11px]"
                   >
-                    <span className="sm:hidden">{locale === "es" ? item.shortEs : item.shortEn}</span>
-                    <span className="hidden sm:inline">{locale === "es" ? item.es : item.en}</span>
+                    <span className="sm:hidden">{t(item.shortLabelKey)}</span>
+                    <span className="hidden sm:inline">{t(item.labelKey)}</span>
                   </a>
-                  {index < legalLinks.length - 1 ? (
+                  {index < LEGAL_LINKS.length - 1 ? (
                     <span aria-hidden="true" className="px-1 text-[10px] text-sky-100/55">
                       |
                     </span>
@@ -390,7 +374,7 @@ export default function LoginPage() {
             </ul>
           </nav>
           <p className="mt-4 text-center text-[11px] text-slate-500">
-            Copyright {currentYear} AcostasPool. {locale === "es" ? "Todos los derechos reservados." : "All rights reserved."}
+            {t("auth.legal.copyright", { year: currentYear })}
           </p>
         </div>
       </div>

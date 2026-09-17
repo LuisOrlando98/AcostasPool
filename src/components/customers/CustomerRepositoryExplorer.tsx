@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/i18n/client";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -220,6 +221,7 @@ export default function CustomerRepositoryExplorer({
     "": { folders: [], loaded: false, loading: false },
   });
   const [expanded, setExpanded] = useState<ExpandedState>({ "": true });
+  const [entryToDelete, setEntryToDelete] = useState<RepositoryEntry | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canManageCurrentPath =
@@ -457,25 +459,32 @@ export default function CustomerRepositoryExplorer({
     }
   };
 
-  const handleDelete = async (entry: RepositoryEntry) => {
-    const confirmed = window.confirm(
-      t("admin.customers.repository.prompts.deleteConfirm", {
-        kind:
-          entry.type === "folder"
-            ? t("admin.customers.repository.table.folder")
-            : t("admin.customers.repository.table.file"),
-        name: entry.name,
-      })
-    );
-    if (!confirmed) {
+  const entryKindLabel = (entry: RepositoryEntry) =>
+    entry.type === "folder"
+      ? t("admin.customers.repository.table.folder")
+      : t("admin.customers.repository.table.file");
+
+  const requestDelete = (entry: RepositoryEntry) => {
+    setEntryToDelete(entry);
+  };
+
+  const cancelDelete = () => {
+    setEntryToDelete(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!entryToDelete) {
       return;
     }
+    const entry = entryToDelete;
     const ok = await runAction({
       action: "delete",
       path: entry.path,
       type: entry.type,
       invoiceId: entry.invoiceId,
     });
+    // Si falla, el error queda en el aviso role="alert" del panel.
+    setEntryToDelete(null);
     if (ok) {
       setMessage(t("admin.customers.repository.feedback.deleted"));
       if (selectedPath === entry.path) {
@@ -750,7 +759,7 @@ export default function CustomerRepositoryExplorer({
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
                       placeholder={t("admin.customers.repository.searchPlaceholder")}
-                      className="w-28 bg-transparent text-[11px] text-slate-700 outline-none placeholder:text-slate-400 sm:w-36"
+                      className="w-28 rounded bg-transparent text-[11px] text-slate-700 outline-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-sky-300 sm:w-36"
                     />
                   </label>
                   {selectedEntry ? (
@@ -779,7 +788,7 @@ export default function CustomerRepositoryExplorer({
                           {canDeleteSelected ? (
                             <button
                               type="button"
-                              onClick={() => void handleDelete(selectedEntry)}
+                              onClick={() => requestDelete(selectedEntry)}
                               disabled={submitting}
                               className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700"
                             >
@@ -798,15 +807,15 @@ export default function CustomerRepositoryExplorer({
               <table className="customers-table w-full min-w-[420px] text-left text-xs text-slate-600 sm:min-w-[560px]">
                 <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.14em] text-slate-100/85">
                   <tr>
-                    <th className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.name")}</th>
-                    <th className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.type")}</th>
-                    <th className="hidden px-3 py-2 font-semibold sm:table-cell">
+                    <th scope="col" className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.name")}</th>
+                    <th scope="col" className="px-3 py-2.5 font-semibold">{t("admin.customers.repository.table.type")}</th>
+                    <th scope="col" className="hidden px-3 py-2 font-semibold sm:table-cell">
                       {t("admin.customers.repository.table.extension")}
                     </th>
-                    <th className="hidden px-3 py-2 font-semibold md:table-cell">
+                    <th scope="col" className="hidden px-3 py-2 font-semibold md:table-cell">
                       {t("admin.customers.repository.table.size")}
                     </th>
-                    <th className="hidden px-3 py-2 font-semibold lg:table-cell">
+                    <th scope="col" className="hidden px-3 py-2 font-semibold lg:table-cell">
                       {t("admin.customers.repository.table.modified")}
                     </th>
                   </tr>
@@ -840,7 +849,12 @@ export default function CustomerRepositoryExplorer({
                           onDoubleClick={() => handleOpenEntry(entry)}
                         >
                           <td className="px-3 py-2.5">
-                            <div className="inline-flex max-w-[12rem] items-center gap-2 sm:max-w-[18rem] lg:max-w-[26rem]">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedPath(entry.path)}
+                              aria-current={isSelected ? "true" : undefined}
+                              className="inline-flex max-w-[12rem] items-center gap-2 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 sm:max-w-[18rem] lg:max-w-[26rem]"
+                            >
                               {entry.type === "folder" ? (
                                 <FolderGlyph />
                               ) : (
@@ -849,12 +863,10 @@ export default function CustomerRepositoryExplorer({
                               <span className="truncate" title={entry.name}>
                                 {entry.name}
                               </span>
-                            </div>
+                            </button>
                           </td>
                           <td className="px-3 py-2.5">
-                            {entry.type === "folder"
-                              ? t("admin.customers.repository.table.folder")
-                              : t("admin.customers.repository.table.file")}
+                            {entryKindLabel(entry)}
                             {entry.readOnly ? ` | ${t("admin.customers.repository.table.locked")}` : ""}
                           </td>
                           <td className="hidden px-3 py-2.5 sm:table-cell">{extension}</td>
@@ -889,7 +901,7 @@ export default function CustomerRepositoryExplorer({
                       })}`
                     : ""}
                 </p>
-                <p className="truncate">
+                <p className="truncate" role="status">
                   {selectedEntry
                     ? t("admin.customers.repository.summary.selected", {
                         name: selectedEntry.name,
@@ -901,6 +913,24 @@ export default function CustomerRepositoryExplorer({
           </section>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={entryToDelete !== null}
+        title={
+          entryToDelete
+            ? t("admin.customers.repository.prompts.deleteConfirm", {
+                kind: entryKindLabel(entryToDelete),
+                name: entryToDelete.name,
+              })
+            : ""
+        }
+        description={t("admin.customers.repository.prompts.deleteDescription")}
+        confirmLabel={t("common.actions.delete")}
+        tone="danger"
+        busy={submitting}
+        onConfirm={() => void confirmDelete()}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

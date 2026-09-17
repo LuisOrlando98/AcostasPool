@@ -324,7 +324,15 @@ export default function AvatarUpload({ avatarUrl }: AvatarUploadProps) {
           </button>
         </div>
 
-        {message ? <p className={`mt-3 text-sm ${messageClass}`}>{message}</p> : null}
+        {message ? (
+          <p
+            role={messageTone === "error" ? "alert" : "status"}
+            aria-live={messageTone === "error" ? undefined : "polite"}
+            className={`mt-3 text-sm ${messageClass}`}
+          >
+            {message}
+          </p>
+        ) : null}
       </div>
     </div>
   );

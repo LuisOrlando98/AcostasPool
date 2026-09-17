@@ -1,32 +1,26 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
 import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
+import LandingHeader from "@/components/landing/LandingHeader";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
+import { LANDING_IMAGES, buildWhatsAppLink } from "@/lib/landing-config";
 
 type SocialLinks = LandingSocialLinks;
 
 type PrincipleIconName = "shield" | "camera" | "route";
 type FlowIconName = "request" | "plan" | "deliver";
 
-const PHONE_E164 = "+17867930081";
+const HERO_IMAGE = LANDING_IMAGES.servicesHeroTechnician;
+const STORY_IMAGE = LANDING_IMAGES.heroDeck;
+const FULL_WIDTH_IMAGE_SIZES = "(max-width: 760px) 94vw, 88vw";
+const HALF_WIDTH_IMAGE_SIZES = "(max-width: 1180px) 94vw, 44vw";
 
 const ABOUT_COPY: Record<
   LandingLocale,
   {
-    nav: {
-      overview: string;
-      services: string;
-      gallery: string;
-      video: string;
-      reviews: string;
-      about: string;
-      contact: string;
-      login: string;
-    };
-    announce: string;
     hero: {
       title: string;
       lead: string;
@@ -52,17 +46,6 @@ const ABOUT_COPY: Record<
   }
 > = {
   en: {
-    nav: {
-      overview: "Home",
-      services: "Services",
-      gallery: "Gallery",
-      video: "Video",
-      reviews: "Reviews",
-      about: "About",
-      contact: "Contact",
-      login: "Log in",
-    },
-    announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
     hero: {
       title: "About AcostasPool",
       lead:
@@ -144,64 +127,53 @@ const ABOUT_COPY: Record<
     ],
   },
   es: {
-    nav: {
-      overview: "Inicio",
-      services: "Servicios",
-      gallery: "Galeria",
-      video: "Video",
-      reviews: "Resenas",
-      about: "Nosotros",
-      contact: "Contacto",
-      login: "Acceso",
-    },
-    announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
     hero: {
       title: "Sobre AcostasPool",
       lead:
-        "Ofrecemos mantenimiento premium semanal de piscinas con consistencia, comunicacion clara y ejecucion tecnica enfocada en detalle para hogares del sur de Florida.",
+        "Ofrecemos mantenimiento premium semanal de piscinas con consistencia, comunicación clara y ejecución técnica enfocada en detalle para hogares del sur de Florida.",
       whatsapp: "Comenzar por WhatsApp",
       contact: "Contactarnos",
-      message: "Hola AcostasPool, quiero conocer mas sobre sus planes de servicio.",
+      message: "Hola AcostasPool, quiero conocer más sobre sus planes de servicio.",
     },
     story: {
       title: "Basado en proceso, no en suposiciones.",
       lead:
-        "Cada propiedad recibe un ritmo de servicio acorde al sistema de su piscina, uso y demanda estacional. Nuestro objetivo es agua estable, comunicacion confiable y expectativas claras en cada visita.",
+        "Cada propiedad recibe un ritmo de servicio acorde al sistema de su piscina, uso y demanda estacional. Nuestro objetivo es agua estable, comunicación confiable y expectativas claras en cada visita.",
       bullets: [
-        "Ejecucion guiada por checklist",
-        "Decisiones correctivas basadas en quimica",
+        "Ejecución guiada por checklist",
+        "Decisiones correctivas basadas en química",
         "Observaciones preventivas de equipos",
-        "Comunicacion consistente con el propietario",
+        "Comunicación consistente con el propietario",
       ],
     },
     history: {
       title: "Nuestra historia y compromiso",
       leadOne:
-        "AcostasPool nacio con un objetivo simple: brindar cuidado premium con disciplina semanal real, no soluciones aisladas e inconsistentes.",
+        "AcostasPool nació con un objetivo simple: brindar cuidado premium con disciplina semanal real, no soluciones aisladas e inconsistentes.",
       leadTwo:
-        "Nuestro compromiso sigue igual en cada propiedad: quimica estable, comunicacion tecnica clara y ejecucion confiable a largo plazo.",
+        "Nuestro compromiso sigue igual en cada propiedad: química estable, comunicación técnica clara y ejecución confiable a largo plazo.",
       milestones: [
         {
           year: "2019",
           title: "Primeras rutas recurrentes",
-          text: "Iniciamos con un grupo pequeno de clientes residenciales enfocados en consistencia y comunicacion clara.",
+          text: "Iniciamos con un grupo pequeño de clientes residenciales enfocados en consistencia y comunicación clara.",
         },
         {
           year: "2022",
-          title: "Estandarizacion del proceso",
-          text: "Implementamos checklists de visita y reportes tecnicos mas claros para equipos y balance quimico.",
+          title: "Estandarización del proceso",
+          text: "Implementamos checklists de visita y reportes técnicos más claros para equipos y balance químico.",
         },
         {
           year: "Hoy",
           title: "Compromiso premium",
-          text: "Atendemos propiedades del sur de Florida con mantenimiento preventivo y ejecucion semanal confiable.",
+          text: "Atendemos propiedades del sur de Florida con mantenimiento preventivo y ejecución semanal confiable.",
         },
       ],
     },
-    principlesTitle: "Que define nuestra calidad de servicio.",
+    principlesTitle: "Qué define nuestra calidad de servicio.",
     principles: [
       {
-        title: "Operacion licenciada y asegurada",
+        title: "Operación licenciada y asegurada",
         text: "Modelo de trabajo orientado a cumplimiento para propiedades residenciales en Florida.",
         icon: "shield",
       },
@@ -212,15 +184,15 @@ const ABOUT_COPY: Record<
       },
       {
         title: "Ritmo de servicio predecible",
-        text: "Rutas estructuradas y ejecucion por checklist para calidad confiable semana tras semana.",
+        text: "Rutas estructuradas y ejecución por checklist para calidad confiable semana tras semana.",
         icon: "route",
       },
     ],
-    flowTitle: "Como trabajamos con propietarios.",
+    flowTitle: "Cómo trabajamos con propietarios.",
     flowSteps: [
       {
         title: "Solicitud",
-        text: "Nos compartes ciudad, condicion de piscina y frecuencia de servicio preferida.",
+        text: "Nos compartes ciudad, condición de piscina y frecuencia de servicio preferida.",
         icon: "request",
       },
       {
@@ -229,44 +201,13 @@ const ABOUT_COPY: Record<
         icon: "plan",
       },
       {
-        title: "Ejecucion",
-        text: "Nuestro equipo realiza chequeos quimicos, control visual y reporte breve de hallazgos.",
+        title: "Ejecución",
+        text: "Nuestro equipo realiza chequeos químicos, control visual y reporte breve de hallazgos.",
         icon: "deliver",
       },
     ],
   },
 };
-
-const SECTION_NAV_ITEMS = [
-  { id: "overview" },
-  { id: "services" },
-  { id: "gallery" },
-  { id: "video" },
-  { id: "reviews" },
-] as const;
-
-const PAGE_NAV_ITEMS = [
-  { href: "/about", key: "about" },
-  { href: "/contact", key: "contact" },
-  { href: "/login", key: "login" },
-] as const;
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M20.1 14.8A8.7 8.7 0 1 1 9.2 3.9a7 7 0 1 0 10.9 10.9Z" />
-    </svg>
-  );
-}
 
 function AboutPrincipleIcon({ id }: { id: PrincipleIconName }) {
   if (id === "shield") {
@@ -327,136 +268,33 @@ function AboutFlowIcon({ id }: { id: FlowIconName }) {
 export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialLinks }) {
   const { language, setLanguage, theme, setTheme } = useLandingPreferences();
   const copy = ABOUT_COPY[language];
-  const sectionLabels: Record<(typeof SECTION_NAV_ITEMS)[number]["id"], string> = {
-    overview: copy.nav.overview,
-    services: copy.nav.services,
-    gallery: copy.nav.gallery,
-    video: copy.nav.video,
-    reviews: copy.nav.reviews,
-  };
-
-  const whatsappLink = useMemo(() => {
-    if (socialLinks?.whatsappUrl) {
-      return socialLinks.whatsappUrl;
-    }
-    const text = encodeURIComponent(copy.hero.message);
-    return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${text}`;
-  }, [copy.hero.message, socialLinks?.whatsappUrl]);
+  const whatsappLink = socialLinks?.whatsappUrl || buildWhatsAppLink(copy.hero.message);
 
   return (
     <div className="lp-shell lp-about-page" data-theme={theme}>
-      <header className="lp-header">
-        <div className="lp-container lp-header-inner">
-          <Link href="/" className="lp-brand">
-            <span className="lp-brand-dot" aria-hidden="true" />
-            <span className="lp-brand-name">
-              <span>Acostas</span>
-              <span>Pool</span>
-            </span>
-          </Link>
+      <LandingHeader
+        language={language}
+        theme={theme}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
+        whatsappLink={whatsappLink}
+        activePage="about"
+      />
 
-          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
-            <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
-              <span className="lp-nav-logo-dot" aria-hidden="true" />
-              <span className="lp-nav-logo-text">
-                <span>Acostas</span>
-                <span>Pool</span>
-              </span>
-            </Link>
-
-            {SECTION_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.id}
-                href={`/#${item.id}`}
-                className="lp-nav-link"
-                data-nav-key={item.id}
-              >
-                {sectionLabels[item.id]}
-              </Link>
-            ))}
-
-            {PAGE_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="lp-nav-link lp-nav-link-page"
-                data-nav-key={item.key}
-                data-active={item.href === "/about"}
-              >
-                {copy.nav[item.key]}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "en"}
-                onClick={() => setLanguage("en")}
-                aria-label={language === "es" ? "Ingles" : "English"}
-                title={language === "es" ? "Ingles" : "English"}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "es"}
-                onClick={() => setLanguage("es")}
-                aria-label={language === "es" ? "Espanol" : "Spanish"}
-                title={language === "es" ? "Espanol" : "Spanish"}
-              >
-                ES
-              </button>
-            </div>
-
-            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "ocean"}
-                onClick={() => setTheme("ocean")}
-                aria-label={language === "es" ? "Tema claro" : "Light theme"}
-                title={language === "es" ? "Tema claro" : "Light theme"}
-              >
-                <SunIcon />
-              </button>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "night"}
-                onClick={() => setTheme("night")}
-                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
-                title={language === "es" ? "Tema oscuro" : "Dark theme"}
-              >
-                <MoonIcon />
-              </button>
-            </div>
-
-            <Link href="/login" className="lp-login-btn">
-              {copy.nav.login}
-            </Link>
-          </div>
-        </div>
-
-        <div className="lp-announce">
-          <div className="lp-container lp-announce-inner">
-            <p>{copy.announce}</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="lp-main">
+      <main id="main-content" className="lp-main" tabIndex={-1}>
         <section className="lp-section">
           <div className="lp-container">
             <article className="lp-about-hero lp-surface">
-              <img
-                src="/landing/media/curated/images/pool-home-services-hero-technician.jpg"
+              <Image
+                src={HERO_IMAGE.src}
+                width={HERO_IMAGE.width}
+                height={HERO_IMAGE.height}
+                sizes={FULL_WIDTH_IMAGE_SIZES}
+                priority
+                fetchPriority="high"
                 alt={
                   language === "es"
-                    ? "Tecnico de piscina realizando servicio en una propiedad residencial"
+                    ? "Técnico de piscina realizando servicio en una propiedad residencial"
                     : "Pool technician performing service at a residential property"
                 }
               />
@@ -489,8 +327,11 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
             </article>
 
             <div className="lp-about-story-media lp-surface">
-              <img
-                src="/landing/media/curated/images/pool-premium-residential-deck.jpg"
+              <Image
+                src={STORY_IMAGE.src}
+                width={STORY_IMAGE.width}
+                height={STORY_IMAGE.height}
+                sizes={HALF_WIDTH_IMAGE_SIZES}
                 alt={
                   language === "es"
                     ? "Piscina residencial preparada para servicio premium de mantenimiento"
@@ -568,8 +409,8 @@ export default function AboutPageClient({ socialLinks }: { socialLinks?: SocialL
       <LandingFooter
         language={language}
         theme={theme}
-        onLanguageChange={(nextLocale) => setLanguage(nextLocale)}
-        onThemeChange={(nextTheme) => setTheme(nextTheme)}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
         socialLinks={socialLinks}
       />
     </div>

@@ -14,6 +14,9 @@ import EditCustomerModal from "@/components/customers/forms/EditCustomerModal";
 import NewJobModal from "@/components/customers/forms/NewJobModal";
 import NewPlanModal from "@/components/customers/forms/NewPlanModal";
 import NewPropertyModal from "@/components/customers/forms/NewPropertyModal";
+import { CustomerDetailModalsProvider } from "@/components/customers/forms/CustomerDetailModals";
+import { pickEditCustomerFields } from "@/components/customers/forms/edit-customer-fields";
+import type { ServiceTierOption } from "@/components/customers/forms/types";
 import {
   ACTION_ERROR_PARAM,
   resolveActionErrorKey,
@@ -180,14 +183,16 @@ export default async function CustomerDetailPage({
     : hasCompletedInvite
     ? "border-emerald-200 bg-emerald-50 text-emerald-700"
     : "border-indigo-200 bg-indigo-50 text-indigo-700";
+  // Los modales de la ficha son client components: solo reciben lo que muestran.
   const technicians = await prisma.technician.findMany({
-    include: { user: true },
+    select: { id: true, user: { select: { fullName: true } } },
     orderBy: { user: { fullName: "asc" } },
   });
   const serviceTiers = await getServiceTiers();
   const activeServiceTiers = serviceTiers.filter((tier) => tier.isActive);
-  const tierOptions =
-    activeServiceTiers.length > 0 ? activeServiceTiers : serviceTiers;
+  const tierOptions: ServiceTierOption[] = (
+    activeServiceTiers.length > 0 ? activeServiceTiers : serviceTiers
+  ).map((tier) => ({ id: tier.id, name: tier.name }));
   const recurringPlanTierOptions = [...tierOptions].sort((left, right) => {
     const leftIsStandard = isStandardTier(left);
     const rightIsStandard = isStandardTier(right);
@@ -300,102 +305,98 @@ export default async function CustomerDetailPage({
           dismissLabel={t("common.actions.close")}
         />
       ) : null}
-      <input id="new-plan" type="checkbox" className="peer/plan hidden" />
-      <input id="new-property" type="checkbox" className="peer/property hidden" />
-      <input id="new-job" type="checkbox" className="peer/job hidden" />
-      <section className="customers-scope customers-detail space-y-5 sm:space-y-6">
-        <CustomerHeroSection
-          t={t}
-          customer={customer}
-          customerName={customerName}
-          customerEmailLabel={customerEmailLabel}
-          portalStatusLabel={portalStatusLabel}
-          counts={{
-            properties: customer.properties.length,
-            jobs: customer.jobs.length,
-            plans: customer.servicePlans.length,
-            invoices: customer.invoices.length,
-          }}
-        />
-
-        <div className="customers-detail-grid grid gap-5 sm:gap-6 2xl:grid-cols-2">
-          <CustomerProfileSection
+      <CustomerDetailModalsProvider>
+        <section className="customers-scope customers-detail space-y-5 sm:space-y-6">
+          <CustomerHeroSection
             t={t}
             customer={customer}
             customerName={customerName}
             customerEmailLabel={customerEmailLabel}
-            hasCustomerEmail={hasCustomerEmail}
             portalStatusLabel={portalStatusLabel}
-            portalStatusClass={portalStatusClass}
-            inviteAction={inviteCustomer}
+            counts={{
+              properties: customer.properties.length,
+              jobs: customer.jobs.length,
+              plans: customer.servicePlans.length,
+              invoices: customer.invoices.length,
+            }}
           />
 
-          <div className="min-w-0">
-            <AdminCustomerProperties
-              customerId={customer.id}
-              rows={propertyRows}
-              addPropertyTargetId="new-property"
-              onUpdateProperty={updatePropertyFormAction}
-              onDeleteProperty={deletePropertyFormAction}
+          <div className="customers-detail-grid grid gap-5 sm:gap-6 2xl:grid-cols-2">
+            <CustomerProfileSection
+              t={t}
+              customer={customer}
+              customerName={customerName}
+              customerEmailLabel={customerEmailLabel}
+              hasCustomerEmail={hasCustomerEmail}
+              portalStatusLabel={portalStatusLabel}
+              portalStatusClass={portalStatusClass}
+              inviteAction={inviteCustomer}
             />
+
+            <div className="min-w-0">
+              <AdminCustomerProperties
+                customerId={customer.id}
+                rows={propertyRows}
+                addPropertyTargetId="new-property"
+                onUpdateProperty={updatePropertyFormAction}
+                onDeleteProperty={deletePropertyFormAction}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <CustomerInvoicesTable rows={invoicesRows} />
+            </div>
+
+            <div className="min-w-0">
+              <CustomerRepositoryExplorer customerId={customer.id} />
+            </div>
           </div>
 
-          <div className="min-w-0">
-            <CustomerInvoicesTable rows={invoicesRows} />
-          </div>
-
-          <div className="min-w-0">
-            <CustomerRepositoryExplorer customerId={customer.id} />
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <CustomerJobsTable
-            rows={jobsRows}
-            actionTargetId="new-job"
-          />
-
-          <CustomerPlansTable
-            rows={plansRows}
-            onToggle={toggleServicePlanFormAction}
-            onDelete={deleteServicePlanFormAction}
-            actionTargetId="new-plan"
-          />
-
-          <div className="flex justify-end">
-            <DeleteCustomerButton
-              customerId={customer.id}
-              deleteCustomerAction={deleteCustomerFormAction}
-              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+          <div className="space-y-6">
+            <CustomerJobsTable
+              rows={jobsRows}
+              actionTargetId="new-job"
             />
-          </div>
-        </div>
-      </section>
 
-      <EditCustomerModal
-        t={t}
-        customer={customer}
-        customerName={customerName}
-        action={updateCustomer}
-      />
-      <NewPropertyModal t={t} customerId={customer.id} action={createProperty} />
-      <NewJobModal
-        t={t}
-        customerId={customer.id}
-        properties={propertyOptions}
-        technicians={technicians}
-        tierOptions={tierOptions}
-        action={createJob}
-      />
-      <NewPlanModal
-        t={t}
-        customerId={customer.id}
-        properties={propertyOptions}
-        technicians={technicians}
-        tierOptions={recurringPlanTierOptions}
-        defaultTierId={recurringPlanDefaultTierId}
-        action={createServicePlan}
-      />
+            <CustomerPlansTable
+              rows={plansRows}
+              onToggle={toggleServicePlanFormAction}
+              onDelete={deleteServicePlanFormAction}
+              actionTargetId="new-plan"
+            />
+
+            <div className="flex justify-end">
+              <DeleteCustomerButton
+                customerId={customer.id}
+                deleteCustomerAction={deleteCustomerFormAction}
+                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100"
+              />
+            </div>
+          </div>
+        </section>
+
+        <EditCustomerModal
+          customer={pickEditCustomerFields(customer)}
+          customerName={customerName}
+          action={updateCustomer}
+        />
+        <NewPropertyModal customerId={customer.id} action={createProperty} />
+        <NewJobModal
+          customerId={customer.id}
+          properties={propertyOptions}
+          technicians={technicians}
+          tierOptions={tierOptions}
+          action={createJob}
+        />
+        <NewPlanModal
+          customerId={customer.id}
+          properties={propertyOptions}
+          technicians={technicians}
+          tierOptions={recurringPlanTierOptions}
+          defaultTierId={recurringPlanDefaultTierId}
+          action={createServicePlan}
+        />
+      </CustomerDetailModalsProvider>
     </AppShell>
   );
 }

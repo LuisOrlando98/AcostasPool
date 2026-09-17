@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
@@ -98,6 +99,22 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldId = useId();
+  const fieldIds = {
+    name: `${fieldId}-name`,
+    poolType: `${fieldId}-pool-type`,
+    address: `${fieldId}-address`,
+    filterType: `${fieldId}-filter-type`,
+    sanitizerType: `${fieldId}-sanitizer-type`,
+    poolVolumeGallons: `${fieldId}-pool-volume`,
+    hasSpa: `${fieldId}-has-spa`,
+    accessInfo: `${fieldId}-access-info`,
+    locationNotes: `${fieldId}-location-notes`,
+  };
+  const editorTitleId = `${fieldId}-editor-title`;
+  const editorSubtitleId = `${fieldId}-editor-subtitle`;
+  const confirmTitleId = `${fieldId}-confirm-title`;
+  const confirmSubtitleId = `${fieldId}-confirm-subtitle`;
 
   useEffect(
     () => () => {
@@ -329,7 +346,13 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
         </div>
 
         {notice ? (
-          <div role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{notice}</div>
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          >
+            {notice}
+          </div>
         ) : null}
 
         {properties.length === 0 ? (
@@ -431,160 +454,166 @@ export default function ClientPropertiesManager({ initialProperties, initialJobs
       </section>
 
       {editorOpen ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/60"
-            aria-label={t("common.actions.close")}
-            onClick={closeModals}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <div className="app-modal-header flex items-start justify-between gap-3">
-                <div>
-                  <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    {mode === "create" ? t("client.properties.editor.createKicker") : t("client.properties.editor.editKicker")}
-                  </p>
-                  <h3 className="app-modal-title mt-1 text-xl font-semibold text-slate-900">
-                    {mode === "create" ? t("client.properties.editor.createTitle") : t("client.properties.editor.editTitle")}
-                  </h3>
-                  <p className="app-modal-subtitle mt-1 text-sm text-slate-500">
-                    {mode === "create" ? t("client.properties.editor.createSubtitle") : t("client.properties.editor.editSubtitle")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeModals}
-                  className="app-modal-close"
-                  aria-label={t("common.actions.close")}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
+        <AppModal
+          open
+          onClose={closeModals}
+          titleId={editorTitleId}
+          describedBy={editorSubtitleId}
+          layerClassName="overflow-y-auto p-3 sm:p-6"
+          backdropClassName="app-modal-backdrop bg-slate-950/60"
+          cardClassName="max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
+          <div className="app-modal-scroll modal-scroll max-h-[88dvh] overflow-y-auto p-5 sm:p-6">
+            <div className="app-modal-header flex items-start justify-between gap-3">
+              <div>
+                <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  {mode === "create" ? t("client.properties.editor.createKicker") : t("client.properties.editor.editKicker")}
+                </p>
+                <h3 id={editorTitleId} className="app-modal-title mt-1 text-xl font-semibold text-slate-900">
+                  {mode === "create" ? t("client.properties.editor.createTitle") : t("client.properties.editor.editTitle")}
+                </h3>
+                <p id={editorSubtitleId} className="app-modal-subtitle mt-1 text-sm text-slate-500">
+                  {mode === "create" ? t("client.properties.editor.createSubtitle") : t("client.properties.editor.editSubtitle")}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={closeModals}
+                className="app-modal-close"
+                aria-label={t("common.actions.close")}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+            </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.name")}</label>
-                  <input value={draft.name} onChange={(e) => setDraft((c) => ({ ...c, name: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolType")}</label>
-                  <input value={draft.poolType} onChange={(e) => setDraft((c) => ({ ...c, poolType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
-                </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor={fieldIds.name} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.name")}</label>
+                <input id={fieldIds.name} value={draft.name} onChange={(e) => setDraft((c) => ({ ...c, name: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
               </div>
-
-              <div className="mt-3">
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("address.line1")}</label>
-                <input value={draft.address} onChange={(e) => setDraft((c) => ({ ...c, address: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" required />
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.filterType")}</label>
-                  <select
-                    value={draft.filterType}
-                    onChange={(e) => setDraft((c) => ({ ...c, filterType: e.target.value }))}
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="">{t("admin.customers.detail.properties.options.select")}</option>
-                    {filterTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.sanitizerSystem")}</label>
-                  <input value={draft.sanitizerType} onChange={(e) => setDraft((c) => ({ ...c, sanitizerType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolVolume")}</label>
-                  <input type="number" min={0} value={draft.poolVolumeGallons} onChange={(e) => setDraft((c) => ({ ...c, poolVolumeGallons: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.spa")}</label>
-                  <select value={draft.hasSpa ? "yes" : "no"} onChange={(e) => setDraft((c) => ({ ...c, hasSpa: e.target.value === "yes" }))} className="app-input mt-2 w-full bg-white px-4 py-3 text-sm">
-                    <option value="no">{t("common.labels.no")}</option>
-                    <option value="yes">{t("common.labels.yes")}</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.accessInfo")}</label>
-                  <textarea value={draft.accessInfo} onChange={(e) => setDraft((c) => ({ ...c, accessInfo: e.target.value }))} className="app-input mt-2 min-h-[100px] w-full px-4 py-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.locationNotes")}</label>
-                  <textarea value={draft.locationNotes} onChange={(e) => setDraft((c) => ({ ...c, locationNotes: e.target.value }))} className="app-input mt-2 min-h-[100px] w-full px-4 py-3 text-sm" />
-                </div>
-              </div>
-
-              {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button type="button" onClick={closeModals} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400">
-                  {t("common.actions.cancel")}
-                </button>
-                <button type="button" onClick={review} className="app-button-primary px-5 py-2 text-sm font-semibold">
-                  {t("client.properties.editor.review")}
-                </button>
+              <div>
+                <label htmlFor={fieldIds.poolType} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolType")}</label>
+                <input id={fieldIds.poolType} value={draft.poolType} onChange={(e) => setDraft((c) => ({ ...c, poolType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
               </div>
             </div>
+
+            <div className="mt-3">
+              <label htmlFor={fieldIds.address} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("address.line1")}</label>
+              <input id={fieldIds.address} value={draft.address} onChange={(e) => setDraft((c) => ({ ...c, address: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" required />
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor={fieldIds.filterType} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.filterType")}</label>
+                <select
+                  id={fieldIds.filterType}
+                  value={draft.filterType}
+                  onChange={(e) => setDraft((c) => ({ ...c, filterType: e.target.value }))}
+                  className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                >
+                  <option value="">{t("admin.customers.detail.properties.options.select")}</option>
+                  {filterTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor={fieldIds.sanitizerType} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.sanitizerSystem")}</label>
+                <input id={fieldIds.sanitizerType} value={draft.sanitizerType} onChange={(e) => setDraft((c) => ({ ...c, sanitizerType: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor={fieldIds.poolVolumeGallons} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.routes.labels.poolVolume")}</label>
+                <input id={fieldIds.poolVolumeGallons} type="number" min={0} value={draft.poolVolumeGallons} onChange={(e) => setDraft((c) => ({ ...c, poolVolumeGallons: e.target.value }))} className="app-input mt-2 w-full px-4 py-3 text-sm" />
+              </div>
+              <div>
+                <label htmlFor={fieldIds.hasSpa} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.spa")}</label>
+                <select id={fieldIds.hasSpa} value={draft.hasSpa ? "yes" : "no"} onChange={(e) => setDraft((c) => ({ ...c, hasSpa: e.target.value === "yes" }))} className="app-input mt-2 w-full bg-white px-4 py-3 text-sm">
+                  <option value="no">{t("common.labels.no")}</option>
+                  <option value="yes">{t("common.labels.yes")}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor={fieldIds.accessInfo} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.accessInfo")}</label>
+                <textarea id={fieldIds.accessInfo} value={draft.accessInfo} onChange={(e) => setDraft((c) => ({ ...c, accessInfo: e.target.value }))} className="app-input mt-2 min-h-[100px] w-full px-4 py-3 text-sm" />
+              </div>
+              <div>
+                <label htmlFor={fieldIds.locationNotes} className="text-xs font-semibold uppercase tracking-wider text-slate-500">{t("admin.customers.detail.properties.fields.locationNotes")}</label>
+                <textarea id={fieldIds.locationNotes} value={draft.locationNotes} onChange={(e) => setDraft((c) => ({ ...c, locationNotes: e.target.value }))} className="app-input mt-2 min-h-[100px] w-full px-4 py-3 text-sm" />
+              </div>
+            </div>
+
+            {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={closeModals} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400">
+                {t("common.actions.cancel")}
+              </button>
+              <button type="button" onClick={review} className="app-button-primary px-5 py-2 text-sm font-semibold">
+                {t("client.properties.editor.review")}
+              </button>
+            </div>
           </div>
-        </div>
+        </AppModal>
       ) : null}
 
       {confirmOpen ? (
-        <div className="app-modal-layer fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/65"
-            aria-label={t("common.actions.close")}
-            onClick={() => !saving && setConfirmOpen(false)}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="app-modal-scroll p-5 sm:p-6">
-              <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">{t("client.properties.confirm.kicker")}</p>
-              <h3 className="app-modal-title mt-1 text-xl font-semibold text-slate-900">{t("client.properties.confirm.title")}</h3>
-              <p className="app-modal-subtitle mt-1 text-sm text-slate-500">{t("client.properties.confirm.subtitle")}</p>
+        <AppModal
+          open
+          onClose={() => setConfirmOpen(false)}
+          titleId={confirmTitleId}
+          describedBy={confirmSubtitleId}
+          zIndexClass="z-[1310]"
+          layerClassName="overflow-y-auto p-3 sm:p-6"
+          backdropClassName="app-modal-backdrop bg-slate-950/65"
+          cardClassName="max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
+          <div className="app-modal-scroll p-5 sm:p-6">
+            <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">{t("client.properties.confirm.kicker")}</p>
+            <h3 id={confirmTitleId} className="app-modal-title mt-1 text-xl font-semibold text-slate-900">{t("client.properties.confirm.title")}</h3>
+            <p id={confirmSubtitleId} className="app-modal-subtitle mt-1 text-sm text-slate-500">{t("client.properties.confirm.subtitle")}</p>
 
-              <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 sm:grid-cols-2">
-                <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.name")}:</span> {show(draft.name)}</p>
-                <p><span className="font-semibold text-slate-900">{t("address.line1")}:</span> {show(draft.address)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span> {show(draft.poolType)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span> {show(draft.filterType)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span> {show(draft.sanitizerType)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span> {show(draft.poolVolumeGallons)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span> {draft.hasSpa ? t("common.labels.yes") : t("common.labels.no")}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.accessInfo")}:</span> {show(draft.accessInfo)}</p>
-                <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.locationNotes")}:</span> {show(draft.locationNotes)}</p>
-              </div>
+            <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700 sm:grid-cols-2">
+              <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.name")}:</span> {show(draft.name)}</p>
+              <p><span className="font-semibold text-slate-900">{t("address.line1")}:</span> {show(draft.address)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolType")}:</span> {show(draft.poolType)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.filterType")}:</span> {show(draft.filterType)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.sanitizerSystem")}:</span> {show(draft.sanitizerType)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.routes.labels.poolVolume")}:</span> {show(draft.poolVolumeGallons)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.spa")}:</span> {draft.hasSpa ? t("common.labels.yes") : t("common.labels.no")}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.accessInfo")}:</span> {show(draft.accessInfo)}</p>
+              <p><span className="font-semibold text-slate-900">{t("admin.customers.detail.properties.fields.locationNotes")}:</span> {show(draft.locationNotes)}</p>
+            </div>
 
-              {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
+            {error ? <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button type="button" onClick={() => setConfirmOpen(false)} disabled={saving || saveSuccess} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60">
-                  {t("client.properties.confirm.back")}
-                </button>
-                <button type="button" onClick={save} disabled={saving || saveSuccess} className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60">
-                  {saving
-                    ? t("common.feedback.saving")
-                    : saveSuccess
-                      ? t("common.feedback.saved")
-                      : t("client.properties.confirm.confirm")}
-                </button>
-              </div>
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => setConfirmOpen(false)} disabled={saving || saveSuccess} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60">
+                {t("client.properties.confirm.back")}
+              </button>
+              <button type="button" onClick={save} disabled={saving || saveSuccess} className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60">
+                {saving
+                  ? t("common.feedback.saving")
+                  : saveSuccess
+                    ? t("common.feedback.saved")
+                    : t("client.properties.confirm.confirm")}
+              </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       ) : null}
     </div>
   );

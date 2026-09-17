@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   type PointerEvent,
   useRef,
@@ -10,6 +11,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { Channel, default as PusherClient } from "pusher-js";
+import NotificationSoundToggle from "@/components/notifications/NotificationSoundToggle";
+import { useLiveAnnouncement } from "@/components/notifications/use-live-announcement";
 import { useI18n } from "@/i18n/client";
 import {
   getNotificationDetail,
@@ -22,6 +25,8 @@ import {
   formatInBusinessTimeZone,
   startOfBusinessDay,
 } from "@/lib/timezone";
+import { useEscapeKey } from "@/lib/ui/use-escape-key";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
 type NotificationItem = {
   id: string;
@@ -142,12 +147,26 @@ export default function NotificationsBell() {
     pointerId: number;
   } | null>(null);
   const rowSwipeConsumedIdRef = useRef<string | null>(null);
+  const panelId = useId();
+  const panelTitleId = useId();
+  const { message: liveAnnouncement, announce } = useLiveAnnouncement();
 
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
   const canUseDom =
     typeof window !== "undefined" && typeof document !== "undefined";
+  const panelRendered = open && canUseDom && panelPlacement !== null;
+  const closePanel = useCallback(() => setOpen(false), []);
+
+  // Popover anclado a la campana (no una capa centrada): diálogo no modal con
+  // Escape, foco inicial en el propio panel y retorno del foco a la campana.
+  useEscapeKey(closePanel, panelRendered);
+  useFocusTrap(portalPanelRef, {
+    active: panelRendered,
+    initialFocus: portalPanelRef,
+    returnFocusTo: bellButtonRef,
+  });
 
   const resetLiveAlertTimers = () => {
     if (alertAutoTimerRef.current) {
@@ -458,12 +477,18 @@ export default function NotificationsBell() {
       const body = latestUnread
         ? getNotificationDetail(latestUnread, locale, t)
         : t("userMenu.recent");
+      const newCount = unreadCount - previousUnreadRef.current;
       emitNotificationSignal({ title, body });
       showLiveAlert(title, body);
+      announce(
+        newCount === 1
+          ? t("layout.notifications.announceNewOne")
+          : t("layout.notifications.announceNewMany", { count: newCount })
+      );
     }
 
     previousUnreadRef.current = unreadCount;
-  }, [locale, notifications, showLiveAlert, t, unreadCount]);
+  }, [announce, locale, notifications, showLiveAlert, t, unreadCount]);
 
   const markAsRead = useCallback(
     async (item: NotificationItem) => {
@@ -490,7 +515,7 @@ export default function NotificationsBell() {
         setUnreadCount((current) => (current > 0 ? current - 1 : 0));
         return true;
       } catch {
-        setActionError(t("notifications.preferences.saveError"));
+        setActionError(t("layout.notifications.actionError"));
         return false;
       }
     },
@@ -538,7 +563,7 @@ export default function NotificationsBell() {
       } catch {
         setNotifications(previousNotifications);
         setUnreadCount(previousUnreadCount);
-        setActionError(t("notifications.preferences.saveError"));
+        setActionError(t("layout.notifications.actionError"));
       } finally {
         setDeletingId(null);
         setSwipeOffsets((current) => {
@@ -578,7 +603,7 @@ export default function NotificationsBell() {
     } catch {
       setNotifications(previousNotifications);
       setUnreadCount(previousUnreadCount);
-      setActionError(t("notifications.preferences.saveError"));
+      setActionError(t("layout.notifications.actionError"));
     } finally {
       setClearing(false);
     }
@@ -670,6 +695,10 @@ export default function NotificationsBell() {
 
   const alertTranslateY = (liveAlertVisible ? 0 : -22) + alertDragOffset;
   const alertOpacity = liveAlertVisible ? 1 : 0;
+  const bellLabel =
+    unreadCount > 0
+      ? t("layout.notifications.bellLabel", { count: unreadCount })
+      : t("layout.notifications.bellLabelEmpty");
 
   return (
     <div className="relative" ref={panelRef}>
@@ -686,13 +715,22 @@ export default function NotificationsBell() {
           }
         }}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-slate-600 transition hover:border-[var(--border-strong)]"
-        aria-label={t("userMenu.notifications")}
+        aria-label={bellLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelRendered ? panelId : undefined}
       >
         <BellIcon />
         {unreadCount > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-sky-500" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-sky-500"
+          />
         ) : null}
       </button>
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveAnnouncement}
+      </div>
 
       {open && canUseDom && panelPlacement
         ? createPortal(
@@ -701,11 +739,16 @@ export default function NotificationsBell() {
                 type="button"
                 aria-label={t("common.actions.close")}
                 className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
-                onClick={() => setOpen(false)}
+                onClick={closePanel}
               />
               <div
                 ref={portalPanelRef}
-                className="fixed z-[1100] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast"
+                id={panelId}
+                role="dialog"
+                aria-modal="false"
+                aria-labelledby={panelTitleId}
+                tabIndex={-1}
+                className="fixed z-[1100] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast outline-none"
                 style={{
                   top: panelPlacement.top,
                   left: panelPlacement.left,
@@ -716,9 +759,9 @@ export default function NotificationsBell() {
                 <div className="border-b border-slate-100 bg-slate-50/75 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
+                      <h2 id={panelTitleId} className="text-sm font-semibold text-slate-900">
                         {t("userMenu.notifications")}
-                      </p>
+                      </h2>
                       {loadFailed ? (
                         <p role="alert" className="mt-0.5 text-xs text-rose-600">
                           {t("layout.notifications.loadError")}
@@ -732,6 +775,7 @@ export default function NotificationsBell() {
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                      <NotificationSoundToggle />
                       {loadFailed ? (
                         <button
                           type="button"
@@ -787,6 +831,10 @@ export default function NotificationsBell() {
                                 const timeLabel = formatRelativeDate(item.createdAt, locale);
                                 const railOpen = offset <= ROW_SWIPE_OPEN_THRESHOLD;
                                 const railArmed = offset <= ROW_SWIPE_DELETE_THRESHOLD;
+                                const source = getNotificationSource(item, t);
+                                const deleteLabel = t("layout.notifications.deleteItem", {
+                                  source,
+                                });
 
                                 return (
                                   <div
@@ -794,6 +842,7 @@ export default function NotificationsBell() {
                                     className="relative overflow-hidden rounded-xl border border-slate-200 bg-white"
                                   >
                                     <div
+                                      aria-hidden={!railOpen}
                                       className={`absolute inset-y-0 right-0 flex w-[92px] items-center justify-center border-l border-rose-200 bg-rose-50 px-2 transition-opacity duration-150 md:hidden ${
                                         railOpen
                                           ? "opacity-100 pointer-events-auto"
@@ -802,6 +851,8 @@ export default function NotificationsBell() {
                                     >
                                       <button
                                         type="button"
+                                        tabIndex={railOpen ? 0 : -1}
+                                        aria-label={deleteLabel}
                                         onClick={(event) => {
                                           event.stopPropagation();
                                           void handleDeleteNotification(item);
@@ -871,7 +922,7 @@ export default function NotificationsBell() {
                                         <div className="flex items-start gap-3 pr-8 sm:justify-between">
                                           <div className="min-w-0 flex-1">
                                             <p className="break-words text-sm font-semibold text-slate-900 sm:truncate">
-                                              {getNotificationSource(item, t)}
+                                              {source}
                                             </p>
                                             <p className="mt-0.5 break-words text-xs text-slate-500 sm:truncate">
                                               {detail}
@@ -902,8 +953,8 @@ export default function NotificationsBell() {
                                           void handleDeleteNotification(item);
                                         }}
                                         disabled={deletingId === item.id}
-                                        className="absolute right-2 top-2 hidden h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 md:inline-flex"
-                                        aria-label={t("common.actions.delete")}
+                                        className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 max-md:pointer-events-none max-md:opacity-0 max-md:focus-visible:pointer-events-auto max-md:focus-visible:opacity-100"
+                                        aria-label={deleteLabel}
                                         title={t("common.actions.delete")}
                                       >
                                         <CloseIcon />
@@ -928,6 +979,7 @@ export default function NotificationsBell() {
         ? createPortal(
             <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[1200] px-2 sm:left-1/2 sm:right-auto sm:top-[calc(env(safe-area-inset-top)+0.75rem)] sm:w-[min(94vw,34rem)] sm:-translate-x-1/2 sm:px-0">
               <div
+                role="status"
                 className="pointer-events-auto rounded-xl border border-sky-200 bg-white/95 px-3 py-2.5 shadow-contrast backdrop-blur sm:rounded-2xl sm:px-4 sm:py-3"
                 onTouchStart={(event) => {
                   const touch = event.touches[0];

@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useId, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createPortal } from "react-dom";
 import CustomersOverview from "@/components/customers/CustomersOverview";
+import AppModal from "@/components/ui/AppModal";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { useI18n } from "@/i18n/client";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type CustomerRow = {
   id: string;
@@ -75,6 +74,13 @@ type CustomersClientProps = {
   createCustomer: (formData: FormData) => void | Promise<void>;
 };
 
+const MODAL_LAYER_CLASS = "overflow-y-auto p-3 sm:p-6";
+const CREATE_MODAL_Z_INDEX_CLASS = "z-[1300]";
+const CREATE_MODAL_CARD_CLASS = "max-w-6xl border border-slate-200 bg-white shadow-2xl";
+const BULK_INVITE_MODAL_Z_INDEX_CLASS = "z-[1400]";
+const BULK_INVITE_MODAL_CARD_CLASS =
+  "max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl";
+
 export default function CustomersClient({
   rows,
   summary,
@@ -90,6 +96,8 @@ export default function CustomersClient({
   const [bulkInviteState, setBulkInviteState] = useState<BulkInviteState | null>(
     null
   );
+  const createTitleId = useId();
+  const bulkInviteTitleId = useId();
   const returnTo = searchParams?.toString()
     ? `${pathname}?${searchParams.toString()}`
     : pathname;
@@ -97,30 +105,6 @@ export default function CustomersClient({
   const isBulkInviting =
     bulkInviteState?.phase === "loading" || bulkInviteState?.phase === "sending";
   const showInviteAllInactive = filters.portal === "INACTIVE";
-
-  useEffect(() => {
-    if (!open && !isBulkInviteOpen) {
-      return;
-    }
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isBulkInviting) {
-        setOpen(false);
-        setBulkInviteState(null);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [isBulkInviteOpen, isBulkInviting, open]);
-
-  useEffect(() => {
-    if (!open && !isBulkInviteOpen) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    return () => {
-      unlock();
-    };
-  }, [isBulkInviteOpen, open]);
 
   const closeBulkInviteModal = () => {
     if (isBulkInviting) {
@@ -274,387 +258,383 @@ export default function CustomersClient({
     }
   };
 
-  const modal =
-    typeof document !== "undefined" && open
-      ? createPortal(
-          <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-            <button
-              type="button"
-              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-              aria-label={t("common.actions.close")}
-              onClick={() => setOpen(false)}
-            />
-            <div className="app-modal-card relative z-10 w-full max-w-6xl border border-slate-200 bg-white shadow-2xl">
-              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="app-modal-header">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                      {t("admin.customers.new.kicker")}
-                    </p>
-                    <h2 className="text-lg font-semibold">
-                      {t("admin.customers.new.title")}
-                    </h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="app-modal-close"
-                    aria-label={t("common.actions.close")}
-                    title={t("common.actions.close")}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 6l12 12M18 6l-12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <form
-                  action={createCustomer}
-                  className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]"
-                >
-                  <input type="hidden" name="returnTo" value={returnTo} />
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <h3 className="text-sm font-semibold text-slate-800">
-                        {t("admin.customers.new.sections.personal.title")}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        {t("admin.customers.new.sections.personal.subtitle")}
-                      </p>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.firstName")}
-                          </label>
-                          <input
-                            name="nombre"
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder={t("admin.customers.new.placeholders.firstName")}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.lastName")}
-                          </label>
-                          <input
-                            name="apellidos"
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder={t("admin.customers.new.placeholders.lastName")}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.email")}
-                          </label>
-                          <input
-                            name="email"
-                            type="email"
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder={t("admin.customers.new.placeholders.email")}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.language")}
-                          </label>
-                          <select
-                            name="idiomaPreferencia"
-                            defaultValue="EN"
-                            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                          >
-                            <option value="EN">EN</option>
-                            <option value="ES">ES</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.phone")}
-                          </label>
-                          <input
-                            name="telefono"
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder={t("admin.customers.new.placeholders.phone")}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("common.labels.phoneSecondary")}
-                          </label>
-                          <input
-                            name="telefonoSecundario"
-                            className="app-input mt-2 w-full px-4 py-3 text-sm"
-                            placeholder={t("admin.customers.new.placeholders.phone")}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <h3 className="text-sm font-semibold text-slate-800">
-                        {t("admin.customers.new.sections.account.title")}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        {t("admin.customers.new.sections.account.subtitle")}
-                      </p>
-                      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("admin.customers.new.fields.status")}
-                          </label>
-                          <select
-                            name="estadoCuenta"
-                            defaultValue="ACTIVE"
-                            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                          >
-                            <option value="ACTIVE">{t("common.status.active")}</option>
-                            <option value="INACTIVE">{t("common.status.inactive")}</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                            {t("admin.customers.new.fields.type")}
-                          </label>
-                          <select
-                            name="tipoCliente"
-                            defaultValue="RESIDENTIAL"
-                            className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                          >
-                            <option value="RESIDENTIAL">
-                              {t("admin.customers.types.residential")}
-                            </option>
-                            <option value="COMMERCIAL">
-                              {t("admin.customers.types.commercial")}
-                            </option>
-                          </select>
-                        </div>
-                      </div>
-                      <label className="mt-3 flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
-                        <input
-                          type="checkbox"
-                          name="allowWeekendBooking"
-                          className="mt-0.5 h-4 w-4"
-                        />
-                        <span>
-                          {t("admin.customers.new.fields.allowWeekendBooking")}
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                      <h3 className="text-sm font-semibold text-slate-800">
-                        {t("address.sectionTitle")}
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        {t("address.sectionSubtitle")}
-                      </p>
-                      <div className="mt-4">
-                        <AddressAutocomplete />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        {t("common.labels.notes")}
-                      </label>
-                      <textarea
-                        name="notas"
-                        className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
-                        placeholder={t("admin.customers.new.placeholders.notes")}
-                      />
-                    </div>
-
-                    <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
-                      <input
-                        type="checkbox"
-                        name="enviarInvitacion"
-                        className="h-4 w-4"
-                      />
-                      <span>
-                        {t("admin.customers.new.fields.sendInvite")}
-                      </span>
-                    </label>
-                    <p className="text-[11px] text-slate-500">
-                      {t("admin.customers.new.fields.inviteHint")}
-                    </p>
-                  </div>
-
-                  <FormSubmitButton
-                    idleLabel={t("admin.customers.new.actions.create")}
-                    pendingLabel={t("admin.customers.new.actions.creating")}
-                    successLabel={t("common.feedback.created")}
-                    className="w-full lg:col-span-2"
+  const modal = (
+    <AppModal
+      open={open}
+      onClose={() => setOpen(false)}
+      titleId={createTitleId}
+      zIndexClass={CREATE_MODAL_Z_INDEX_CLASS}
+      layerClassName={MODAL_LAYER_CLASS}
+      cardClassName={CREATE_MODAL_CARD_CLASS}
+    >
+      <div className="app-modal-scroll modal-scroll max-h-[90dvh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-header">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+              {t("admin.customers.new.kicker")}
+            </p>
+            <h2 id={createTitleId} className="text-lg font-semibold">
+              {t("admin.customers.new.title")}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="app-modal-close"
+            aria-label={t("common.actions.close")}
+            title={t("common.actions.close")}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="h-4 w-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 6l12 12M18 6l-12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <form
+          action={createCustomer}
+          className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]"
+        >
+          <input type="hidden" name="returnTo" value={returnTo} />
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">
+                {t("admin.customers.new.sections.personal.title")}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {t("admin.customers.new.sections.personal.subtitle")}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.firstName")}
+                  </label>
+                  <input
+                    name="nombre"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("admin.customers.new.placeholders.firstName")}
+                    required
                   />
-                </form>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.lastName")}
+                  </label>
+                  <input
+                    name="apellidos"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("admin.customers.new.placeholders.lastName")}
+                  />
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.email")}
+                  </label>
+                  <input
+                    name="email"
+                    type="email"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("admin.customers.new.placeholders.email")}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.language")}
+                  </label>
+                  <select
+                    name="idiomaPreferencia"
+                    defaultValue="EN"
+                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="EN">EN</option>
+                    <option value="ES">ES</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.phone")}
+                  </label>
+                  <input
+                    name="telefono"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("admin.customers.new.placeholders.phone")}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("common.labels.phoneSecondary")}
+                  </label>
+                  <input
+                    name="telefonoSecundario"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    placeholder={t("admin.customers.new.placeholders.phone")}
+                  />
+                </div>
               </div>
             </div>
-          </div>,
-          document.body
-        )
-      : null;
 
-  const bulkInviteModal =
-    typeof document !== "undefined" && bulkInviteState
-      ? createPortal(
-          <div className="app-modal-layer fixed inset-0 z-[1400] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">
+                {t("admin.customers.new.sections.account.title")}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {t("admin.customers.new.sections.account.subtitle")}
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.new.fields.status")}
+                  </label>
+                  <select
+                    name="estadoCuenta"
+                    defaultValue="ACTIVE"
+                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="ACTIVE">{t("common.status.active")}</option>
+                    <option value="INACTIVE">{t("common.status.inactive")}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    {t("admin.customers.new.fields.type")}
+                  </label>
+                  <select
+                    name="tipoCliente"
+                    defaultValue="RESIDENTIAL"
+                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+                  >
+                    <option value="RESIDENTIAL">
+                      {t("admin.customers.types.residential")}
+                    </option>
+                    <option value="COMMERCIAL">
+                      {t("admin.customers.types.commercial")}
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <label className="mt-3 flex items-start gap-2 rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-xs text-sky-800">
+                <input
+                  type="checkbox"
+                  name="allowWeekendBooking"
+                  className="mt-0.5 h-4 w-4"
+                />
+                <span>
+                  {t("admin.customers.new.fields.allowWeekendBooking")}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <h3 className="text-sm font-semibold text-slate-800">
+                {t("address.sectionTitle")}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {t("address.sectionSubtitle")}
+              </p>
+              <div className="mt-4">
+                <AddressAutocomplete />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {t("common.labels.notes")}
+              </label>
+              <textarea
+                name="notas"
+                className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
+                placeholder={t("admin.customers.new.placeholders.notes")}
+              />
+            </div>
+
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+              <input
+                type="checkbox"
+                name="enviarInvitacion"
+                className="h-4 w-4"
+              />
+              <span>
+                {t("admin.customers.new.fields.sendInvite")}
+              </span>
+            </label>
+            <p className="text-[11px] text-slate-500">
+              {t("admin.customers.new.fields.inviteHint")}
+            </p>
+          </div>
+
+          <FormSubmitButton
+            idleLabel={t("admin.customers.new.actions.create")}
+            pendingLabel={t("admin.customers.new.actions.creating")}
+            successLabel={t("common.feedback.created")}
+            className="w-full lg:col-span-2"
+          />
+        </form>
+      </div>
+    </AppModal>
+  );
+
+  const bulkInviteModal = (
+    <AppModal
+      open={isBulkInviteOpen}
+      onClose={closeBulkInviteModal}
+      titleId={bulkInviteTitleId}
+      zIndexClass={BULK_INVITE_MODAL_Z_INDEX_CLASS}
+      layerClassName={MODAL_LAYER_CLASS}
+      cardClassName={BULK_INVITE_MODAL_CARD_CLASS}
+      closeOnBackdrop={!isBulkInviting}
+      closeOnEscape={!isBulkInviting}
+    >
+      {bulkInviteState ? (
+        <div className="app-modal-scroll modal-scroll max-h-[90dvh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+          <div className="app-modal-header">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                {t("admin.customers.overview.bulkInvite.kicker")}
+              </p>
+              <h2 id={bulkInviteTitleId} className="text-lg font-semibold">
+                {t("admin.customers.overview.bulkInvite.title")}
+              </h2>
+              <p className="text-sm text-slate-500">
+                {t("admin.customers.overview.bulkInvite.subtitle")}
+              </p>
+            </div>
             <button
               type="button"
-              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
+              onClick={closeBulkInviteModal}
+              className="app-modal-close"
               aria-label={t("common.actions.close")}
+              title={t("common.actions.close")}
+              disabled={isBulkInviting}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6l-12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-5 space-y-4">
+            <div
+              aria-live="polite"
+              className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                <p className="font-semibold text-slate-800">
+                  {bulkInviteState.message}
+                </p>
+                <p className="text-slate-500">
+                  {bulkInviteState.total > 0
+                    ? t("admin.customers.overview.bulkInvite.progressCount", {
+                        completed: bulkInviteState.completed,
+                        total: bulkInviteState.total,
+                      })
+                    : t("admin.customers.overview.bulkInvite.preparingCount")}
+                </p>
+              </div>
+
+              <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    bulkInviteState.phase === "error"
+                      ? "bg-rose-500"
+                      : bulkInviteState.phase === "finished"
+                        ? "bg-emerald-500"
+                        : "bg-sky-500"
+                  }`}
+                  style={{
+                    width:
+                      bulkInviteState.total > 0
+                        ? `${Math.max(
+                            6,
+                            Math.round(
+                              (bulkInviteState.completed / bulkInviteState.total) * 100
+                            )
+                          )}%`
+                        : bulkInviteState.phase === "loading"
+                          ? "20%"
+                          : "100%",
+                  }}
+                />
+              </div>
+
+              {bulkInviteState.currentCustomerName ? (
+                <p className="mt-3 text-sm text-slate-600">
+                  {t("admin.customers.overview.bulkInvite.currentCustomer", {
+                    name: bulkInviteState.currentCustomerName,
+                  })}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                  {t("admin.customers.overview.bulkInvite.sent")}
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-emerald-900">
+                  {bulkInviteState.successCount}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-700">
+                  {t("admin.customers.overview.bulkInvite.failed")}
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-rose-900">
+                  {bulkInviteState.failedCount}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  {t("admin.customers.overview.bulkInvite.skipped")}
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-amber-900">
+                  {bulkInviteState.skippedCount}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
               onClick={closeBulkInviteModal}
               disabled={isBulkInviting}
-            />
-            <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="app-modal-header">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                      {t("admin.customers.overview.bulkInvite.kicker")}
-                    </p>
-                    <h2 className="text-lg font-semibold">
-                      {t("admin.customers.overview.bulkInvite.title")}
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                      {t("admin.customers.overview.bulkInvite.subtitle")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeBulkInviteModal}
-                    className="app-modal-close"
-                    aria-label={t("common.actions.close")}
-                    title={t("common.actions.close")}
-                    disabled={isBulkInviting}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 6l12 12M18 6l-12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                      <p className="font-semibold text-slate-800">
-                        {bulkInviteState.message}
-                      </p>
-                      <p className="text-slate-500">
-                        {bulkInviteState.total > 0
-                          ? t("admin.customers.overview.bulkInvite.progressCount", {
-                              completed: bulkInviteState.completed,
-                              total: bulkInviteState.total,
-                            })
-                          : t("admin.customers.overview.bulkInvite.preparingCount")}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className={`h-full rounded-full transition-all duration-300 ${
-                          bulkInviteState.phase === "error"
-                            ? "bg-rose-500"
-                            : bulkInviteState.phase === "finished"
-                              ? "bg-emerald-500"
-                              : "bg-sky-500"
-                        }`}
-                        style={{
-                          width:
-                            bulkInviteState.total > 0
-                              ? `${Math.max(
-                                  6,
-                                  Math.round(
-                                    (bulkInviteState.completed / bulkInviteState.total) * 100
-                                  )
-                                )}%`
-                              : bulkInviteState.phase === "loading"
-                                ? "20%"
-                                : "100%",
-                        }}
-                      />
-                    </div>
-
-                    {bulkInviteState.currentCustomerName ? (
-                      <p className="mt-3 text-sm text-slate-600">
-                        {t("admin.customers.overview.bulkInvite.currentCustomer", {
-                          name: bulkInviteState.currentCustomerName,
-                        })}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                        {t("admin.customers.overview.bulkInvite.sent")}
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-emerald-900">
-                        {bulkInviteState.successCount}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-rose-700">
-                        {t("admin.customers.overview.bulkInvite.failed")}
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-rose-900">
-                        {bulkInviteState.failedCount}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700">
-                        {t("admin.customers.overview.bulkInvite.skipped")}
-                      </p>
-                      <p className="mt-2 text-2xl font-semibold text-amber-900">
-                        {bulkInviteState.skippedCount}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={closeBulkInviteModal}
-                    disabled={isBulkInviting}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
-                      isBulkInviting
-                        ? "cursor-wait border border-slate-200 bg-slate-100 text-slate-400"
-                        : "border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300"
-                    }`}
-                  >
-                    {t("common.actions.close")}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      : null;
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
+                isBulkInviting
+                  ? "cursor-wait border border-slate-200 bg-slate-100 text-slate-400"
+                  : "border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300"
+              }`}
+            >
+              {t("common.actions.close")}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </AppModal>
+  );
 
   return (
     <>

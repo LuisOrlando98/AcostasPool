@@ -224,19 +224,19 @@ export default async function CustomerAssignmentsPage() {
                 <table className="w-full min-w-[920px] text-left text-xs text-slate-600">
                   <thead className="border-b border-slate-200 bg-white text-[11px] uppercase tracking-[0.12em] text-slate-500">
                     <tr>
-                      <th className="px-4 py-3">
+                      <th scope="col" className="px-4 py-3">
                         {t("admin.customers.assignments.table.customer")}
                       </th>
-                      <th className="px-4 py-3">
+                      <th scope="col" className="px-4 py-3">
                         {t("admin.customers.assignments.table.property")}
                       </th>
-                      <th className="px-4 py-3">
+                      <th scope="col" className="px-4 py-3">
                         {t("admin.customers.assignments.table.next")}
                       </th>
-                      <th className="px-4 py-3">
+                      <th scope="col" className="px-4 py-3">
                         {t("admin.customers.assignments.table.status")}
                       </th>
-                      <th className="px-4 py-3">
+                      <th scope="col" className="px-4 py-3">
                         {t("admin.customers.assignments.table.notes")}
                       </th>
                     </tr>

@@ -71,7 +71,7 @@ export default function SidebarAccount() {
           {user?.avatarUrl ? (
             <img
               src={getAssetUrl(user.avatarUrl)}
-              alt="Avatar"
+              alt={t("account.avatar.alt")}
               className="h-full w-full object-cover"
             />
           ) : (

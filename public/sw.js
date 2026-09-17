@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const STATIC_CACHE = `acostaspool-static-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [
@@ -8,7 +8,12 @@ const PRECACHE_URLS = [
   "/pwa/icon-512.png",
   "/pwa/icon-maskable-512.png",
 ];
+// Debe coincidir con SW_UPDATED_MESSAGE_TYPE en src/lib/ui/sw-update.ts.
+const SW_UPDATED_MESSAGE_TYPE = "SW_UPDATED";
 
+// skipWaiting(): la versión nueva se activa sin esperar a que se cierren las
+// pestañas. La página no se recarga sola: PwaRegister muestra el aviso
+// "Nueva versión disponible" al recibir `controllerchange` / SW_UPDATED.
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -17,6 +22,15 @@ self.addEventListener("install", (event) => {
       .then(() => self.skipWaiting())
   );
 });
+
+const notifyClientsOfUpdate = () =>
+  self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: SW_UPDATED_MESSAGE_TYPE, version: CACHE_VERSION });
+      });
+    });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -30,6 +44,7 @@ self.addEventListener("activate", (event) => {
         )
       )
       .then(() => self.clients.claim())
+      .then(notifyClientsOfUpdate)
   );
 });
 

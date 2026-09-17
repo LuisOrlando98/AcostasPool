@@ -502,7 +502,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   href={`/admin/settings?${params.toString()}`}
                   className={`settings-top-nav-item ${isActive ? "is-active" : ""}`}
                 >
-                  <span className="settings-top-nav-icon">
+                  <span className="settings-top-nav-icon" aria-hidden="true">
                     <SettingsTabIcon tabId={tab.id} />
                   </span>
                   <span className="settings-top-nav-text">
@@ -529,6 +529,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     <span className="flex items-center gap-2">
                       <span
                         className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${field.iconTone}`}
+                        aria-hidden="true"
                       >
                         <SocialNetworkIcon network={field.icon} />
                       </span>

@@ -4,12 +4,14 @@ import {
   COMPLIANCE_DOC_DEFINITIONS,
   COMPLIANCE_DOC_IDS,
 } from "@/lib/compliance-config";
+import { buildLandingMetadata } from "@/lib/landing-config";
 import { getComplianceContentConfig, getSiteSocialLinks } from "@/lib/site-settings";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildLandingMetadata({
+  path: "/legal",
   title: "Legal Center | AcostasPool",
   description: "Public legal policies for AcostasPool services.",
-};
+});
 
 export default async function LegalIndexPage() {
   const [compliance, socialLinks] = await Promise.all([
@@ -30,4 +32,3 @@ export default async function LegalIndexPage() {
 
   return <LegalIndexPageClient docs={docs} socialLinks={socialLinks} />;
 }
-

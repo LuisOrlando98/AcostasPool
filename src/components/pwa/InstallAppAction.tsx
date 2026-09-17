@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/i18n/client";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { useEscapeKey } from "@/lib/ui/use-escape-key";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -63,6 +65,9 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
   const [installing, setInstalling] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isPortalReady, setIsPortalReady] = useState(false);
+  const [installError, setInstallError] = useState<string | null>(null);
+  const dialogCardRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -130,24 +135,20 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
   }, []);
 
   useEffect(() => {
-    if (!isGuideOpen || typeof window === "undefined") {
+    if (!isGuideOpen) {
       return;
     }
-
-    const unlock = lockBodyScroll();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsGuideOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      unlock();
-      window.removeEventListener("keydown", onKeyDown);
-    };
+    return lockBodyScroll();
   }, [isGuideOpen]);
+
+  // Escape respeta la pila de capas y el foco queda dentro de la guía mientras esté abierta.
+  useEscapeKey(() => setIsGuideOpen(false), isGuideOpen);
+  useFocusTrap(dialogCardRef, { active: isGuideOpen, initialFocus: closeButtonRef });
+
+  const openGuide = () => {
+    setInstallError(null);
+    setIsGuideOpen(true);
+  };
 
   const handleInstallPrompt = useCallback(async () => {
     if (!deferredPrompt) {
@@ -160,7 +161,7 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
       await deferredPrompt.userChoice;
       setIsGuideOpen(false);
     } catch {
-      window.alert(t("userMenu.installError"));
+      setInstallError(t("userMenu.installError"));
     } finally {
       setInstalling(false);
       setDeferredPrompt(null);
@@ -178,7 +179,7 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
     variant === "menu" ? (
       <button
         type="button"
-        onClick={() => setIsGuideOpen(true)}
+        onClick={openGuide}
         disabled={installing}
         className="w-full border-t border-[var(--border)] px-4 py-3 text-left text-sm text-slate-600 hover:bg-slate-50"
       >
@@ -187,7 +188,7 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
     ) : (
       <button
         type="button"
-        onClick={() => setIsGuideOpen(true)}
+        onClick={openGuide}
         disabled={installing}
         className="sidebar-account-link"
       >
@@ -230,7 +231,11 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
                 onClick={() => setIsGuideOpen(false)}
               />
               <div className="relative flex min-h-full items-center justify-center">
-                <div className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-contrast">
+                <div
+                  ref={dialogCardRef}
+                  tabIndex={-1}
+                  className="relative max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-contrast outline-none"
+                >
                   <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
@@ -251,6 +256,7 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
                       </p>
                     </div>
                     <button
+                      ref={closeButtonRef}
                       type="button"
                       onClick={() => setIsGuideOpen(false)}
                       className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
@@ -323,6 +329,15 @@ export default function InstallAppAction({ variant }: InstallAppActionProps) {
                         </li>
                       ))}
                     </ol>
+
+                    {installError ? (
+                      <p
+                        role="alert"
+                        className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                      >
+                        {installError}
+                      </p>
+                    ) : null}
 
                     <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
                       {canUseInstallPrompt ? (

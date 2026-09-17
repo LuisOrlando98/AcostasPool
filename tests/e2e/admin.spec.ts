@@ -27,8 +27,8 @@ const ADMIN_PAGES: ReadonlyArray<{ path: string; heading: RegExp }> = [
   { path: "/account", heading: HEADINGS.account },
 ];
 
-/** Customer rows are clickable <tr role="button"> (CustomersOverview.tsx). */
-const CUSTOMER_ROW = 'tr[role="button"]';
+/** Customer rows of the overview table (CustomersOverview.tsx); the name cell is a real link. */
+const CUSTOMER_ROW = "table.customers-overview-table tbody tr";
 const CUSTOMER_DETAIL_URL = /\/admin\/customers\/([a-z0-9]+)(\?.*)?$/i;
 const CUSTOMER_CREATED_URL = /feedback=customer-created/;
 const CUSTOMER_FORM_FIELDS = {

@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useId, useState } from "react";
 import InvoiceCreateForm from "@/components/invoices/InvoiceCreateForm";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
-import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
+import AppModal from "@/components/ui/AppModal";
 
 type CustomerOption = {
   id: string;
@@ -40,28 +38,11 @@ export default function NewInvoiceModal({
   closeLabel,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
-  // false during SSR/hydration, true once rendered on the client.
-  const portalReady = useIsHydrated();
+  const titleId = useId();
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const unlock = lockBodyScroll();
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      window.removeEventListener("keydown", handleEscape);
-      unlock();
-    };
-  }, [isOpen]);
+  const closeModal = () => {
+    setIsOpen(false);
+  };
 
   return (
     <>
@@ -73,64 +54,57 @@ export default function NewInvoiceModal({
         {triggerLabel}
       </button>
 
-      {isOpen && portalReady
-        ? createPortal(
-            <div
-              className="app-modal-layer fixed inset-0 z-[1600] flex items-center justify-center overflow-y-auto p-3 sm:p-6"
-              role="dialog"
-              aria-modal="true"
-              aria-label={title}
+      <AppModal
+        open={isOpen}
+        onClose={closeModal}
+        titleId={titleId}
+        zIndexClass="z-[1600]"
+        layerClassName="overflow-y-auto p-3 sm:p-6"
+        backdropClassName="app-modal-backdrop"
+        cardClassName="my-auto max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl xl:max-w-5xl"
+      >
+        <div className="app-modal-scroll modal-scroll max-h-[90dvh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+          <div className="app-modal-header flex items-center justify-between gap-3">
+            <div>
+              <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                {kicker}
+              </p>
+              <h2 id={titleId} className="app-modal-title text-lg font-semibold">
+                {title}
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="app-modal-close"
+              aria-label={closeLabel}
+              title={closeLabel}
+              onClick={closeModal}
             >
-              <button
-                type="button"
-                aria-label={closeLabel}
-                className="app-modal-backdrop absolute inset-0"
-                onClick={() => setIsOpen(false)}
-              />
-              <div className="app-modal-card relative z-10 my-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl xl:max-w-5xl">
-                <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                  <div className="app-modal-header flex items-center justify-between gap-3">
-                    <div>
-                      <p className="app-modal-kicker text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                        {kicker}
-                      </p>
-                      <h2 className="app-modal-title text-lg font-semibold">{title}</h2>
-                    </div>
-                    <button
-                      type="button"
-                      className="app-modal-close"
-                      aria-label={closeLabel}
-                      title={closeLabel}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="h-4 w-4"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 6l12 12M18 6l-12 12"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6l-12 12"
+                />
+              </svg>
+            </button>
+          </div>
 
-                  <InvoiceCreateForm
-                    customers={customers}
-                    jobs={jobs}
-                    createInvoiceAction={createInvoiceAction}
-                    onCreated={() => setIsOpen(false)}
-                  />
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+          <InvoiceCreateForm
+            customers={customers}
+            jobs={jobs}
+            createInvoiceAction={createInvoiceAction}
+            onCreated={closeModal}
+          />
+        </div>
+      </AppModal>
     </>
   );
 }

@@ -1,5 +1,6 @@
 import type { Customer } from "@prisma/client";
 import { formatUsPhone } from "@/lib/phones";
+import { CustomerDetailModalTrigger } from "./CustomerDetailModals";
 import type { Translator } from "./types";
 
 type CustomerHeroSectionProps = {
@@ -55,24 +56,24 @@ export default function CustomerHeroSection({
                 ? t("common.status.active")
                 : t("common.status.inactive")}
             </span>
-            <label
-              htmlFor="new-property"
+            <CustomerDetailModalTrigger
+              modal="new-property"
               className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
             >
               {t("admin.customers.detail.actions.addProperty")}
-            </label>
-            <label
-              htmlFor="new-job"
+            </CustomerDetailModalTrigger>
+            <CustomerDetailModalTrigger
+              modal="new-job"
               className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
             >
               {t("admin.customers.detail.actions.scheduleJob")}
-            </label>
-            <label
-              htmlFor="new-plan"
+            </CustomerDetailModalTrigger>
+            <CustomerDetailModalTrigger
+              modal="new-plan"
               className="cursor-pointer rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 transition hover:bg-white/20"
             >
               {t("admin.customers.detail.actions.newPlan")}
-            </label>
+            </CustomerDetailModalTrigger>
           </div>
         </div>
       </div>

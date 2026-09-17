@@ -5,6 +5,7 @@ import AdminBillingTable from "@/components/billing/AdminBillingTable";
 import Badge from "@/components/ui/Badge";
 import SendInvoiceButton from "@/components/invoices/SendInvoiceButton";
 import NewInvoiceModal from "@/components/invoices/NewInvoiceModal";
+import InvoiceFiltersModal from "@/components/invoices/InvoiceFiltersModal";
 import DeleteInvoiceButton from "@/components/invoices/DeleteInvoiceButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
@@ -27,6 +28,16 @@ import {
   startOfBusinessDay,
 } from "@/lib/timezone";
 import type { Prisma } from "@prisma/client";
+
+const FILTER_LABEL_CLASS = "text-xs font-semibold uppercase tracking-wider text-slate-500";
+/** Ids estáticos: el modal se renderiza una sola vez por página (portal). */
+const INVOICE_FILTER_FIELD_IDS = {
+  query: "invoice-filter-q",
+  customer: "invoice-filter-customer",
+  date: "invoice-filter-date",
+  from: "invoice-filter-from",
+  to: "invoice-filter-to",
+} as const;
 
 async function createInvoice(formData: FormData) {
   "use server";
@@ -450,6 +461,104 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
     return query ? `/admin/invoices?${query}` : "/admin/invoices";
   };
 
+  // Formulario GET de filtros: se renderiza (server) dentro del modal accesible
+  // de InvoiceFiltersModal; campos y query params (q, customerId, date, from, to)
+  // no cambian.
+  const filtersForm = (
+    <form action="/admin/invoices" method="get" className="mt-5 space-y-4">
+      <div>
+        <label htmlFor={INVOICE_FILTER_FIELD_IDS.query} className={FILTER_LABEL_CLASS}>
+          {t("admin.invoices.filters.invoiceNumber")}
+        </label>
+        <input
+          id={INVOICE_FILTER_FIELD_IDS.query}
+          type="text"
+          name="q"
+          defaultValue={query}
+          className="app-input mt-2 w-full px-4 py-3 text-sm"
+          placeholder={t("admin.invoices.filters.invoiceNumberPlaceholder")}
+        />
+      </div>
+
+      <div>
+        <label htmlFor={INVOICE_FILTER_FIELD_IDS.customer} className={FILTER_LABEL_CLASS}>
+          {t("admin.invoices.filters.customer")}
+        </label>
+        <select
+          id={INVOICE_FILTER_FIELD_IDS.customer}
+          name="customerId"
+          defaultValue={customerFilter}
+          className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+        >
+          <option value="">{t("admin.invoices.filters.allCustomers")}</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>
+              {formatCustomerName(customer)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div>
+          <label htmlFor={INVOICE_FILTER_FIELD_IDS.date} className={FILTER_LABEL_CLASS}>
+            {t("admin.invoices.filters.date")}
+          </label>
+          <input
+            id={INVOICE_FILTER_FIELD_IDS.date}
+            type="date"
+            name="date"
+            defaultValue={normalizedExactDate}
+            className="app-input mt-2 w-full px-4 py-3 text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor={INVOICE_FILTER_FIELD_IDS.from} className={FILTER_LABEL_CLASS}>
+            {t("admin.invoices.filters.from")}
+          </label>
+          <input
+            id={INVOICE_FILTER_FIELD_IDS.from}
+            type="date"
+            name="from"
+            defaultValue={normalizedFromDate}
+            className="app-input mt-2 w-full px-4 py-3 text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor={INVOICE_FILTER_FIELD_IDS.to} className={FILTER_LABEL_CLASS}>
+            {t("admin.invoices.filters.to")}
+          </label>
+          <input
+            id={INVOICE_FILTER_FIELD_IDS.to}
+            type="date"
+            name="to"
+            defaultValue={normalizedToDate}
+            className="app-input mt-2 w-full px-4 py-3 text-sm"
+          />
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-500">
+        {t("admin.invoices.filters.dateHint")}
+      </p>
+
+      <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <Link
+          href="/admin/invoices"
+          className="app-button-ghost w-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+        >
+          {t("admin.invoices.filters.reset")}
+        </Link>
+        <button
+          type="submit"
+          className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+        >
+          {t("admin.invoices.filters.apply")}
+        </button>
+      </div>
+    </form>
+  );
+
   return (
     <AppShell
       title={t("admin.invoices.title")}
@@ -493,8 +602,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           updatePropertyBillingAction={updatePropertyBillingAction}
         />
       ) : (
-        <>
-      <input id="invoice-filters" type="checkbox" className="peer/invoice-filters hidden" />
       <section className="space-y-6">
         <div className="app-card p-6 shadow-contrast">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -523,23 +630,7 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
                   })}
                 </span>
               ) : null}
-              <label
-                htmlFor="invoice-filters"
-                className="app-button-ghost inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-full p-0"
-                aria-label={t("admin.invoices.filters.open")}
-                title={t("admin.invoices.filters.open")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
-                </svg>
-                <span className="sr-only">{t("admin.invoices.filters.open")}</span>
-              </label>
+              <InvoiceFiltersModal>{filtersForm}</InvoiceFiltersModal>
               {hasActiveFilters ? (
                 <Link
                   href="/admin/invoices"
@@ -744,135 +835,6 @@ export default async function InvoicesPage({ searchParams }: InvoicesPageProps) 
           ) : null}
         </div>
       </section>
-
-      <div className="app-modal-layer fixed inset-0 z-[2200] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked/invoice-filters:flex">
-        <label
-          htmlFor="invoice-filters"
-          className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-        />
-        <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-          <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-            <div className="app-modal-header flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  {t("admin.invoices.filters.open")}
-                </p>
-                <h2 className="text-lg font-semibold">
-                  {t("admin.invoices.filters.modalTitle")}
-                </h2>
-                <p className="text-sm text-slate-500">
-                  {t("admin.invoices.filters.modalSubtitle")}
-                </p>
-              </div>
-              <label
-                htmlFor="invoice-filters"
-                className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
-                aria-label={t("common.actions.close")}
-                title={t("common.actions.close")}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                </svg>
-              </label>
-            </div>
-
-            <form action="/admin/invoices" method="get" className="mt-5 space-y-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.invoices.filters.invoiceNumber")}
-                </label>
-                <input
-                  type="text"
-                  name="q"
-                  defaultValue={query}
-                  className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  placeholder={t("admin.invoices.filters.invoiceNumberPlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {t("admin.invoices.filters.customer")}
-                </label>
-                <select
-                  name="customerId"
-                  defaultValue={customerFilter}
-                  className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                >
-                  <option value="">{t("admin.invoices.filters.allCustomers")}</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {formatCustomerName(customer)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.filters.date")}
-                  </label>
-                  <input
-                    type="date"
-                    name="date"
-                    defaultValue={normalizedExactDate}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.filters.from")}
-                  </label>
-                  <input
-                    type="date"
-                    name="from"
-                    defaultValue={normalizedFromDate}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    {t("admin.invoices.filters.to")}
-                  </label>
-                  <input
-                    type="date"
-                    name="to"
-                    defaultValue={normalizedToDate}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                  />
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-500">
-                {t("admin.invoices.filters.dateHint")}
-              </p>
-
-              <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <Link
-                  href="/admin/invoices"
-                  className="app-button-ghost w-full px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
-                >
-                  {t("admin.invoices.filters.reset")}
-                </Link>
-                <button
-                  type="submit"
-                  className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
-                >
-                  {t("admin.invoices.filters.apply")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-        </>
       )}
     </AppShell>
   );

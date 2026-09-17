@@ -1,6 +1,7 @@
 "use client";
 
-import { useFormStatus } from "react-dom";
+import { useState, useTransition } from "react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/i18n/client";
 
 type Props = {
@@ -9,51 +10,63 @@ type Props = {
   className: string;
 };
 
-function SubmitDeleteButton({
-  idleLabel,
-  pendingLabel,
-  className,
-}: {
-  idleLabel: string;
-  pendingLabel: string;
-  className: string;
-}) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button type="submit" disabled={pending} className={className}>
-      {pending ? pendingLabel : idleLabel}
-    </button>
-  );
-}
-
 export default function DeleteInvoiceButton({
   invoiceId,
   deleteInvoiceAction,
   className,
 }: Props) {
-  const { locale, t } = useI18n();
-  const pendingLabel = locale === "es" ? "Eliminando..." : "Deleting...";
-  const confirmDeleteMessage =
-    locale === "es"
-      ? "Se eliminara esta factura de forma permanente. Deseas continuar?"
-      : "This invoice will be permanently deleted. Do you want to continue?";
+  const { t } = useI18n();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startDelete] = useTransition();
+
+  const openConfirm = () => {
+    setDeleteError(null);
+    setConfirmOpen(true);
+  };
+
+  const closeConfirm = () => {
+    if (isDeleting) {
+      return;
+    }
+    setConfirmOpen(false);
+  };
+
+  const confirmDelete = () => {
+    const formData = new FormData();
+    formData.set("invoiceId", invoiceId);
+    setDeleteError(null);
+    startDelete(async () => {
+      try {
+        await deleteInvoiceAction(formData);
+        setConfirmOpen(false);
+      } catch {
+        setDeleteError(t("admin.invoices.delete.error"));
+      }
+    });
+  };
 
   return (
-    <form
-      action={deleteInvoiceAction}
-      onSubmit={(event) => {
-        if (!window.confirm(confirmDeleteMessage)) {
-          event.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="invoiceId" value={invoiceId} />
-      <SubmitDeleteButton
-        idleLabel={t("common.actions.delete")}
-        pendingLabel={pendingLabel}
+    <>
+      <button
+        type="button"
+        onClick={openConfirm}
+        disabled={isDeleting}
         className={className}
+      >
+        {isDeleting ? t("common.feedback.deleting") : t("common.actions.delete")}
+      </button>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t("admin.invoices.delete.confirmTitle")}
+        description={t("admin.invoices.delete.confirmMessage")}
+        confirmLabel={t("common.actions.delete")}
+        tone="danger"
+        busy={isDeleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={closeConfirm}
       />
-    </form>
+    </>
   );
 }

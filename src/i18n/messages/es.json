@@ -20,7 +20,8 @@
       "edit": "Editar",
       "send": "Enviar",
       "search": "Buscar",
-      "confirm": "Confirmar"
+      "confirm": "Confirmar",
+      "clearFilters": "Limpiar filtros"
     },
     "feedback": {
       "saving": "Guardando...",
@@ -28,7 +29,8 @@
       "creating": "Creando...",
       "created": "Creado",
       "updating": "Actualizando...",
-      "updated": "Actualizado"
+      "updated": "Actualizado",
+      "deleting": "Eliminando..."
     },
     "status": {
       "active": "Activo",
@@ -384,7 +386,11 @@
       "passwordPlaceholder": "••••••••",
       "submit": "Iniciar sesion",
       "loading": "Ingresando...",
-      "error": "No se pudo iniciar sesion."
+      "error": "No se pudo iniciar sesion.",
+      "showPassword": "Mostrar contrasena",
+      "hidePassword": "Ocultar contrasena",
+      "show": "Mostrar",
+      "hide": "Ocultar"
     },
     "reset": {
       "title": "Restablecer contrasena",
@@ -430,7 +436,25 @@
       "kicker": "Acceso restringido",
       "title": "No tienes permisos",
       "subtitle": "Tu cuenta no tiene acceso a esta seccion. Contacta al administrador para permisos.",
-      "backToLogin": "Volver al login"
+      "backToLogin": "Volver al login",
+      "goBack": "Volver"
+    },
+    "legal": {
+      "title": "Legal",
+      "navLabel": "Enlaces legales",
+      "copyright": "Copyright {{year}} AcostasPool. Todos los derechos reservados.",
+      "links": {
+        "terms": "Terminos de Servicio",
+        "termsShort": "Terminos",
+        "privacy": "Politica de Privacidad",
+        "privacyShort": "Privacidad",
+        "payments": "Pago y Cancelacion",
+        "paymentsShort": "Pagos",
+        "liability": "Descargo y Responsabilidad",
+        "liabilityShort": "Responsabilidad",
+        "cookies": "Aviso de Cookies",
+        "cookiesShort": "Cookies"
+      }
     }
   },
   "address": {
@@ -520,7 +544,11 @@
       "noEvidence": "No hay evidencias disponibles.",
       "evidenceAlt": "Evidencia",
       "noAccess": "No tienes acceso a este trabajo.",
-      "serviceTitle": "Servicio"
+      "serviceTitle": "Servicio",
+      "evidenceCountPlural": {
+        "one": "{{count}} foto",
+        "other": "{{count}} fotos"
+      }
     }
   },
   "plans": {
@@ -611,6 +639,11 @@
           "open": "Abiertas",
           "paid": "Pagadas"
         }
+      },
+      "developer": {
+        "kicker": "Acceso de desarrollador",
+        "title": "Consola de pruebas y auditoría",
+        "cta": "Abrir consola de desarrollador"
       }
     },
     "routes": {
@@ -759,7 +792,8 @@
         "helper": "Toca un dia para ver las rutas en detalle.",
         "loadLow": "Carga baja",
         "loadHigh": "Carga alta",
-        "empty": "No hay rutas programadas para este dia."
+        "empty": "No hay rutas programadas para este dia.",
+        "editHelper": "Modo edicion: toca un dia para mover, eliminar o asignar trabajos desde el modal."
       },
       "actions": {
         "creating": "Creando...",
@@ -768,7 +802,9 @@
         "saveChanges": "Guardar cambios",
         "assignJobs": "Asignar trabajos",
         "addJob": "Agregar otro trabajo",
-        "assignTechnician": "Asignar tecnico"
+        "assignTechnician": "Asignar tecnico",
+        "currentMonth": "Este mes",
+        "editCalendar": "Editar calendario"
       },
       "labels": {
         "technicianFallback": "Tecnico",
@@ -808,7 +844,27 @@
         "order": "Orden",
         "jobNumber": "Trabajo #{{count}}",
         "completedNoEvidence": "Trabajo completado sin evidencia.",
-        "saveSuccess": "Cambios guardados."
+        "saveSuccess": "Cambios guardados.",
+        "nextMonthJobs": "Proximo mes",
+        "statusPlanned": "Planificado",
+        "jobsToday": "Trabajos hoy",
+        "enableEditToAssign": "Activar editar para asignar",
+        "dropHint": "Arrastra aqui o pulsa para asignar"
+      },
+      "helper": {
+        "editMode": "Modo edicion activo: en movil abre un dia y edita desde el modal.",
+        "quickFilters": "Filtra por urgentes, sin tecnico o por trabajos de hoy."
+      },
+      "move": {
+        "title": "Mover a",
+        "hint": "Se guarda al momento, igual que al arrastrar la tarjeta.",
+        "hintEditMode": "Queda pendiente hasta pulsar Guardar cambios, igual que al arrastrar la tarjeta.",
+        "action": "Mover",
+        "open": "Mover {{customer}}...",
+        "saveDisabledInEditMode": "En modo edicion usa Guardar cambios del calendario"
+      },
+      "a11y": {
+        "assignJobsOnDay": "Asignar trabajos: {{date}}"
       }
     },
     "technicians": {
@@ -826,6 +882,17 @@
         "inviteHint": "Al crear el tecnico, se envia automaticamente una invitacion por email para que complete y asegure su cuenta.",
         "actions": {
           "create": "Crear tecnico y enviar invitacion"
+        },
+        "form": {
+          "required": "Este campo es obligatorio.",
+          "invalidEmail": "Ingresa un email válido.",
+          "invalidPhone": "Ingresa un teléfono válido de EE. UU.",
+          "emailInUse": "Este email ya está en uso.",
+          "completeRequired": "Completa los campos requeridos para continuar.",
+          "createError": "No se pudo crear el técnico. Revisa los datos.",
+          "unexpectedError": "Error inesperado al crear el técnico.",
+          "inviteSuccess": "Técnico creado e invitación enviada.",
+          "closing": "Cerrando formulario..."
         }
       },
       "overview": {
@@ -872,6 +939,11 @@
           "actions": "Acciones",
           "todayCount": "{{count}} trabajos",
           "noRoute": "Sin ruta"
+        },
+        "delete": {
+          "confirmTitle": "Eliminar tecnico",
+          "confirmMessage": "Se eliminara la cuenta del tecnico {{name}} y se desasignaran sus trabajos. Deseas continuar?",
+          "error": "No se pudo eliminar el tecnico. Intentalo de nuevo."
         }
       },
       "detail": {
@@ -1025,7 +1097,8 @@
           "modalTitle": "Filtros de clientes",
           "modalSubtitle": "Filtra por nombre/email, estado, portal y orden de listado.",
           "apply": "Aplicar filtros",
-          "activeCount": "{{count}} filtros activos"
+          "activeCount": "{{count}} filtros activos",
+          "clear": "Limpiar filtros"
         },
         "portal": {
           "active": "Activo",
@@ -1300,6 +1373,23 @@
           "dateInvalid": "La fecha o la hora no son válidas.",
           "technicianRequired": "Selecciona un técnico.",
           "durationInvalid": "La duración estimada debe ser un número entero de minutos (0 o más)."
+        },
+        "invoices": {
+          "sort": {
+            "dateDesc": "{{label}} (reciente)",
+            "dateAsc": "{{label}} (antiguo)",
+            "totalDesc": "{{label}} (mayor)",
+            "totalAsc": "{{label}} (menor)"
+          },
+          "emptyFiltered": "No hay facturas que coincidan con los filtros activos."
+        },
+        "delete": {
+          "kicker": "Accion permanente",
+          "title": "Eliminar este cliente?",
+          "description": "Escribe la palabra {{keyword}} para confirmar que eliminaras este cliente, su portal de usuario, propiedades, trabajos, facturas, planes, documentos y cualquier registro historico relacionado.",
+          "inputLabel": "Escribe \"{{keyword}}\" para continuar",
+          "irreversible": "Esta accion no se puede deshacer.",
+          "pending": "Eliminando..."
         }
       },
       "repository": {
@@ -1340,7 +1430,8 @@
         "prompts": {
           "folderName": "Nombre de la carpeta",
           "rename": "Nuevo nombre",
-          "deleteConfirm": "Eliminar {{kind}} \"{{name}}\"?"
+          "deleteConfirm": "Eliminar {{kind}} \"{{name}}\"?",
+          "deleteDescription": "Esta accion no se puede deshacer."
         },
         "feedback": {
           "folderCreated": "Carpeta creada.",
@@ -1461,6 +1552,9 @@
         "status": {
           "paused": "Pausado"
         }
+      },
+      "filters": {
+        "all": "Todos"
       }
     },
     "invoices": {
@@ -1651,8 +1745,10 @@
           "removeLine": "Quitar"
         },
         "errors": {
-          "create": "No se pudo crear la factura. Intentalo de nuevo."
-        }
+          "create": "No se pudo crear la factura. Intentalo de nuevo.",
+          "customerRequired": "Selecciona un cliente para crear la factura."
+        },
+        "requiredLegend": "* Campo obligatorio"
       },
       "send": {
         "submit": "Enviar",
@@ -1691,6 +1787,11 @@
           "saving": "Guardando...",
           "updated": "Actualizado"
         }
+      },
+      "delete": {
+        "confirmTitle": "Eliminar factura",
+        "confirmMessage": "Se eliminara esta factura de forma permanente. Deseas continuar?",
+        "error": "No se pudo eliminar la factura. Intentalo de nuevo."
       }
     },
     "reports": {
@@ -2047,7 +2148,9 @@
         "loading": "Cargando paquetes de servicio...",
         "empty": "No hay paquetes configurados.",
         "labels": {
-          "checklist": "Checklist"
+          "checklist": "Checklist",
+          "active": "Paquete activo",
+          "newItem": "Nuevo item del checklist"
         },
         "placeholders": {
           "name": "Nombre del paquete",
@@ -2065,7 +2168,8 @@
           "showInactive": "Mostrar inactivos",
           "hideInactive": "Ocultar inactivos",
           "saving": "Guardando...",
-          "deactivate": "Desactivar"
+          "deactivate": "Desactivar",
+          "drag": "Arrastrar para reordenar"
         },
         "errors": {
           "load": "No se pudieron cargar los paquetes.",
@@ -2258,7 +2362,8 @@
         "from": "Desde",
         "to": "Hasta",
         "apply": "Aplicar",
-        "reset": "Limpiar filtros"
+        "reset": "Limpiar filtros",
+        "deliveryProcessing": "Procesando"
       }
     },
     "placeholder": {
@@ -2270,7 +2375,9 @@
     "kicker": "Sin conexion",
     "title": "No hay conexion a internet",
     "subtitle": "Cuando vuelva la conexion, recarga para seguir usando la app.",
-    "backToLogin": "Ir a login"
+    "backToLogin": "Ir a login",
+    "retry": "Reintentar",
+    "autoRetry": "Reintentaremos automáticamente en cuanto vuelva la conexión."
   },
   "client": {
     "home": {
@@ -2382,6 +2489,11 @@
         "quickCleaning": "Limpieza rapida",
         "chemBalance": "Balance quimico urgente",
         "general": "Revision general"
+      },
+      "confirmation": {
+        "kicker": "Solicitud enviada",
+        "title": "Tu solicitud fue registrada correctamente",
+        "continue": "Continuar"
       }
     },
     "profile": {
@@ -2451,7 +2563,8 @@
         "pausedOk": "Servicios pausados desde {{date}} en adelante.",
         "resumedOk": "Servicios recurrentes reanudados.",
         "pauseError": "No se pudo pausar servicios desde la fecha seleccionada.",
-        "resumeError": "No se pudo reanudar el servicio recurrente."
+        "resumeError": "No se pudo reanudar el servicio recurrente.",
+        "pauseFromLabel": "Pausar desde"
       },
       "property": {
         "pool": "Piscina",
@@ -2624,8 +2737,26 @@
           "network": "No se pudieron subir las fotos. Revisa tu conexión e inténtalo de nuevo; tus fotos y notas siguen aquí.",
           "fileTooLarge": "Estas fotos superan {{maxMb}} MB y se omitieron: {{names}}"
         },
-        "photoMaxSize": "Máximo {{maxMb}} MB por foto."
+        "photoMaxSize": "Máximo {{maxMb}} MB por foto.",
+        "takePhotoCamera": "Tomar foto",
+        "chooseFromGallery": "Elegir de la galería",
+        "photoPreviewAlt": "Vista previa de {{name}}",
+        "removePhoto": "Quitar",
+        "removePhotoAria": "Quitar la foto {{name}}",
+        "preparingPhotos": "Preparando fotos...",
+        "backToRoutes": "Volver a mis rutas"
       }
+    },
+    "loading": {
+      "title": "Cargando"
+    },
+    "error": {
+      "kicker": "Algo salió mal",
+      "title": "No se pudo cargar esta página",
+      "description": "Inténtalo de nuevo. Si el problema continúa, avisa al equipo admin.",
+      "reference": "Referencia: {{digest}}",
+      "retry": "Reintentar",
+      "backHome": "Volver a mis rutas"
     }
   },
   "layout": {
@@ -2637,7 +2768,65 @@
     },
     "notifications": {
       "loadError": "No se pudieron cargar las notificaciones.",
+      "retry": "Reintentar",
+      "bellLabel": "Notificaciones, {{count}} sin leer",
+      "bellLabelEmpty": "Notificaciones, ninguna sin leer",
+      "announceNewOne": "1 notificación nueva",
+      "announceNewMany": "{{count}} notificaciones nuevas",
+      "soundToggle": "Sonido de notificaciones",
+      "soundOn": "Sonido activado",
+      "soundOff": "Sonido desactivado",
+      "deleteItem": "Eliminar notificación: {{source}}",
+      "actionError": "No se pudo completar la acción. Inténtalo de nuevo."
+    },
+    "sidebar": {
+      "collapse": "Contraer barra lateral",
+      "expand": "Expandir barra lateral"
+    },
+    "navigation": {
+      "primary": "Navegación principal"
+    }
+  },
+  "invoices": {
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "paid": "Pagada",
+      "overdue": "Vencida"
+    }
+  },
+  "globalShell": {
+    "skipToContent": "Saltar al contenido principal",
+    "loading": {
+      "label": "Cargando contenido..."
+    },
+    "notFound": {
+      "kicker": "Error 404",
+      "title": "Página no encontrada",
+      "subtitle": "La página que buscas no existe o se ha movido.",
+      "backHome": "Ir al inicio"
+    },
+    "error": {
+      "kicker": "Algo salió mal",
+      "title": "No pudimos cargar esta página",
+      "subtitle": "Ocurrió un error inesperado. Inténtalo de nuevo; si persiste, contacta al administrador.",
+      "digest": "Referencia: {{digest}}",
       "retry": "Reintentar"
+    },
+    "globalError": {
+      "kicker": "Error crítico",
+      "title": "La app no pudo iniciarse",
+      "subtitle": "Un error inesperado impidió cargar la app. Inténtalo de nuevo o vuelve al inicio.",
+      "digest": "Referencia: {{digest}}",
+      "retry": "Reintentar",
+      "backHome": "Ir al inicio"
+    }
+  },
+  "pwa": {
+    "update": {
+      "title": "Nueva versión disponible",
+      "reload": "Recargar",
+      "dismiss": "Más tarde"
     }
   }
 }

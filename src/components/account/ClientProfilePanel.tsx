@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import AvatarUpload from "@/components/account/AvatarUpload";
 import ResetLinkButton from "@/components/account/ResetLinkButton";
+import AppModal from "@/components/ui/AppModal";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import { useI18n } from "@/i18n/client";
 import { formatBusinessDateInput } from "@/lib/timezone";
@@ -31,6 +32,8 @@ type Props = {
 };
 
 const SAVE_SUCCESS_CLOSE_DELAY_MS = 850;
+const FIELD_LABEL_CLASS =
+  "text-xs font-semibold uppercase tracking-wider text-slate-500";
 
 type PersonalDraft = {
   nombre: string;
@@ -81,6 +84,25 @@ export default function ClientProfilePanel({ initialData }: Props) {
       : formatBusinessDateInput(new Date())
   );
   const saveSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fieldId = useId();
+  const fieldIds = {
+    nombre: `${fieldId}-nombre`,
+    apellidos: `${fieldId}-apellidos`,
+    email: `${fieldId}-email`,
+    idiomaPreferencia: `${fieldId}-idioma`,
+    telefono: `${fieldId}-telefono`,
+    telefonoSecundario: `${fieldId}-telefono-secundario`,
+    direccionLinea1: `${fieldId}-direccion-1`,
+    direccionLinea2: `${fieldId}-direccion-2`,
+    ciudad: `${fieldId}-ciudad`,
+    estadoProvincia: `${fieldId}-estado`,
+    codigoPostal: `${fieldId}-codigo-postal`,
+    pauseFrom: `${fieldId}-pause-from`,
+  };
+  const editorTitleId = `${fieldId}-editor-title`;
+  const editorSubtitleId = `${fieldId}-editor-subtitle`;
+  const confirmTitleId = `${fieldId}-confirm-title`;
+  const confirmSubtitleId = `${fieldId}-confirm-subtitle`;
 
   useEffect(
     () => () => {
@@ -348,7 +370,11 @@ export default function ClientProfilePanel({ initialData }: Props) {
   return (
     <div className="space-y-6">
       {notice ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+        >
           {notice}
         </div>
       ) : null}
@@ -493,6 +519,8 @@ export default function ClientProfilePanel({ initialData }: Props) {
                 </div>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={data.email2faEnabled}
                   onClick={toggle2fa}
                   disabled={securitySaving}
                   className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
@@ -547,85 +575,99 @@ export default function ClientProfilePanel({ initialData }: Props) {
                 })}
               </p>
             ) : null}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <input
-                type="date"
-                value={pauseFromInput}
-                onChange={(event) => setPauseFromInput(event.target.value)}
-                className="app-input w-full max-w-[190px] px-4 py-2 text-sm"
-              />
-              <button
-                type="button"
-                onClick={applyServicePause}
-                disabled={serviceControlSaving}
-                className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 transition hover:border-amber-400 disabled:opacity-60"
-              >
-                {serviceControlSaving
-                  ? t("common.feedback.saving")
-                  : t("client.profile.serviceControl.pauseButton")}
-              </button>
-              <button
-                type="button"
-                onClick={resumeServices}
-                disabled={serviceControlSaving || !data.pauseServicesFrom}
-                className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-400 disabled:opacity-60"
-              >
-                {t("client.profile.serviceControl.resumeButton")}
-              </button>
+            <div className="mt-4">
+              <label htmlFor={fieldIds.pauseFrom} className={FIELD_LABEL_CLASS}>
+                {t("client.profile.serviceControl.pauseFromLabel")}
+              </label>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  id={fieldIds.pauseFrom}
+                  type="date"
+                  value={pauseFromInput}
+                  onChange={(event) => setPauseFromInput(event.target.value)}
+                  className="app-input w-full max-w-[190px] px-4 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={applyServicePause}
+                  disabled={serviceControlSaving}
+                  className="rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-700 transition hover:border-amber-400 disabled:opacity-60"
+                >
+                  {serviceControlSaving
+                    ? t("common.feedback.saving")
+                    : t("client.profile.serviceControl.pauseButton")}
+                </button>
+                <button
+                  type="button"
+                  onClick={resumeServices}
+                  disabled={serviceControlSaving || !data.pauseServicesFrom}
+                  className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 transition hover:border-emerald-400 disabled:opacity-60"
+                >
+                  {t("client.profile.serviceControl.resumeButton")}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {editor ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
-            aria-label={t("common.actions.close")}
-            onClick={closeModal}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <div className="app-modal-header">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    {editor === "personal"
-                      ? t("client.profile.editor.personalTitle")
-                      : t("client.profile.editor.addressTitle")}
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {editor === "personal"
-                      ? t("client.profile.editor.personalSubtitle")
-                      : t("client.profile.editor.addressSubtitle")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="app-modal-close"
-                  aria-label={t("common.actions.close")}
-                  title={t("common.actions.close")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 6l12 12M18 6L6 18"
-                    />
-                  </svg>
-                </button>
+        <AppModal
+          open
+          onClose={closeModal}
+          titleId={editorTitleId}
+          describedBy={editorSubtitleId}
+          layerClassName="overflow-y-auto p-3 sm:p-6"
+          backdropClassName="app-modal-backdrop bg-slate-950/60 backdrop-blur-[2px]"
+          cardClassName="max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
+          <div className="app-modal-scroll modal-scroll max-h-[88dvh] overflow-y-auto p-5 sm:p-6">
+            <div className="app-modal-header">
+              <div>
+                <h3 id={editorTitleId} className="text-xl font-semibold text-slate-900">
+                  {editor === "personal"
+                    ? t("client.profile.editor.personalTitle")
+                    : t("client.profile.editor.addressTitle")}
+                </h3>
+                <p id={editorSubtitleId} className="mt-1 text-sm text-slate-500">
+                  {editor === "personal"
+                    ? t("client.profile.editor.personalSubtitle")
+                    : t("client.profile.editor.addressSubtitle")}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="app-modal-close"
+                aria-label={t("common.actions.close")}
+                title={t("common.actions.close")}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 6l12 12M18 6L6 18"
+                  />
+                </svg>
+              </button>
+            </div>
 
-              {editor === "personal" ? (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {editor === "personal" ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor={fieldIds.nombre} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.firstName")}
+                  </label>
                   <input
+                    id={fieldIds.nombre}
                     value={personalDraft.nombre}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -633,10 +675,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         nombre: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("common.labels.firstName")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.apellidos} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.lastName")}
+                  </label>
                   <input
+                    id={fieldIds.apellidos}
                     value={personalDraft.apellidos}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -644,10 +692,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         apellidos: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("common.labels.lastName")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.email} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.email")}
+                  </label>
                   <input
+                    id={fieldIds.email}
                     value={personalDraft.email}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -655,10 +709,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         email: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("common.labels.email")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.idiomaPreferencia} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.language")}
+                  </label>
                   <select
+                    id={fieldIds.idiomaPreferencia}
                     value={personalDraft.idiomaPreferencia}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -666,12 +726,18 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         idiomaPreferencia: event.target.value === "ES" ? "ES" : "EN",
                       }))
                     }
-                    className="app-input w-full bg-white px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
                   >
                     <option value="EN">EN</option>
                     <option value="ES">ES</option>
                   </select>
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.telefono} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.phone")}
+                  </label>
                   <input
+                    id={fieldIds.telefono}
                     value={personalDraft.telefono}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -679,10 +745,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         telefono: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("common.labels.phone")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.telefonoSecundario} className={FIELD_LABEL_CLASS}>
+                    {t("common.labels.phoneSecondary")}
+                  </label>
                   <input
+                    id={fieldIds.telefonoSecundario}
                     value={personalDraft.telefonoSecundario}
                     onChange={(event) =>
                       setPersonalDraft((current) => ({
@@ -690,13 +762,19 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         telefonoSecundario: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("common.labels.phoneSecondary")}
                   />
                 </div>
-              ) : (
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label htmlFor={fieldIds.direccionLinea1} className={FIELD_LABEL_CLASS}>
+                    {t("address.line1")}
+                  </label>
                   <input
+                    id={fieldIds.direccionLinea1}
                     value={addressDraft.direccionLinea1}
                     onChange={(event) =>
                       setAddressDraft((current) => ({
@@ -704,10 +782,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         direccionLinea1: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm sm:col-span-2"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("address.line1")}
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor={fieldIds.direccionLinea2} className={FIELD_LABEL_CLASS}>
+                    {t("address.line2")}
+                  </label>
                   <input
+                    id={fieldIds.direccionLinea2}
                     value={addressDraft.direccionLinea2}
                     onChange={(event) =>
                       setAddressDraft((current) => ({
@@ -715,10 +799,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         direccionLinea2: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm sm:col-span-2"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("address.line2")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.ciudad} className={FIELD_LABEL_CLASS}>
+                    {t("address.city")}
+                  </label>
                   <input
+                    id={fieldIds.ciudad}
                     value={addressDraft.ciudad}
                     onChange={(event) =>
                       setAddressDraft((current) => ({
@@ -726,10 +816,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         ciudad: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("address.city")}
                   />
+                </div>
+                <div>
+                  <label htmlFor={fieldIds.estadoProvincia} className={FIELD_LABEL_CLASS}>
+                    {t("address.state")}
+                  </label>
                   <input
+                    id={fieldIds.estadoProvincia}
                     value={addressDraft.estadoProvincia}
                     onChange={(event) =>
                       setAddressDraft((current) => ({
@@ -737,10 +833,16 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         estadoProvincia: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("address.state")}
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor={fieldIds.codigoPostal} className={FIELD_LABEL_CLASS}>
+                    {t("address.postal")}
+                  </label>
                   <input
+                    id={fieldIds.codigoPostal}
                     value={addressDraft.codigoPostal}
                     onChange={(event) =>
                       setAddressDraft((current) => ({
@@ -748,110 +850,119 @@ export default function ClientProfilePanel({ initialData }: Props) {
                         codigoPostal: event.target.value,
                       }))
                     }
-                    className="app-input w-full px-4 py-3 text-sm sm:col-span-2"
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
                     placeholder={t("address.postal")}
                   />
                 </div>
-              )}
-
-              {error ? (
-                <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
-                >
-                  {t("common.actions.cancel")}
-                </button>
-                <button
-                  type="button"
-                  onClick={reviewChanges}
-                  className="app-button-primary px-5 py-2 text-sm font-semibold"
-                >
-                  {t("client.profile.editor.review")}
-                </button>
               </div>
+            )}
+
+            {error ? (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+              >
+                {error}
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeModal}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400"
+              >
+                {t("common.actions.cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={reviewChanges}
+                className="app-button-primary px-5 py-2 text-sm font-semibold"
+              >
+                {t("client.profile.editor.review")}
+              </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       ) : null}
 
       {confirmOpen && editor ? (
-        <div className="app-modal-layer fixed inset-0 z-[1310] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/65 backdrop-blur-[2px]"
-            aria-label={t("common.actions.close")}
-            onClick={() => !saving && setConfirmOpen(false)}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="p-5 sm:p-6">
-              <h3 className="text-xl font-semibold text-slate-900">
-                {t("client.profile.confirm.title")}
-              </h3>
-              <p className="mt-1 text-sm text-slate-500">
-                {t("client.profile.confirm.subtitle")}
-              </p>
+        <AppModal
+          open
+          onClose={() => setConfirmOpen(false)}
+          titleId={confirmTitleId}
+          describedBy={confirmSubtitleId}
+          zIndexClass="z-[1310]"
+          layerClassName="overflow-y-auto p-3 sm:p-6"
+          backdropClassName="app-modal-backdrop bg-slate-950/65 backdrop-blur-[2px]"
+          cardClassName="max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+          closeOnBackdrop={!saving}
+          closeOnEscape={!saving}
+        >
+          <div className="p-5 sm:p-6">
+            <h3 id={confirmTitleId} className="text-xl font-semibold text-slate-900">
+              {t("client.profile.confirm.title")}
+            </h3>
+            <p id={confirmSubtitleId} className="mt-1 text-sm text-slate-500">
+              {t("client.profile.confirm.subtitle")}
+            </p>
 
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700">
-                {editor === "personal" ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <p>{personalDraft.nombre}</p>
-                    <p>{personalDraft.apellidos}</p>
-                    <p>{personalDraft.email}</p>
-                    <p>{personalDraft.idiomaPreferencia}</p>
-                    <p>{personalDraft.telefono}</p>
-                    <p>{personalDraft.telefonoSecundario || "-"}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <p>{addressDraft.direccionLinea1 || "-"}</p>
-                    <p>{addressDraft.direccionLinea2 || "-"}</p>
-                    <p>
-                      {[addressDraft.ciudad, addressDraft.estadoProvincia, addressDraft.codigoPostal]
-                        .filter(Boolean)
-                        .join(", ") || "-"}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {error ? (
-                <div role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-700">
+              {editor === "personal" ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <p>{personalDraft.nombre}</p>
+                  <p>{personalDraft.apellidos}</p>
+                  <p>{personalDraft.email}</p>
+                  <p>{personalDraft.idiomaPreferencia}</p>
+                  <p>{personalDraft.telefono}</p>
+                  <p>{personalDraft.telefonoSecundario || "-"}</p>
                 </div>
-              ) : null}
+              ) : (
+                <div className="space-y-1">
+                  <p>{addressDraft.direccionLinea1 || "-"}</p>
+                  <p>{addressDraft.direccionLinea2 || "-"}</p>
+                  <p>
+                    {[addressDraft.ciudad, addressDraft.estadoProvincia, addressDraft.codigoPostal]
+                      .filter(Boolean)
+                      .join(", ") || "-"}
+                  </p>
+                </div>
+              )}
+            </div>
 
-              <div className="mt-5 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConfirmOpen(false)}
-                  disabled={saving || saveSuccess}
-                  className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
-                >
-                  {t("client.profile.confirm.back")}
-                </button>
-                <button
-                  type="button"
-                  onClick={saveChanges}
-                  disabled={saving || saveSuccess}
-                  className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60"
-                >
-                  {saving
-                    ? t("common.feedback.saving")
-                    : saveSuccess
-                      ? t("common.feedback.saved")
-                      : t("client.profile.confirm.confirm")}
-                </button>
+            {error ? (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+              >
+                {error}
               </div>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                disabled={saving || saveSuccess}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 disabled:opacity-60"
+              >
+                {t("client.profile.confirm.back")}
+              </button>
+              <button
+                type="button"
+                onClick={saveChanges}
+                disabled={saving || saveSuccess}
+                className="app-button-primary px-5 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                {saving
+                  ? t("common.feedback.saving")
+                  : saveSuccess
+                    ? t("common.feedback.saved")
+                    : t("client.profile.confirm.confirm")}
+              </button>
             </div>
           </div>
-        </div>
+        </AppModal>
       ) : null}
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useId, useMemo, useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { DateTime } from "luxon";
 import {
@@ -15,7 +14,7 @@ import { formatUsPhone } from "@/lib/phones";
 import { useI18n } from "@/i18n/client";
 import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import AppModal from "@/components/ui/AppModal";
 import {
   applyBusinessTime,
   BUSINESS_TIMEZONE,
@@ -153,6 +152,9 @@ type JobModalState = {
   notes: string;
   checklist: { label?: string; completed?: boolean }[];
   photos: { id: string; url: string; takenAt: string }[];
+  /** Destino del bloque "Mover a" (mismo camino de guardado que soltar la tarjeta). */
+  moveDate: string;
+  moveTime: string;
 };
 
 type ServiceTier = {
@@ -312,6 +314,12 @@ const normalizeChecklist = (value?: { label?: string; completed?: boolean }[] | 
 const HIGHLIGHT_DURATION_MS = 7000;
 const SAVE_SUCCESS_FEEDBACK_MS = 1600;
 
+// Boton invisible para el raton (sin espacio ni clics) que aparece al recibir
+// foco: alternativa de teclado a las acciones que dependen de arrastrar o de
+// pulsar una zona de la celda.
+const FOCUS_ONLY_ACTION_CLASS =
+  "pointer-events-none absolute right-2 top-2 z-20 inline-flex items-center rounded-full border border-sky-300 bg-white px-2 py-0.5 text-[11px] font-semibold text-sky-700 opacity-0 focus:pointer-events-auto focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-sky-200";
+
 const resolveRangeStart = (
   rangeFilter: ScheduledFiltersState["rangeFilter"],
   customStart: string,
@@ -384,6 +392,14 @@ export default function RoutesCalendar({
   const [mobileDayKey, setMobileDayKey] = useState<string | null>(null);
   const [mobileDeleteConfirmId, setMobileDeleteConfirmId] = useState<string | null>(null);
   const mounted = useIsHydrated();
+  const modalIdBase = useId();
+  const filtersTitleId = `${modalIdBase}-filters-title`;
+  const mobileDayKickerId = `${modalIdBase}-mobile-day-kicker`;
+  const mobileDayTitleId = `${modalIdBase}-mobile-day-title`;
+  const assignKickerId = `${modalIdBase}-assign-kicker`;
+  const assignTitleId = `${modalIdBase}-assign-title`;
+  const jobDetailKickerId = `${modalIdBase}-job-detail-kicker`;
+  const jobDetailTitleId = `${modalIdBase}-job-detail-title`;
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [techFilter, setTechFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
@@ -462,23 +478,6 @@ export default function RoutesCalendar({
     return () => clearTimeout(timeout);
   }, [searchParams]);
 
-  useEffect(() => {
-    if (!filtersOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setFiltersOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const unlock = lockBodyScroll();
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      unlock();
-    };
-  }, [filtersOpen]);
-
   const [syncedMobileDayKey, setSyncedMobileDayKey] = useState(mobileDayKey);
   if (mobileDayKey !== syncedMobileDayKey) {
     setSyncedMobileDayKey(mobileDayKey);
@@ -486,23 +485,6 @@ export default function RoutesCalendar({
       setMobileDeleteConfirmId(null);
     }
   }
-
-  useEffect(() => {
-    if (!mobileDayKey) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileDayKey(null);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const unlock = lockBodyScroll();
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      unlock();
-    };
-  }, [mobileDayKey]);
 
   useEffect(() => {
     if (!mobileDeleteConfirmId) {
@@ -513,16 +495,6 @@ export default function RoutesCalendar({
     }, 1800);
     return () => window.clearTimeout(timeout);
   }, [mobileDeleteConfirmId]);
-
-  useEffect(() => {
-    if (!selectedDate && !jobModal) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    return () => {
-      unlock();
-    };
-  }, [selectedDate, jobModal]);
 
   // El estado local se reinicia al cambiar de mes o cuando el servidor trae datos
   // nuevos: el padre monta el componente con `key={monthKey:dataVersion}`
@@ -588,7 +560,7 @@ export default function RoutesCalendar({
   });
   const monthLabel =
     monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
-  const nextMonthJobsLabel = locale === "es" ? "Proximo mes" : "Next month";
+  const nextMonthJobsLabel = t("admin.routes.labels.nextMonthJobs");
 
   const moveMonth = (offset: number) => {
     const nextMonth = viewedMonth.plus({ months: offset }).startOf("month").toUTC().toJSDate();
@@ -688,7 +660,7 @@ export default function RoutesCalendar({
     { label: string; className: string }
   > = {
     PLANNED: {
-      label: locale === "es" ? "Planificado" : "Planned",
+      label: t("admin.routes.labels.statusPlanned"),
       className: "border-violet-200 bg-violet-50 text-violet-700",
     },
     SCHEDULED: {
@@ -869,7 +841,7 @@ export default function RoutesCalendar({
       <span>{label}</span>
       {sortKey === key ? (
         <span
-          className={`text-[10px] ${
+          className={`text-[11px] ${
             variant === "dark" ? "text-white/80" : "text-slate-400"
           }`}
         >
@@ -1027,6 +999,8 @@ export default function RoutesCalendar({
             ? getTierChecklist(resolvedTierId)
             : [],
       photos: Array.isArray(job.photos) ? job.photos : [],
+      moveDate: scheduledDate,
+      moveTime: scheduledTime,
     });
   };
 
@@ -1304,6 +1278,56 @@ export default function RoutesCalendar({
     }
   };
 
+  // Alternativa de teclado/tactil a soltar la tarjeta en otro dia. Reutiliza
+  // el mismo camino de guardado que el drop: en modo edicion queda en
+  // pendingChanges (se envia con "Guardar cambios"); fuera de el se guarda al
+  // momento con saveSingleUpdate, igual que la asignacion de tecnico.
+  const handleMoveJob = async () => {
+    if (!jobModal) {
+      return;
+    }
+    const targetDateTime = parseBusinessDateTimeInput(
+      jobModal.moveDate,
+      jobModal.moveTime || "00:00"
+    );
+    if (!targetDateTime) {
+      setErrorMessage(t("admin.routes.errors.saveJobFailed"));
+      return;
+    }
+    const jobId = jobModal.jobId;
+    const previousJob = jobsState.find((job) => job.id === jobId);
+    const timeParts = getBusinessTimeParts(targetDateTime);
+    const scheduledDate = targetDateTime.toISOString();
+    const sortOrder = (timeParts?.hour ?? 0) * 60 + (timeParts?.minute ?? 0);
+    const applySchedule = (
+      nextScheduledDate: string,
+      nextSortOrder: number | null | undefined
+    ) =>
+      setJobsState((current) =>
+        sortJobsChronologically(
+          current.map((job) =>
+            job.id === jobId
+              ? { ...job, scheduledDate: nextScheduledDate, sortOrder: nextSortOrder }
+              : job
+          )
+        )
+      );
+    applySchedule(scheduledDate, sortOrder);
+    if (editMode) {
+      setPendingForJob(jobId, { scheduledDate, sortOrder });
+      setJobModal(null);
+      return;
+    }
+    const saved = await saveSingleUpdate(jobId, { scheduledDate, sortOrder });
+    if (!saved) {
+      if (previousJob) {
+        applySchedule(previousJob.scheduledDate, previousJob.sortOrder);
+      }
+      return;
+    }
+    setJobModal(null);
+  };
+
   const handleSaveChanges = async () => {
     const updates = Object.entries(pendingChanges).map(([jobId, patch]) => ({
       jobId,
@@ -1387,17 +1411,13 @@ export default function RoutesCalendar({
   const urgentActive = priorityFilter === "URGENT";
   const unassignedActive = techFilter === "UNASSIGNED";
   const helperCopy = editMode
-    ? locale === "es"
-      ? "Modo edicion activo: en movil abre un dia y edita desde el modal."
-      : "Edit mode active: on mobile open a day and edit from the modal."
-    : locale === "es"
-      ? "Filtra por urgentes, sin tecnico o por trabajos de hoy."
-      : "Filter by urgent, unassigned, or jobs for today.";
+    ? t("admin.routes.helper.editMode")
+    : t("admin.routes.helper.quickFilters");
   const summaryCards = [
     {
       key: "today",
       active: todayActive,
-      label: locale === "es" ? "Trabajos hoy" : "Jobs today",
+      label: t("admin.routes.labels.jobsToday"),
       value: summary.todayJobs,
       onClick: () => {
         if (todayActive) {
@@ -1479,7 +1499,7 @@ export default function RoutesCalendar({
         <div className="flex flex-col gap-3 sm:gap-4">
           <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:text-[11px] sm:tracking-[0.22em]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 sm:tracking-[0.22em]">
                 {t("admin.routes.title")}
               </p>
               <p className="text-xs text-slate-500 sm:text-sm">{helperCopy}</p>
@@ -1487,7 +1507,7 @@ export default function RoutesCalendar({
             <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end sm:gap-2">
               <RoutesSectionTabs />
               <div className="inline-flex h-8 w-fit shrink-0 items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 sm:h-10 sm:gap-2 sm:px-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:text-[11px] sm:tracking-[0.14em]">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 sm:tracking-[0.14em]">
                   {nextMonthJobsLabel}
                 </span>
                 <span className="text-sm font-bold text-slate-900 sm:text-base">
@@ -1548,9 +1568,9 @@ export default function RoutesCalendar({
                 type="button"
                 onClick={goToCurrentMonth}
                 disabled={isCurrentMonthViewed}
-                className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 sm:h-9 sm:px-3 sm:text-[11px] sm:tracking-[0.14em]"
+                className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500 transition hover:border-slate-300 hover:text-slate-700 disabled:cursor-default disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 sm:h-9 sm:px-3 sm:tracking-[0.14em]"
               >
-                {locale === "es" ? "Este mes" : "Current month"}
+                {t("admin.routes.actions.currentMonth")}
               </button>
             </div>
 
@@ -1605,9 +1625,7 @@ export default function RoutesCalendar({
                 <span>
                   {editMode
                     ? t("common.actions.save")
-                    : locale === "es"
-                      ? "Editar calendario"
-                      : "Edit calendar"}
+                    : t("admin.routes.actions.editCalendar")}
                 </span>
               </button>
 
@@ -1665,7 +1683,7 @@ export default function RoutesCalendar({
                 {card.icon}
               </span>
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate text-[9px] uppercase tracking-[0.08em] text-slate-400 sm:text-[10px] sm:tracking-[0.16em]">
+                <span className="truncate text-[11px] uppercase tracking-[0.08em] text-slate-400 sm:tracking-[0.16em]">
                   {card.label}
                 </span>
                 <span className="text-[13px] font-semibold text-slate-900 sm:text-sm">
@@ -1691,16 +1709,14 @@ export default function RoutesCalendar({
           <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
             <p className="text-[11px] text-slate-500">
               {editMode
-                ? locale === "es"
-                  ? "Modo edicion: toca un dia para mover, eliminar o asignar trabajos desde el modal."
-                  : "Edit mode: tap a day to move, delete, or assign jobs from the modal."
+                ? t("admin.routes.calendarMobile.editHelper")
                 : t("admin.routes.calendarMobile.helper")}
             </p>
             <div className="mt-3 grid grid-cols-7 gap-1">
               {daysShort.map((label) => (
                 <div
                   key={`wd-${label}`}
-                  className="py-1 text-center text-[10px] font-semibold uppercase tracking-[0.04em] text-slate-500"
+                  className="py-1 text-center text-[11px] font-semibold uppercase tracking-[0.04em] text-slate-500"
                 >
                   {label}
                 </div>
@@ -1726,6 +1742,7 @@ export default function RoutesCalendar({
                   <button
                     key={`mobile-day-${key}`}
                     type="button"
+                    aria-current={isToday ? "date" : undefined}
                     disabled={!isCurrentMonth}
                     onClick={() => {
                       setMobileDayKey(key);
@@ -1757,7 +1774,7 @@ export default function RoutesCalendar({
                     </span>
                     {isCurrentMonth ? (
                       <span
-                        className="absolute right-1 top-1 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold text-white"
+                        className="absolute right-1 top-1 inline-flex min-w-[16px] items-center justify-center rounded-full px-1 text-[11px] font-semibold text-white"
                         style={{ backgroundColor: capacityColor }}
                       >
                         {jobsCount}
@@ -1773,7 +1790,7 @@ export default function RoutesCalendar({
                 );
               })}
             </div>
-            <div className="mt-3 flex items-center gap-2 text-[10px] text-slate-500">
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-500">
               <span>{t("admin.routes.calendarMobile.loadLow")}</span>
               <div className="h-1 flex-1 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
               <span>{t("admin.routes.calendarMobile.loadHigh")}</span>
@@ -1803,9 +1820,16 @@ export default function RoutesCalendar({
               const dayHover = editMode
                 ? "hover:border-sky-300 hover:bg-sky-50/60"
                 : "";
+              const dayA11yLabel = day.toLocaleDateString(locale, {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                timeZone: BUSINESS_TIMEZONE,
+              });
               return (
                 <div
                 key={key}
+                aria-current={isToday ? "date" : undefined}
                 onClick={() => openModalForDate(day)}
                 onDragOver={(event) => {
                     if (editMode) {
@@ -1844,19 +1868,31 @@ export default function RoutesCalendar({
                       >
                         {getBusinessDayNumber(day)}
                       </span>
-                      <span className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:tracking-[0.28em]">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 xl:tracking-[0.28em]">
                         {dayLabel}
                       </span>
+                      {editMode ? (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openModalForDate(day);
+                          }}
+                          className={FOCUS_ONLY_ACTION_CLASS}
+                        >
+                          {t("admin.routes.a11y.assignJobsOnDay", { date: dayA11yLabel })}
+                        </button>
+                      ) : null}
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       {jobsForDay.length > 0 ? (
-                        <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[8px] font-semibold text-slate-600">
+                        <span className="rounded-full bg-slate-900/5 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                           {t("admin.routes.labels.jobsCount", {
                             count: jobsForDay.length,
                           })}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[8px] text-slate-400">
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-400">
                           {t("admin.routes.labels.free")}
                         </span>
                       )}
@@ -1935,9 +1971,40 @@ export default function RoutesCalendar({
                       job.technicianId && techColor
                         ? { backgroundColor: techColor }
                         : { backgroundColor: "#fb7185" };
+                    const techName = job.technician?.name ?? t("jobs.detail.noTech");
+                    const cardLabel = [job.customer.name, timeLabel, techName]
+                      .filter(Boolean)
+                      .join(", ");
+                    const activateCard = () => {
+                      if (isPlanEntry) {
+                        return;
+                      }
+                      if (editMode) {
+                        setSelectedJobId((current) =>
+                          current === job.id ? null : job.id
+                        );
+                        return;
+                      }
+                      openJobModal(job as JobItem);
+                    };
                     return (
                       <div
                         key={job.id}
+                        role={isPlanEntry ? undefined : "button"}
+                        tabIndex={isPlanEntry ? undefined : 0}
+                        aria-label={isPlanEntry ? undefined : cardLabel}
+                        aria-pressed={!isPlanEntry && editMode ? isSelected : undefined}
+                        onKeyDown={(event) => {
+                          if (
+                            isPlanEntry ||
+                            event.target !== event.currentTarget ||
+                            (event.key !== "Enter" && event.key !== " ")
+                          ) {
+                            return;
+                          }
+                          event.preventDefault();
+                          activateCard();
+                        }}
                         draggable={editMode && !isPlanEntry}
                         onDragStart={(event) => {
                           if (isPlanEntry) {
@@ -1989,18 +2056,9 @@ export default function RoutesCalendar({
                         }}
                         onClick={(event) => {
                           event.stopPropagation();
-                          if (isPlanEntry) {
-                            return;
-                          }
-                          if (editMode) {
-                            setSelectedJobId((current) =>
-                              current === job.id ? null : job.id
-                            );
-                            return;
-                          }
-                          openJobModal(job as JobItem);
+                          activateCard();
                         }}
-                        className={`relative block rounded-2xl border px-2.5 py-2.5 text-[9px] transition xl:px-3 xl:py-3 xl:text-[10px] ${
+                        className={`relative block rounded-2xl border px-2.5 py-2.5 text-[11px] transition xl:px-3 xl:py-3 ${
                           isPlanEntry
                             ? "cursor-default"
                             : editMode
@@ -2027,18 +2085,31 @@ export default function RoutesCalendar({
                           className="absolute left-0 top-0 h-full w-1.5 rounded-l-2xl"
                           style={{ backgroundColor: accentColor }}
                         />
+                        {editMode && !isPlanEntry ? (
+                          <button
+                            type="button"
+                            draggable={false}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openJobModal(job as JobItem);
+                            }}
+                            className={FOCUS_ONLY_ACTION_CLASS}
+                          >
+                            {t("admin.routes.move.open", { customer: job.customer.name })}
+                          </button>
+                        ) : null}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <div className="truncate text-[11px] font-semibold text-slate-800 xl:text-[12px]">
                               {job.customer.name}
                             </div>
-                            <div className="text-[10px] text-slate-500">
+                            <div className="text-[11px] text-slate-500">
                               {secondaryLabel}
                             </div>
                           </div>
                           {timeLabel ? (
                             <span
-                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold text-slate-600"
+                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600"
                               title={t("admin.routes.labels.scheduledTime")}
                             >
                               <svg
@@ -2059,7 +2130,7 @@ export default function RoutesCalendar({
                             </span>
                           ) : null}
                         </div>
-                        <div className="mt-2 flex items-center gap-1 text-[10px] text-slate-500">
+                        <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                           <svg
                             viewBox="0 0 24 24"
                             fill="none"
@@ -2088,9 +2159,9 @@ export default function RoutesCalendar({
                             {job.property.address}
                           </a>
                         </div>
-                        <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-slate-600">
+                        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-600">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500">
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
                               {isPlanEntry
                                 ? planLabel || t("client.request.modes.recurring")
                                 : job.type === "ON_DEMAND"
@@ -2098,13 +2169,13 @@ export default function RoutesCalendar({
                                   : t("jobs.type.routine")}
                             </span>
                             {!isPlanEntry && job.priority === "URGENT" ? (
-                              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[9px] font-semibold text-indigo-700">
+                              <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
                                 {t("jobs.priority.urgent")}
                               </span>
                             ) : null}
                           </div>
                           {isPlanEntry ? (
-                            <span className="inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            <span className="inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                               <span
                                 className="h-1.5 w-1.5 rounded-full"
                                 style={techDotStyle}
@@ -2120,11 +2191,11 @@ export default function RoutesCalendar({
                                 event.stopPropagation();
                                 setActiveTechJobId(job.id);
                               }}
-                              className={`inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold transition ${techTone} hover:border-slate-300 hover:bg-slate-50 hover:ring-2 hover:ring-sky-100`}
+                              className={`inline-flex max-w-[120px] items-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-[11px] font-semibold transition ${techTone} hover:border-slate-300 hover:bg-slate-50 hover:ring-2 hover:ring-sky-100`}
                               title={
                                 editMode
                                   ? t("admin.routes.actions.assignTechnician")
-                                  : "Activar editar para asignar"
+                                  : t("admin.routes.labels.enableEditToAssign")
                               }
                             >
                               <span
@@ -2143,11 +2214,12 @@ export default function RoutesCalendar({
                             onClick={(event) => event.stopPropagation()}
                           >
                             <select
+                              aria-label={t("admin.routes.actions.assignTechnician")}
                               value={job.technicianId ?? ""}
                               onChange={(event) =>
                                 handleTechnicianAssign(job.id, event.target.value)
                               }
-                              className="w-full rounded-md border border-slate-200 px-2 py-1 text-[10px]"
+                              className="w-full rounded-md border border-slate-200 px-2 py-1 text-[11px]"
                             >
                               <option value="">
                                 {t("admin.routes.labels.unassigned")}
@@ -2164,8 +2236,8 @@ export default function RoutesCalendar({
                     );
                   })}
                   {editMode && jobsForDay.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-sky-200 bg-sky-50/40 px-3 py-3 text-[10px] text-slate-500">
-                      Arrastra aqui o pulsa para asignar
+                    <div className="rounded-2xl border border-dashed border-sky-200 bg-sky-50/40 px-3 py-3 text-[11px] text-slate-500">
+                      {t("admin.routes.labels.dropHint")}
                     </div>
                   ) : null}
                 </div>
@@ -2312,11 +2384,11 @@ export default function RoutesCalendar({
                             </p>
                           </div>
                           {contactLine ? (
-                            <p className="truncate text-[10px] text-slate-500" title={contactLine}>
+                            <p className="truncate text-[11px] text-slate-500" title={contactLine}>
                               {contactLine}
                             </p>
                           ) : (
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] text-slate-400">
                               {t("admin.routes.labels.noContact")}
                             </p>
                           )}
@@ -2326,7 +2398,7 @@ export default function RoutesCalendar({
                             {dateLabel}
                           </p>
                           {timeLabel ? (
-                            <p className="text-[10px] text-slate-500">{timeLabel}</p>
+                            <p className="text-[11px] text-slate-500">{timeLabel}</p>
                           ) : null}
                         </div>
                       </div>
@@ -2338,7 +2410,7 @@ export default function RoutesCalendar({
                           <span className="font-medium text-slate-700">{serviceLabel}</span>
                         </p>
                         {tierLabel ? (
-                          <p className="truncate text-[10px] text-slate-500">{tierLabel}</p>
+                          <p className="truncate text-[11px] text-slate-500">{tierLabel}</p>
                         ) : null}
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -2347,7 +2419,7 @@ export default function RoutesCalendar({
                           target="_blank"
                           rel="noreferrer"
                           onClick={(event) => event.stopPropagation()}
-                          className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-slate-500 hover:text-slate-700"
+                          className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-slate-500 hover:text-slate-700"
                           title={job.property.address}
                         >
                           <svg
@@ -2370,21 +2442,21 @@ export default function RoutesCalendar({
 
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold ${statusInfo.className}`}
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.className}`}
                         >
                           {statusInfo.label}
                         </span>
                         <span
-                          className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold ${priorityInfo.className}`}
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityInfo.className}`}
                         >
                           {priorityInfo.label}
                         </span>
-                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-600">
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                           {job.type === "ON_DEMAND"
                             ? t("jobs.type.onDemand")
                             : t("jobs.type.routine")}
                         </span>
-                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-slate-600">
+                        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-600">
                           <span className="h-2 w-2 rounded-full" style={techDotStyle} />
                           <span className="max-w-[108px] truncate font-medium">
                             {techInfo?.name ??
@@ -2398,7 +2470,7 @@ export default function RoutesCalendar({
                             event.stopPropagation();
                             openJobModal(job);
                           }}
-                          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                          className="inline-flex items-center justify-center rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                         >
                           {t("common.actions.view")}
                         </button>
@@ -2534,13 +2606,13 @@ export default function RoutesCalendar({
                             </div>
                             {contactLine ? (
                               <div
-                                className="max-w-[200px] truncate text-[10px] text-slate-500"
+                                className="max-w-[200px] truncate text-[11px] text-slate-500"
                                 title={contactLine}
                               >
                                 {contactLine}
                               </div>
                             ) : (
-                              <div className="text-[10px] text-slate-400">
+                              <div className="text-[11px] text-slate-400">
                                 {t("admin.routes.labels.noContact")}
                               </div>
                             )}
@@ -2554,7 +2626,7 @@ export default function RoutesCalendar({
                             >
                               {propertyName}
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500">
                               <svg
                                 viewBox="0 0 24 24"
                                 fill="none"
@@ -2590,7 +2662,7 @@ export default function RoutesCalendar({
                               {dateLabel}
                             </div>
                             {timeLabel ? (
-                              <div className="text-[10px]">{timeLabel}</div>
+                              <div className="text-[11px]">{timeLabel}</div>
                             ) : null}
                           </div>
                         </td>
@@ -2600,11 +2672,11 @@ export default function RoutesCalendar({
                               {serviceLabel}
                             </div>
                             {tierLabel ? (
-                              <div className="text-[10px] text-slate-400">
+                              <div className="text-[11px] text-slate-400">
                                 {tierLabel}
                               </div>
                             ) : null}
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
+                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
                               {job.type === "ON_DEMAND"
                                 ? t("jobs.type.onDemand")
                                 : t("jobs.type.routine")}
@@ -2613,14 +2685,14 @@ export default function RoutesCalendar({
                         </td>
                         <td className={`${cellPadding} align-top`}>
                           <span
-                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.className}`}
                           >
                             {statusInfo.label}
                           </span>
                         </td>
                         <td className={`${cellPadding} align-top`}>
                           <span
-                            className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityInfo.className}`}
                           >
                             {priorityInfo.label}
                           </span>
@@ -2648,7 +2720,7 @@ export default function RoutesCalendar({
                               event.stopPropagation();
                               openJobModal(job);
                             }}
-                            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                           >
                             {t("common.actions.view")}
                           </button>
@@ -2665,23 +2737,22 @@ export default function RoutesCalendar({
         </div>
       </section>
 
-      {mounted && filtersOpen
-        ? createPortal(
-            <div className="app-modal-layer fixed inset-0 z-[1295] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
-              <button
-                type="button"
-                className="absolute inset-0"
-                aria-label={t("common.actions.close")}
-                onClick={() => setFiltersOpen(false)}
-              />
-              <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      <AppModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        titleId={filtersTitleId}
+        zIndexClass="z-[1295]"
+        layerClassName="bg-slate-900/50 p-3 sm:p-6"
+        backdropClassName=""
+        cardClassName="max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      >
                 <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                         {t("admin.routes.filters.toolbar")}
                       </p>
-                      <h2 className="text-lg font-semibold text-slate-900">
+                      <h2 id={filtersTitleId} className="text-lg font-semibold text-slate-900">
                         {t("admin.routes.filters.modalTitle")}
                       </h2>
                       <p className="text-xs text-slate-500">
@@ -2903,29 +2974,25 @@ export default function RoutesCalendar({
                     {t("admin.routes.filters.apply")}
                   </button>
                 </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+      </AppModal>
 
-      {mounted && mobileDayKey
-        ? createPortal(
-            <div className="app-modal-layer fixed inset-0 z-[1298] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
-              <button
-                type="button"
-                className="absolute inset-0"
-                aria-label={t("common.actions.close")}
-                onClick={() => setMobileDayKey(null)}
-              />
-              <div className="app-modal-card relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+      {mobileDayKey ? (
+        <AppModal
+          open
+          onClose={() => setMobileDayKey(null)}
+          titleId={`${mobileDayKickerId} ${mobileDayTitleId}`}
+          zIndexClass="z-[1298]"
+          layerClassName="bg-slate-900/50 p-3 sm:p-6"
+          backdropClassName=""
+          cardClassName="max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+        >
                 <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      <p id={mobileDayKickerId} className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                         {t("admin.routes.sections.scheduledJobs")}
                       </p>
-                      <h2 className="text-lg font-semibold text-slate-900">
+                      <h2 id={mobileDayTitleId} className="text-lg font-semibold text-slate-900">
                         {mobileDayDate
                           ? mobileDayDate.toLocaleDateString(locale, {
                               weekday: "long",
@@ -2957,9 +3024,7 @@ export default function RoutesCalendar({
                           ? saving
                             ? t("admin.routes.actions.saving")
                             : t("admin.routes.actions.saveChanges")
-                          : locale === "es"
-                            ? "Editar calendario"
-                            : "Edit calendar"}
+                          : t("admin.routes.actions.editCalendar")}
                       </button>
                       <button
                         type="button"
@@ -2983,6 +3048,14 @@ export default function RoutesCalendar({
                 </div>
 
                 <div className="max-h-[72vh] overflow-y-auto px-4 py-4 sm:px-6">
+                  {errorMessage ? (
+                    <p
+                      role="alert"
+                      className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+                    >
+                      {errorMessage}
+                    </p>
+                  ) : null}
                   {mobileDayJobs.length === 0 ? (
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
                       {t("admin.routes.calendarMobile.empty")}
@@ -3047,16 +3120,16 @@ export default function RoutesCalendar({
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span
-                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.className}`}
                               >
                                 {statusInfo.label}
                               </span>
                               <span
-                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityInfo.className}`}
                               >
                                 {priorityInfo.label}
                               </span>
-                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                                 {job.type === "ON_DEMAND"
                                   ? t("jobs.type.onDemand")
                                   : t("jobs.type.routine")}
@@ -3064,7 +3137,7 @@ export default function RoutesCalendar({
                             </div>
                             <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                               <label>
-                                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                                   {t("admin.routes.labels.date")}
                                 </span>
                                 <input
@@ -3126,11 +3199,11 @@ export default function RoutesCalendar({
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span
-                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.className}`}
                               >
                                 {statusInfo.label}
                               </span>
-                              <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                              <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                                 {planLabel || t("client.request.modes.recurring")}
                               </span>
                             </div>
@@ -3166,16 +3239,16 @@ export default function RoutesCalendar({
                             </p>
                             <div className="mt-2 flex flex-wrap items-center gap-2">
                               <span
-                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusInfo.className}`}
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusInfo.className}`}
                               >
                                 {statusInfo.label}
                               </span>
                               <span
-                                className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priorityInfo.className}`}
+                                className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityInfo.className}`}
                               >
                                 {priorityInfo.label}
                               </span>
-                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                                 {job.type === "ON_DEMAND"
                                   ? t("jobs.type.onDemand")
                                   : t("jobs.type.routine")}
@@ -3205,23 +3278,26 @@ export default function RoutesCalendar({
                     <span />
                   )}
                 </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+        </AppModal>
+      ) : null}
 
       {selectedDate ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-6">
-          <div className="app-modal-backdrop absolute inset-0 bg-slate-900/60" />
-          <div className="app-modal-card relative z-10 w-full max-w-5xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:rounded-3xl">
-            <div className="app-modal-scroll modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90vh] sm:p-6 sm:pr-5">
+        <AppModal
+          open
+          onClose={() => setSelectedDate(null)}
+          titleId={`${assignKickerId} ${assignTitleId}`}
+          zIndexClass="z-[1300]"
+          layerClassName="overflow-y-auto p-0 sm:p-6"
+          cardClassName="max-w-5xl self-end overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl sm:self-center sm:rounded-3xl"
+          closeOnBackdrop={false}
+        >
+            <div className="app-modal-scroll modal-scroll max-h-[82dvh] overflow-y-auto p-5 pr-4 sm:max-h-[90dvh] sm:p-6 sm:pr-5">
               <div className="app-modal-header flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  <p id={assignKickerId} className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                     {t("admin.routes.actions.assignJobs")}
                   </p>
-                  <h2 className="text-lg font-semibold">
+                  <h2 id={assignTitleId} className="text-lg font-semibold">
                     {(parseBusinessDateInput(selectedDate) ?? new Date(selectedDate)).toLocaleDateString(
                       locale,
                       { timeZone: BUSINESS_TIMEZONE }
@@ -3276,10 +3352,14 @@ export default function RoutesCalendar({
                       </div>
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-customer`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("admin.routes.labels.customer")}
                           </label>
                           <select
+                            id={`${draft.id}-customer`}
                             value={draft.customerId}
                             onChange={(event) =>
                               handleCustomerChange(draft.id, event.target.value)
@@ -3297,10 +3377,14 @@ export default function RoutesCalendar({
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-property`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("admin.routes.labels.property")}
                           </label>
                           <select
+                            id={`${draft.id}-property`}
                             value={draft.propertyId}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3325,10 +3409,14 @@ export default function RoutesCalendar({
                       </div>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-time`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("admin.routes.labels.time")}
                           </label>
                           <input
+                            id={`${draft.id}-time`}
                             value={draft.scheduledTime}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3340,10 +3428,14 @@ export default function RoutesCalendar({
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-technician`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("jobs.detail.fields.tech")}
                           </label>
                           <select
+                            id={`${draft.id}-technician`}
                             value={draft.technicianId}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3363,10 +3455,14 @@ export default function RoutesCalendar({
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-priority`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("jobs.detail.fields.priority")}
                           </label>
                           <select
+                            id={`${draft.id}-priority`}
                             value={draft.priority}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3384,10 +3480,14 @@ export default function RoutesCalendar({
                       </div>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-service-tier`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("jobs.detail.fields.serviceTier")}
                           </label>
                           <select
+                            id={`${draft.id}-service-tier`}
                             value={draft.serviceTierId}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3404,10 +3504,14 @@ export default function RoutesCalendar({
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-service-type`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("jobs.detail.fields.serviceType")}
                           </label>
                           <select
+                            id={`${draft.id}-service-type`}
                             value={draft.serviceType}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3424,10 +3528,14 @@ export default function RoutesCalendar({
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                          <label
+                            htmlFor={`${draft.id}-duration`}
+                            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                          >
                             {t("admin.routes.labels.durationMinutes")}
                           </label>
                           <input
+                            id={`${draft.id}-duration`}
                             value={draft.estimatedDuration}
                             onChange={(event) =>
                               updateDraft(draft.id, {
@@ -3441,10 +3549,14 @@ export default function RoutesCalendar({
                         </div>
                       </div>
                       <div className="mt-3">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        <label
+                          htmlFor={`${draft.id}-notes`}
+                          className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                        >
                           {t("common.labels.notes")}
                         </label>
                         <textarea
+                          id={`${draft.id}-notes`}
                           value={draft.notes}
                           onChange={(event) =>
                             updateDraft(draft.id, { notes: event.target.value })
@@ -3457,6 +3569,14 @@ export default function RoutesCalendar({
                 })}
               </div>
 
+              {errorMessage ? (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+                >
+                  {errorMessage}
+                </p>
+              ) : null}
               <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <button
                   type="button"
@@ -3477,30 +3597,28 @@ export default function RoutesCalendar({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </AppModal>
       ) : null}
 
-      {mounted && jobModal
-        ? createPortal(
-            <div
-              className="app-modal-layer fixed inset-0 z-[1310] overflow-y-auto bg-slate-900/60"
-              onClick={() => setJobModal(null)}
-            >
-              <div className="flex min-h-screen items-end justify-center px-0 py-0 sm:items-center sm:px-6 sm:py-10">
-                <div
-                  className="relative h-[88dvh] max-h-[88dvh] w-full max-w-4xl overflow-hidden rounded-t-3xl border border-slate-200 bg-white sm:h-[90vh] sm:max-h-[90vh] sm:rounded-3xl"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  <div className="flex h-full min-h-0 flex-col">
+      {jobModal ? (
+        <AppModal
+          open
+          onClose={() => setJobModal(null)}
+          titleId={`${jobDetailKickerId} ${jobDetailTitleId}`}
+          zIndexClass="z-[1310]"
+          layerClassName="overflow-y-auto bg-slate-900/60 px-0 py-0 sm:px-6 sm:py-10"
+          backdropClassName=""
+          cardClassName="flex max-h-[88dvh] max-w-4xl flex-col self-end overflow-hidden rounded-t-3xl border border-slate-200 bg-white sm:my-auto sm:max-h-[90dvh] sm:self-start sm:rounded-3xl"
+        >
+                  <div className="flex min-h-0 flex-1 flex-col">
                     <div className="relative shrink-0 border-b border-slate-800/60 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-4 py-5 sm:px-6">
                       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(56,189,248,0.25),_transparent_45%)]" />
                       <div className="relative flex flex-wrap items-start justify-between gap-3 text-white">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-100/70">
+                          <p id={jobDetailKickerId} className="text-xs font-semibold uppercase tracking-[0.3em] text-sky-100/70">
                             {t("admin.routes.sections.jobDetail")}
                           </p>
-                          <h2 className="text-xl font-semibold">
+                          <h2 id={jobDetailTitleId} className="text-xl font-semibold">
                             {jobModal.customerName}
                           </h2>
                           <p className="text-sm text-sky-100/80">
@@ -3558,7 +3676,7 @@ export default function RoutesCalendar({
                               </div>
                               <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                  <p className="text-[11px] uppercase tracking-wider text-slate-400">
                                     {t("admin.routes.labels.customer")}
                                   </p>
                                   <p className="font-semibold text-slate-800">
@@ -3566,8 +3684,8 @@ export default function RoutesCalendar({
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                    Email
+                                  <p className="text-[11px] uppercase tracking-wider text-slate-400">
+                                    {t("common.labels.email")}
                                   </p>
                                   <p>
                                     {jobModal.customerEmail ||
@@ -3575,8 +3693,8 @@ export default function RoutesCalendar({
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
-                                    Telefono
+                                  <p className="text-[11px] uppercase tracking-wider text-slate-400">
+                                    {t("common.labels.phone")}
                                   </p>
                                   <p>
                                     {formatUsPhone(jobModal.customerPhone) ||
@@ -3584,13 +3702,13 @@ export default function RoutesCalendar({
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                  <p className="text-[11px] uppercase tracking-wider text-slate-400">
                                     {t("admin.routes.labels.property")}
                                   </p>
                                   <p>{jobModal.propertyName}</p>
                                 </div>
                                 <div className="sm:col-span-2">
-                                  <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                                  <p className="text-[11px] uppercase tracking-wider text-slate-400">
                                     {t("admin.routes.labels.address")}
                                   </p>
                                   <p>{jobModal.propertyAddress}</p>
@@ -3609,10 +3727,14 @@ export default function RoutesCalendar({
                               </div>
                               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-date`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("admin.routes.labels.date")}
                                   </label>
                                   <input
+                                    id={`${modalIdBase}-job-date`}
                                     type="date"
                                     value={jobModal.scheduledDate}
                                     onChange={(event) =>
@@ -3624,10 +3746,14 @@ export default function RoutesCalendar({
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-time`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("admin.routes.labels.time")}
                                   </label>
                                   <input
+                                    id={`${modalIdBase}-job-time`}
                                     type="time"
                                     value={jobModal.scheduledTime}
                                     onChange={(event) =>
@@ -3639,10 +3765,14 @@ export default function RoutesCalendar({
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-status`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("admin.routes.labels.status")}
                                   </label>
                                   <select
+                                    id={`${modalIdBase}-job-status`}
                                     value={jobModal.status}
                                     onChange={(event) =>
                                       updateJobModal({
@@ -3669,10 +3799,14 @@ export default function RoutesCalendar({
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-priority`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("jobs.detail.fields.priority")}
                                   </label>
                                   <select
+                                    id={`${modalIdBase}-job-priority`}
                                     value={jobModal.priority}
                                     onChange={(event) =>
                                       updateJobModal({
@@ -3688,10 +3822,14 @@ export default function RoutesCalendar({
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-technician`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("jobs.detail.fields.tech")}
                                   </label>
                                   <select
+                                    id={`${modalIdBase}-job-technician`}
                                     value={jobModal.technicianId}
                                     onChange={(event) =>
                                       updateJobModal({
@@ -3711,10 +3849,14 @@ export default function RoutesCalendar({
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-service-tier`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("jobs.detail.fields.serviceTier")}
                                   </label>
                                   <select
+                                    id={`${modalIdBase}-job-service-tier`}
                                     value={jobModal.serviceTierId}
                                     onChange={(event) => {
                                       const nextTier = event.target.value;
@@ -3737,10 +3879,14 @@ export default function RoutesCalendar({
                                   </select>
                                 </div>
                                 <div>
-                                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                  <label
+                                    htmlFor={`${modalIdBase}-job-service-type`}
+                                    className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                  >
                                     {t("jobs.detail.fields.serviceType")}
                                   </label>
                                   <select
+                                    id={`${modalIdBase}-job-service-type`}
                                     value={jobModal.serviceType}
                                     onChange={(event) =>
                                       updateJobModal({
@@ -3757,6 +3903,62 @@ export default function RoutesCalendar({
                                   </select>
                                 </div>
                               </div>
+                              <div className="mt-4 rounded-xl border border-dashed border-sky-200 bg-sky-50/40 p-3 sm:p-4">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                                    {t("admin.routes.move.title")}
+                                  </h4>
+                                  <span className="text-[11px] text-slate-500">
+                                    {editMode
+                                      ? t("admin.routes.move.hintEditMode")
+                                      : t("admin.routes.move.hint")}
+                                  </span>
+                                </div>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                                  <div>
+                                    <label
+                                      htmlFor={`${modalIdBase}-move-date`}
+                                      className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                    >
+                                      {t("admin.routes.labels.date")}
+                                    </label>
+                                    <input
+                                      id={`${modalIdBase}-move-date`}
+                                      type="date"
+                                      value={jobModal.moveDate}
+                                      onChange={(event) =>
+                                        updateJobModal({ moveDate: event.target.value })
+                                      }
+                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label
+                                      htmlFor={`${modalIdBase}-move-time`}
+                                      className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                                    >
+                                      {t("admin.routes.labels.time")}
+                                    </label>
+                                    <input
+                                      id={`${modalIdBase}-move-time`}
+                                      type="time"
+                                      value={jobModal.moveTime}
+                                      onChange={(event) =>
+                                        updateJobModal({ moveTime: event.target.value })
+                                      }
+                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => void handleMoveJob()}
+                                    disabled={saving || !jobModal.moveDate}
+                                    className="inline-flex items-center justify-center rounded-xl border border-slate-900 bg-slate-900 px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                                  >
+                                    {t("admin.routes.move.action")}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
 
                             <div className="rounded-2xl border border-slate-200/80 bg-white p-5">
@@ -3769,6 +3971,7 @@ export default function RoutesCalendar({
                                 </span>
                               </div>
                               <textarea
+                                aria-label={t("common.labels.notes")}
                                 value={jobModal.notes}
                                 onChange={(event) =>
                                   updateJobModal({ notes: event.target.value })
@@ -3792,7 +3995,7 @@ export default function RoutesCalendar({
                   </div>
                   <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.poolType")}
                       </p>
                       <p>
@@ -3801,7 +4004,7 @@ export default function RoutesCalendar({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.sanitizerSystem")}
                       </p>
                       <p>
@@ -3810,7 +4013,7 @@ export default function RoutesCalendar({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.poolVolume")}
                       </p>
                       <p>
@@ -3819,7 +4022,7 @@ export default function RoutesCalendar({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.filterType")}
                       </p>
                       <p>
@@ -3828,7 +4031,7 @@ export default function RoutesCalendar({
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.access")}
                       </p>
                       <p>
@@ -3837,7 +4040,7 @@ export default function RoutesCalendar({
                       </p>
                     </div>
                     <div className="sm:col-span-2">
-                      <p className="text-[10px] uppercase tracking-wider text-slate-400">
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400">
                         {t("admin.routes.labels.accessNotes")}
                       </p>
                       <p>
@@ -3924,7 +4127,7 @@ export default function RoutesCalendar({
                                     alt={t("jobs.detail.evidenceAlt")}
                                     className="h-24 w-full object-cover transition group-hover:scale-105"
                                   />
-                                  <div className="px-2 py-1 text-[10px] text-slate-500">
+                                  <div className="px-2 py-1 text-[11px] text-slate-500">
                                     {new Date(photo.takenAt).toLocaleString(locale, {
                                       dateStyle: "medium",
                                       timeStyle: "short",
@@ -3941,9 +4144,23 @@ export default function RoutesCalendar({
             </div>
 
               <div className="flex shrink-0 flex-col-reverse gap-4 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-                <p className="text-[11px] text-slate-500">
-                  {t("admin.routes.labels.saveHint")}
-                </p>
+                <div className="space-y-1">
+                  <p
+                    id={`${modalIdBase}-job-save-hint`}
+                    className={`text-[11px] ${
+                      editMode ? "font-semibold text-amber-700" : "text-slate-500"
+                    }`}
+                  >
+                    {editMode
+                      ? t("admin.routes.move.saveDisabledInEditMode")
+                      : t("admin.routes.labels.saveHint")}
+                  </p>
+                  {errorMessage ? (
+                    <p role="alert" className="text-[11px] font-semibold text-rose-600">
+                      {errorMessage}
+                    </p>
+                  ) : null}
+                </div>
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:gap-3">
                   <button
                     type="button"
@@ -3955,8 +4172,9 @@ export default function RoutesCalendar({
                   <button
                     type="button"
                     onClick={handleJobModalSave}
-                    disabled={saving}
-                    className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 sm:w-auto"
+                    disabled={saving || editMode}
+                    aria-describedby={editMode ? `${modalIdBase}-job-save-hint` : undefined}
+                    className="w-full rounded-full bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                   >
                     {saving
                       ? t("admin.routes.actions.saving")
@@ -3965,12 +4183,8 @@ export default function RoutesCalendar({
                 </div>
               </div>
             </div>
-                </div>
-              </div>
-            </div>,
-            document.body
-          )
-        : null}
+        </AppModal>
+      ) : null}
     </div>
   );
 }

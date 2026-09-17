@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createPortal } from "react-dom";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 import {
   addBusinessDays,
   formatBusinessDateInput,
@@ -90,6 +89,7 @@ export default function ReportsFiltersBar({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
+  const titleId = useId();
   const defaultsState = toFilterState(defaults);
   const [state, setState] = useState<FilterState>(defaultsState);
   const [draft, setDraft] = useState<FilterState>(defaultsState);
@@ -105,22 +105,9 @@ export default function ReportsFiltersBar({
     }
   }
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    const unlock = lockBodyScroll();
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      unlock();
-    };
-  }, [open]);
+  const closeFilters = () => {
+    setOpen(false);
+  };
 
   const activeCount = useMemo(() => {
     let count = 0;
@@ -289,6 +276,7 @@ export default function ReportsFiltersBar({
               stroke="currentColor"
               strokeWidth="2"
               className="h-4 w-4"
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
             </svg>
@@ -300,220 +288,216 @@ export default function ReportsFiltersBar({
         <p className="w-full text-[11px] text-slate-500">{t("common.feedback.updating")}</p>
       ) : null}
 
-      {open
-        ? createPortal(
-        <div className="fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/50 p-3 sm:p-6">
+      <AppModal
+        open={open}
+        onClose={closeFilters}
+        titleId={titleId}
+        zIndexClass="z-[2600]"
+        layerClassName="bg-slate-900/50 p-3 sm:p-6"
+        backdropClassName=""
+        cardClassName="max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      >
+        <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {t("admin.reports.filters.toolbar")}
+              </p>
+              <h2 id={titleId} className="text-lg font-semibold text-slate-900">
+                {t("admin.reports.filters.modalTitle")}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {t("admin.reports.filters.modalSubtitle")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeFilters}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+              aria-label={t("common.actions.close")}
+              title={t("common.actions.close")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[75vh] overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="space-y-5">
+            <section>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("admin.reports.filters.range")}
+              </p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {[
+                  { value: "30", label: t("admin.reports.filters.range30") },
+                  { value: "15", label: t("admin.reports.filters.range15") },
+                  { value: "7", label: t("admin.reports.filters.range7") },
+                  { value: "today", label: t("admin.reports.filters.rangeToday") },
+                  { value: "custom", label: t("admin.reports.filters.rangeCustom") },
+                ].map((preset) => (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() =>
+                      preset.value === "custom"
+                        ? setDraft((current) => ({ ...current, range: "custom" }))
+                        : setPreset(preset.value)
+                    }
+                    className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
+                      normalizeRangeLabel(draft.range) === preset.value
+                        ? "border-sky-300 bg-sky-50 text-sky-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {normalizeRangeLabel(draft.range) === "custom" ? (
+              <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("admin.reports.filters.dateRange")}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-semibold text-slate-600">
+                    {t("admin.reports.filters.from")}
+                    <input
+                      type="date"
+                      value={draft.from}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          range: "custom",
+                          from: event.target.value,
+                        }))
+                      }
+                      className="app-input mt-1.5 w-full px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-xs font-semibold text-slate-600">
+                    {t("admin.reports.filters.to")}
+                    <input
+                      type="date"
+                      value={draft.to}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          range: "custom",
+                          to: event.target.value,
+                        }))
+                      }
+                      className="app-input mt-1.5 w-full px-3 py-2 text-sm"
+                    />
+                  </label>
+                </div>
+              </section>
+            ) : null}
+
+            <section className="grid gap-3 sm:grid-cols-3">
+              <label className="text-xs font-semibold text-slate-600">
+                {t("admin.reports.filters.technician")}
+                <select
+                  value={draft.technicianId}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      technicianId: event.target.value,
+                    }))
+                  }
+                  className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">{t("admin.reports.filters.allTechs")}</option>
+                  {technicians.map((tech) => (
+                    <option key={tech.id} value={tech.id}>
+                      {tech.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="text-xs font-semibold text-slate-600">
+                {t("admin.reports.filters.service")}
+                <select
+                  value={draft.serviceType}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      serviceType: event.target.value,
+                    }))
+                  }
+                  className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">{t("admin.reports.filters.allServices")}</option>
+                  <option value="WEEKLY_CLEANING">
+                    {t("jobs.service.weeklyCleaning")}
+                  </option>
+                  <option value="FILTER_CHECK">{t("jobs.service.filterCheck")}</option>
+                  <option value="CHEM_BALANCE">{t("jobs.service.chemBalance")}</option>
+                  <option value="EQUIPMENT_CHECK">
+                    {t("jobs.service.equipmentCheck")}
+                  </option>
+                </select>
+              </label>
+
+              <label className="text-xs font-semibold text-slate-600">
+                {t("admin.reports.filters.priority")}
+                <select
+                  value={draft.priority}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      priority: event.target.value,
+                    }))
+                  }
+                  className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
+                >
+                  <option value="">{t("admin.reports.filters.allPriorities")}</option>
+                  <option value="NORMAL">{t("jobs.priority.normal")}</option>
+                  <option value="URGENT">{t("jobs.priority.urgent")}</option>
+                </select>
+              </label>
+            </section>
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <button
             type="button"
-            className="absolute inset-0"
-            aria-label={t("common.actions.close")}
-            onClick={() => setOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {t("admin.reports.filters.toolbar")}
-                  </p>
-                  <h2 className="text-lg font-semibold text-slate-900">
-                    {t("admin.reports.filters.modalTitle")}
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    {t("admin.reports.filters.modalSubtitle")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
-                  aria-label={t("common.actions.close")}
-                  title={t("common.actions.close")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[75vh] overflow-y-auto px-4 py-4 sm:px-6">
-              <div className="space-y-5">
-                <section>
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.reports.filters.range")}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                    {[
-                      { value: "30", label: t("admin.reports.filters.range30") },
-                      { value: "15", label: t("admin.reports.filters.range15") },
-                      { value: "7", label: t("admin.reports.filters.range7") },
-                      { value: "today", label: t("admin.reports.filters.rangeToday") },
-                      { value: "custom", label: t("admin.reports.filters.rangeCustom") },
-                    ].map((preset) => (
-                      <button
-                        key={preset.value}
-                        type="button"
-                        onClick={() =>
-                          preset.value === "custom"
-                            ? setDraft((current) => ({ ...current, range: "custom" }))
-                            : setPreset(preset.value)
-                        }
-                        className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${
-                          normalizeRangeLabel(draft.range) === preset.value
-                            ? "border-sky-300 bg-sky-50 text-sky-700"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                        }`}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                {normalizeRangeLabel(draft.range) === "custom" ? (
-                  <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                      {t("admin.reports.filters.dateRange")}
-                    </p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label className="text-xs font-semibold text-slate-600">
-                        {t("admin.reports.filters.from")}
-                        <input
-                          type="date"
-                          value={draft.from}
-                          onChange={(event) =>
-                            setDraft((current) => ({
-                              ...current,
-                              range: "custom",
-                              from: event.target.value,
-                            }))
-                          }
-                          className="app-input mt-1.5 w-full px-3 py-2 text-sm"
-                        />
-                      </label>
-                      <label className="text-xs font-semibold text-slate-600">
-                        {t("admin.reports.filters.to")}
-                        <input
-                          type="date"
-                          value={draft.to}
-                          onChange={(event) =>
-                            setDraft((current) => ({
-                              ...current,
-                              range: "custom",
-                              to: event.target.value,
-                            }))
-                          }
-                          className="app-input mt-1.5 w-full px-3 py-2 text-sm"
-                        />
-                      </label>
-                    </div>
-                  </section>
-                ) : null}
-
-                <section className="grid gap-3 sm:grid-cols-3">
-                  <label className="text-xs font-semibold text-slate-600">
-                    {t("admin.reports.filters.technician")}
-                    <select
-                      value={draft.technicianId}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          technicianId: event.target.value,
-                        }))
-                      }
-                      className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="">{t("admin.reports.filters.allTechs")}</option>
-                      {technicians.map((tech) => (
-                        <option key={tech.id} value={tech.id}>
-                          {tech.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="text-xs font-semibold text-slate-600">
-                    {t("admin.reports.filters.service")}
-                    <select
-                      value={draft.serviceType}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          serviceType: event.target.value,
-                        }))
-                      }
-                      className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="">{t("admin.reports.filters.allServices")}</option>
-                      <option value="WEEKLY_CLEANING">
-                        {t("jobs.service.weeklyCleaning")}
-                      </option>
-                      <option value="FILTER_CHECK">{t("jobs.service.filterCheck")}</option>
-                      <option value="CHEM_BALANCE">{t("jobs.service.chemBalance")}</option>
-                      <option value="EQUIPMENT_CHECK">
-                        {t("jobs.service.equipmentCheck")}
-                      </option>
-                    </select>
-                  </label>
-
-                  <label className="text-xs font-semibold text-slate-600">
-                    {t("admin.reports.filters.priority")}
-                    <select
-                      value={draft.priority}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          priority: event.target.value,
-                        }))
-                      }
-                      className="app-input mt-1.5 w-full bg-white px-3 py-2 text-sm"
-                    >
-                      <option value="">{t("admin.reports.filters.allPriorities")}</option>
-                      <option value="NORMAL">{t("jobs.priority.normal")}</option>
-                      <option value="URGENT">{t("jobs.priority.urgent")}</option>
-                    </select>
-                  </label>
-                </section>
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <button
-                type="button"
-                onClick={clearReports}
-                className="app-button-secondary w-full px-4 py-2 text-xs font-semibold sm:w-auto"
-              >
-                {t("admin.reports.filters.reset")}
-              </button>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="app-button-ghost w-full px-4 py-2 text-xs font-semibold sm:w-auto"
-                >
-                  {t("common.actions.close")}
-                </button>
-                <button
-                  type="button"
-                  onClick={applyDraft}
-                  className="app-button-primary w-full px-4 py-2 text-xs font-semibold sm:w-auto"
-                >
-                  {t("admin.reports.filters.apply")}
-                </button>
-              </div>
-            </div>
+            onClick={clearReports}
+            className="app-button-secondary w-full px-4 py-2 text-xs font-semibold sm:w-auto"
+          >
+            {t("admin.reports.filters.reset")}
+          </button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <button
+              type="button"
+              onClick={closeFilters}
+              className="app-button-ghost w-full px-4 py-2 text-xs font-semibold sm:w-auto"
+            >
+              {t("common.actions.close")}
+            </button>
+            <button
+              type="button"
+              onClick={applyDraft}
+              className="app-button-primary w-full px-4 py-2 text-xs font-semibold sm:w-auto"
+            >
+              {t("admin.reports.filters.apply")}
+            </button>
           </div>
-        </div>,
-            document.body
-          )
-        : null}
+        </div>
+      </AppModal>
     </section>
   );
 }

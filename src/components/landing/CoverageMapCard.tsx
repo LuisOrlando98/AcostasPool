@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import type { LandingLocale } from "@/components/landing/preferences";
 
 type GeoBounds = {
@@ -17,6 +17,7 @@ type CoverageArea = {
   zipCodes: string[];
 };
 
+/* Keep the city list in sync with LANDING_SERVICE_AREAS (src/lib/landing-config.ts). */
 const COVERAGE_AREAS: CoverageArea[] = [
   {
     city: "Miami Gardens",
@@ -93,13 +94,13 @@ const MAP_COPY: Record<
   },
   es: {
     title: "Mapa de cobertura",
-    lead: "La cobertura llega al norte hasta Miramar y Miami Gardens, y desde ahi atendemos todo hacia el sur.",
+    lead: "La cobertura llega al norte hasta Miramar y Miami Gardens, y desde ahí atendemos todo hacia el sur.",
     tabLabel: "Ciudades de servicio",
     frameLabel: "Mapa centrado en",
     iframeTitle: "Mapa de servicio en South Florida",
     source: "Datos del mapa por colaboradores de OpenStreetMap.",
     openMap: "Abrir mapa completo",
-    zipcodesPrefix: "Codigos ZIP en",
+    zipcodesPrefix: "Códigos ZIP en",
   },
 };
 
@@ -109,12 +110,44 @@ function getMapEmbedUrl(area: CoverageArea) {
   return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(marker)}`;
 }
 
+function toCitySlug(city: string) {
+  return city.toLowerCase().replaceAll(" ", "-");
+}
+
+/** Resolves the tab index targeted by a WAI-ARIA tablist key (arrows wrap around). */
+function getTabIndexForKey(key: string, currentIndex: number, count: number): number | null {
+  const lastIndex = count - 1;
+  switch (key) {
+    case "ArrowRight":
+      return currentIndex === lastIndex ? 0 : currentIndex + 1;
+    case "ArrowLeft":
+      return currentIndex === 0 ? lastIndex : currentIndex - 1;
+    case "Home":
+      return 0;
+    case "End":
+      return lastIndex;
+    default:
+      return null;
+  }
+}
+
 export default function CoverageMapCard({ language = "en" }: { language?: LandingLocale }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const area = COVERAGE_AREAS[activeIndex] ?? COVERAGE_AREAS[0];
-  const citySlug = area.city.toLowerCase().replaceAll(" ", "-");
+  const citySlug = toCitySlug(area.city);
   const copy = MAP_COPY[language];
   const mapEmbedUrl = getMapEmbedUrl(area);
+
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const nextIndex = getTabIndexForKey(event.key, index, COVERAGE_AREAS.length);
+    if (nextIndex === null) {
+      return;
+    }
+    event.preventDefault();
+    setActiveIndex(nextIndex);
+    tabRefs.current[nextIndex]?.focus();
+  }
 
   return (
     <article className="lp-contact-card lp-contact-card-map lp-surface">
@@ -125,17 +158,23 @@ export default function CoverageMapCard({ language = "en" }: { language?: Landin
 
       <div className="lp-contact-map-cities" role="tablist" aria-label={copy.tabLabel}>
         {COVERAGE_AREAS.map((item, index) => {
-          const itemSlug = item.city.toLowerCase().replaceAll(" ", "-");
+          const itemSlug = toCitySlug(item.city);
+          const selected = index === activeIndex;
           return (
             <button
               key={item.city}
+              ref={(node) => {
+                tabRefs.current[index] = node;
+              }}
               type="button"
               className="lp-contact-map-city-btn"
-              data-active={index === activeIndex}
+              data-active={selected}
               onClick={() => setActiveIndex(index)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
               role="tab"
-              aria-selected={index === activeIndex}
+              aria-selected={selected}
               aria-controls="coverage-panel"
+              tabIndex={selected ? 0 : -1}
               id={`coverage-tab-${itemSlug}`}
             >
               {item.city}
@@ -145,7 +184,11 @@ export default function CoverageMapCard({ language = "en" }: { language?: Landin
       </div>
 
       <div className="lp-contact-map-layout">
-        <div className="lp-contact-map-frame" aria-label={`${copy.frameLabel}: ${area.city}`}>
+        <div
+          className="lp-contact-map-frame"
+          role="group"
+          aria-label={`${copy.frameLabel}: ${area.city}`}
+        >
           <div className="lp-contact-map-stage">
             <iframe
               key={area.city}
@@ -173,6 +216,7 @@ export default function CoverageMapCard({ language = "en" }: { language?: Landin
           role="tabpanel"
           id="coverage-panel"
           aria-labelledby={`coverage-tab-${citySlug}`}
+          tabIndex={0}
         >
           <p>
             {copy.zipcodesPrefix} {area.city}

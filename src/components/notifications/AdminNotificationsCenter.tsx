@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useId, useMemo, useState } from "react";
+import AppModal from "@/components/ui/AppModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/i18n/client";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 import {
   getNotificationDetail,
   getNotificationSource,
@@ -49,6 +49,33 @@ type NotificationsFilters = {
 };
 
 const PAGE_SIZE = 20;
+
+const DELIVERY_LABEL_KEYS: Record<NotificationRow["status"], string> = {
+  QUEUED: "admin.notifications.filters.deliveryQueued",
+  PROCESSING: "admin.notifications.filters.deliveryProcessing",
+  SENT: "admin.notifications.filters.deliverySent",
+  FAILED: "admin.notifications.filters.deliveryFailed",
+};
+
+const SEVERITY_LABEL_KEYS: Record<NotificationRow["severity"], string> = {
+  INFO: "admin.notifications.filters.severityInfo",
+  WARNING: "admin.notifications.filters.severityWarning",
+  CRITICAL: "admin.notifications.filters.severityCritical",
+};
+
+/** "En cola" incluye PROCESSING: estado transitorio del worker previo al envío. */
+function matchesDeliveryFilter(
+  status: NotificationRow["status"],
+  filter: DeliveryFilter
+): boolean {
+  if (filter === "ALL") {
+    return true;
+  }
+  if (filter === "QUEUED") {
+    return status === "QUEUED" || status === "PROCESSING";
+  }
+  return status === filter;
+}
 
 const DEFAULT_FILTERS: NotificationsFilters = {
   search: "",
@@ -116,6 +143,10 @@ export default function AdminNotificationsCenter({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const filtersTitleId = useId();
+  const filtersDescriptionId = useId();
+  const filtersFieldId = useId();
 
   const decorated = useMemo(() => {
     return notifications.map((row) => {
@@ -204,7 +235,7 @@ export default function AdminNotificationsCenter({
       if (filters.severity !== "ALL" && item.severity !== filters.severity) {
         return false;
       }
-      if (filters.delivery !== "ALL" && item.status !== filters.delivery) {
+      if (!matchesDeliveryFilter(item.status, filters.delivery)) {
         return false;
       }
       if (rangeFrom && item.createdAtDate < rangeFrom) {
@@ -238,23 +269,6 @@ export default function AdminNotificationsCenter({
     setPagedFilters(filters);
     setPage(1);
   }
-
-  useEffect(() => {
-    if (!filtersOpen) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setFiltersOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      unlock();
-    };
-  }, [filtersOpen]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -321,7 +335,7 @@ export default function AdminNotificationsCenter({
         )
       );
     } catch {
-      setActionError(t("notifications.preferences.saveError"));
+      setActionError(t("layout.notifications.actionError"));
     } finally {
       setBusyReadId(null);
     }
@@ -351,19 +365,22 @@ export default function AdminNotificationsCenter({
       }
     } catch {
       setNotifications(previous);
-      setActionError(t("notifications.preferences.saveError"));
+      setActionError(t("layout.notifications.actionError"));
     } finally {
       setBusyDeleteId(null);
     }
   };
 
-  const clearAll = async () => {
+  const requestClearAll = () => {
     if (clearing || notifications.length === 0) {
       return;
     }
+    setClearConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm(t("admin.notifications.actions.clearConfirm"));
-    if (!confirmed) {
+  const clearAll = async () => {
+    setClearConfirmOpen(false);
+    if (clearing || notifications.length === 0) {
       return;
     }
 
@@ -381,7 +398,7 @@ export default function AdminNotificationsCenter({
       }
     } catch {
       setNotifications(previous);
-      setActionError(t("notifications.preferences.saveError"));
+      setActionError(t("layout.notifications.actionError"));
     } finally {
       setClearing(false);
     }
@@ -477,7 +494,7 @@ export default function AdminNotificationsCenter({
             ) : null}
             <button
               type="button"
-              onClick={() => void clearAll()}
+              onClick={requestClearAll}
               disabled={clearing || notifications.length === 0}
               className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-700 sm:px-3 sm:py-2 sm:text-xs disabled:opacity-60"
             >
@@ -533,10 +550,10 @@ export default function AdminNotificationsCenter({
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                         <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${severityClass}`}>
-                          {item.severity}
+                          {t(SEVERITY_LABEL_KEYS[item.severity])}
                         </span>
                         <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${statusClass}`}>
-                          {item.status}
+                          {t(DELIVERY_LABEL_KEYS[item.status])}
                         </span>
                         <span
                           className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] ${
@@ -637,239 +654,281 @@ export default function AdminNotificationsCenter({
         ) : null}
       </section>
 
-      {filtersOpen && typeof document !== "undefined"
-        ? createPortal(
-        <div className="app-modal-layer fixed inset-0 z-[2600] flex items-center justify-center bg-slate-900/60 p-3 sm:p-6">
-          <button
-            type="button"
-            onClick={() => setFiltersOpen(false)}
-            className="absolute inset-0"
-            aria-label={t("common.actions.close")}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-              <div className="app-modal-header flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {t("admin.notifications.filters.modalTitle")}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {t("admin.notifications.filters.modalSubtitle")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
-                  aria-label={t("common.actions.close")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                  </svg>
-                </button>
-              </div>
+      <AppModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        titleId={filtersTitleId}
+        describedBy={filtersDescriptionId}
+        zIndexClass="z-[2600]"
+        layerClassName="bg-slate-900/60 p-3 sm:p-6"
+        backdropClassName=""
+        cardClassName="max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      >
+        <div className="app-modal-scroll modal-scroll max-h-[88vh] overflow-y-auto p-5 sm:p-6">
+          <div className="app-modal-header flex items-start justify-between gap-3">
+            <div>
+              <h3 id={filtersTitleId} className="text-lg font-semibold text-slate-900">
+                {t("admin.notifications.filters.modalTitle")}
+              </h3>
+              <p id={filtersDescriptionId} className="text-xs text-slate-500">
+                {t("admin.notifications.filters.modalSubtitle")}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
+              aria-label={t("common.actions.close")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+              </svg>
+            </button>
+          </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("common.actions.search")}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label
+                htmlFor={`${filtersFieldId}-search`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("common.actions.search")}
+              </label>
+              <input
+                id={`${filtersFieldId}-search`}
+                value={draftFilters.search}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    search: event.target.value,
+                  }))
+                }
+                className="app-input mt-2 w-full px-4 py-3 text-sm"
+                placeholder={t("admin.notifications.filters.searchPlaceholder")}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor={`${filtersFieldId}-event-type`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("admin.notifications.filters.eventType")}
+              </label>
+              <select
+                id={`${filtersFieldId}-event-type`}
+                value={draftFilters.eventType}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    eventType: event.target.value,
+                  }))
+                }
+                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+              >
+                <option value="ALL">{t("admin.notifications.filters.allEventTypes")}</option>
+                {eventTypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor={`${filtersFieldId}-read`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("admin.notifications.filters.read")}
+              </label>
+              <select
+                id={`${filtersFieldId}-read`}
+                value={draftFilters.read}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    read: event.target.value as ReadFilter,
+                  }))
+                }
+                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+              >
+                <option value="ALL">{t("admin.notifications.filters.readAll")}</option>
+                <option value="UNREAD">{t("admin.notifications.filters.readUnread")}</option>
+                <option value="READ">{t("admin.notifications.filters.readRead")}</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor={`${filtersFieldId}-severity`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("admin.notifications.filters.severity")}
+              </label>
+              <select
+                id={`${filtersFieldId}-severity`}
+                value={draftFilters.severity}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    severity: event.target.value as SeverityFilter,
+                  }))
+                }
+                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+              >
+                <option value="ALL">{t("admin.notifications.filters.severityAll")}</option>
+                <option value="INFO">{t("admin.notifications.filters.severityInfo")}</option>
+                <option value="WARNING">{t("admin.notifications.filters.severityWarning")}</option>
+                <option value="CRITICAL">{t("admin.notifications.filters.severityCritical")}</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor={`${filtersFieldId}-delivery`}
+                className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("admin.notifications.filters.delivery")}
+              </label>
+              <select
+                id={`${filtersFieldId}-delivery`}
+                value={draftFilters.delivery}
+                onChange={(event) =>
+                  setDraftFilters((current) => ({
+                    ...current,
+                    delivery: event.target.value as DeliveryFilter,
+                  }))
+                }
+                className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
+              >
+                <option value="ALL">{t("admin.notifications.filters.deliveryAll")}</option>
+                <option value="QUEUED">{t("admin.notifications.filters.deliveryQueued")}</option>
+                <option value="SENT">{t("admin.notifications.filters.deliverySent")}</option>
+                <option value="FAILED">{t("admin.notifications.filters.deliveryFailed")}</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <p
+              id={`${filtersFieldId}-range`}
+              className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+            >
+              {t("admin.notifications.filters.range")}
+            </p>
+            <div
+              role="group"
+              aria-labelledby={`${filtersFieldId}-range`}
+              className="flex flex-wrap gap-2"
+            >
+              {(
+                [
+                  { key: "ALL", label: t("admin.notifications.filters.rangeAll") },
+                  { key: "TODAY", label: t("admin.notifications.filters.rangeToday") },
+                  { key: "7D", label: t("admin.notifications.filters.range7") },
+                  { key: "30D", label: t("admin.notifications.filters.range30") },
+                  { key: "CUSTOM", label: t("admin.notifications.filters.rangeCustom") },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  aria-pressed={draftFilters.range === option.key}
+                  onClick={() =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      range: option.key,
+                    }))
+                  }
+                  className={`app-chip px-3 py-1.5 text-xs transition ${
+                    draftFilters.range === option.key ? "bg-slate-900 text-white" : ""
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {draftFilters.range === "CUSTOM" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor={`${filtersFieldId}-from`}
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                  >
+                    {t("admin.notifications.filters.from")}
                   </label>
                   <input
-                    value={draftFilters.search}
+                    id={`${filtersFieldId}-from`}
+                    type="date"
+                    value={draftFilters.from}
                     onChange={(event) =>
                       setDraftFilters((current) => ({
                         ...current,
-                        search: event.target.value,
+                        from: event.target.value,
                       }))
                     }
                     className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    placeholder={t("admin.notifications.filters.searchPlaceholder")}
                   />
                 </div>
-
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.notifications.filters.eventType")}
+                  <label
+                    htmlFor={`${filtersFieldId}-to`}
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                  >
+                    {t("admin.notifications.filters.to")}
                   </label>
-                  <select
-                    value={draftFilters.eventType}
+                  <input
+                    id={`${filtersFieldId}-to`}
+                    type="date"
+                    value={draftFilters.to}
                     onChange={(event) =>
                       setDraftFilters((current) => ({
                         ...current,
-                        eventType: event.target.value,
+                        to: event.target.value,
                       }))
                     }
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="ALL">{t("admin.notifications.filters.allEventTypes")}</option>
-                    {eventTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.notifications.filters.read")}
-                  </label>
-                  <select
-                    value={draftFilters.read}
-                    onChange={(event) =>
-                      setDraftFilters((current) => ({
-                        ...current,
-                        read: event.target.value as ReadFilter,
-                      }))
-                    }
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="ALL">{t("admin.notifications.filters.readAll")}</option>
-                    <option value="UNREAD">{t("admin.notifications.filters.readUnread")}</option>
-                    <option value="READ">{t("admin.notifications.filters.readRead")}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.notifications.filters.severity")}
-                  </label>
-                  <select
-                    value={draftFilters.severity}
-                    onChange={(event) =>
-                      setDraftFilters((current) => ({
-                        ...current,
-                        severity: event.target.value as SeverityFilter,
-                      }))
-                    }
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="ALL">{t("admin.notifications.filters.severityAll")}</option>
-                    <option value="INFO">{t("admin.notifications.filters.severityInfo")}</option>
-                    <option value="WARNING">{t("admin.notifications.filters.severityWarning")}</option>
-                    <option value="CRITICAL">{t("admin.notifications.filters.severityCritical")}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.notifications.filters.delivery")}
-                  </label>
-                  <select
-                    value={draftFilters.delivery}
-                    onChange={(event) =>
-                      setDraftFilters((current) => ({
-                        ...current,
-                        delivery: event.target.value as DeliveryFilter,
-                      }))
-                    }
-                    className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  >
-                    <option value="ALL">{t("admin.notifications.filters.deliveryAll")}</option>
-                    <option value="QUEUED">{t("admin.notifications.filters.deliveryQueued")}</option>
-                    <option value="SENT">{t("admin.notifications.filters.deliverySent")}</option>
-                    <option value="FAILED">{t("admin.notifications.filters.deliveryFailed")}</option>
-                  </select>
+                    className="app-input mt-2 w-full px-4 py-3 text-sm"
+                  />
                 </div>
               </div>
-
-              <div className="mt-5 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {t("admin.notifications.filters.range")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      { key: "ALL", label: t("admin.notifications.filters.rangeAll") },
-                      { key: "TODAY", label: t("admin.notifications.filters.rangeToday") },
-                      { key: "7D", label: t("admin.notifications.filters.range7") },
-                      { key: "30D", label: t("admin.notifications.filters.range30") },
-                      { key: "CUSTOM", label: t("admin.notifications.filters.rangeCustom") },
-                    ] as const
-                  ).map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() =>
-                        setDraftFilters((current) => ({
-                          ...current,
-                          range: option.key,
-                        }))
-                      }
-                      className={`app-chip px-3 py-1.5 text-xs transition ${
-                        draftFilters.range === option.key ? "bg-slate-900 text-white" : ""
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                {draftFilters.range === "CUSTOM" ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        {t("admin.notifications.filters.from")}
-                      </label>
-                      <input
-                        type="date"
-                        value={draftFilters.from}
-                        onChange={(event) =>
-                          setDraftFilters((current) => ({
-                            ...current,
-                            from: event.target.value,
-                          }))
-                        }
-                        className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        {t("admin.notifications.filters.to")}
-                      </label>
-                      <input
-                        type="date"
-                        value={draftFilters.to}
-                        onChange={(event) =>
-                          setDraftFilters((current) => ({
-                            ...current,
-                            to: event.target.value,
-                          }))
-                        }
-                        className="app-input mt-2 w-full px-4 py-3 text-sm"
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="mt-5 flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="app-button-ghost w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] sm:w-auto"
-                >
-                  {t("admin.notifications.filters.reset")}
-                </button>
-                <button
-                  type="button"
-                  onClick={applyFilters}
-                  className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] sm:w-auto"
-                >
-                  {t("admin.notifications.filters.apply")}
-                </button>
-              </div>
-            </div>
+            ) : null}
           </div>
-        </div>,
-            document.body
-          )
-        : null}
+
+          <div className="mt-5 flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="app-button-ghost w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] sm:w-auto"
+            >
+              {t("admin.notifications.filters.reset")}
+            </button>
+            <button
+              type="button"
+              onClick={applyFilters}
+              className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] sm:w-auto"
+            >
+              {t("admin.notifications.filters.apply")}
+            </button>
+          </div>
+        </div>
+      </AppModal>
+
+      <ConfirmDialog
+        open={clearConfirmOpen}
+        title={t("admin.notifications.actions.clearAll")}
+        description={t("admin.notifications.actions.clearConfirm")}
+        confirmLabel={t("admin.notifications.actions.clearAll")}
+        tone="danger"
+        onConfirm={() => void clearAll()}
+        onCancel={() => setClearConfirmOpen(false)}
+      />
     </div>
   );
 }

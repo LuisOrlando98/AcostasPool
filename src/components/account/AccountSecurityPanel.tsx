@@ -77,8 +77,9 @@ export default function AccountSecurityPanel({
             className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
               email2faEnabled ? "bg-emerald-500" : "bg-slate-300"
             } ${saving ? "opacity-70" : ""}`}
+            role="switch"
+            aria-checked={email2faEnabled}
             aria-label={t("client.profile.security.twoFaTitle")}
-            aria-pressed={email2faEnabled}
           >
             <span
               className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -90,7 +91,11 @@ export default function AccountSecurityPanel({
       </div>
 
       {notice ? (
-        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+        >
           {notice}
         </div>
       ) : null}

@@ -1,7 +1,8 @@
 "use client";
 
 import AppShell from "@/components/layout/AppShell";
-import { useEffect, useMemo, useState } from "react";
+import AppModal from "@/components/ui/AppModal";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
@@ -115,6 +116,19 @@ export default function ClientRequestPage() {
   );
   const [confirmationMessage, setConfirmationMessage] = useState<string | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const fieldId = useId();
+  const fieldIds = {
+    property: `${fieldId}-property`,
+    mode: `${fieldId}-mode`,
+    visitsPerWeek: `${fieldId}-visits-per-week`,
+    reason: `${fieldId}-reason`,
+    preferredDate: `${fieldId}-preferred-date`,
+    preferredTime: `${fieldId}-preferred-time`,
+    description: `${fieldId}-description`,
+  };
+  const confirmationTitleId = `${fieldId}-confirmation-title`;
+  const confirmationMessageId = `${fieldId}-confirmation-message`;
+  const continueButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -343,6 +357,11 @@ export default function ClientRequestPage() {
     setMessage(null);
   };
 
+  const finishRequest = () => {
+    setShowConfirmationModal(false);
+    router.push("/client");
+  };
+
   const handleSubmit = async () => {
     if (!propertyId) {
       setMessageTone("error");
@@ -457,10 +476,14 @@ export default function ClientRequestPage() {
           className="mt-5 grid gap-3.5 md:grid-cols-2"
         >
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={fieldIds.property}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("client.request.fields.property")}
             </label>
             <select
+              id={fieldIds.property}
               value={propertyId}
               onChange={(event) => setPropertyId(event.target.value)}
               className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
@@ -478,10 +501,14 @@ export default function ClientRequestPage() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={fieldIds.mode}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("client.request.fields.mode")}
             </label>
             <select
+              id={fieldIds.mode}
               value={mode}
               onChange={(event) =>
                 setMode(event.target.value === "RECURRING" ? "RECURRING" : "SINGLE")
@@ -494,10 +521,14 @@ export default function ClientRequestPage() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={fieldIds.visitsPerWeek}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("client.request.fields.visitsPerWeek")}
             </label>
             <select
+              id={fieldIds.visitsPerWeek}
               value={resolvedVisitsPerWeek}
               onChange={(event) => {
                 const nextValue = Number(event.target.value);
@@ -534,10 +565,14 @@ export default function ClientRequestPage() {
           ) : null}
 
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={fieldIds.reason}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("client.request.fields.reason")}
             </label>
             <select
+              id={fieldIds.reason}
               value={resolvedReason}
               onChange={(event) => setReason(event.target.value)}
               className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
@@ -563,10 +598,14 @@ export default function ClientRequestPage() {
           {urgentOverride ? (
             <>
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <label
+                  htmlFor={fieldIds.preferredDate}
+                  className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
                   {t("client.request.fields.preferredDate")}
                 </label>
                 <input
+                  id={fieldIds.preferredDate}
                   type="date"
                   value={preferredDate}
                   onChange={(event) => {
@@ -582,10 +621,14 @@ export default function ClientRequestPage() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <label
+                  htmlFor={fieldIds.preferredTime}
+                  className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
                   {t("client.request.fields.preferredTime")}
                 </label>
                 <input
+                  id={fieldIds.preferredTime}
                   type="time"
                   value={preferredTime}
                   onChange={(event) => setPreferredTime(event.target.value)}
@@ -762,10 +805,14 @@ export default function ClientRequestPage() {
           )}
 
           <div className="md:col-span-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={fieldIds.description}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("client.request.fields.description")}
             </label>
             <textarea
+              id={fieldIds.description}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               className="app-input mt-2 min-h-[120px] w-full px-4 py-3 text-sm text-slate-700"
@@ -776,6 +823,7 @@ export default function ClientRequestPage() {
           {message ? (
             <div
               role={messageTone === "error" ? "alert" : "status"}
+              aria-live={messageTone === "error" ? undefined : "polite"}
               className={`md:col-span-2 rounded-xl border px-4 py-3 text-sm ${messageClass}`}
             >
               {message}
@@ -797,46 +845,38 @@ export default function ClientRequestPage() {
         </form>
       </section>
 
-      {showConfirmationModal ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
-            aria-label={t("common.actions.close")}
-            onClick={() => {
-              setShowConfirmationModal(false);
-              router.push("/client");
-            }}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl">
-            <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
-                {locale === "es" ? "Solicitud enviada" : "Request sent"}
-              </p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">
-                {locale === "es"
-                  ? "Tu solicitud fue registrada correctamente"
-                  : "Your request was submitted successfully"}
-              </h3>
-              <p className="mt-3 text-sm text-slate-600">
-                {confirmationMessage}
-              </p>
-              <div className="mt-5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowConfirmationModal(false);
-                    router.push("/client");
-                  }}
-                  className="app-button-primary px-4 py-2 text-sm font-semibold"
-                >
-                  {locale === "es" ? "Continuar" : "Continue"}
-                </button>
-              </div>
-            </div>
+      <AppModal
+        open={showConfirmationModal}
+        onClose={finishRequest}
+        titleId={confirmationTitleId}
+        describedBy={confirmationMessageId}
+        layerClassName="overflow-y-auto p-3 sm:p-6"
+        backdropClassName="app-modal-backdrop bg-slate-950/60 backdrop-blur-[2px]"
+        cardClassName="max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl"
+        initialFocusRef={continueButtonRef}
+      >
+        <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+            {t("client.request.confirmation.kicker")}
+          </p>
+          <h3 id={confirmationTitleId} className="mt-2 text-xl font-semibold text-slate-900">
+            {t("client.request.confirmation.title")}
+          </h3>
+          <p id={confirmationMessageId} className="mt-3 text-sm text-slate-600">
+            {confirmationMessage}
+          </p>
+          <div className="mt-5 flex justify-end">
+            <button
+              ref={continueButtonRef}
+              type="button"
+              onClick={finishRequest}
+              className="app-button-primary px-4 py-2 text-sm font-semibold"
+            >
+              {t("client.request.confirmation.continue")}
+            </button>
           </div>
         </div>
-      ) : null}
+      </AppModal>
     </AppShell>
   );
 }

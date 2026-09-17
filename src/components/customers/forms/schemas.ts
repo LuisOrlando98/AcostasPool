@@ -12,6 +12,7 @@ import { parseServicePaymentInfoInput } from "@/lib/customers/service-payment-in
 import { GLOBAL_RECURRING_PLAN_OPTIONS } from "@/lib/jobs/recurring-plan-templates";
 import { normalizeUsPhone } from "@/lib/phones";
 import { CUSTOMER_DETAIL_ERRORS, failure, type ActionResult } from "./action-result";
+import { DELETE_CONFIRMATION_WORDS } from "./delete-confirmation";
 
 /**
  * Esquemas zod de los formularios de la ficha de cliente. Reproducen las reglas
@@ -20,7 +21,6 @@ import { CUSTOMER_DETAIL_ERRORS, failure, type ActionResult } from "./action-res
  */
 
 const DEFAULT_JOB_TIME = "09:00";
-const DELETE_CONFIRMATION_WORDS = ["eliminar", "delete"] as const;
 const EXPLICIT_SERVICE_TYPES: readonly ServiceType[] = [
   "FILTER_CHECK",
   "CHEM_BALANCE",
@@ -223,10 +223,9 @@ export const deleteCustomerSchema = z
     typedConfirmation: textField().transform((value) => value.toLowerCase()),
   })
   .superRefine((data, ctx) => {
-    const confirmationWords: readonly string[] = DELETE_CONFIRMATION_WORDS;
     if (
       data.confirmDelete !== "yes" ||
-      !confirmationWords.includes(data.typedConfirmation)
+      !DELETE_CONFIRMATION_WORDS.includes(data.typedConfirmation)
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

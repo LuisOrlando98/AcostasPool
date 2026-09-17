@@ -20,7 +20,8 @@
       "edit": "Edit",
       "send": "Send",
       "search": "Search",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "clearFilters": "Clear filters"
     },
     "feedback": {
       "saving": "Saving...",
@@ -28,7 +29,8 @@
       "creating": "Creating...",
       "created": "Created",
       "updating": "Updating...",
-      "updated": "Updated"
+      "updated": "Updated",
+      "deleting": "Deleting..."
     },
     "status": {
       "active": "Active",
@@ -384,7 +386,11 @@
       "passwordPlaceholder": "••••••••",
       "submit": "Sign in",
       "loading": "Signing in...",
-      "error": "Unable to sign in."
+      "error": "Unable to sign in.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "show": "Show",
+      "hide": "Hide"
     },
     "reset": {
       "title": "Reset password",
@@ -430,7 +436,25 @@
       "kicker": "Access restricted",
       "title": "You don't have access",
       "subtitle": "Your account doesn't have permission for this section. Contact the administrator for access.",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "goBack": "Go back"
+    },
+    "legal": {
+      "title": "Legal",
+      "navLabel": "Legal links",
+      "copyright": "Copyright {{year}} AcostasPool. All rights reserved.",
+      "links": {
+        "terms": "Terms of Service",
+        "termsShort": "Terms",
+        "privacy": "Privacy Policy",
+        "privacyShort": "Privacy",
+        "payments": "Payment & Cancellation",
+        "paymentsShort": "Payments",
+        "liability": "Disclaimer & Liability",
+        "liabilityShort": "Liability",
+        "cookies": "Cookie Notice",
+        "cookiesShort": "Cookies"
+      }
     }
   },
   "address": {
@@ -520,7 +544,11 @@
       "noEvidence": "No evidence available.",
       "evidenceAlt": "Evidence",
       "noAccess": "You don't have access to this job.",
-      "serviceTitle": "Service"
+      "serviceTitle": "Service",
+      "evidenceCountPlural": {
+        "one": "{{count}} photo",
+        "other": "{{count}} photos"
+      }
     }
   },
   "plans": {
@@ -611,6 +639,11 @@
           "open": "Open",
           "paid": "Paid"
         }
+      },
+      "developer": {
+        "kicker": "Developer access",
+        "title": "Testing and audit console",
+        "cta": "Open developer console"
       }
     },
     "routes": {
@@ -759,7 +792,8 @@
         "helper": "Tap a day to see routes in detail.",
         "loadLow": "Low load",
         "loadHigh": "High load",
-        "empty": "No routes scheduled for this day."
+        "empty": "No routes scheduled for this day.",
+        "editHelper": "Edit mode: tap a day to move, delete, or assign jobs from the modal."
       },
       "actions": {
         "creating": "Creating...",
@@ -768,7 +802,9 @@
         "saveChanges": "Save changes",
         "assignJobs": "Assign jobs",
         "addJob": "Add another job",
-        "assignTechnician": "Assign technician"
+        "assignTechnician": "Assign technician",
+        "currentMonth": "Current month",
+        "editCalendar": "Edit calendar"
       },
       "labels": {
         "technicianFallback": "Technician",
@@ -808,7 +844,27 @@
         "order": "Order",
         "jobNumber": "Job #{{count}}",
         "completedNoEvidence": "Job completed without evidence.",
-        "saveSuccess": "Changes saved."
+        "saveSuccess": "Changes saved.",
+        "nextMonthJobs": "Next month",
+        "statusPlanned": "Planned",
+        "jobsToday": "Jobs today",
+        "enableEditToAssign": "Turn on edit mode to assign",
+        "dropHint": "Drag here or click to assign"
+      },
+      "helper": {
+        "editMode": "Edit mode active: on mobile open a day and edit from the modal.",
+        "quickFilters": "Filter by urgent, unassigned, or jobs for today."
+      },
+      "move": {
+        "title": "Move to",
+        "hint": "Saved right away, just like dragging the card.",
+        "hintEditMode": "Stays pending until you press Save changes, just like dragging the card.",
+        "action": "Move",
+        "open": "Move {{customer}}...",
+        "saveDisabledInEditMode": "While editing, use the calendar's Save changes"
+      },
+      "a11y": {
+        "assignJobsOnDay": "Assign jobs: {{date}}"
       }
     },
     "technicians": {
@@ -826,6 +882,17 @@
         "inviteHint": "After creating the technician, an email invitation is sent automatically so they can complete and secure the account.",
         "actions": {
           "create": "Create technician and send invite"
+        },
+        "form": {
+          "required": "This field is required.",
+          "invalidEmail": "Enter a valid email.",
+          "invalidPhone": "Enter a valid U.S. phone number.",
+          "emailInUse": "This email is already in use.",
+          "completeRequired": "Complete the required fields to continue.",
+          "createError": "Could not create technician. Check the data.",
+          "unexpectedError": "Unexpected error while creating technician.",
+          "inviteSuccess": "Technician created and invitation sent.",
+          "closing": "Closing form..."
         }
       },
       "overview": {
@@ -872,6 +939,11 @@
           "actions": "Actions",
           "todayCount": "{{count}} jobs",
           "noRoute": "No route"
+        },
+        "delete": {
+          "confirmTitle": "Delete technician",
+          "confirmMessage": "This will delete the technician account of {{name}} and unassign their jobs. Do you want to continue?",
+          "error": "The technician could not be deleted. Please try again."
         }
       },
       "detail": {
@@ -1025,7 +1097,8 @@
           "modalTitle": "Customer filters",
           "modalSubtitle": "Filter by name/email, account status, portal, and list order.",
           "apply": "Apply filters",
-          "activeCount": "{{count}} active filters"
+          "activeCount": "{{count}} active filters",
+          "clear": "Clear filters"
         },
         "portal": {
           "active": "Active",
@@ -1300,6 +1373,23 @@
           "dateInvalid": "The date or time is not valid.",
           "technicianRequired": "Select a technician.",
           "durationInvalid": "The estimated duration must be a whole number of minutes (0 or more)."
+        },
+        "invoices": {
+          "sort": {
+            "dateDesc": "{{label}} (newest)",
+            "dateAsc": "{{label}} (oldest)",
+            "totalDesc": "{{label}} (high)",
+            "totalAsc": "{{label}} (low)"
+          },
+          "emptyFiltered": "No invoices match the active filters."
+        },
+        "delete": {
+          "kicker": "Permanent action",
+          "title": "Delete this customer?",
+          "description": "Type the word {{keyword}} to confirm that you will delete this customer, their portal user, properties, jobs, invoices, plans, documents, and any related historical records.",
+          "inputLabel": "Type \"{{keyword}}\" to continue",
+          "irreversible": "This action cannot be undone.",
+          "pending": "Deleting..."
         }
       },
       "repository": {
@@ -1340,7 +1430,8 @@
         "prompts": {
           "folderName": "Folder name",
           "rename": "New name",
-          "deleteConfirm": "Delete {{kind}} \"{{name}}\"?"
+          "deleteConfirm": "Delete {{kind}} \"{{name}}\"?",
+          "deleteDescription": "This action cannot be undone."
         },
         "feedback": {
           "folderCreated": "Folder created.",
@@ -1461,6 +1552,9 @@
         "status": {
           "paused": "Paused"
         }
+      },
+      "filters": {
+        "all": "All"
       }
     },
     "invoices": {
@@ -1651,8 +1745,10 @@
           "removeLine": "Remove"
         },
         "errors": {
-          "create": "Unable to create the invoice. Please try again."
-        }
+          "create": "Unable to create the invoice. Please try again.",
+          "customerRequired": "Select a customer to create the invoice."
+        },
+        "requiredLegend": "* Required field"
       },
       "send": {
         "submit": "Send",
@@ -1691,6 +1787,11 @@
           "saving": "Saving...",
           "updated": "Updated"
         }
+      },
+      "delete": {
+        "confirmTitle": "Delete invoice",
+        "confirmMessage": "This invoice will be permanently deleted. Do you want to continue?",
+        "error": "The invoice could not be deleted. Please try again."
       }
     },
     "reports": {
@@ -2047,7 +2148,9 @@
         "loading": "Loading service tiers...",
         "empty": "No service tiers configured yet.",
         "labels": {
-          "checklist": "Checklist items"
+          "checklist": "Checklist items",
+          "active": "Active tier",
+          "newItem": "New checklist item"
         },
         "placeholders": {
           "name": "Tier name",
@@ -2065,7 +2168,8 @@
           "showInactive": "Show inactive",
           "hideInactive": "Hide inactive",
           "saving": "Saving...",
-          "deactivate": "Deactivate"
+          "deactivate": "Deactivate",
+          "drag": "Drag to reorder"
         },
         "errors": {
           "load": "Unable to load service tiers.",
@@ -2258,7 +2362,8 @@
         "from": "From",
         "to": "To",
         "apply": "Apply",
-        "reset": "Reset filters"
+        "reset": "Reset filters",
+        "deliveryProcessing": "Processing"
       }
     },
     "placeholder": {
@@ -2270,7 +2375,9 @@
     "kicker": "Offline",
     "title": "No internet connection",
     "subtitle": "When the connection is back, reload to keep using the app.",
-    "backToLogin": "Go to login"
+    "backToLogin": "Go to login",
+    "retry": "Retry",
+    "autoRetry": "We'll retry automatically as soon as the connection is back."
   },
   "client": {
     "home": {
@@ -2382,6 +2489,11 @@
         "quickCleaning": "Quick cleaning",
         "chemBalance": "Urgent chemical balance",
         "general": "General checkup"
+      },
+      "confirmation": {
+        "kicker": "Request sent",
+        "title": "Your request was submitted successfully",
+        "continue": "Continue"
       }
     },
     "profile": {
@@ -2451,7 +2563,8 @@
         "pausedOk": "Services paused from {{date}} onward.",
         "resumedOk": "Recurring services resumed.",
         "pauseError": "Unable to pause services from the selected date.",
-        "resumeError": "Unable to resume recurring services."
+        "resumeError": "Unable to resume recurring services.",
+        "pauseFromLabel": "Pause from"
       },
       "property": {
         "pool": "Pool",
@@ -2624,8 +2737,26 @@
           "network": "The photos couldn't be uploaded. Check your connection and try again; your photos and notes are still here.",
           "fileTooLarge": "These photos exceed {{maxMb}} MB and were skipped: {{names}}"
         },
-        "photoMaxSize": "Max {{maxMb}} MB per photo."
+        "photoMaxSize": "Max {{maxMb}} MB per photo.",
+        "takePhotoCamera": "Take photo",
+        "chooseFromGallery": "Choose from gallery",
+        "photoPreviewAlt": "Preview of {{name}}",
+        "removePhoto": "Remove",
+        "removePhotoAria": "Remove photo {{name}}",
+        "preparingPhotos": "Preparing photos...",
+        "backToRoutes": "Back to my routes"
       }
+    },
+    "loading": {
+      "title": "Loading"
+    },
+    "error": {
+      "kicker": "Something went wrong",
+      "title": "We couldn't load this page",
+      "description": "Try again. If the problem continues, let the admin team know.",
+      "reference": "Reference: {{digest}}",
+      "retry": "Try again",
+      "backHome": "Back to my routes"
     }
   },
   "layout": {
@@ -2637,7 +2768,65 @@
     },
     "notifications": {
       "loadError": "We couldn't load your notifications.",
+      "retry": "Retry",
+      "bellLabel": "Notifications, {{count}} unread",
+      "bellLabelEmpty": "Notifications, no unread",
+      "announceNewOne": "1 new notification",
+      "announceNewMany": "{{count}} new notifications",
+      "soundToggle": "Notification sound",
+      "soundOn": "Sound on",
+      "soundOff": "Sound off",
+      "deleteItem": "Delete notification: {{source}}",
+      "actionError": "We couldn't complete that action. Please try again."
+    },
+    "sidebar": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar"
+    },
+    "navigation": {
+      "primary": "Main navigation"
+    }
+  },
+  "invoices": {
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    }
+  },
+  "globalShell": {
+    "skipToContent": "Skip to main content",
+    "loading": {
+      "label": "Loading content..."
+    },
+    "notFound": {
+      "kicker": "Error 404",
+      "title": "Page not found",
+      "subtitle": "The page you are looking for does not exist or was moved.",
+      "backHome": "Go to home"
+    },
+    "error": {
+      "kicker": "Something went wrong",
+      "title": "We couldn't load this page",
+      "subtitle": "An unexpected error occurred. Try again; if it keeps happening, contact the administrator.",
+      "digest": "Reference: {{digest}}",
       "retry": "Retry"
+    },
+    "globalError": {
+      "kicker": "Critical error",
+      "title": "The app couldn't start",
+      "subtitle": "An unexpected error prevented the app from loading. Try again or go back to the home page.",
+      "digest": "Reference: {{digest}}",
+      "retry": "Retry",
+      "backHome": "Go to home"
+    }
+  },
+  "pwa": {
+    "update": {
+      "title": "New version available",
+      "reload": "Reload",
+      "dismiss": "Later"
     }
   }
 }

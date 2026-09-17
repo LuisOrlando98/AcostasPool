@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import type { GoogleAutocomplete } from "@/lib/ui/google-maps-types";
 
@@ -58,6 +58,7 @@ export default function AddressAutocompleteSingle({
 
   const [value, setValue] = useState(defaultValue ?? "");
   const [autocompleteReady, setAutocompleteReady] = useState(false);
+  const inputId = useId();
 
   const labelClass =
     theme === "dark"
@@ -148,12 +149,14 @@ export default function AddressAutocompleteSingle({
     <div>
       {label ? (
         <label
+          htmlFor={inputId}
           className={`${labelSize} font-semibold uppercase tracking-wider ${labelClass}`}
         >
           {label}
         </label>
       ) : null}
       <input
+        id={inputId}
         ref={inputRef}
         name={name}
         value={value}

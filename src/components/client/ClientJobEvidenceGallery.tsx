@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import AppModal from "@/components/ui/AppModal";
 import { getAssetUrl } from "@/lib/assets";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 type EvidencePhoto = {
@@ -19,6 +19,8 @@ type ClientJobEvidenceGalleryProps = {
   closeLabel: string;
 };
 
+const LIGHTBOX_Z_INDEX_CLASS = "z-[1600]";
+
 export default function ClientJobEvidenceGallery({
   photos,
   locale,
@@ -27,24 +29,7 @@ export default function ClientJobEvidenceGallery({
   closeLabel,
 }: ClientJobEvidenceGalleryProps) {
   const [activePhoto, setActivePhoto] = useState<EvidencePhoto | null>(null);
-
-  useEffect(() => {
-    if (!activePhoto) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setActivePhoto(null);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      unlock();
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [activePhoto]);
+  const closeLightbox = () => setActivePhoto(null);
 
   return (
     <>
@@ -75,38 +60,38 @@ export default function ClientJobEvidenceGallery({
       </div>
 
       {activePhoto ? (
-        <div className="fixed inset-0 z-[1600] flex items-center justify-center p-3 sm:p-6">
-          <button
-            type="button"
-            aria-label={closeLabel}
-            onClick={() => setActivePhoto(null)}
-            className="absolute inset-0 bg-slate-950/75 backdrop-blur-[1px]"
-          />
-          <div className="relative z-[1] w-full max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  {formatInBusinessTimeZone(activePhoto.takenAt, locale, {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </p>
-              <button
-                type="button"
-                onClick={() => setActivePhoto(null)}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
-              >
-                {closeLabel}
-              </button>
-            </div>
-            <div className="max-h-[80vh] overflow-auto bg-slate-100">
-              <img
-                src={getAssetUrl(activePhoto.url)}
-                alt={evidenceAlt}
-                className="mx-auto h-auto w-auto max-h-[78vh] max-w-full object-contain"
-              />
-            </div>
+        <AppModal
+          open
+          onClose={closeLightbox}
+          title={evidenceAlt}
+          zIndexClass={LIGHTBOX_Z_INDEX_CLASS}
+          layerClassName="p-3 sm:p-6"
+          backdropClassName="bg-slate-950/75 backdrop-blur-[1px]"
+          cardClassName="max-w-5xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        >
+          <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 sm:px-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {formatInBusinessTimeZone(activePhoto.takenAt, locale, {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={closeLightbox}
+              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300"
+            >
+              {closeLabel}
+            </button>
           </div>
-        </div>
+          <div className="max-h-[80dvh] overflow-auto bg-slate-100">
+            <img
+              src={getAssetUrl(activePhoto.url)}
+              alt={evidenceAlt}
+              className="mx-auto h-auto w-auto max-h-[78dvh] max-w-full object-contain"
+            />
+          </div>
+        </AppModal>
       ) : null}
     </>
   );

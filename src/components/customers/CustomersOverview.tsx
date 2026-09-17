@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useId, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
 import { formatUsPhone } from "@/lib/phones";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
 
 type CustomerRow = {
   id: string;
@@ -30,12 +30,16 @@ type DraftFilters = {
   sort: SortKey;
 };
 
+const FILTERS_MODAL_Z_INDEX_CLASS = "z-[2400]";
+const FILTERS_MODAL_LAYER_CLASS = "overflow-y-auto p-3 sm:p-6";
+const FILTERS_MODAL_CARD_CLASS =
+  "max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl";
+
 export default function CustomersOverview({
   rows,
   summary,
   pagination,
   filters,
-  createTargetId,
   onCreate,
   showInviteAllInactive,
   isBulkInviting,
@@ -61,14 +65,14 @@ export default function CustomersOverview({
     portal: string;
     sort: string;
   };
-  createTargetId?: string;
   onCreate?: () => void;
   showInviteAllInactive?: boolean;
   isBulkInviting?: boolean;
   onInviteAllInactive?: () => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
+  const filtersTitleId = useId();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const activeQuery = filters.query;
   const activeStatus = filters.status;
@@ -80,28 +84,7 @@ export default function CustomersOverview({
     portal: activePortal,
     sort: activeSort,
   });
-  const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
-
-  useEffect(() => {
-    if (!isFiltersOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsFiltersOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isFiltersOpen]);
-
-  useEffect(() => {
-    if (!isFiltersOpen) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    return () => unlock();
-  }, [isFiltersOpen]);
+  const clearFiltersLabel = t("admin.customers.overview.filters.clear");
 
   const pushFilters = (next: {
     query?: string;
@@ -195,17 +178,11 @@ export default function CustomersOverview({
     <button
       type="button"
       onClick={onCreate}
+      aria-haspopup="dialog"
       className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] md:w-auto"
     >
       {t("admin.customers.overview.actions.new")}
     </button>
-  ) : createTargetId ? (
-    <label
-      htmlFor={createTargetId}
-      className="app-button-primary w-full cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em] md:w-auto"
-    >
-      {t("admin.customers.overview.actions.new")}
-    </label>
   ) : null;
 
   const kpiCards = (
@@ -257,181 +234,171 @@ export default function CustomersOverview({
     </div>
   );
 
-  const filtersModal =
-    typeof document !== "undefined" && isFiltersOpen
-      ? createPortal(
-          <div className="app-modal-layer fixed inset-0 z-[2400] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-            <button
-              type="button"
-              onClick={() => setIsFiltersOpen(false)}
-              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-              aria-label={t("common.actions.close")}
-            />
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label={t("admin.customers.overview.filters.modalTitle")}
-              className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+  const filtersModal = (
+    <AppModal
+      open={isFiltersOpen}
+      onClose={() => setIsFiltersOpen(false)}
+      titleId={filtersTitleId}
+      zIndexClass={FILTERS_MODAL_Z_INDEX_CLASS}
+      layerClassName={FILTERS_MODAL_LAYER_CLASS}
+      cardClassName={FILTERS_MODAL_CARD_CLASS}
+    >
+      <div className="app-modal-scroll modal-scroll max-h-[90dvh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+        <div className="app-modal-header">
+          <div>
+            <p className="app-modal-kicker">
+              {t("admin.customers.overview.filters.open")}
+            </p>
+            <h3 id={filtersTitleId} className="app-modal-title">
+              {t("admin.customers.overview.filters.modalTitle")}
+            </h3>
+            <p className="app-modal-subtitle">
+              {t("admin.customers.overview.filters.modalSubtitle")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsFiltersOpen(false)}
+            className="app-modal-close"
+            aria-label={t("common.actions.close")}
+            title={t("common.actions.close")}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="h-4 w-4"
             >
-              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="app-modal-header">
-                  <div>
-                    <p className="app-modal-kicker">
-                      {t("admin.customers.overview.filters.open")}
-                    </p>
-                    <h3 className="app-modal-title">
-                      {t("admin.customers.overview.filters.modalTitle")}
-                    </h3>
-                    <p className="app-modal-subtitle">
-                      {t("admin.customers.overview.filters.modalSubtitle")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsFiltersOpen(false)}
-                    className="app-modal-close"
-                    aria-label={t("common.actions.close")}
-                    title={t("common.actions.close")}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="h-4 w-4"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                    </svg>
-                  </button>
-                </div>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+            </svg>
+          </button>
+        </div>
 
-                <div className="mt-4 space-y-4">
-                  <section className="app-modal-section">
-                    <p className="app-modal-section-title">
-                      {t("admin.customers.overview.filters.open")}
-                    </p>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <label className="sm:col-span-2">
-                        <span className="app-modal-field-label">
-                          {t("common.actions.search")}
-                        </span>
-                        <input
-                          value={draftFilters.query}
-                          onChange={(event) =>
-                            setDraftFilters((current) => ({
-                              ...current,
-                              query: event.target.value,
-                            }))
-                          }
-                          placeholder={t("admin.customers.overview.placeholders.search")}
-                          className="app-modal-input app-input"
-                        />
-                      </label>
-                      <label>
-                        <span className="app-modal-field-label">
-                          {t("admin.customers.overview.filters.status")}
-                        </span>
-                        <select
-                          value={draftFilters.status}
-                          onChange={(event) =>
-                            setDraftFilters((current) => ({
-                              ...current,
-                              status: event.target.value,
-                            }))
-                          }
-                          className="app-modal-input app-input bg-white"
-                        >
-                          <option value="ALL">{t("admin.customers.overview.filters.status")}</option>
-                          <option value="ACTIVE">{t("common.status.active")}</option>
-                          <option value="INACTIVE">{t("common.status.inactive")}</option>
-                        </select>
-                      </label>
-                      <label>
-                        <span className="app-modal-field-label">
-                          {t("admin.customers.overview.filters.portal")}
-                        </span>
-                        <select
-                          value={draftFilters.portal}
-                          onChange={(event) =>
-                            setDraftFilters((current) => ({
-                              ...current,
-                              portal: event.target.value,
-                            }))
-                          }
-                          className="app-modal-input app-input bg-white"
-                        >
-                          <option value="ALL">
-                            {t("admin.customers.overview.filters.portalAll")}
-                          </option>
-                          <option value="ACTIVE">
-                            {t("admin.customers.overview.filters.portalActive")}
-                          </option>
-                          <option value="INACTIVE">
-                            {t("admin.customers.overview.filters.portalInactive")}
-                          </option>
-                        </select>
-                      </label>
-                      <label>
-                        <span className="app-modal-field-label">
-                          {t("admin.customers.overview.filters.sort")}
-                        </span>
-                        <select
-                          value={draftFilters.sort}
-                          onChange={(event) =>
-                            setDraftFilters((current) => ({
-                              ...current,
-                              sort: event.target.value as SortKey,
-                            }))
-                          }
-                          className="app-modal-input app-input bg-white"
-                        >
-                          <option value="name">{t("admin.customers.overview.sort.name")}</option>
-                          <option value="jobs">{t("admin.customers.overview.sort.jobs")}</option>
-                          <option value="properties">
-                            {t("admin.customers.overview.sort.properties")}
-                          </option>
-                        </select>
-                      </label>
-                    </div>
-                  </section>
-                </div>
-
-                <div className="mt-5 flex flex-wrap justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDraftFilters({
-                        query: "",
-                        status: "ALL",
-                        portal: "ALL",
-                        sort: "name",
-                      })
-                    }
-                    className="ui-button-ghost px-3 py-2 text-xs font-semibold"
-                  >
-                    {clearFiltersLabel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsFiltersOpen(false)}
-                    className="ui-button-ghost px-3 py-2 text-xs font-semibold"
-                  >
-                    {t("common.actions.cancel")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={applyFilters}
-                    className="app-button-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
-                  >
-                    {t("admin.customers.overview.filters.apply")}
-                  </button>
-                </div>
-              </div>
+        <div className="mt-4 space-y-4">
+          <section className="app-modal-section">
+            <p className="app-modal-section-title">
+              {t("admin.customers.overview.filters.open")}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span className="app-modal-field-label">
+                  {t("common.actions.search")}
+                </span>
+                <input
+                  value={draftFilters.query}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      query: event.target.value,
+                    }))
+                  }
+                  placeholder={t("admin.customers.overview.placeholders.search")}
+                  className="app-modal-input app-input"
+                />
+              </label>
+              <label>
+                <span className="app-modal-field-label">
+                  {t("admin.customers.overview.filters.status")}
+                </span>
+                <select
+                  value={draftFilters.status}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      status: event.target.value,
+                    }))
+                  }
+                  className="app-modal-input app-input bg-white"
+                >
+                  <option value="ALL">{t("admin.customers.overview.filters.status")}</option>
+                  <option value="ACTIVE">{t("common.status.active")}</option>
+                  <option value="INACTIVE">{t("common.status.inactive")}</option>
+                </select>
+              </label>
+              <label>
+                <span className="app-modal-field-label">
+                  {t("admin.customers.overview.filters.portal")}
+                </span>
+                <select
+                  value={draftFilters.portal}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      portal: event.target.value,
+                    }))
+                  }
+                  className="app-modal-input app-input bg-white"
+                >
+                  <option value="ALL">
+                    {t("admin.customers.overview.filters.portalAll")}
+                  </option>
+                  <option value="ACTIVE">
+                    {t("admin.customers.overview.filters.portalActive")}
+                  </option>
+                  <option value="INACTIVE">
+                    {t("admin.customers.overview.filters.portalInactive")}
+                  </option>
+                </select>
+              </label>
+              <label>
+                <span className="app-modal-field-label">
+                  {t("admin.customers.overview.filters.sort")}
+                </span>
+                <select
+                  value={draftFilters.sort}
+                  onChange={(event) =>
+                    setDraftFilters((current) => ({
+                      ...current,
+                      sort: event.target.value as SortKey,
+                    }))
+                  }
+                  className="app-modal-input app-input bg-white"
+                >
+                  <option value="name">{t("admin.customers.overview.sort.name")}</option>
+                  <option value="jobs">{t("admin.customers.overview.sort.jobs")}</option>
+                  <option value="properties">
+                    {t("admin.customers.overview.sort.properties")}
+                  </option>
+                </select>
+              </label>
             </div>
-          </div>,
-          document.body
-        )
-      : null;
+          </section>
+        </div>
+
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              setDraftFilters({
+                query: "",
+                status: "ALL",
+                portal: "ALL",
+                sort: "name",
+              })
+            }
+            className="ui-button-ghost px-3 py-2 text-xs font-semibold"
+          >
+            {clearFiltersLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsFiltersOpen(false)}
+            className="ui-button-ghost px-3 py-2 text-xs font-semibold"
+          >
+            {t("common.actions.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={applyFilters}
+            className="app-button-primary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
+          >
+            {t("admin.customers.overview.filters.apply")}
+          </button>
+        </div>
+      </div>
+    </AppModal>
+  );
 
   return (
     <>
@@ -522,37 +489,35 @@ export default function CustomersOverview({
                   <table className="customers-table customers-overview-table w-full min-w-[1120px] table-fixed text-left text-xs text-slate-600 md:min-w-[1160px]">
                     <thead className="sticky top-0 z-10 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[10px] uppercase tracking-[0.06em] text-slate-100/85 sm:text-[11px] sm:tracking-[0.12em]">
                       <tr>
-                        <th className="w-[17%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
-                        <th className="w-[13%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
-                        <th className="w-[20%] min-w-[11.5rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.address")}</th>
-                        <th className="w-[18%] min-w-[11rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.properties")}</th>
-                        <th className="w-[10%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.portal")}</th>
-                        <th className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.jobs")}</th>
-                        <th className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.invoices")}</th>
-                        <th className="w-[8%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.status")}</th>
+                        <th scope="col" className="w-[17%] min-w-[11rem] whitespace-nowrap bg-slate-900 px-3 py-3 sm:px-4">{t("admin.customers.overview.table.customer")}</th>
+                        <th scope="col" className="w-[13%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.phone")}</th>
+                        <th scope="col" className="w-[20%] min-w-[11.5rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.address")}</th>
+                        <th scope="col" className="w-[18%] min-w-[11rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.properties")}</th>
+                        <th scope="col" className="w-[10%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.portal")}</th>
+                        <th scope="col" className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.jobs")}</th>
+                        <th scope="col" className="w-[7%] min-w-[6rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.invoices")}</th>
+                        <th scope="col" className="w-[8%] min-w-[7rem] whitespace-nowrap px-3 py-3 sm:px-4">{t("admin.customers.overview.table.status")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {rows.map((customer) => {
                         const propertiesPreview = customer.propertyNames.join(", ");
+                        const customerHref = `/admin/customers/${customer.id}`;
                         return (
                           <tr
                             key={customer.id}
                             className="group cursor-pointer transition hover:bg-sky-50/45"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => router.push(`/admin/customers/${customer.id}`)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                router.push(`/admin/customers/${customer.id}`);
-                              }
-                            }}
+                            onClick={() => router.push(customerHref)}
                           >
                             <td className="min-w-[13.5rem] px-4 py-3.5">
-                              <p className="max-w-[12rem] truncate font-semibold text-slate-900" title={customer.name}>
+                              <Link
+                                href={customerHref}
+                                onClick={(event) => event.stopPropagation()}
+                                className="block max-w-[12rem] truncate rounded font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                                title={customer.name}
+                              >
                                 {customer.name}
-                              </p>
+                              </Link>
                               <p
                                 className="max-w-[12rem] truncate text-[11px] text-slate-400"
                                 title={customer.email || t("common.labels.notAvailable")}

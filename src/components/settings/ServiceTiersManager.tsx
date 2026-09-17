@@ -414,12 +414,14 @@ export default function ServiceTiersManager() {
                           placeholder={t(
                             "admin.settings.tiers.placeholders.name"
                           )}
+                          aria-label={t("admin.settings.tiers.placeholders.name")}
                         />
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             className="app-toggle"
                             checked={tier.isActive}
+                            aria-label={t("admin.settings.tiers.labels.active")}
                             onChange={(event) =>
                               updateTier(tier.id, {
                                 isActive: event.target.checked,
@@ -437,23 +439,29 @@ export default function ServiceTiersManager() {
                         </div>
                       </div>
                       {tier.saving ? (
-                        <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div
+                          role="status"
+                          className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                           {t("admin.settings.tiers.actions.saving")}
                         </div>
                       ) : savedTierId === tier.id ? (
-                        <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                        <div
+                          role="status"
+                          className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600"
+                        >
                           {t("common.feedback.saved")}
                         </div>
                       ) : null}
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                         {t("admin.settings.tiers.labels.checklist")}
                         <span className="ml-2 text-[10px] font-semibold text-slate-400">
                           ({countChecklistItems(tier.checklistText)})
                         </span>
-                      </label>
+                      </p>
                       <span className="text-xs text-slate-400">
                         {t("admin.settings.tiers.placeholders.checklist")}
                       </span>
@@ -519,9 +527,9 @@ export default function ServiceTiersManager() {
                                     draggable
                                     onDragStart={beginDrag(tier.id, index)}
                                     onDragEnd={clearDragState}
-                                    aria-label="Drag"
+                                    aria-label={t("admin.settings.tiers.actions.drag")}
                                   >
-                                    |||
+                                    <span aria-hidden="true">|||</span>
                                   </button>
                                   <button
                                     type="button"
@@ -529,6 +537,7 @@ export default function ServiceTiersManager() {
                                       removeChecklistItem(tier, index)
                                     }
                                     className="app-button-ghost px-2 py-1 text-[10px] font-semibold text-slate-500 hover:text-rose-600"
+                                    aria-label={`${t("common.actions.delete")}: ${item}`}
                                   >
                                     {t("common.actions.delete")}
                                   </button>
@@ -558,6 +567,7 @@ export default function ServiceTiersManager() {
                         placeholder={t(
                           "admin.settings.tiers.placeholders.checklist"
                         )}
+                        aria-label={t("admin.settings.tiers.labels.newItem")}
                       />
                       <button
                         type="button"

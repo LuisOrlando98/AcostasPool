@@ -5,7 +5,7 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
 export default async function UpdatesPage() {
-  await requireRole("ADMIN");
+  const session = await requireRole("ADMIN");
   const t = await getTranslations();
   const locale = await getRequestLocale();
 
@@ -13,7 +13,7 @@ export default async function UpdatesPage() {
     <AppShell
       title={t("updates.title")}
       subtitle={t("updates.subtitle")}
-      role="ADMIN"
+      role={session.role}
     >
       <section className="space-y-6">
         {updates.length === 0 ? (

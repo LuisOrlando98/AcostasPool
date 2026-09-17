@@ -1,4 +1,3 @@
-import type { NotificationStatus } from "@prisma/client";
 import AppShell from "@/components/layout/AppShell";
 import AdminNotificationsCenter from "@/components/notifications/AdminNotificationsCenter";
 import { getTranslations } from "@/i18n/server";
@@ -51,11 +50,6 @@ export default async function NotificationsPage() {
     return null;
   };
   const asString = (value: unknown) => (typeof value === "string" ? value : null);
-  // PROCESSING es un estado transitorio del worker; la tabla lo muestra como QUEUED.
-  const toRowStatus = (
-    status: NotificationStatus
-  ): Exclude<NotificationStatus, "PROCESSING"> =>
-    status === "PROCESSING" ? "QUEUED" : status;
   const getLink = (payload: Record<string, unknown> | null) => {
     const jobId = asString(payload?.jobId);
     if (jobId) {
@@ -77,7 +71,7 @@ export default async function NotificationsPage() {
       id: item.id,
       eventType: item.eventType,
       severity: item.severity,
-      status: toRowStatus(item.status),
+      status: item.status,
       createdAt: item.createdAt.toISOString(),
       readAt: item.readAt ? item.readAt.toISOString() : null,
       payload,

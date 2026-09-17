@@ -2,12 +2,15 @@
 
 import { createContext, useContext, useMemo } from "react";
 import type { Locale } from "@/i18n/config";
-import type { Messages } from "@/i18n/translate";
-import { translate } from "@/i18n/translate";
+import type { Messages, TranslatePluralFn, Translator } from "@/i18n/translate";
+import { createTranslator } from "@/i18n/translate";
 
 type I18nContextValue = {
   locale: Locale;
-  t: (key: string, values?: Record<string, string | number>) => string;
+  /** `t(key, values)`; también expone `t.plural(...)`. */
+  t: Translator;
+  /** `tPlural(key, count, values)`: resuelve `${key}.one` / `${key}.other`. */
+  tPlural: TranslatePluralFn;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -21,17 +24,13 @@ export function I18nProvider({
   messages: Messages;
   children: React.ReactNode;
 }) {
-  const t = useMemo(
-    () => (key: string, values?: Record<string, string | number>) =>
-      translate(messages, key, values),
-    [messages]
+  const t = useMemo(() => createTranslator(messages), [messages]);
+  const value = useMemo<I18nContextValue>(
+    () => ({ locale, t, tPlural: t.plural }),
+    [locale, t]
   );
 
-  return (
-    <I18nContext.Provider value={{ locale, t }}>
-      {children}
-    </I18nContext.Provider>
-  );
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
 export function useI18n() {

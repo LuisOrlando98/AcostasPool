@@ -2,6 +2,7 @@ import type { Customer } from "@prisma/client";
 import ActionForm from "./ActionForm";
 import type { CustomerDetailFormAction } from "./action-result";
 import { formatUsPhone } from "@/lib/phones";
+import { CustomerDetailModalTrigger } from "./CustomerDetailModals";
 import type { Translator } from "./types";
 
 type CustomerProfileSectionProps = {
@@ -81,12 +82,12 @@ export default function CustomerProfileSection({
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {t("admin.customers.detail.sections.profileLabel")}
               </p>
-              <label
-                htmlFor="edit-customer"
+              <CustomerDetailModalTrigger
+                modal="edit-customer"
                 className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
               >
                 {t("common.actions.edit")}
-              </label>
+              </CustomerDetailModalTrigger>
             </div>
             <p className="mt-3 text-sm font-semibold text-slate-900">{customerName}</p>
             <p className="mt-1 text-xs text-slate-600">{customerEmailLabel}</p>
@@ -115,12 +116,12 @@ export default function CustomerProfileSection({
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                 {t("admin.customers.detail.sections.addressLabel")}
               </p>
-              <label
-                htmlFor="edit-customer"
+              <CustomerDetailModalTrigger
+                modal="edit-customer"
                 className="cursor-pointer rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
               >
                 {t("common.actions.edit")}
-              </label>
+              </CustomerDetailModalTrigger>
             </div>
             {customer.direccionLinea1 ? (
               <>

@@ -58,7 +58,11 @@ export default function ResetLinkButton({
         {loading ? resolvedLoadingLabel : resolvedSubmitLabel}
       </button>
       {sent ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+        >
           {resolvedSentLabel}
         </div>
       ) : null}

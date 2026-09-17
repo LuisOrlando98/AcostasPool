@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import type {
   GoogleAddressComponent,
@@ -85,6 +85,14 @@ export default function AddressAutocomplete({
   const [state, setState] = useState(defaultValue?.state ?? "");
   const [postalCode, setPostalCode] = useState(defaultValue?.postalCode ?? "");
   const [autocompleteReady, setAutocompleteReady] = useState(false);
+  const fieldId = useId();
+  const fieldIds = {
+    line1: `${fieldId}-line1`,
+    line2: `${fieldId}-line2`,
+    city: `${fieldId}-city`,
+    state: `${fieldId}-state`,
+    postalCode: `${fieldId}-postal-code`,
+  };
   const labelClass =
     theme === "dark"
       ? "text-slate-400"
@@ -205,10 +213,14 @@ export default function AddressAutocomplete({
   return (
     <div className="space-y-4">
       <div>
-        <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+        <label
+          htmlFor={fieldIds.line1}
+          className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}
+        >
           {t("address.line1")}
         </label>
         <input
+          id={fieldIds.line1}
           ref={inputRef}
           name={line1Name}
           value={line1}
@@ -229,10 +241,14 @@ export default function AddressAutocomplete({
         )}
       </div>
       <div>
-        <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+        <label
+          htmlFor={fieldIds.line2}
+          className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}
+        >
           {t("address.line2")}
         </label>
         <input
+          id={fieldIds.line2}
           name={line2Name}
           value={line2}
           onChange={(event) => setLine2(event.target.value)}
@@ -242,10 +258,14 @@ export default function AddressAutocomplete({
       </div>
       <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
         <div>
-          <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+          <label
+            htmlFor={fieldIds.city}
+            className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}
+          >
             {t("address.city")}
           </label>
           <input
+            id={fieldIds.city}
             name={cityName}
             value={city}
             onChange={(event) => setCity(event.target.value)}
@@ -254,9 +274,9 @@ export default function AddressAutocomplete({
           />
         </div>
         <div>
-          <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+          <span className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
             {t("address.country")}
-          </label>
+          </span>
           <div
             className={`mt-2 flex h-[46px] items-center justify-center rounded-xl border text-sm font-semibold ${countryClass}`}
           >
@@ -266,10 +286,14 @@ export default function AddressAutocomplete({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+          <label
+            htmlFor={fieldIds.state}
+            className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}
+          >
             {t("address.state")}
           </label>
           <input
+            id={fieldIds.state}
             name={stateName}
             value={state}
             onChange={(event) => setState(event.target.value)}
@@ -278,10 +302,14 @@ export default function AddressAutocomplete({
           />
         </div>
         <div>
-          <label className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}>
+          <label
+            htmlFor={fieldIds.postalCode}
+            className={`text-xs font-semibold uppercase tracking-wider ${labelClass}`}
+          >
             {t("address.postal")}
           </label>
           <input
+            id={fieldIds.postalCode}
             name={postalName}
             value={postalCode}
             onChange={(event) => setPostalCode(event.target.value)}

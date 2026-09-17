@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
@@ -70,6 +70,11 @@ export default function InvoiceCreateForm({
   const [taxExempt, setTaxExempt] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([createLine()]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [customerMissing, setCustomerMissing] = useState(false);
+  const fieldIdBase = useId();
+  const customerSelectId = `${fieldIdBase}-customer`;
+  const customerErrorId = `${fieldIdBase}-customer-error`;
+  const notesId = `${fieldIdBase}-notes`;
 
   const serviceCatalog = useMemo(
     () =>
@@ -224,16 +229,29 @@ export default function InvoiceCreateForm({
         <div className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <label>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <div>
+                <label
+                  htmlFor={customerSelectId}
+                  className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
                   {t("admin.invoices.new.fields.customer")}
-                </span>
+                  <span aria-hidden="true" className="ml-0.5 text-rose-600">
+                    *
+                  </span>
+                </label>
                 <select
+                  id={customerSelectId}
                   name="customerId"
                   value={selectedCustomerId}
+                  required
+                  aria-required="true"
+                  aria-invalid={customerMissing || undefined}
+                  aria-describedby={customerMissing ? customerErrorId : undefined}
+                  onInvalid={() => setCustomerMissing(true)}
                   onChange={(event) => {
                     const nextCustomerId = event.target.value;
                     setSelectedCustomerId(nextCustomerId);
+                    setCustomerMissing(false);
                     if (!nextCustomerId) {
                       setSelectedJobId("");
                       setLines([createLine()]);
@@ -254,7 +272,6 @@ export default function InvoiceCreateForm({
                     }
                   }}
                   className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  required
                 >
                   <option value="" disabled>
                     --
@@ -265,7 +282,12 @@ export default function InvoiceCreateForm({
                     </option>
                   ))}
                 </select>
-              </label>
+                {customerMissing ? (
+                  <p id={customerErrorId} className="mt-1 text-xs text-rose-600">
+                    {t("admin.invoices.new.errors.customerRequired")}
+                  </p>
+                ) : null}
+              </div>
 
               <label>
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -317,6 +339,9 @@ export default function InvoiceCreateForm({
                 </select>
               </label>
             </div>
+            <p className="mt-3 text-[11px] text-slate-500">
+              {t("admin.invoices.new.requiredLegend")}
+            </p>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
@@ -481,10 +506,14 @@ export default function InvoiceCreateForm({
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={notesId}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("common.labels.notes")}
             </label>
             <textarea
+              id={notesId}
               name="notes"
               className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
             />

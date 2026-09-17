@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth/guards";
 import { getAssetUrl } from "@/lib/assets";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
+import { formatCurrency } from "@/lib/format/currency";
+import { getInvoiceStatusLabel } from "@/lib/invoices/status-label";
 
 export default async function ClientInvoicesPage() {
   const session = await requireRole("CUSTOMER");
@@ -71,7 +73,7 @@ export default async function ClientInvoicesPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">
-                    ${invoice.total.toFixed(2)}
+                    {formatCurrency(invoice.total.toNumber(), locale)}
                   </p>
                   <span
                     className="app-chip mt-1 inline-flex px-2.5 py-0.5 text-[11px] font-semibold"
@@ -83,7 +85,7 @@ export default async function ClientInvoicesPage() {
                           : "warning"
                     }
                   >
-                    {invoice.status}
+                    {getInvoiceStatusLabel(invoice.status, t)}
                   </span>
                 </div>
                 {invoice.pdfUrl ? (

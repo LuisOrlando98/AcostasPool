@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { getJobStatusLabel } from "@/lib/constants";
@@ -158,6 +158,7 @@ const IconSearch = ({ className }: { className?: string }) => (
     stroke="currentColor"
     strokeWidth="1.6"
     className={className}
+    aria-hidden="true"
   >
     <circle cx="11" cy="11" r="7" />
     <path d="m20 20-3.5-3.5" />
@@ -171,6 +172,7 @@ const IconCalendar = ({ className }: { className?: string }) => (
     stroke="currentColor"
     strokeWidth="1.6"
     className={className}
+    aria-hidden="true"
   >
     <rect x="3" y="5" width="18" height="16" rx="2" />
     <path d="M16 3v4M8 3v4M3 10h18" />
@@ -195,6 +197,7 @@ const DateFilterPopover = ({
   const [open, setOpen] = useState(false);
   const [preset, setPreset] = useState("ALL");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const quickRangeId = useId();
 
   useEffect(() => {
     if (!open) {
@@ -237,10 +240,20 @@ const DateFilterPopover = ({
   };
 
   return (
-    <div className="relative w-full sm:w-auto" ref={containerRef}>
+    <div
+      className="relative w-full sm:w-auto"
+      ref={containerRef}
+      onKeyDown={(event) => {
+        if (open && event.key === "Escape") {
+          event.preventDefault();
+          setOpen(false);
+        }
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
         className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 sm:w-auto sm:justify-start"
       >
         <IconCalendar className="h-4 w-4 text-slate-500" />
@@ -251,13 +264,18 @@ const DateFilterPopover = ({
           open ? "opacity-100 scale-100" : "pointer-events-none opacity-0 scale-95"
         }`}
         style={{ transformOrigin: "top right" }}
+        inert={!open}
       >
         <div className="space-y-3">
           <div>
-            <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <label
+              htmlFor={quickRangeId}
+              className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+            >
               {t("admin.technicians.detail.jobs.filters.quickRange")}
             </label>
             <select
+              id={quickRangeId}
               value={preset}
               onChange={(event) => applyPreset(event.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
@@ -362,6 +380,7 @@ const FiltersBar = ({
         value={search}
         onChange={(event) => setSearch(event.target.value)}
         placeholder={t("admin.technicians.detail.jobs.filters.search")}
+        aria-label={t("admin.technicians.detail.jobs.filters.search")}
         className="ui-search-input w-full"
       />
     </label>
@@ -369,6 +388,7 @@ const FiltersBar = ({
     <select
       value={statusFilter}
       onChange={(event) => setStatusFilter(event.target.value)}
+      aria-label={t("admin.technicians.detail.jobs.filters.status")}
       className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">{t("admin.technicians.detail.jobs.filters.status")}</option>
@@ -382,6 +402,7 @@ const FiltersBar = ({
     <select
       value={priorityFilter}
       onChange={(event) => setPriorityFilter(event.target.value)}
+      aria-label={t("admin.technicians.detail.jobs.filters.priority")}
       className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">
@@ -394,6 +415,7 @@ const FiltersBar = ({
     <select
       value={serviceFilter}
       onChange={(event) => setServiceFilter(event.target.value)}
+      aria-label={t("admin.technicians.detail.jobs.filters.service")}
       className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
     >
       <option value="ALL">
@@ -410,6 +432,7 @@ const FiltersBar = ({
       <select
         value={evidenceFilter}
         onChange={(event) => setEvidenceFilter(event.target.value)}
+        aria-label={t("admin.technicians.detail.jobs.filters.evidence")}
         className="ui-select w-full px-3 py-2 text-xs xl:w-auto"
       >
         <option value="ALL">
@@ -848,16 +871,16 @@ const CompletedTableSection = ({
           <table className="customers-table min-w-[980px] w-full text-left text-[12px] text-slate-600">
             <thead className="border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="w-[16%] px-3 py-3">{t("admin.technicians.detail.jobs.table.date")}</th>
-                <th className="w-[20%] px-3 py-3">{t("admin.technicians.detail.jobs.table.customer")}</th>
-                <th className="w-[22%] px-3 py-3">{t("admin.technicians.detail.jobs.table.address")}</th>
-                <th className="w-[18%] px-3 py-3">{t("admin.technicians.detail.jobs.table.service")}</th>
-                <th className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.priority")}</th>
-                <th className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.status")}</th>
+                <th scope="col" className="w-[16%] px-3 py-3">{t("admin.technicians.detail.jobs.table.date")}</th>
+                <th scope="col" className="w-[20%] px-3 py-3">{t("admin.technicians.detail.jobs.table.customer")}</th>
+                <th scope="col" className="w-[22%] px-3 py-3">{t("admin.technicians.detail.jobs.table.address")}</th>
+                <th scope="col" className="w-[18%] px-3 py-3">{t("admin.technicians.detail.jobs.table.service")}</th>
+                <th scope="col" className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.priority")}</th>
+                <th scope="col" className="w-[9%] px-3 py-3">{t("admin.technicians.detail.jobs.table.status")}</th>
                 {showEvidenceFilter ? (
-                  <th className="w-[10%] px-3 py-3">{t("admin.technicians.detail.jobs.table.evidence")}</th>
+                  <th scope="col" className="w-[10%] px-3 py-3">{t("admin.technicians.detail.jobs.table.evidence")}</th>
                 ) : null}
-                <th className="w-[10%] px-3 py-3 text-right">
+                <th scope="col" className="w-[10%] px-3 py-3 text-right">
                   {t("admin.technicians.detail.jobs.table.action")}
                 </th>
               </tr>

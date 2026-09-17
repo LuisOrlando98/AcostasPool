@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import TechniciansOverview from "@/components/technicians/TechniciansOverview";
-import TechnicianCreateForm from "@/components/technicians/TechnicianCreateForm";
+import NewTechnicianModal from "@/components/technicians/NewTechnicianModal";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
@@ -321,46 +321,8 @@ export default async function TechniciansPage() {
       wide
     >
       <section className="space-y-6">
-        <input id="new-tech" type="checkbox" className="peer hidden" />
         <TechniciansOverview rows={rows} deleteTechnicianAction={deleteTechnician} />
-
-        <div className="app-modal-layer fixed inset-0 z-[1300] hidden items-center justify-center overflow-y-auto p-3 sm:p-6 peer-checked:flex">
-          <label
-            htmlFor="new-tech"
-            className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-contrast xl:max-w-5xl">
-            <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-              <div className="app-modal-header flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    {t("admin.technicians.newTech.kicker")}
-                  </p>
-                  <h2 className="text-lg font-semibold">
-                    {t("admin.technicians.newTech.title")}
-                  </h2>
-                </div>
-                <label
-                  htmlFor="new-tech"
-                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300"
-                  aria-label={t("common.actions.close")}
-                  title={t("common.actions.close")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                  </svg>
-                </label>
-              </div>
-              <TechnicianCreateForm createTechnicianAction={createTechnician} />
-            </div>
-          </div>
-        </div>
+        <NewTechnicianModal createTechnicianAction={createTechnician} />
       </section>
     </AppShell>
   );

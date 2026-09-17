@@ -295,13 +295,14 @@ export default async function JobDetailPage({
           <div className="app-card p-6 shadow-contrast">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <h2 className="text-lg font-semibold">
+                <h2 id="job-assign-tech-title" className="text-lg font-semibold">
                   {t("jobs.detail.assignTech")}
                 </h2>
                 <form action={updateJobTechnician} className="mt-4 space-y-3">
                   <input type="hidden" name="jobId" value={job.id} />
                   <select
                     name="technicianId"
+                    aria-labelledby="job-assign-tech-title"
                     className="app-input w-full bg-white px-4 py-3 text-sm"
                     defaultValue={job.technician?.id ?? ""}
                   >
@@ -321,13 +322,14 @@ export default async function JobDetailPage({
                 </form>
               </div>
               <div>
-                <h2 className="text-lg font-semibold">
+                <h2 id="job-status-title" className="text-lg font-semibold">
                   {t("jobs.detail.statusTitle")}
                 </h2>
                 <form action={updateJobStatus} className="mt-4 space-y-3">
                   <input type="hidden" name="jobId" value={job.id} />
                   <select
                     name="status"
+                    aria-labelledby="job-status-title"
                     className="app-input w-full bg-white px-4 py-3 text-sm"
                     defaultValue={job.status}
                   >
