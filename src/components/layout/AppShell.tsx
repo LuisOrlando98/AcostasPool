@@ -6,6 +6,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
+import DeveloperViewBanner from "@/components/layout/DeveloperViewBanner";
+import { DeveloperViewSwitcherPanel } from "@/components/layout/DeveloperViewSwitcher";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { applyInertOutside } from "@/components/ui/AppModal";
 import ModalPresenceManager from "@/components/ui/ModalPresenceManager";
@@ -968,6 +970,9 @@ export default function AppShell({
                 <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
                   <InstallAppAction variant="sidebar" />
                 </div>
+                <div className="mt-2">
+                  <DeveloperViewSwitcherPanel />
+                </div>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1060,6 +1065,7 @@ export default function AppShell({
           tabIndex={-1}
           className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade focus:outline-none sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
         >
+          <DeveloperViewBanner />
           {children}
         </main>
       </div>

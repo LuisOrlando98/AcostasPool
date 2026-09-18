@@ -5,6 +5,8 @@ import { useId, useMemo, useState } from "react";
 import AppModal from "@/components/ui/AppModal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/i18n/client";
+import { clearRecentCache } from "@/lib/notifications/client-cache";
+import { emitNotificationsChanged } from "@/lib/notifications/client-events";
 import {
   getNotificationDetail,
   getNotificationSource,
@@ -316,6 +318,9 @@ export default function AdminNotificationsCenter({
     setBusyReadId(id);
     setActionError(null);
     try {
+      // La campana comparte estos datos: invalida su caché antes de la petición
+      // y avísala después para que recargue sin esperar al sondeo.
+      clearRecentCache();
       const response = await fetch(`/api/notifications/${id}/read`, {
         method: "POST",
       });
@@ -334,6 +339,7 @@ export default function AdminNotificationsCenter({
             : item
         )
       );
+      emitNotificationsChanged();
     } catch {
       setActionError(t("layout.notifications.actionError"));
     } finally {
@@ -355,6 +361,7 @@ export default function AdminNotificationsCenter({
     setPendingDeleteId(null);
     setActionError(null);
     const previous = notifications;
+    clearRecentCache();
     setNotifications((current) => current.filter((item) => item.id !== id));
     try {
       const response = await fetch(`/api/notifications/${id}`, {
@@ -363,6 +370,7 @@ export default function AdminNotificationsCenter({
       if (!response.ok) {
         throw new Error(`Delete failed with status ${response.status}`);
       }
+      emitNotificationsChanged();
     } catch {
       setNotifications(previous);
       setActionError(t("layout.notifications.actionError"));
@@ -388,6 +396,7 @@ export default function AdminNotificationsCenter({
     setPendingDeleteId(null);
     setActionError(null);
     const previous = notifications;
+    clearRecentCache();
     setNotifications([]);
     try {
       const response = await fetch("/api/notifications/clear", {
@@ -396,6 +405,7 @@ export default function AdminNotificationsCenter({
       if (!response.ok) {
         throw new Error(`Clear failed with status ${response.status}`);
       }
+      emitNotificationsChanged();
     } catch {
       setNotifications(previous);
       setActionError(t("layout.notifications.actionError"));

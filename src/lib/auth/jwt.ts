@@ -7,6 +7,14 @@ export type SessionPayload = {
   name: string;
   role: UserRole;
   avatarUrl?: string | null;
+  /**
+   * `true` para las cuentas de desarrollador. Permite que `src/proxy.ts`
+   * (que solo lee el JWT, nunca la base de datos) deje pasar cualquier prefijo
+   * protegido mientras la vista de desarrollador está activa. Es opcional:
+   * los tokens emitidos antes de este campo siguen siendo válidos, pero su
+   * titular debe volver a iniciar sesión una vez para obtener el claim.
+   */
+  dev?: boolean;
 };
 
 const getSecret = () => {
@@ -34,11 +42,13 @@ export async function verifySessionToken(token: string) {
       algorithms: ["HS256"],
     });
     const role = payload.role;
+    const dev = payload.dev;
     if (
       typeof payload.sub !== "string" ||
       typeof payload.email !== "string" ||
       typeof payload.name !== "string" ||
-      (role !== "ADMIN" && role !== "TECH" && role !== "CUSTOMER")
+      (role !== "ADMIN" && role !== "TECH" && role !== "CUSTOMER") ||
+      (dev !== undefined && typeof dev !== "boolean")
     ) {
       return null;
     }

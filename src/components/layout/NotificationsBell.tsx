@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import type { Channel, default as PusherClient } from "pusher-js";
 import NotificationSoundToggle from "@/components/notifications/NotificationSoundToggle";
 import { useLiveAnnouncement } from "@/components/notifications/use-live-announcement";
@@ -19,7 +20,18 @@ import {
   getNotificationSource,
   getNotificationTitle,
 } from "@/lib/notifications/view";
-import { emitNotificationSignal } from "@/lib/notifications/client-alert";
+import {
+  emitNotificationSignal,
+  shouldAnnounceNewUnread,
+  type UnreadValueSource,
+} from "@/lib/notifications/client-alert";
+import {
+  clearRecentCache,
+  readRecentCache,
+  writeRecentCache,
+  type RecentNotification,
+} from "@/lib/notifications/client-cache";
+import { subscribeNotificationsChanged } from "@/lib/notifications/client-events";
 import {
   addBusinessDays,
   formatInBusinessTimeZone,
@@ -28,16 +40,20 @@ import {
 import { useEscapeKey } from "@/lib/ui/use-escape-key";
 import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
-type NotificationItem = {
-  id: string;
-  eventType: string;
-  status: string;
-  createdAt: string;
-  readAt?: string | null;
-  severity?: "INFO" | "WARNING" | "CRITICAL";
-  payload?: Record<string, unknown> | null;
-  customerName?: string | null;
-  link?: string | null;
+type NotificationItem = RecentNotification;
+
+/** Novedad pendiente de anunciar: la decide `load()`, la renderiza un efecto con el idioma actual. */
+type NewUnreadAlert = {
+  readonly id: string;
+  /** Notificación sin leer más reciente, o `null` si la lista no trae ninguna. */
+  readonly item: NotificationItem | null;
+  /** Cuántas entraron desde el último valor contabilizado. */
+  readonly count: number;
+};
+
+type LoadOptions = {
+  /** `true` para recargas provocadas por el propio usuario: nunca suenan. */
+  readonly silent?: boolean;
 };
 
 type LiveAlert = {
@@ -59,8 +75,17 @@ const ALERT_SWIPE_CLOSE_THRESHOLD = -60;
 const ROW_SWIPE_OPEN_THRESHOLD = -36;
 const ROW_SWIPE_DELETE_THRESHOLD = -56;
 const ROW_SWIPE_MAX = -92;
-const NOTIFICATIONS_CACHE_KEY = "ap:notifications:recent:v1";
-const NOTIFICATIONS_CACHE_TTL_MS = 30 * 1000;
+const NOTIFICATIONS_POLL_INTERVAL_MS = 20 * 1000;
+const INTERNAL_LINK_PREFIX = "/";
+const PROTOCOL_RELATIVE_PREFIX = "//";
+
+/** Enlace servido por la propia aplicación: "//host" apunta fuera del dominio. */
+function isInternalLink(link: string): boolean {
+  return (
+    link.startsWith(INTERNAL_LINK_PREFIX) &&
+    !link.startsWith(PROTOCOL_RELATIVE_PREFIX)
+  );
+}
 
 function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
   const aTime = new Date(a.createdAt).getTime();
@@ -119,7 +144,6 @@ export default function NotificationsBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -130,12 +154,26 @@ export default function NotificationsBell() {
   const [alertDragOffset, setAlertDragOffset] = useState(0);
   const [panelPlacement, setPanelPlacement] = useState<PanelPlacement | null>(null);
   const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
+  const [newUnreadAlert, setNewUnreadAlert] = useState<NewUnreadAlert | null>(null);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const portalPanelRef = useRef<HTMLDivElement | null>(null);
   const bellButtonRef = useRef<HTMLButtonElement | null>(null);
+  /** Último valor de "sin leer" ya contabilizado (red, caché o baja optimista local). */
   const previousUnreadRef = useRef(0);
-  const initializedRef = useRef(false);
+  /** `true` en cuanto llega la primera respuesta del servidor de este montaje. */
+  const hasServerValueRef = useRef(false);
+  const announcedAlertIdRef = useRef<string | null>(null);
+  /** Descarta respuestas desordenadas: solo la última carga lanzada escribe estado. */
+  const loadSequenceRef = useRef(0);
+  /**
+   * Cambia con cada acción local (marcar leída, borrar, limpiar). Una carga que
+   * la cruce trae un contador anterior a la acción: se aplica, pero no suena.
+   */
+  const localMutationRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  const userIdRequestRef = useRef<Promise<string | null> | null>(null);
   const alertAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertSwipeStartYRef = useRef<number | null>(null);
@@ -149,6 +187,7 @@ export default function NotificationsBell() {
   const rowSwipeConsumedIdRef = useRef<string | null>(null);
   const panelId = useId();
   const panelTitleId = useId();
+  const router = useRouter();
   const { message: liveAnnouncement, announce } = useLiveAnnouncement();
 
   const usePusher =
@@ -208,40 +247,111 @@ export default function NotificationsBell() {
   useEffect(
     () => () => {
       resetLiveAlertTimers();
+      loadAbortRef.current?.abort();
     },
     []
   );
 
-  const load = useCallback(async () => {
+  /**
+   * Identidad de la sesión, resuelta una sola vez por montaje y guardada en un
+   * ref: si viviera en estado, `load` y el efecto de tiempo real cambiarían de
+   * identidad al resolverse y duplicarían peticiones y suscripciones.
+   */
+  const resolveUserId = useCallback(async (): Promise<string | null> => {
+    if (userIdRef.current) {
+      return userIdRef.current;
+    }
+    if (!userIdRequestRef.current) {
+      userIdRequestRef.current = (async () => {
+        try {
+          const response = await fetch("/api/auth/me", { cache: "no-store" });
+          const data = (await response.json()) as { user?: { id?: unknown } };
+          const id = typeof data.user?.id === "string" ? data.user.id : null;
+          userIdRef.current = id;
+          return id;
+        } catch {
+          // Reintentable: una caída de red no debe dejar la sesión sin resolver.
+          userIdRequestRef.current = null;
+          return null;
+        }
+      })();
+    }
+    return userIdRequestRef.current;
+  }, []);
+
+  /**
+   * Contabiliza un valor de "sin leer" y devuelve cuántas entraron desde el
+   * último ya contabilizado, o 0 cuando el valor no es una novedad anunciable
+   * (la regla vive entera en `shouldAnnounceNewUnread`).
+   */
+  const countNewUnread = useCallback(
+    (value: number, source: UnreadValueSource): number => {
+      const previous = previousUnreadRef.current;
+      const isNews = shouldAnnounceNewUnread({
+        previous,
+        next: value,
+        source,
+        hasServerValue: hasServerValueRef.current,
+      });
+      previousUnreadRef.current = value;
+      return isNews ? value - previous : 0;
+    },
+    []
+  );
+
+  /**
+   * Marca que el usuario acaba de cambiar el estado en el servidor: invalida la
+   * caché —que ya está obsoleta— antes de que salga la petición y deja constancia
+   * para que una carga en vuelo no confunda el contador anterior con una novedad.
+   */
+  const markLocalMutation = useCallback(() => {
+    localMutationRef.current += 1;
+    clearRecentCache();
+  }, []);
+
+  /**
+   * Carga el contador y las últimas notificaciones.
+   *
+   * - La caché de sesión solo se aplica mientras no haya llegado ninguna
+   *   respuesta del servidor en este montaje: después es siempre más vieja que
+   *   el estado en memoria y resucitaría filas ya borradas.
+   * - Cada llamada aborta la anterior y lleva número de secuencia, de modo que
+   *   una respuesta desordenada nunca escribe estado ni sube el contador. Lo
+   *   mismo vale para una respuesta anterior a una acción del usuario.
+   * - `silent` marca las recargas provocadas por el propio usuario, que nunca
+   *   suenan aunque el contador suba.
+   */
+  const load = useCallback(async ({ silent = false }: LoadOptions = {}) => {
+    const sequence = loadSequenceRef.current + 1;
+    loadSequenceRef.current = sequence;
+    const mutationAtStart = localMutationRef.current;
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+    const isCurrent = () => loadSequenceRef.current === sequence;
+
     setLoading(true);
     try {
-      if (typeof window !== "undefined") {
-        try {
-          const cached = window.sessionStorage.getItem(NOTIFICATIONS_CACHE_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached) as {
-              ts?: number;
-              unread?: number;
-              notifications?: NotificationItem[];
-            };
-            if (
-              parsed?.ts &&
-              Date.now() - parsed.ts < NOTIFICATIONS_CACHE_TTL_MS &&
-              Array.isArray(parsed.notifications)
-            ) {
-              setUnreadCount(typeof parsed.unread === "number" ? parsed.unread : 0);
-              setNotifications([...parsed.notifications].sort(byCreatedDesc));
-            }
-          }
-        } catch {
-          // Ignore cache read failures.
+      if (!hasServerValueRef.current) {
+        const cached = readRecentCache();
+        if (cached) {
+          // Siembra la referencia sin anunciar: la regla descarta la caché.
+          countNewUnread(cached.unread, "cache");
+          setUnreadCount(cached.unread);
+          setNotifications([...cached.notifications].sort(byCreatedDesc));
         }
       }
 
       const cacheBust = Date.now().toString();
       const [unreadRes, notificationsRes] = await Promise.all([
-        fetch(`/api/notifications/unread?cb=${cacheBust}`, { cache: "no-store" }),
-        fetch(`/api/notifications/recent?cb=${cacheBust}`, { cache: "no-store" }),
+        fetch(`/api/notifications/unread?cb=${cacheBust}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        }),
+        fetch(`/api/notifications/recent?cb=${cacheBust}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        }),
       ]);
       if (!unreadRes.ok || !notificationsRes.ok) {
         throw new Error(
@@ -252,44 +362,46 @@ export default function NotificationsBell() {
       const notificationsData = (await notificationsRes.json()) as {
         notifications?: unknown;
       };
+      if (!isCurrent() || localMutationRef.current !== mutationAtStart) {
+        // Respuesta anterior a una acción del usuario (marcar leída, borrar,
+        // limpiar): su contador y su lista ya no describen el servidor, así que
+        // no se aplican ni se guardan en caché. Manda el estado optimista.
+        return;
+      }
 
       const unread =
         typeof unreadData.unread === "number" ? unreadData.unread : 0;
-      setUnreadCount(unread);
       const resolved = Array.isArray(notificationsData.notifications)
         ? (notificationsData.notifications as NotificationItem[])
         : [];
-      setNotifications([...resolved].sort(byCreatedDesc));
-      setLoadFailed(false);
-      if (typeof window !== "undefined") {
-        try {
-          window.sessionStorage.setItem(
-            NOTIFICATIONS_CACHE_KEY,
-            JSON.stringify({
-              ts: Date.now(),
-              unread,
-              notifications: resolved,
-            })
-          );
-        } catch {
-          // Ignore cache write failures.
-        }
-      }
+      const sorted = [...resolved].sort(byCreatedDesc);
+      const newUnread = countNewUnread(unread, "network");
 
-      if (!userId) {
-        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-        const meData = await meRes.json().catch(() => ({ user: null }));
-        if (meData?.user?.id) {
-          setUserId(meData.user.id);
-        }
+      hasServerValueRef.current = true;
+      setUnreadCount(unread);
+      setNotifications(sorted);
+      setLoadFailed(false);
+      writeRecentCache({ unread, notifications: resolved });
+
+      if (newUnread > 0 && !silent) {
+        setNewUnreadAlert({
+          id: `${Date.now()}-${sequence}`,
+          item: sorted.find((item) => !item.readAt) ?? null,
+          count: newUnread,
+        });
       }
     } catch {
+      if (controller.signal.aborted || !isCurrent()) {
+        return;
+      }
       // Keep whatever is already shown (cache or previous load) and surface the failure.
       setLoadFailed(true);
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
-  }, [userId]);
+  }, [countNewUnread]);
 
   const updatePanelPlacement = useCallback(() => {
     if (!canUseDom || !bellButtonRef.current) {
@@ -326,6 +438,15 @@ export default function NotificationsBell() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Acciones del centro de notificaciones (misma página): recarga sin sonido.
+  useEffect(
+    () =>
+      subscribeNotificationsChanged(() => {
+        void load({ silent: true });
+      }),
+    [load]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -370,13 +491,19 @@ export default function NotificationsBell() {
     return () => window.removeEventListener("resize", resetDesktopRows);
   }, [canUseDom, open]);
 
+  // Solo se monta y desmonta con el componente: la identidad de la sesión se
+  // resuelve dentro, así que resolverla no reabre el canal ni duplica el sondeo.
   useEffect(() => {
-    if (usePusher && userId) {
+    if (usePusher) {
       let channel: Channel | null = null;
       let pusher: PusherClient | null = null;
       let cancelled = false;
 
       const setup = async () => {
+        const id = await resolveUserId();
+        if (cancelled || !id) {
+          return;
+        }
         const { default: Pusher } = await import("pusher-js");
         if (cancelled) {
           return;
@@ -385,7 +512,7 @@ export default function NotificationsBell() {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
           authEndpoint: "/api/notifications/pusher-auth",
         });
-        channel = pusher.subscribe(`private-user-${userId}`);
+        channel = pusher.subscribe(`private-user-${id}`);
         channel.bind("notification", () => {
           void load();
         });
@@ -404,34 +531,30 @@ export default function NotificationsBell() {
       };
     }
 
-    if (!usePusher) {
-      let stream: EventSource | null = null;
-      if (typeof window !== "undefined" && "EventSource" in window) {
-        stream = new EventSource("/api/notifications/stream");
-        stream.addEventListener("notification", () => {
-          void load();
-        });
-      }
-      const intervalId = window.setInterval(() => {
+    let stream: EventSource | null = null;
+    if (typeof window !== "undefined" && "EventSource" in window) {
+      stream = new EventSource("/api/notifications/stream");
+      stream.addEventListener("notification", () => {
         void load();
-      }, 20000);
-      const onVisibilityChange = () => {
-        if (!document.hidden) {
-          void load();
-        }
-      };
-      document.addEventListener("visibilitychange", onVisibilityChange);
-      return () => {
-        if (stream) {
-          stream.close();
-        }
-        window.clearInterval(intervalId);
-        document.removeEventListener("visibilitychange", onVisibilityChange);
-      };
+      });
     }
-
-    return undefined;
-  }, [load, usePusher, userId]);
+    const intervalId = window.setInterval(() => {
+      void load();
+    }, NOTIFICATIONS_POLL_INTERVAL_MS);
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        void load();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      if (stream) {
+        stream.close();
+      }
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [load, resolveUserId, usePusher]);
 
   const grouped = useMemo(() => {
     const groups = {
@@ -462,33 +585,36 @@ export default function NotificationsBell() {
     return groups;
   }, [notifications]);
 
+  // Una baja local (marcar leída, borrar, limpiar) rebaja la referencia para que
+  // la siguiente subida real vuelva a contar como novedad.
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
+    if (unreadCount < previousUnreadRef.current) {
       previousUnreadRef.current = unreadCount;
+    }
+  }, [unreadCount]);
+
+  // `load()` decide si hay novedad; aquí solo se anuncia, con el idioma vigente.
+  // El ref evita repetir el aviso si cambia el diccionario o el idioma.
+  useEffect(() => {
+    if (!newUnreadAlert || announcedAlertIdRef.current === newUnreadAlert.id) {
       return;
     }
-
-    if (unreadCount > previousUnreadRef.current) {
-      const latestUnread = notifications.find((item) => !item.readAt);
-      const title = latestUnread
-        ? getNotificationTitle(latestUnread.eventType, t)
-        : t("userMenu.notifications");
-      const body = latestUnread
-        ? getNotificationDetail(latestUnread, locale, t)
-        : t("userMenu.recent");
-      const newCount = unreadCount - previousUnreadRef.current;
-      emitNotificationSignal({ title, body });
-      showLiveAlert(title, body);
-      announce(
-        newCount === 1
-          ? t("layout.notifications.announceNewOne")
-          : t("layout.notifications.announceNewMany", { count: newCount })
-      );
-    }
-
-    previousUnreadRef.current = unreadCount;
-  }, [announce, locale, notifications, showLiveAlert, t, unreadCount]);
+    announcedAlertIdRef.current = newUnreadAlert.id;
+    const { item, count } = newUnreadAlert;
+    const title = item
+      ? getNotificationTitle(item.eventType, t)
+      : t("userMenu.notifications");
+    const body = item
+      ? getNotificationDetail(item, locale, t)
+      : t("userMenu.recent");
+    emitNotificationSignal({ title, body });
+    showLiveAlert(title, body);
+    announce(
+      count === 1
+        ? t("layout.notifications.announceNewOne")
+        : t("layout.notifications.announceNewMany", { count })
+    );
+  }, [announce, locale, newUnreadAlert, showLiveAlert, t]);
 
   const markAsRead = useCallback(
     async (item: NotificationItem) => {
@@ -496,6 +622,7 @@ export default function NotificationsBell() {
         return true;
       }
       try {
+        markLocalMutation();
         const response = await fetch(`/api/notifications/${item.id}/read`, {
           method: "POST",
         });
@@ -519,7 +646,7 @@ export default function NotificationsBell() {
         return false;
       }
     },
-    [t]
+    [markLocalMutation, t]
   );
 
   const openNotification = useCallback(
@@ -531,11 +658,16 @@ export default function NotificationsBell() {
         return;
       }
       setOpen(false);
-      if (item.link) {
-        window.location.href = item.link;
+      if (!item.link) {
+        return;
       }
+      if (isInternalLink(item.link)) {
+        router.push(item.link);
+        return;
+      }
+      window.location.href = item.link;
     },
-    [markAsRead]
+    [markAsRead, router]
   );
 
   const handleDeleteNotification = useCallback(
@@ -545,8 +677,7 @@ export default function NotificationsBell() {
       }
       setActionError(null);
       setDeletingId(item.id);
-      const previousNotifications = notifications;
-      const previousUnreadCount = unreadCount;
+      markLocalMutation();
 
       setNotifications((current) => current.filter((entry) => entry.id !== item.id));
       if (!item.readAt) {
@@ -561,8 +692,16 @@ export default function NotificationsBell() {
           throw new Error(`Delete failed with status ${response.status}`);
         }
       } catch {
-        setNotifications(previousNotifications);
-        setUnreadCount(previousUnreadCount);
+        // Reposición sobre el estado vigente: un sondeo pudo traer filas nuevas
+        // mientras la petición estaba en vuelo.
+        setNotifications((current) =>
+          current.some((entry) => entry.id === item.id)
+            ? current
+            : [...current, item].sort(byCreatedDesc)
+        );
+        if (!item.readAt) {
+          setUnreadCount((current) => current + 1);
+        }
         setActionError(t("layout.notifications.actionError"));
       } finally {
         setDeletingId(null);
@@ -576,7 +715,7 @@ export default function NotificationsBell() {
         });
       }
     },
-    [deletingId, notifications, t, unreadCount]
+    [deletingId, markLocalMutation, t]
   );
 
   const handleClearAll = useCallback(async () => {
@@ -588,6 +727,8 @@ export default function NotificationsBell() {
 
     const previousNotifications = notifications;
     const previousUnreadCount = unreadCount;
+    // Antes del await: la recarga posterior no debe encontrar la caché vieja.
+    markLocalMutation();
     setNotifications([]);
     setUnreadCount(0);
     setSwipeOffsets({});
@@ -599,15 +740,24 @@ export default function NotificationsBell() {
       if (!response.ok) {
         throw new Error(`Clear failed with status ${response.status}`);
       }
-      await load();
+      await load({ silent: true });
     } catch {
-      setNotifications(previousNotifications);
-      setUnreadCount(previousUnreadCount);
+      // Reposición sobre el estado vigente, sin pisar lo que llegara entretanto.
+      setNotifications((current) => {
+        const currentIds = new Set(current.map((entry) => entry.id));
+        const restored = previousNotifications.filter(
+          (entry) => !currentIds.has(entry.id)
+        );
+        return restored.length === 0
+          ? current
+          : [...current, ...restored].sort(byCreatedDesc);
+      });
+      setUnreadCount((current) => Math.max(current, previousUnreadCount));
       setActionError(t("layout.notifications.actionError"));
     } finally {
       setClearing(false);
     }
-  }, [clearing, load, notifications, t, unreadCount]);
+  }, [clearing, load, markLocalMutation, notifications, t, unreadCount]);
 
   const handleRowPointerDown = (
     itemId: string,
@@ -789,7 +939,10 @@ export default function NotificationsBell() {
                       <button
                         type="button"
                         onClick={() => void handleClearAll()}
-                        disabled={clearing || notifications.length === 0}
+                        disabled={
+                          clearing ||
+                          (unreadCount === 0 && notifications.length === 0)
+                        }
                         className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
                       >
                         {clearing ? t("common.feedback.saving") : t("notifications.clear")}

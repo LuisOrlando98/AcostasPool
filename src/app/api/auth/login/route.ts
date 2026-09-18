@@ -76,7 +76,8 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    const resolvedRole = isDeveloperEmail(user.email) ? "ADMIN" : user.role;
+    const developerAccess = isDeveloperEmail(user.email);
+    const resolvedRole = developerAccess ? "ADMIN" : user.role;
 
     const token = await signSessionToken({
       sub: user.id,
@@ -84,6 +85,9 @@ export async function POST(request: Request) {
       name: user.fullName,
       role: resolvedRole,
       avatarUrl: user.avatarUrl,
+      // `dev` deja que el proxy permita /admin, /tech y /client sin leer la BD
+      // mientras la vista de desarrollador esta activa.
+      dev: developerAccess,
     });
 
     const response = NextResponse.json({

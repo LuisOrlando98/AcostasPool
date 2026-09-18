@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
+import DeveloperViewSwitcher from "@/components/layout/DeveloperViewSwitcher";
+import type { UserRole } from "@/lib/auth/config";
+
+type DevViewInfo = {
+  role: UserRole;
+  targetLabel: string;
+  actorName: string;
+};
 
 type UserInfo = {
   name: string;
@@ -11,6 +19,8 @@ type UserInfo = {
   role: string;
   avatarUrl?: string | null;
   isDeveloper?: boolean;
+  /** Vista de desarrollador activa; `null` cuando se ve la app como uno mismo. */
+  devView?: DevViewInfo | null;
 };
 
 export default function SidebarAccount() {
@@ -46,6 +56,10 @@ export default function SidebarAccount() {
         .toUpperCase()
     : "AP";
   const isAdmin = user?.role === "ADMIN";
+  // El conmutador aparece también en las vistas emuladas: ahí `role` ya es
+  // TECH/CUSTOMER, y `devView` es lo único que delata a la cuenta real.
+  const showDevViewSwitcher = Boolean(user?.isDeveloper || user?.devView);
+  const activeDevViewRole: UserRole = user?.devView?.role ?? "ADMIN";
   const accountHref = user?.role === "CUSTOMER" ? "/client/profile" : "/account";
 
   const handleLogout = async () => {
@@ -135,6 +149,9 @@ export default function SidebarAccount() {
           </a>
         ) : null}
         <InstallAppAction variant="sidebar" />
+        {showDevViewSwitcher ? (
+          <DeveloperViewSwitcher activeRole={activeDevViewRole} />
+        ) : null}
         {user?.isDeveloper ? (
           <a href="/admin/developer" className="sidebar-account-link">
             <span className="sidebar-account-icon" aria-hidden="true">

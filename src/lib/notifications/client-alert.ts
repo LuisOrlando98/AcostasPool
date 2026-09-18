@@ -208,3 +208,41 @@ export function emitNotificationSignal({
   }
   showSystemNotification(title, body);
 }
+
+/** Origen del valor de "sin leer" que la campana acaba de aplicar. */
+export type UnreadValueSource = "cache" | "network";
+
+export type UnreadAnnouncementInput = {
+  /** Último valor ya contabilizado (caché, red o una baja optimista local). */
+  readonly previous: number;
+  /** Valor recién aplicado. */
+  readonly next: number;
+  readonly source: UnreadValueSource;
+  /** `true` cuando ya llegó al menos una respuesta del servidor en este montaje. */
+  readonly hasServerValue: boolean;
+};
+
+/**
+ * Decide si un valor de "sin leer" representa una novedad real que merece
+ * sonido y aviso visible.
+ *
+ * La campana se remonta en cada navegación (AppShell se instancia por página),
+ * así que el primer valor de cada montaje —venga de la caché de sesión o de la
+ * primera respuesta del servidor— solo siembra la referencia: anunciarlo haría
+ * sonar la aplicación en cada página sin que haya llegado nada nuevo. A partir
+ * de ahí, solo un valor de red mayor que el último contabilizado es novedad.
+ */
+export function shouldAnnounceNewUnread({
+  previous,
+  next,
+  source,
+  hasServerValue,
+}: UnreadAnnouncementInput): boolean {
+  if (source !== "network") {
+    return false;
+  }
+  if (!hasServerValue) {
+    return false;
+  }
+  return next > previous;
+}

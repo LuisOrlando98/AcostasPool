@@ -98,6 +98,16 @@ Las notificaciones se publican por Pusher cuando `PUSHER_APP_ID`, `PUSHER_KEY`, 
 ## Proteccion de rutas
 `src/proxy.ts` (convencion `proxy` de Next 16, antes `middleware`) se ejecuta antes de renderizar `/admin`, `/tech` y `/client`: sin cookie de sesion valida redirige a `/login?next=<ruta>` y con un rol distinto al de la seccion redirige a `/unauthorized?next=<inicio del rol>`. Los guards de servidor de `src/lib/auth/guards.ts` siguen siendo la fuente de verdad (usuario activo, rol en base de datos, acceso developer); el proxy solo adelanta la redireccion y conserva `?next=`.
 
+## Vista de desarrollador
+La cuenta de desarrollador (correo incluido en `DEFAULT_DEVELOPER_EMAILS` de `src/lib/auth/developer.ts`) puede recorrer la aplicacion como administrador, tecnico o cliente sin cerrar sesion.
+
+- **Como se activa**: en la tarjeta de cuenta del sidebar aparece un conmutador con las tres vistas. Al elegir Tecnico o Cliente se selecciona ademas el usuario objetivo (`GET /api/developer/view/targets` lista los usuarios activos con fila `Technician`/`Customer`) y `POST /api/developer/view` escribe la cookie `ap_dev_view` (httpOnly, `SameSite=Lax`, `Secure` en produccion, 12 h). La cookie solo guarda `{ role, targetUserId }`; la sesion real (`ap_session`) no cambia nunca.
+- **Como se vuelve a administrador**: con el boton "Volver a administrador" de la franja superior, o eligiendo Administrador en el conmutador; ambos envian `POST /api/developer/view` con `role: "ADMIN"`, que borra la cookie. Si algo falla, basta con borrar la cookie `ap_dev_view` del navegador o cerrar sesion: la vista vuelve a administrador sola.
+- **Quien puede usarla**: `getSession()` ignora `ap_dev_view` por completo para cualquier cuenta que no sea de desarrollador, y las dos rutas `/api/developer/view*` resuelven el usuario REAL desde la cookie de sesion y la base de datos (no desde `getSession()`) antes de responder; el resto recibe `403`.
+- **Auditoria**: cada cambio de vista deja un `AuditLog` con `action = "DEV_VIEW_SWITCH"`, `userId` del desarrollador y `metadata = { role, targetUserId }`.
+- **Atribucion**: mientras la vista esta activa la sesion efectiva ES la del usuario objetivo, asi que **todo lo que se haga (trabajos, facturas, notificaciones, auditoria) queda atribuido a ese tecnico o cliente**, no al desarrollador. La unica excepcion es el propio registro del cambio de vista. Usala para mirar, no para operar.
+- **Tokens anteriores**: el JWT de sesion incorpora ahora el claim `dev` para que `src/proxy.ts` deje pasar los tres prefijos protegidos sin consultar la base de datos. Las sesiones abiertas antes de este cambio deben iniciar sesion una vez mas para obtenerlo.
+
 ## Verificacion y pruebas
 - `npm run verify`: typecheck (`tsc --noEmit`), lint (`eslint`) y tests unitarios (`vitest run`). Es el mismo conjunto que exige la CI antes del build.
 - `npm run test:unit` / `npm run test:watch`: solo Vitest (`tests/unit/**`).

@@ -55,6 +55,32 @@ export async function loginViaApi(
   }
 }
 
+/**
+ * Same API login as `loginViaApi` but with explicit credentials, for accounts
+ * that the suite creates itself (developer account of tests/e2e/dev-view.spec.ts)
+ * and therefore are not part of SEED_CREDENTIALS.
+ */
+export async function loginWithCredentials(
+  baseURL: string,
+  credentials: Credentials
+): Promise<StorageState> {
+  const api = await request.newContext({ baseURL });
+  try {
+    const response = await api.post(LOGIN_ENDPOINT, {
+      data: { ...credentials, remember: true },
+    });
+    const body = (await response.json().catch(() => ({}))) as LoginResponseBody;
+    if (!response.ok() || body.ok !== true) {
+      throw new Error(
+        `API login failed for ${credentials.email} (HTTP ${response.status()}): ${body.error ?? "unknown error"}`
+      );
+    }
+    return await api.storageState();
+  } finally {
+    await api.dispose();
+  }
+}
+
 export type AuthStateCache = {
   readonly get: (role: Role) => Promise<StorageState>;
 };

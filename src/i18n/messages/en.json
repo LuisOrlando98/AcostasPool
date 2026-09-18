@@ -2832,5 +2832,35 @@
       "reload": "Reload",
       "dismiss": "Later"
     }
+  },
+  "devView": {
+    "title": "Developer view",
+    "groupLabel": "Choose the view",
+    "roles": {
+      "ADMIN": "Administrator",
+      "TECH": "Technician",
+      "CUSTOMER": "Client"
+    },
+    "roleInitials": {
+      "ADMIN": "A",
+      "TECH": "T",
+      "CUSTOMER": "C"
+    },
+    "targetLabel": "Target user",
+    "targetPlaceholder": "Select a user",
+    "targetEmpty": "No users available for this view.",
+    "apply": "Apply view",
+    "applying": "Switching…",
+    "loading": "Loading targets…",
+    "banner": {
+      "text": "Developer view: {{role}} · {{target}}",
+      "back": "Back to administrator",
+      "returning": "Returning…"
+    },
+    "errors": {
+      "load": "The available targets could not be loaded.",
+      "switch": "The view could not be changed.",
+      "target": "Pick a target user first."
+    }
   }
 }

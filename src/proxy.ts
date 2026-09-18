@@ -51,6 +51,14 @@ export async function proxy(request: NextRequest) {
     return redirectWithNext(request, LOGIN_PATH, pathname);
   }
 
+  // Vista de desarrollador: el JWT de una cuenta de desarrollador habilita los
+  // tres prefijos protegidos. El rol efectivo lo siguen aplicando los guards de
+  // servidor (`@/lib/auth/guards`), que leen la sesion resuelta en la base de
+  // datos y la cookie `ap_dev_view`.
+  if (session.dev === true) {
+    return NextResponse.next();
+  }
+
   if (session.role !== route.role) {
     const fallback = ROLE_REDIRECTS[session.role] ?? HOME_PATH;
     return redirectWithNext(request, UNAUTHORIZED_PATH, fallback);
