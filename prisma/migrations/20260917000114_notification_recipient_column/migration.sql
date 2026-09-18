@@ -24,4 +24,4 @@ WHERE "recipientUserId" IS NULL
   AND payload->>'recipientUserId' <> '';
 
 -- CreateIndex
-CREATE INDEX "Notification_recipientUserId_createdAt_idx" ON "Notification"("recipientUserId", "createdAt");
+CREATE INDEX IF NOT EXISTS "Notification_recipientUserId_createdAt_idx" ON "Notification"("recipientUserId", "createdAt");

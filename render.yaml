@@ -14,6 +14,13 @@ services:
       # If every attempt fails the deploy must stop here: going live with a
       # build whose Prisma client expects columns the database does not have
       # breaks every page that touches those tables.
+      # One-off repair for the 18 Sep 2026 incident: the index migration of the
+      # main-based branch failed in production (duplicate indexes) and a failed
+      # migration blocks every later "migrate deploy". Marking it rolled back
+      # lets the (now idempotent) migration run again; when it is not in a
+      # failed state the CLI just errors and that error is ignored. Safe to
+      # remove once production is migrated.
+      npx prisma migrate resolve --rolled-back 20260916235800_add_missing_indexes || true
       migrated=0
       for i in 1 2 3; do
         if npx prisma migrate deploy; then migrated=1; break; fi

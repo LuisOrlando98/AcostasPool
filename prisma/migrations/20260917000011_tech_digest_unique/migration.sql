@@ -48,4 +48,4 @@ WHERE d."id" = ranked."id"
   AND ranked."id" <> ranked."keepId";
 
 -- CreateIndex
-CREATE UNIQUE INDEX "TechDigest_technicianId_routeDate_window_key" ON "TechDigest"("technicianId", "routeDate", "window");
+CREATE UNIQUE INDEX IF NOT EXISTS "TechDigest_technicianId_routeDate_window_key" ON "TechDigest"("technicianId", "routeDate", "window");
