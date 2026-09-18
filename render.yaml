@@ -11,11 +11,19 @@ services:
       npx playwright install chromium
       npm run build
     preDeployCommand: |
+      # If every attempt fails the deploy must stop here: going live with a
+      # build whose Prisma client expects columns the database does not have
+      # breaks every page that touches those tables.
+      migrated=0
       for i in 1 2 3; do
-        npx prisma migrate deploy && break
+        if npx prisma migrate deploy; then migrated=1; break; fi
         echo "Prisma migrate deploy failed (attempt $i). Retrying in 5s..."
         sleep 5
       done
+      if [ "$migrated" != "1" ]; then
+        echo "Prisma migrate deploy failed after 3 attempts: aborting the deploy (previous version stays live)."
+        exit 1
+      fi
     startCommand: npm run start -- -H 0.0.0.0 -p $PORT
     envVars:
       - key: NODE_VERSION
