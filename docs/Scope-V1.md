@@ -1,5 +1,12 @@
 # Alcance Funcional V1
 
+> **Estado a 18 sep 2026**: los módulos y estados listados abajo siguen vigentes y ya están
+> implementados en producción (Render, no solo local). Se ampliaron con prioridad de trabajo
+> (`JobPriority`), niveles de servicio (`ServiceTier`) y planes recurrentes materializados
+> automáticamente por el worker cron; asistente de rutas con geocodificación persistida;
+> notificaciones en tiempo real (Pusher/SSE) y digests de técnico además del email; PWA
+> instalable e i18n EN/ES. Ver `docs/Architecture.md` y `docs/adr/` para el detalle.
+
 ## Modulos
 - Autenticacion y roles
 - Administracion de clientes
