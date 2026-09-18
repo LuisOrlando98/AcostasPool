@@ -4,7 +4,7 @@ import StatCard from "@/components/ui/StatCard";
 import TechRoutePlannerButton from "@/components/tech/TechRoutePlannerButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerName, formatJobTitle } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { geocodeProperties } from "@/lib/routing/geo";
 import { BUSINESS_TIMEZONE, toDateKey } from "@/lib/jobs/capacity";
@@ -86,7 +86,7 @@ export default async function TechPage() {
       serviceType: true,
       customer: { select: { nombre: true, apellidos: true, telefono: true } },
       property: {
-        select: { id: true, address: true, lat: true, lng: true, geocodedAt: true },
+        select: { id: true, name: true, address: true, lat: true, lng: true, geocodedAt: true },
       },
       photos: { select: { id: true } },
     },
@@ -147,7 +147,7 @@ export default async function TechPage() {
   );
   const routePreviewStops = routeJobs.map((job) => ({
     id: job.id,
-    customerName: formatCustomerName(job.customer),
+    customerName: formatJobTitle(formatCustomerName(job.customer), job.property),
     address: job.property.address,
   }));
 
@@ -179,7 +179,7 @@ export default async function TechPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-base font-semibold text-slate-900">
-                    {formatCustomerName(nextJob.customer)}
+                    {formatJobTitle(formatCustomerName(nextJob.customer), nextJob.property)}
                   </p>
                   <p className="text-sm text-slate-500">
                     {nextJob.property.address}
@@ -383,7 +383,7 @@ export default async function TechPage() {
                           {t("tech.home.route.stop", { count: index + 1 })}
                         </p>
                         <p className="text-sm text-slate-700">
-                          {formatCustomerName(job.customer)}
+                          {formatJobTitle(formatCustomerName(job.customer), job.property)}
                         </p>
                         <p className="text-xs text-slate-500">{job.property.address}</p>
 

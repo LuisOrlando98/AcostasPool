@@ -105,6 +105,7 @@ export default async function TechJobUploadPage({
           technicianName: job.technician?.user.fullName ?? session.name ?? "Tech",
           existingPhotosCount: job.photos.length,
           customerPhone: job.customer.telefono ?? null,
+          propertyName: job.property.name ?? null,
           propertyAddress: job.property.address,
           scheduledTime: formatInBusinessTimeZone(job.scheduledDate, locale, {
             hour: "2-digit",

@@ -25,6 +25,38 @@ export function formatCustomerName(customer: CustomerNameParts) {
   return "Cliente";
 }
 
+export type PropertyLabelParts = {
+  name?: string | null;
+  address: string;
+};
+
+/**
+ * Etiqueta corta de una propiedad: su nombre si lo tiene; si no, el primer
+ * tramo de la dirección (la calle) y, en último término, `fallback`.
+ */
+export function formatPropertyLabel(property: PropertyLabelParts, fallback = ""): string {
+  const name = property.name?.trim();
+  if (name) {
+    return name;
+  }
+  const street = property.address.split(",")[0]?.trim();
+  return street || fallback;
+}
+
+/**
+ * Título de un trabajo en tarjetas y listas: "Cliente · Propiedad" cuando la
+ * propiedad tiene nombre (clientes con varias propiedades, p. ej.
+ * "Parplace · Parplace 2"); solo el cliente cuando no lo tiene, porque la
+ * dirección ya se muestra debajo.
+ */
+export function formatJobTitle(
+  customerName: string,
+  property: Pick<PropertyLabelParts, "name">
+): string {
+  const name = property.name?.trim();
+  return name ? `${customerName} · ${name}` : customerName;
+}
+
 export function formatCustomerAddress(customer: CustomerAddressParts) {
   const line1 = customer.direccionLinea1?.trim() ?? "";
   const line2 = customer.direccionLinea2?.trim() ?? "";

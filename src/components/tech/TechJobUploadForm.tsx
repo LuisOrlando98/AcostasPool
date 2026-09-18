@@ -3,6 +3,7 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/i18n/client";
+import { formatJobTitle } from "@/lib/customers/format";
 import {
   buildCustomerJobPhotoRepositoryPrefix,
   buildTechJobPhotoFileName,
@@ -53,6 +54,8 @@ type TechJobUploadData = {
   technicianName: string;
   existingPhotosCount: number;
   customerPhone?: string | null;
+  /** Nombre de la propiedad (clientes con varias); `null` si no tiene. */
+  propertyName?: string | null;
   propertyAddress: string;
   scheduledTime: string;
   serviceLabel: string;
@@ -306,7 +309,9 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
         </div>
 
         <div className="mt-4 space-y-2 text-sm text-slate-600">
-          <p className="text-base font-semibold text-slate-900">{job.customerName}</p>
+          <p className="text-base font-semibold text-slate-900">
+            {formatJobTitle(job.customerName, { name: job.propertyName })}
+          </p>
           <p className="text-sm text-slate-500">{job.propertyAddress}</p>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="app-chip px-2 py-1 text-xs" data-tone="info">

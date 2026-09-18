@@ -2,7 +2,7 @@ import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerName, formatJobTitle } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 import {
@@ -166,7 +166,7 @@ export default async function TechCalendarPage({
         sortOrder: true,
         planId: true,
         customer: { select: { nombre: true, apellidos: true } },
-        property: { select: { address: true } },
+        property: { select: { name: true, address: true } },
       },
     }),
     prisma.servicePlan.findMany({
@@ -183,7 +183,7 @@ export default async function TechCalendarPage({
         serviceType: true,
         priority: true,
         customer: { select: { nombre: true, apellidos: true } },
-        property: { select: { address: true } },
+        property: { select: { name: true, address: true } },
       },
     }),
   ]);
@@ -201,7 +201,7 @@ export default async function TechCalendarPage({
       href: `/tech/jobs/${job.id}`,
       dateKey: toBusinessDateKey(job.scheduledDate),
       scheduledDate: job.scheduledDate,
-      customerName: formatCustomerName(job.customer),
+      customerName: formatJobTitle(formatCustomerName(job.customer), job.property),
       address: job.property.address,
       serviceType: job.serviceType,
       status: job.status,
@@ -213,7 +213,10 @@ export default async function TechCalendarPage({
       href: null,
       dateKey: occurrence.dateKey,
       scheduledDate: occurrence.scheduledDate,
-      customerName: formatCustomerName(occurrence.plan.customer),
+      customerName: formatJobTitle(
+        formatCustomerName(occurrence.plan.customer),
+        occurrence.plan.property
+      ),
       address: occurrence.plan.property.address,
       serviceType: occurrence.plan.serviceType,
       status: null,

@@ -11,6 +11,7 @@ import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
+import { formatJobTitle, formatPropertyLabel } from "@/lib/customers/format";
 import { useI18n } from "@/i18n/client";
 import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
@@ -978,10 +979,10 @@ export default function RoutesCalendar({
       : [];
     const resolvedTierId =
       job.serviceTierId ?? tierOptions[0]?.id ?? "";
-    const propertyName =
-      job.property.name?.trim() ||
-      job.property.address.split(",")[0]?.trim() ||
-      t("admin.routes.labels.propertyFallback");
+    const propertyName = formatPropertyLabel(
+      job.property,
+      t("admin.routes.labels.propertyFallback")
+    );
     setActiveTechJobId(null);
     setJobModal({
       jobId: job.id,
@@ -2005,7 +2006,11 @@ export default function RoutesCalendar({
                         ? { backgroundColor: techColor }
                         : { backgroundColor: "#fb7185" };
                     const techName = job.technician?.name ?? t("jobs.detail.noTech");
-                    const cardLabel = [job.customer.name, timeLabel, techName]
+                    // Clientes con varias propiedades: el nombre de la propiedad va en su
+                    // propia línea, porque en la tarjeta compacta el título se trunca.
+                    const propertyDisplayName = job.property.name?.trim() || null;
+                    const cardTitle = formatJobTitle(job.customer.name, job.property);
+                    const cardLabel = [cardTitle, timeLabel, techName]
                       .filter(Boolean)
                       .join(", ");
                     const activateCard = () => {
@@ -2133,9 +2138,20 @@ export default function RoutesCalendar({
                         ) : null}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <div className="truncate text-[11px] font-semibold text-slate-800 xl:text-[12px]">
+                            <div
+                              className="truncate text-[11px] font-semibold text-slate-800 xl:text-[12px]"
+                              title={cardTitle}
+                            >
                               {job.customer.name}
                             </div>
+                            {propertyDisplayName ? (
+                              <div
+                                className="truncate text-[11px] font-semibold text-sky-800"
+                                title={propertyDisplayName}
+                              >
+                                {propertyDisplayName}
+                              </div>
+                            ) : null}
                             <div className="text-[11px] text-slate-500">
                               {secondaryLabel}
                             </div>
@@ -2357,10 +2373,10 @@ export default function RoutesCalendar({
                         timeZone: BUSINESS_TIMEZONE,
                       })
                     : "";
-                  const propertyName =
-                    job.property.name?.trim() ||
-                    job.property.address.split(",")[0]?.trim() ||
-                    t("admin.routes.labels.propertyFallback");
+                  const propertyName = formatPropertyLabel(
+                    job.property,
+                    t("admin.routes.labels.propertyFallback")
+                  );
                   const statusInfo =
                     statusMeta[job.status] ??
                     ({
@@ -2572,10 +2588,10 @@ export default function RoutesCalendar({
                           timeZone: BUSINESS_TIMEZONE,
                         })
                       : "";
-                    const propertyName =
-                      job.property.name?.trim() ||
-                      job.property.address.split(",")[0]?.trim() ||
-                      t("admin.routes.labels.propertyFallback");
+                    const propertyName = formatPropertyLabel(
+                      job.property,
+                      t("admin.routes.labels.propertyFallback")
+                    );
                     const statusInfo =
                       statusMeta[job.status] ??
                       ({
@@ -3135,7 +3151,7 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {job.customer.name}
+                                  {formatJobTitle(job.customer.name, job.property)}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}
@@ -3213,7 +3229,7 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {job.customer.name}
+                                  {formatJobTitle(job.customer.name, job.property)}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}
@@ -3254,7 +3270,7 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {job.customer.name}
+                                  {formatJobTitle(job.customer.name, job.property)}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}
