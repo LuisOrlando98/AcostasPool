@@ -3506,22 +3506,13 @@
       "TECH": "T",
       "CUSTOMER": "C"
     },
-    "targetLabel": "Target user",
-    "targetPlaceholder": "Select a user",
-    "targetEmpty": "No users available for this view.",
-    "apply": "Apply view",
-    "applying": "Switching…",
-    "loading": "Loading targets…",
-    "banner": {
-      "text": "Developer view: {{role}} · {{target}}",
-      "back": "Back to administrator",
-      "returning": "Returning…"
-    },
     "errors": {
-      "load": "The available targets could not be loaded.",
       "switch": "The view could not be changed.",
-      "target": "Pick a target user first."
-    }
+      "notDeveloper": "Your account is not marked as a developer."
+    },
+    "menuLabel": "Developer view: {{role}}",
+    "menuTitle": "View the app as",
+    "activeSuffix": "current view"
   },
   "poolCalculator": {
     "title": "Chlorine calculator",

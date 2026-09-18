@@ -14,6 +14,7 @@
  * invalida en el mismo paso.
  */
 import { clearRecentCache } from "@/lib/notifications/client-cache";
+import type { UserRole } from "@/lib/auth/config";
 
 /** Clave de sessionStorage del usuario del drawer. El sufijo permite invalidar formatos anteriores. */
 export const SHELL_USER_CACHE_KEY = "ap:me-cache:v1";
@@ -24,6 +25,10 @@ export type ShellUser = {
   readonly name?: string;
   readonly email?: string;
   readonly avatarUrl?: string | null;
+  /** Cuenta de desarrollador (conmutador de vistas en la cabecera). */
+  readonly isDeveloper?: boolean;
+  /** Vista emulada al cachear; el conmutador vacía la caché al cambiarla. */
+  readonly devViewRole?: UserRole | null;
 };
 
 type StoredShellUser = {
@@ -60,7 +65,19 @@ function isShellUser(value: unknown): value is ShellUser {
   return (
     isOptionalString(candidate.name) &&
     isOptionalString(candidate.email) &&
-    (candidate.avatarUrl === null || isOptionalString(candidate.avatarUrl))
+    (candidate.avatarUrl === null || isOptionalString(candidate.avatarUrl)) &&
+    (candidate.isDeveloper === undefined || typeof candidate.isDeveloper === "boolean") &&
+    isOptionalDevViewRole(candidate.devViewRole)
+  );
+}
+
+const DEV_VIEW_ROLES: readonly UserRole[] = ["ADMIN", "TECH", "CUSTOMER"];
+
+function isOptionalDevViewRole(value: unknown): value is UserRole | null | undefined {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === "string" && (DEV_VIEW_ROLES as readonly string[]).includes(value))
   );
 }
 

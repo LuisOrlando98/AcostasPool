@@ -12,8 +12,7 @@ import {
   writeCachedShellUser,
   type ShellUser,
 } from "@/components/layout/session-caches";
-import DeveloperViewBanner from "@/components/layout/DeveloperViewBanner";
-import { DeveloperViewSwitcherPanel } from "@/components/layout/DeveloperViewSwitcher";
+import DeveloperViewSwitcher from "@/components/layout/DeveloperViewSwitcher";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { applyInertOutside } from "@/components/ui/AppModal";
 import ModalPresenceManager from "@/components/ui/ModalPresenceManager";
@@ -32,6 +31,29 @@ export type NavItem = {
 };
 
 type MobileUser = ShellUser;
+
+/**
+ * Cuenta de desarrollador leída de la MISMA respuesta de `/api/auth/me` que
+ * alimenta el drawer móvil: el conmutador de la cabecera no añade peticiones.
+ */
+type DeveloperAccount = {
+  isDeveloper: boolean;
+  /** Rol emulado ahora mismo, o `null` si el desarrollador se ve como admin. */
+  devViewRole: UserRole | null;
+};
+
+type MeResponseUser = {
+  name?: string;
+  email?: string;
+  avatarUrl?: string | null;
+  isDeveloper?: boolean;
+  devView?: { role?: string } | null;
+};
+
+function toDevViewRole(devView: MeResponseUser["devView"]): UserRole | null {
+  const role = devView?.role;
+  return role === "TECH" || role === "CUSTOMER" ? role : null;
+}
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "ap:sidebar-collapsed";
 /**
@@ -504,6 +526,15 @@ export default function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileNavPathname, setMobileNavPathname] = useState(pathname);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
+  const [developerAccount, setDeveloperAccount] = useState<DeveloperAccount | null>(
+    null
+  );
+  /**
+   * Vista marcada en el conmutador: el rol que la página ya renderiza (dato de
+   * servidor, disponible en el primer pintado) y, si faltara, el de la sesión.
+   */
+  const devViewActiveRole: UserRole =
+    role ?? developerAccount?.devViewRole ?? "ADMIN";
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
   const isClientApp = role === "CUSTOMER";
@@ -600,22 +631,37 @@ export default function AppShell({
         // Caché vigente: se evita repetir /api/auth/me (y su viaje a base de
         // datos) en cada navegación; caduca sola y se limpia al cambiar de sesión.
         setMobileUser(cachedUser);
+        setDeveloperAccount({
+          isDeveloper: cachedUser.isDeveloper === true,
+          devViewRole: cachedUser.devViewRole ?? null,
+        });
         return;
       }
 
       try {
         const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const data = await response.json().catch(() => ({ user: null }));
-        if (cancelled || !data?.user) {
+        const data = (await response.json().catch(() => null)) as {
+          user?: MeResponseUser | null;
+        } | null;
+        const user = data?.user;
+        if (cancelled || !user) {
           return;
         }
         const nextUser: MobileUser = {
-          name: data.user.name,
-          email: data.user.email,
-          avatarUrl: data.user.avatarUrl ?? null,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl ?? null,
+          // Se cachean junto al usuario: el conmutador y el logout vacían la
+          // caché, así que una vista emulada nunca sobrevive a su cambio.
+          isDeveloper: user.isDeveloper === true,
+          devViewRole: toDevViewRole(user.devView),
         };
         setMobileUser(nextUser);
         writeCachedShellUser(nextUser);
+        setDeveloperAccount({
+          isDeveloper: nextUser.isDeveloper === true,
+          devViewRole: nextUser.devViewRole ?? null,
+        });
       } catch {
         // Sin red o respuesta inválida: el drawer conserva la caché o el
         // fallback (iniciales "AP" y nombre de la app). Solo se evita el
@@ -945,6 +991,9 @@ export default function AppShell({
             </div>
 
             <div className="flex items-center gap-2">
+              {developerAccount?.isDeveloper ? (
+                <DeveloperViewSwitcher activeRole={devViewActiveRole} />
+              ) : null}
               <NotificationsBell />
             </div>
           </div>
@@ -1105,9 +1154,6 @@ export default function AppShell({
                 <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
                   <InstallAppAction variant="sidebar" />
                 </div>
-                <div className="mt-2">
-                  <DeveloperViewSwitcherPanel />
-                </div>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1200,7 +1246,6 @@ export default function AppShell({
           tabIndex={-1}
           className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade focus:outline-none sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
         >
-          <DeveloperViewBanner />
           {children}
         </main>
       </div>

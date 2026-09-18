@@ -1,42 +1,60 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { loginWithCredentials } from "./helpers/auth";
+import { loginWithCredentials, type StorageState } from "./helpers/auth";
 import { expectPageHeading, gotoOk } from "./helpers/assertions";
 import { DEFAULT_BASE_URL, ROLE_HOME } from "./helpers/constants";
 import { HEADINGS } from "./helpers/texts";
 import {
   DEVELOPER_CREDENTIALS,
+  DEV_TEST_PROPERTY_ADDRESS,
+  DEV_TEST_PROPERTY_NAME,
+  cleanupDeveloperUser,
   ensureDeveloperUser,
-  restoreDeveloperUser,
+  signLegacySessionToken,
   type DeveloperFixture,
 } from "./helpers/developer";
 
 /**
- * Vista de desarrollador: el conmutador del sidebar cambia entre administrador,
- * técnico y cliente sin cerrar sesión, y la franja devuelve siempre a
- * administrador. La cuenta se crea aquí porque el acceso depende de que el
- * correo esté en DEFAULT_DEVELOPER_EMAILS, no de la semilla.
+ * Vista de desarrollador: el conmutador de la cabecera cambia entre
+ * administrador, técnico y cliente sin cerrar sesión ni usar credenciales
+ * ajenas (la sesión sigue siendo la del desarrollador; solo cambia el rol).
+ *
+ * La cuenta se crea aquí porque el acceso depende de que el correo esté en
+ * DEFAULT_DEVELOPER_EMAILS, no de la semilla.
  */
 
 const SWITCHER = '[data-testid="dev-view-switcher"]';
-const BANNER = '[data-testid="dev-view-banner"]';
-const APPLY_BUTTON = '[data-testid="dev-view-apply"]';
-const BACK_BUTTON = '[data-testid="dev-view-back"]';
-const TARGET_SELECT = `${SWITCHER} select`;
+const SEGMENTED = '[data-testid="dev-view-segmented"]';
+const MENU_TRIGGER = '[data-testid="dev-view-menu-trigger"]';
+const MENU = '[data-testid="dev-view-menu"]';
+const AUTH_COOKIE_NAME = "ap_session";
+const MOBILE_VIEWPORT = { width: 390, height: 844 } as const;
 
-function roleButton(role: "ADMIN" | "TECH" | "CUSTOMER") {
-  return `${SWITCHER} [data-role="${role}"]`;
+type SwitchableRole = "ADMIN" | "TECH" | "CUSTOMER";
+
+function segmentedOption(role: SwitchableRole) {
+  return `${SEGMENTED} [data-role="${role}"]`;
+}
+
+function menuOption(role: SwitchableRole) {
+  return `${MENU} [data-role="${role}"]`;
+}
+
+function homePattern(home: string): RegExp {
+  return new RegExp(`${home}(\\?.*)?$`);
 }
 
 test.describe.configure({ mode: "serial" });
 
 let fixture: DeveloperFixture;
+let storageState: StorageState;
+let baseURL: string;
 let context: BrowserContext;
 let page: Page;
 
 test.beforeAll(async ({ browser }, workerInfo) => {
   fixture = await ensureDeveloperUser();
-  const baseURL = workerInfo.project.use.baseURL ?? DEFAULT_BASE_URL;
-  const storageState = await loginWithCredentials(baseURL, DEVELOPER_CREDENTIALS);
+  baseURL = workerInfo.project.use.baseURL ?? DEFAULT_BASE_URL;
+  storageState = await loginWithCredentials(baseURL, DEVELOPER_CREDENTIALS);
   context = await browser.newContext({ baseURL, storageState, serviceWorkers: "block" });
   page = await context.newPage();
 });
@@ -44,61 +62,107 @@ test.beforeAll(async ({ browser }, workerInfo) => {
 test.afterAll(async () => {
   await context?.close();
   if (fixture) {
-    await restoreDeveloperUser(fixture);
+    await cleanupDeveloperUser(fixture);
   }
 });
 
-/** Elige rol + objetivo en el conmutador y espera la vista resultante. */
-async function switchTo(
-  role: "TECH" | "CUSTOMER",
-  targetUserId: string,
-  home: string
-): Promise<void> {
-  await page.locator(roleButton(role)).click();
-  await expect(page.locator(roleButton(role))).toHaveAttribute("aria-checked", "true");
-  await expect(page.locator(TARGET_SELECT)).toBeEnabled();
-  await page.locator(TARGET_SELECT).selectOption(targetUserId);
-  await page.locator(APPLY_BUTTON).click();
-  await page.waitForURL(new RegExp(`${home}(\\?.*)?$`));
+/** Pulsa una vista en el control de la cabecera y espera la página resultante. */
+async function switchTo(role: SwitchableRole, home: string): Promise<void> {
+  await page.locator(segmentedOption(role)).click();
+  await page.waitForURL(homePattern(home));
+  await expect(page.locator(segmentedOption(role))).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
 }
 
 test.describe("developer view switcher", () => {
-  test("renders /admin with the switcher and no active view", async () => {
+  test("renders the header control on /admin with the administrator view marked", async () => {
     await gotoOk(page, ROLE_HOME.ADMIN);
 
     await expectPageHeading(page, HEADINGS.adminDashboard);
     await expect(page.locator(SWITCHER)).toBeVisible();
-    await expect(page.locator(BANNER)).toHaveCount(0);
+    await expect(page.locator(segmentedOption("ADMIN"))).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
   });
 
-  test("switches to the technician view and keeps the switcher visible", async () => {
-    await switchTo("TECH", fixture.technicianUserId, ROLE_HOME.TECH);
+  test("switches to the technician view and keeps the control visible", async () => {
+    await switchTo("TECH", ROLE_HOME.TECH);
 
     await expectPageHeading(page, HEADINGS.techHome);
-    await expect(page.locator(BANNER)).toBeVisible();
-    await expect(page.locator(SWITCHER)).toBeVisible();
+    await expect(page.locator(SEGMENTED)).toBeVisible();
   });
 
-  test("returns to the administrator view from the banner", async () => {
-    await page.locator(BACK_BUTTON).click();
-    await page.waitForURL(new RegExp(`${ROLE_HOME.ADMIN}(\\?.*)?$`));
-
-    await expectPageHeading(page, HEADINGS.adminDashboard);
-    await expect(page.locator(BANNER)).toHaveCount(0);
-  });
-
-  test("switches to the client view", async () => {
-    await switchTo("CUSTOMER", fixture.customerUserId, ROLE_HOME.CUSTOMER);
+  test("switches to the client view and shows the developer's test property", async () => {
+    await switchTo("CUSTOMER", ROLE_HOME.CUSTOMER);
 
     await expectPageHeading(page, HEADINGS.clientHome);
-    await expect(page.locator(BANNER)).toBeVisible();
+
+    await gotoOk(page, "/client/properties");
+    await expectPageHeading(page, HEADINGS.clientProperties);
+    await expect(page.getByText(DEV_TEST_PROPERTY_NAME).first()).toBeVisible();
+    await expect(page.getByText(DEV_TEST_PROPERTY_ADDRESS).first()).toBeVisible();
   });
 
-  test("returns to the administrator view from the client view", async () => {
-    await page.locator(BACK_BUTTON).click();
-    await page.waitForURL(new RegExp(`${ROLE_HOME.ADMIN}(\\?.*)?$`));
+  test("returns to the administrator view", async () => {
+    await switchTo("ADMIN", ROLE_HOME.ADMIN);
 
     await expectPageHeading(page, HEADINGS.adminDashboard);
-    await expect(page.locator(BANNER)).toHaveCount(0);
+  });
+
+  test("switches with a session token issued before the dev claim existed", async () => {
+    const legacyToken = await signLegacySessionToken(fixture.userId);
+    await context.clearCookies({ name: AUTH_COOKIE_NAME });
+    await context.addCookies([
+      { name: AUTH_COOKIE_NAME, value: legacyToken, url: baseURL, httpOnly: true },
+    ]);
+
+    await gotoOk(page, ROLE_HOME.ADMIN);
+    await switchTo("TECH", ROLE_HOME.TECH);
+
+    await expectPageHeading(page, HEADINGS.techHome);
+  });
+});
+
+test.describe("developer view switcher on mobile", () => {
+  let mobileContext: BrowserContext;
+  let mobilePage: Page;
+
+  test.beforeAll(async ({ browser }) => {
+    mobileContext = await browser.newContext({
+      baseURL,
+      storageState,
+      viewport: MOBILE_VIEWPORT,
+      serviceWorkers: "block",
+    });
+    mobilePage = await mobileContext.newPage();
+  });
+
+  test.afterAll(async () => {
+    await mobileContext?.close();
+  });
+
+  test("opens the icon menu and switches to the technician view", async () => {
+    await gotoOk(mobilePage, ROLE_HOME.ADMIN);
+
+    const trigger = mobilePage.locator(MENU_TRIGGER);
+    await expect(trigger).toBeVisible();
+    await expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    await expect(mobilePage.locator(SEGMENTED)).toBeHidden();
+
+    await trigger.click();
+    await expect(mobilePage.locator(MENU)).toBeVisible();
+    await expect(mobilePage.locator(menuOption("ADMIN"))).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+
+    await mobilePage.locator(menuOption("TECH")).click();
+    await mobilePage.waitForURL(homePattern(ROLE_HOME.TECH));
+
+    await expectPageHeading(mobilePage, HEADINGS.techHome);
+    await expect(mobilePage.locator(MENU_TRIGGER)).toBeVisible();
   });
 });

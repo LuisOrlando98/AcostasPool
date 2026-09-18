@@ -1,144 +1,67 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSessionCaches } from "@/components/layout/session-caches";
 import { useI18n } from "@/i18n/client";
 import { ROLE_REDIRECTS, type UserRole } from "@/lib/auth/config";
+import { useEscapeKey } from "@/lib/ui/use-escape-key";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
 /**
  * Conmutador de vista de desarrollador.
  *
- * Vive en `SidebarAccount` (escritorio) y en el drawer móvil de `AppShell`, así
- * que se renderiza en las tres vistas (admin, técnico y cliente) y permite
- * volver a administrador sin cerrar sesión.
+ * Vive en la cabecera, junto a la campana de notificaciones, y es el ÚNICO
+ * punto de cambio de vista: aparece igual en las tres vistas (admin, técnico y
+ * cliente). En escritorio es un control segmentado de tres posiciones
+ * (`role="radiogroup"`); por debajo de `lg` es un botón de icono que despliega
+ * las mismas tres opciones en un menú.
  *
- * Los textos salen del diccionario normal bajo la clave `devView.*`.
+ * No consulta la sesión por su cuenta: `AppShell` le pasa la vista activa a
+ * partir de la llamada a `/api/auth/me` que ya hacía.
  */
-
-const ME_ENDPOINT = "/api/auth/me";
-export type ImpersonatableRole = Exclude<UserRole, "ADMIN">;
-
-export type DevViewState = {
-  role: ImpersonatableRole;
-  targetLabel: string;
-  actorName: string;
-};
-
-export type DevViewAccount = {
-  isDeveloper: boolean;
-  /** Vista emulada ahora mismo, o `null` si el desarrollador se ve a sí mismo. */
-  devView: DevViewState | null;
-};
-
-function toDevViewState(value: unknown): DevViewState | null {
-  const devView = value as Record<string, unknown> | null | undefined;
-  const role = devView?.role;
-  if (role !== "TECH" && role !== "CUSTOMER") {
-    return null;
-  }
-  return {
-    role,
-    targetLabel: typeof devView?.targetLabel === "string" ? devView.targetLabel : "",
-    actorName: typeof devView?.actorName === "string" ? devView.actorName : "",
-  };
-}
-
-/**
- * Lee la cuenta activa de `/api/auth/me` sin caché. Ante cualquier fallo
- * devuelve una cuenta sin privilegios: el conmutador y la franja son avisos de
- * UI, la barrera real la aplican los guards de servidor.
- */
-export async function fetchDevViewAccount(): Promise<DevViewAccount> {
-  try {
-    const response = await fetch(ME_ENDPOINT, { cache: "no-store" });
-    if (!response.ok) {
-      throw new Error(`Account request failed with status ${response.status}`);
-    }
-    const payload = (await response.json()) as { user?: Record<string, unknown> } | null;
-    const user = payload?.user;
-    return {
-      isDeveloper: user?.isDeveloper === true,
-      devView: toDevViewState(user?.devView),
-    };
-  } catch {
-    return { isDeveloper: false, devView: null };
-  }
-}
 
 export const DEV_VIEW_SWITCH_ENDPOINT = "/api/developer/view";
-const DEV_VIEW_TARGETS_ENDPOINT = "/api/developer/view/targets";
 const ROLE_ORDER: readonly UserRole[] = ["ADMIN", "TECH", "CUSTOMER"];
+const HTTP_FORBIDDEN = 403;
 
-type TargetOption = {
-  userId: string;
-  label: string;
-};
+/** Error de `POST /api/developer/view` con el estado HTTP que lo causó. */
+export class DevViewSwitchError extends Error {
+  readonly status: number;
 
-type DevViewTargets = {
-  technicians: readonly TargetOption[];
-  customers: readonly TargetOption[];
-  defaults: Record<ImpersonatableRole, string | null>;
-};
+  constructor(status: number) {
+    super(`Developer view switch failed with status ${status}`);
+    this.name = "DevViewSwitchError";
+    this.status = status;
+  }
+}
 
 type SwitchResponse = {
   redirectTo?: unknown;
 };
 
-function toTargetOptions(value: unknown): TargetOption[] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-  const options = value.map((entry) => {
-    const record = entry as Record<string, unknown>;
-    return typeof record?.userId === "string" && typeof record?.label === "string"
-      ? { userId: record.userId, label: record.label }
-      : null;
-  });
-  return options.every((option): option is TargetOption => option !== null)
-    ? options
-    : null;
-}
-
-function toDefaultId(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null;
-}
-
-/** Valida la respuesta de `/targets` antes de usarla (dato externo al componente). */
-function parseTargets(payload: unknown): DevViewTargets | null {
-  const record = payload as Record<string, unknown> | null;
-  const technicians = toTargetOptions(record?.technicians);
-  const customers = toTargetOptions(record?.customers);
-  if (!technicians || !customers) {
-    return null;
-  }
-  const defaults = (record?.defaults ?? {}) as Record<string, unknown>;
-  return {
-    technicians,
-    customers,
-    defaults: {
-      TECH: toDefaultId(defaults.TECH),
-      CUSTOMER: toDefaultId(defaults.CUSTOMER),
-    },
-  };
-}
-
 /** Cambia la vista y devuelve la ruta a la que navegar. */
-export async function requestDevViewSwitch(
-  role: UserRole,
-  targetUserId?: string
-): Promise<string> {
+export async function requestDevViewSwitch(role: UserRole): Promise<string> {
   const response = await fetch(DEV_VIEW_SWITCH_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(targetUserId ? { role, targetUserId } : { role }),
+    body: JSON.stringify({ role }),
   });
   if (!response.ok) {
-    throw new Error(`Developer view switch failed with status ${response.status}`);
+    throw new DevViewSwitchError(response.status);
   }
   const body = (await response.json()) as SwitchResponse;
   return typeof body.redirectTo === "string" ? body.redirectTo : ROLE_REDIRECTS[role];
 }
+
+const SEGMENT_BASE_CLASS =
+  "rounded-full px-2.5 py-1 text-xs font-semibold transition disabled:opacity-60";
+const SEGMENT_ACTIVE_CLASS = "bg-[var(--brand)] text-white";
+const SEGMENT_IDLE_CLASS = "text-slate-600 hover:bg-slate-100";
+const MENU_ITEM_BASE_CLASS =
+  "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold transition disabled:opacity-60";
+const MENU_ITEM_ACTIVE_CLASS = "bg-sky-50 text-sky-700";
+const MENU_ITEM_IDLE_CLASS = "text-slate-700 hover:bg-slate-100";
 
 type DeveloperViewSwitcherProps = {
   /** Vista activa ahora mismo: el rol emulado, o ADMIN cuando no hay ninguno. */
@@ -150,105 +73,62 @@ export default function DeveloperViewSwitcher({
 }: DeveloperViewSwitcherProps) {
   const { t } = useI18n();
   const router = useRouter();
-  const selectId = useId();
-  const [selectedRole, setSelectedRole] = useState<UserRole>(activeRole);
-  const [targets, setTargets] = useState<DevViewTargets | null>(null);
-  const [targetByRole, setTargetByRole] = useState<Record<ImpersonatableRole, string>>({
-    TECH: "",
-    CUSTOMER: "",
-  });
-  const [loadingTargets, setLoadingTargets] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const menuId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const response = await fetch(DEV_VIEW_TARGETS_ENDPOINT, { cache: "no-store" });
-        if (!response.ok) {
-          throw new Error(`Targets request failed with status ${response.status}`);
-        }
-        const parsed = parseTargets(await response.json());
-        if (!parsed) {
-          throw new Error("Unexpected targets payload");
-        }
-        if (cancelled) {
-          return;
-        }
-        setTargets(parsed);
-        setTargetByRole({
-          TECH: parsed.defaults.TECH ?? parsed.technicians[0]?.userId ?? "",
-          CUSTOMER: parsed.defaults.CUSTOMER ?? parsed.customers[0]?.userId ?? "",
-        });
-      } catch {
-        if (!cancelled) {
-          setError(t("devView.errors.load"));
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingTargets(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [t]);
+  useEscapeKey(() => setMenuOpen(false), menuOpen);
+  useFocusTrap(menuRef, { active: menuOpen, returnFocusTo: triggerRef });
 
-  const options = useMemo<readonly TargetOption[]>(() => {
-    if (selectedRole === "TECH") {
-      return targets?.technicians ?? [];
-    }
-    if (selectedRole === "CUSTOMER") {
-      return targets?.customers ?? [];
-    }
-    return [];
-  }, [selectedRole, targets]);
+  const activeRoleLabel = t(`devView.roles.${activeRole}`);
+  const roleLabels = useMemo(
+    () =>
+      ROLE_ORDER.map((role) => ({
+        role,
+        label: t(`devView.roles.${role}`),
+        initial: t(`devView.roleInitials.${role}`),
+      })),
+    [t]
+  );
 
-  const needsTarget = selectedRole !== "ADMIN";
-  const selectedTargetId = needsTarget ? targetByRole[selectedRole] : "";
-
-  const handleApply = async () => {
-    setError(null);
-    if (needsTarget && !selectedTargetId) {
-      setError(t("devView.errors.target"));
+  const applyRole = async (role: UserRole) => {
+    setMenuOpen(false);
+    if (switching || role === activeRole) {
       return;
     }
-    setSaving(true);
+    setError(null);
+    setSwitching(true);
     try {
-      const redirectTo = await requestDevViewSwitch(
-        selectedRole,
-        needsTarget ? selectedTargetId : undefined
-      );
-      // La sesión pasa a otra cuenta sin recargar: las cachés por pestaña
+      const redirectTo = await requestDevViewSwitch(role);
+      // La sesión pasa a otra vista sin recargar: las cachés por pestaña
       // (usuario del drawer, id de sesión, campana) ya no describen a nadie.
       clearSessionCaches();
       router.push(redirectTo);
       router.refresh();
-    } catch {
-      setError(t("devView.errors.switch"));
+    } catch (cause) {
+      const isForbidden =
+        cause instanceof DevViewSwitchError && cause.status === HTTP_FORBIDDEN;
+      setError(
+        isForbidden ? t("devView.errors.notDeveloper") : t("devView.errors.switch")
+      );
     } finally {
-      setSaving(false);
+      setSwitching(false);
     }
   };
 
   return (
-    <div className="grid gap-1.5" data-testid="dev-view-switcher">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--sidebar-muted)]">
-        {t("devView.title")}
-      </p>
+    <div className="relative" data-testid="dev-view-switcher">
       <div
         role="radiogroup"
         aria-label={t("devView.groupLabel")}
-        className="grid grid-cols-3 gap-1"
+        data-testid="dev-view-segmented"
+        className="hidden items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5 lg:flex"
       >
-        {ROLE_ORDER.map((role) => {
-          const checked = selectedRole === role;
-          // `overflow-hidden` + `min-w-0`: en una celda de ~80 px la etiqueta
-          // debe recortarse dentro del boton; sin ellos se desborda y tapa el
-          // centro del boton contiguo, que deja de ser pulsable.
+        {roleLabels.map(({ role, label }) => {
+          const checked = role === activeRole;
           return (
             <button
               key={role}
@@ -256,103 +136,115 @@ export default function DeveloperViewSwitcher({
               role="radio"
               aria-checked={checked}
               data-role={role}
-              disabled={saving}
-              onClick={() => setSelectedRole(role)}
-              className={`sidebar-account-link min-w-0 overflow-hidden px-1 ${
-                checked ? "ring-2 ring-sky-300/80" : "opacity-70"
+              disabled={switching}
+              onClick={() => applyRole(role)}
+              className={`${SEGMENT_BASE_CLASS} ${
+                checked ? SEGMENT_ACTIVE_CLASS : SEGMENT_IDLE_CLASS
               }`}
             >
-              <span className="sidebar-account-icon shrink-0" aria-hidden="true">
-                {t(`devView.roleInitials.${role}`)}
-              </span>
-              <span className="sidebar-account-label min-w-0 truncate">
-                {t(`devView.roles.${role}`)}
-              </span>
+              {label}
             </button>
           );
         })}
       </div>
 
-      {needsTarget ? (
-        <div className="grid gap-1">
-          <label
-            htmlFor={selectId}
-            className="text-[11px] font-medium text-[color:var(--sidebar-muted)]"
-          >
-            {t("devView.targetLabel")}
-          </label>
-          <select
-            id={selectId}
-            value={selectedTargetId}
-            disabled={saving || loadingTargets || options.length === 0}
-            onChange={(event) =>
-              setTargetByRole((current) => ({
-                ...current,
-                [selectedRole]: event.target.value,
-              }))
-            }
-            className="w-full min-w-0 rounded-xl border border-white/20 bg-white/10 px-2 py-1.5 text-[0.72rem] font-semibold text-[color:var(--sidebar-ink)] disabled:opacity-60"
-          >
-            <option value="" className="text-slate-900">
-              {loadingTargets ? t("devView.loading") : t("devView.targetPlaceholder")}
-            </option>
-            {options.map((option) => (
-              <option key={option.userId} value={option.userId} className="text-slate-900">
-                {option.label}
-              </option>
-            ))}
-          </select>
-          {!loadingTargets && options.length === 0 ? (
-            <p className="text-[11px] leading-snug text-[color:var(--sidebar-muted)]">
-              {t("devView.targetEmpty")}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
       <button
+        ref={triggerRef}
         type="button"
-        onClick={handleApply}
-        disabled={saving}
-        data-testid="dev-view-apply"
-        className="sidebar-account-link"
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-controls={menuOpen ? menuId : undefined}
+        aria-label={t("devView.menuLabel", { role: activeRoleLabel })}
+        data-testid="dev-view-menu-trigger"
+        disabled={switching}
+        onClick={() => setMenuOpen((open) => !open)}
+        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-slate-600 transition hover:border-[var(--border-strong)] disabled:opacity-60 lg:hidden"
       >
-        <span className="sidebar-account-label">
-          {saving ? t("devView.applying") : t("devView.apply")}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+          className="h-4 w-4"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 7.5L5 12l4 4.5M15 7.5L19 12l-4 4.5"
+          />
+        </svg>
+        <span
+          aria-hidden="true"
+          className="absolute -right-0.5 -top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-bold leading-none text-white"
+        >
+          {t(`devView.roleInitials.${activeRole}`)}
         </span>
       </button>
 
+      {menuOpen ? (
+        <>
+          <button
+            type="button"
+            aria-label={t("common.actions.close")}
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-[1090] cursor-default lg:hidden"
+          />
+          <div
+            ref={menuRef}
+            id={menuId}
+            role="menu"
+            aria-label={t("devView.menuTitle")}
+            tabIndex={-1}
+            data-testid="dev-view-menu"
+            className="absolute right-0 top-[calc(100%+0.5rem)] z-[1100] w-56 rounded-2xl border border-[var(--border)] bg-white p-1.5 shadow-contrast outline-none lg:hidden"
+          >
+            <p className="px-3 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              {t("devView.menuTitle")}
+            </p>
+            {roleLabels.map(({ role, label, initial }) => {
+              const checked = role === activeRole;
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={checked}
+                  data-role={role}
+                  disabled={switching}
+                  onClick={() => applyRole(role)}
+                  className={`${MENU_ITEM_BASE_CLASS} ${
+                    checked ? MENU_ITEM_ACTIVE_CLASS : MENU_ITEM_IDLE_CLASS
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-current text-[11px] font-bold"
+                  >
+                    {initial}
+                  </span>
+                  <span className="truncate">{label}</span>
+                  {checked ? (
+                    <span className="ml-auto text-[10px] font-medium uppercase tracking-[0.08em]">
+                      {t("devView.activeSuffix")}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : null}
+
       {error ? (
-        <p role="alert" className="text-[11px] leading-snug text-rose-300">
+        <p
+          role="alert"
+          data-testid="dev-view-error"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-[1100] w-64 rounded-xl border border-rose-200 bg-white px-3 py-2 text-xs font-medium text-rose-700 shadow-contrast"
+        >
           {error}
         </p>
       ) : null}
     </div>
   );
-}
-
-/**
- * Conmutador que resuelve por su cuenta si debe mostrarse. Lo usa el drawer
- * móvil de `AppShell`, que no dispone del `/api/auth/me` sin caché que ya hace
- * `SidebarAccount` en escritorio.
- */
-export function DeveloperViewSwitcherPanel() {
-  const [account, setAccount] = useState<DevViewAccount | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchDevViewAccount().then((next) => {
-      if (!cancelled) {
-        setAccount(next);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!account || !(account.isDeveloper || account.devView)) {
-    return null;
-  }
-  return <DeveloperViewSwitcher activeRole={account.devView?.role ?? "ADMIN"} />;
 }
