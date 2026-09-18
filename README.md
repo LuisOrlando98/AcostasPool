@@ -15,6 +15,7 @@ Este proyecto esta configurado para ejecutar pruebas y despliegues en Render.
    - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` y `GOOGLE_MAPS_SERVER_API_KEY`
    - `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` (ver "Notificaciones en tiempo real")
    - `BUSINESS_TIMEZONE`
+   - `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` (pagos online de facturas, membresias y `/api/webhooks/stripe`)
 3. Define estas variables en el worker (`acostaspool-cron-worker`):
    - `APP_URL` y `CRON_SECRET`
    - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `CONTACT_INBOX_EMAIL`
@@ -49,8 +50,12 @@ Tareas (cron evaluado en `BUSINESS_TIMEZONE`):
 | `digest-retry` | `*/2 * * * *` | Reintenta los digests de tecnicos del dia en `FAILED` (o `PROCESSING` huerfanos) con el mismo backoff; los intentos se cuentan por las filas `EmailLog` del digest. |
 | `recurring-plans` | `*/10 * * * *` y al arrancar | Materializa las visitas de los planes activos para los proximos 28 dias con `materializeServicePlanJob` (nunca duplica una fecha del plan), encola los avisos al cliente y al tecnico y avanza `nextRunAt`. |
 | `route-assistant-auto` | `0 7 * * *` | `POST /api/internal/routes/assistant/auto-optimize` con la cabecera `x-cron-secret` (requiere `APP_URL` y `CRON_SECRET`). |
+| `contract-regen` | `0 5 1 * *` | `POST /api/internal/contracts/regenerate`: el dia 1 de cada mes regenera el contrato del periodo en curso para los clientes cuyo ultimo contrato esta firmado. |
+| `stripe-reconcile` | `0 4 * * *` | `POST /api/internal/stripe/reconcile`: contrasta contra Stripe el estado de membresias y pagos. Requiere `STRIPE_SECRET_KEY` en el servicio web. |
 | `morning-digest` | `30 6 * * *` | Plan diario (`TechDigest` MORNING) a cada tecnico con trabajos hoy. |
 | `midday-digest` / `evening-digest` | `0 12 * * *` / `0 21 * * *` | Cambios de ruta del dia (`TechDigestItem` sin digest) agrupados por tecnico. |
+
+Las tres tareas que delegan trabajo en la web (`route-assistant-auto`, `contract-regen`, `stripe-reconcile`) comparten el mismo transporte (`src/lib/worker/internal-endpoint.ts`): `POST` con `x-cron-secret`, sin seguir redirecciones (una redireccion a `/login` se trata como error, no como exito) y con timeout. Sin `APP_URL` o `CRON_SECRET` se omiten con un aviso en vez de fallar.
 
 Los digests se buscan por `(technicianId, routeDate, window)` y se reutilizan: uno ya enviado no se repite y los items que lleguen despues quedan para la siguiente ventana. Un tick que llega mientras la misma tarea sigue en curso se omite y se registra.
 
@@ -70,7 +75,9 @@ La referencia completa, agrupada y comentada, esta en `.env.example`; copialo a 
 ### Recomendadas
 | Variable | Uso | Sin ella |
 | --- | --- | --- |
-| `CRON_SECRET` | Cabecera `x-cron-secret` entre el worker y `/api/internal/routes/assistant/auto-optimize`. | El endpoint rechaza todas las llamadas y el worker omite la optimizacion diaria. |
+| `CRON_SECRET` | Cabecera `x-cron-secret` entre el worker y los endpoints internos (`routes/assistant/auto-optimize`, `contracts/regenerate`, `stripe/reconcile`). | Los endpoints rechazan todas las llamadas y el worker omite esas tres tareas. |
+| `STRIPE_SECRET_KEY` | Clave secreta de la API de Stripe: checkout de facturas online, membresias y la tarea `stripe-reconcile`. Usa claves de TEST fuera de produccion. | El cobro online y las membresias quedan deshabilitados; las facturas se siguen cobrando fuera de linea. |
+| `STRIPE_WEBHOOK_SECRET` | Secreto de firma (`whsec_...`) de `/api/webhooks/stripe`. | El endpoint rechaza todos los eventos, asi que los pagos y los cambios de membresia hechos en Stripe no se registran. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Correo transaccional (invitaciones, reset de password, facturas, fotos, cotizaciones, digests). | No se envia ningun correo. `SMTP_PORT` por defecto 587; `SMTP_FROM` por defecto `SMTP_USER`. |
 | `CONTACT_INBOX_EMAIL` | Buzon de cotizaciones y respuestas de integraciones publicas. | Se usa `SMTP_USER`. |
 | `TRUSTED_PROXY_HOPS` | Numero de proxies delante de la app. `x-forwarded-for` crece por la derecha, asi que la IP real es la entrada situada a esas posiciones del final; en Render vale `1` (subelo si añades un CDN). | Por defecto `1` en produccion y `0` en desarrollo; con `0` se ignora la cabecera porque el cliente puede falsearla. |

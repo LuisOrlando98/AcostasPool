@@ -38,6 +38,7 @@ export const S3_ENV_VARIABLES = [
   "AWS_SECRET_ACCESS_KEY",
 ] as const;
 export const SMTP_ENV_VARIABLES = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"] as const;
+export const STRIPE_ENV_VARIABLES = ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] as const;
 export const PUSHER_SERVER_ENV_VARIABLES = [
   "PUSHER_APP_ID",
   "PUSHER_KEY",
@@ -150,6 +151,10 @@ export const envSchema = z.object({
   SMTP_PASS: optionalString,
   SMTP_FROM: optionalString,
   CONTACT_INBOX_EMAIL: optionalEmail,
+
+  // Stripe (online invoice payments and memberships)
+  STRIPE_SECRET_KEY: optionalString,
+  STRIPE_WEBHOOK_SECRET: optionalString,
 
   // File storage
   STORAGE_DRIVER: optionalStorageDriver,
@@ -327,8 +332,42 @@ function cronIssues(env: NormalizedEnv): readonly EnvIssue[] {
   return [
     envWarning(
       "CRON_SECRET",
-      "CRON_SECRET is not set: the route assistant auto-optimize endpoint rejects every call and the cron worker skips it"
+      "CRON_SECRET is not set: the internal endpoints (route assistant auto-optimize, monthly contract regeneration, Stripe reconcile) reject every call and the cron worker skips them"
     ),
+  ];
+}
+
+/**
+ * Stripe is optional: without it invoices are still issued and paid offline.
+ * Half-configured is the dangerous state, so each half gets its own warning.
+ */
+function stripeIssues(env: NormalizedEnv): readonly EnvIssue[] {
+  const missing = missingNames(env, STRIPE_ENV_VARIABLES);
+  if (missing.length === STRIPE_ENV_VARIABLES.length) {
+    return [
+      envWarning(
+        "STRIPE",
+        `Stripe is not configured (${STRIPE_ENV_VARIABLES.join(", ")}): online invoice payments, memberships and the reconcile worker task are disabled`
+      ),
+    ];
+  }
+  return [
+    ...(env.STRIPE_SECRET_KEY
+      ? []
+      : [
+          envWarning(
+            "STRIPE_SECRET_KEY",
+            "STRIPE_SECRET_KEY is not set: every Stripe call fails, so checkout links, memberships and the reconcile worker task are unavailable"
+          ),
+        ]),
+    ...(env.STRIPE_WEBHOOK_SECRET
+      ? []
+      : [
+          envWarning(
+            "STRIPE_WEBHOOK_SECRET",
+            "STRIPE_WEBHOOK_SECRET is not set: /api/webhooks/stripe rejects every event, so payments and membership changes are never recorded"
+          ),
+        ]),
   ];
 }
 
@@ -452,6 +491,7 @@ const CROSS_FIELD_RULES: readonly ((env: NormalizedEnv) => readonly EnvIssue[])[
   authSecretIssues,
   emailIssues,
   cronIssues,
+  stripeIssues,
   publicIntegrationIssues,
   trustedProxyIssues,
   realtimeIssues,

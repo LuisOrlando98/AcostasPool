@@ -8,6 +8,7 @@ import {
   REQUIRED_ENV_VARIABLES,
   S3_ENV_VARIABLES,
   SMTP_ENV_VARIABLES,
+  STRIPE_ENV_VARIABLES,
   assertEnv,
   formatEnvErrors,
   resolveStorageDriver,
@@ -37,6 +38,11 @@ const FULL_PUSHER: EnvSource = {
   PUSHER_CLUSTER: "mt1",
   NEXT_PUBLIC_PUSHER_KEY: "pusher-key",
   NEXT_PUBLIC_PUSHER_CLUSTER: "mt1",
+};
+
+const FULL_STRIPE: EnvSource = {
+  STRIPE_SECRET_KEY: "sk_test_example",
+  STRIPE_WEBHOOK_SECRET: "whsec_example",
 };
 
 const FULL_SMTP: EnvSource = {
@@ -161,6 +167,7 @@ describe("validateEnv - required variables", () => {
       ...SMTP_ENV_VARIABLES,
       ...PUSHER_SERVER_ENV_VARIABLES,
       ...PUSHER_CLIENT_ENV_VARIABLES,
+      ...STRIPE_ENV_VARIABLES,
       "CRON_SECRET",
       "CONTACT_INBOX_EMAIL",
       "STORAGE_DRIVER",
@@ -313,6 +320,44 @@ describe("validateEnv - e-mail and cron", () => {
 
     expect(warningsMentioning(missing, "CRON_SECRET")).toHaveLength(1);
     expect(warningsMentioning(present, "CRON_SECRET")).toEqual([]);
+  });
+});
+
+describe("validateEnv - Stripe", () => {
+  it("warns once while nothing is configured, without blocking startup", () => {
+    // Arrange & Act
+    const result = validateEnv(VALID_REQUIRED);
+
+    // Assert
+    expect(result.ok).toBe(true);
+    expect(warningsMentioning(result, "Stripe is not configured")).toHaveLength(1);
+  });
+
+  it("stays quiet once both variables are set", () => {
+    // Arrange & Act
+    const result = validateEnv(withRequired(FULL_STRIPE));
+
+    // Assert
+    expect(warningsMentioning(result, "Stripe is not configured")).toEqual([]);
+    expect(warningsMentioning(result, "STRIPE_")).toEqual([]);
+  });
+
+  it("names the missing half when Stripe is only partially configured", () => {
+    // Arrange & Act
+    const withoutWebhook = validateEnv(
+      withRequired({ STRIPE_SECRET_KEY: FULL_STRIPE.STRIPE_SECRET_KEY })
+    );
+    const withoutKey = validateEnv(
+      withRequired({ STRIPE_WEBHOOK_SECRET: FULL_STRIPE.STRIPE_WEBHOOK_SECRET })
+    );
+
+    // Assert
+    expect(warningsMentioning(withoutWebhook, "STRIPE_WEBHOOK_SECRET")).toHaveLength(1);
+    expect(warningsMentioning(withoutWebhook, "STRIPE_SECRET_KEY")).toEqual([]);
+    expect(warningsMentioning(withoutKey, "STRIPE_SECRET_KEY")).toHaveLength(1);
+    expect(warningsMentioning(withoutKey, "STRIPE_WEBHOOK_SECRET")).toEqual([]);
+    expect(withoutWebhook.ok).toBe(true);
+    expect(withoutKey.ok).toBe(true);
   });
 });
 

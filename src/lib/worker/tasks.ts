@@ -1,4 +1,5 @@
 import type { EnvSource } from "@/lib/config/env";
+import { triggerContractRegeneration, triggerStripeReconcile } from "@/lib/worker/billing";
 import { CRON_SCHEDULES } from "@/lib/worker/constants";
 import { processCustomerNotifications } from "@/lib/worker/customer-notifications";
 import { createEmailTemplateSource } from "@/lib/worker/email-templates";
@@ -23,6 +24,8 @@ export const TASK_NAMES = {
   digestRetry: "digest-retry",
   recurringPlans: "recurring-plans",
   routeAssistantAutoOptimize: "route-assistant-auto",
+  contractRegeneration: "contract-regen",
+  stripeReconcile: "stripe-reconcile",
   morningDigest: "morning-digest",
   middayDigest: "midday-digest",
   eveningDigest: "evening-digest",
@@ -54,6 +57,16 @@ export function buildWorkerTasks(context: WorkerContext): readonly WorkerTask[] 
       name: TASK_NAMES.routeAssistantAutoOptimize,
       schedule: CRON_SCHEDULES.routeAssistantAutoOptimize,
       run: () => triggerRouteAssistantAutoOptimize({ env, logger, fetchImpl }),
+    },
+    {
+      name: TASK_NAMES.contractRegeneration,
+      schedule: CRON_SCHEDULES.contractRegeneration,
+      run: () => triggerContractRegeneration({ env, logger, fetchImpl }),
+    },
+    {
+      name: TASK_NAMES.stripeReconcile,
+      schedule: CRON_SCHEDULES.stripeReconcile,
+      run: () => triggerStripeReconcile({ env, logger, fetchImpl }),
     },
     {
       name: TASK_NAMES.morningDigest,

@@ -1,3 +1,8 @@
+-- Índices que faltaban sobre claves foráneas y columnas usadas en filtros/orden.
+-- Nota de integración: "ServicePlan_isActive_nextRunAt_idx" y "Property_customerId_idx"
+-- ya los crea la migración anterior 20260812120000_performance_indexes, por lo que aquí
+-- se omiten deliberadamente (crearlos de nuevo abortaría la migración).
+
 -- CreateIndex
 CREATE INDEX "AuditLog_entity_entityId_idx" ON "AuditLog"("entity", "entityId");
 
@@ -12,12 +17,6 @@ CREATE INDEX "EmailLog_technicianId_idx" ON "EmailLog"("technicianId");
 
 -- CreateIndex
 CREATE INDEX "EmailLog_jobId_idx" ON "EmailLog"("jobId");
-
--- CreateIndex
-CREATE INDEX "Property_customerId_idx" ON "Property"("customerId");
-
--- CreateIndex
-CREATE INDEX "ServicePlan_isActive_nextRunAt_idx" ON "ServicePlan"("isActive", "nextRunAt");
 
 -- CreateIndex
 CREATE INDEX "ServicePlan_customerId_idx" ON "ServicePlan"("customerId");

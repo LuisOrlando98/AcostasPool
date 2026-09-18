@@ -11,6 +11,9 @@ export const CRON_SCHEDULES = {
   customerNotifications: "*/2 * * * *",
   recurringPlans: "*/10 * * * *",
   routeAssistantAutoOptimize: "0 7 * * *",
+  /** Mensual: el día 1 se genera el contrato del nuevo periodo. */
+  contractRegeneration: "0 5 1 * *",
+  stripeReconcile: "0 4 * * *",
   morningDigest: "30 6 * * *",
   middayDigest: "0 12 * * *",
   eveningDigest: "0 21 * * *",
@@ -44,3 +47,7 @@ export const RETRY_BACKOFF_FACTOR = 2;
 export const RETRY_MAX_DELAY_MS = MS_PER_HOUR;
 /** Tiempo máximo de espera de la llamada al endpoint interno de optimización de rutas. */
 export const ROUTE_OPTIMIZE_TIMEOUT_MS = 5 * MS_PER_MINUTE;
+/** La regeneración de contratos renderiza un PDF por cliente, así que necesita más margen. */
+export const CONTRACT_REGENERATE_TIMEOUT_MS = 15 * MS_PER_MINUTE;
+/** Tiempo máximo de espera de la conciliación con Stripe. */
+export const STRIPE_RECONCILE_TIMEOUT_MS = 5 * MS_PER_MINUTE;

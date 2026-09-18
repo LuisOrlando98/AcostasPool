@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  AUTO_OPTIMIZE_PATH,
-  CRON_SECRET_HEADER,
-  triggerRouteAssistantAutoOptimize,
-} from "@/lib/worker/route-optimize";
+import { CRON_SECRET_HEADER } from "@/lib/worker/internal-endpoint";
+import { AUTO_OPTIMIZE_PATH, triggerRouteAssistantAutoOptimize } from "@/lib/worker/route-optimize";
 import { createLoggerStub } from "./helpers";
 
 const APP_URL = "https://acostaspool.example";
