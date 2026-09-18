@@ -342,6 +342,23 @@ const techNavItems = (t: (key: string) => string): NavItem[] => [
     ),
   },
   {
+    label: t("nav.tech.calendar"),
+    href: "/tech/calendar",
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        className={iconClassName}
+      >
+        <rect x="3.5" y="5" width="17" height="15.5" rx="2" strokeLinejoin="round" />
+        <path strokeLinecap="round" d="M3.5 10h17M8 3.5V7M16 3.5V7" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 14h2.5M13.5 14H16M8 17.5h2.5" />
+      </svg>
+    ),
+  },
+  {
     label: t("nav.tech.calculator"),
     href: "/tech/calculator",
     icon: (

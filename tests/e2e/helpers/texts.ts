@@ -23,6 +23,7 @@ export const HEADINGS = {
   account: /My account|Mi cuenta/,
   techHome: /Technician route|Ruta del tecnico/,
   techHistory: /Technician history|Historial del tecnico/,
+  techCalendar: /My calendar|Mi calendario/,
   techJobDetail: /Complete job|Completar trabajo/,
   clientHome: /Client portal|Portal del cliente/,
   clientInvoices: /^(Invoices|Facturas)$/,

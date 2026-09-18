@@ -18,6 +18,29 @@ test.describe("technician pages", () => {
     await expectPageHeading(page, HEADINGS.techHistory);
   });
 
+  test("renders /tech/calendar with the seed job on today", async ({
+    page,
+    seedJobId,
+  }) => {
+    // The fixture keeps the seed job scheduled today, so the calendar opens on
+    // today and lists it with a link to its detail.
+    await gotoOk(page, "/tech/calendar");
+    await expectPageHeading(page, HEADINGS.techCalendar);
+
+    const today = page.locator('table a[aria-current="date"]');
+    await expect(today).toHaveCount(1);
+    await expect(page.locator(`a[href="/tech/jobs/${seedJobId}"]`).first()).toBeVisible();
+  });
+
+  test("renders next month from the calendar navigation", async ({ page }) => {
+    await gotoOk(page, "/tech/calendar");
+    await page.locator('nav a[href*="month="]').last().click();
+    await page.waitForURL(/\/tech\/calendar\?month=\d{4}-\d{2}/);
+
+    await expectPageHeading(page, HEADINGS.techCalendar);
+    await expect(page.locator('table a[aria-current="date"]')).toHaveCount(1);
+  });
+
   test("redirects /tech/profile to the shared account page", async ({
     page,
   }) => {

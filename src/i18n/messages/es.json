@@ -171,6 +171,7 @@
     "tech": {
       "route": "Mi ruta",
       "history": "Historial",
+      "calendar": "Calendario",
       "profile": "Perfil",
       "calculator": "Calculadora"
     },
@@ -3349,6 +3350,27 @@
       "empty": "No hay trabajos completados aun.",
       "noDate": "Sin fecha",
       "photos": "{{count}} fotos"
+    },
+    "calendar": {
+      "kicker": "Agenda",
+      "title": "Mi calendario",
+      "subtitle": "Todos los trabajos asignados a ti, día a día, incluidas las próximas visitas recurrentes.",
+      "navigation": "Cambiar de mes",
+      "previousMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "today": "Hoy",
+      "gridLabel": "Calendario del mes",
+      "monthTotal": {
+        "one": "{{count}} trabajo este mes",
+        "other": "{{count}} trabajos este mes"
+      },
+      "dayCount": {
+        "one": "{{count}} trabajo",
+        "other": "{{count}} trabajos"
+      },
+      "empty": "No hay trabajos programados para este día.",
+      "planned": "Visita recurrente (pendiente de generar)",
+      "openJob": "Ver trabajo"
     },
     "profile": {
       "title": "Perfil del tecnico",

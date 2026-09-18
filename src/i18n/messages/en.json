@@ -171,6 +171,7 @@
     "tech": {
       "route": "My Route",
       "history": "History",
+      "calendar": "Calendar",
       "profile": "Profile",
       "calculator": "Calculator"
     },
@@ -3349,6 +3350,27 @@
       "empty": "No completed jobs yet.",
       "noDate": "No date",
       "photos": "{{count}} photos"
+    },
+    "calendar": {
+      "kicker": "Schedule",
+      "title": "My calendar",
+      "subtitle": "Every job assigned to you, day by day, including upcoming recurring visits.",
+      "navigation": "Change month",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "today": "Today",
+      "gridLabel": "Month calendar",
+      "monthTotal": {
+        "one": "{{count}} job this month",
+        "other": "{{count}} jobs this month"
+      },
+      "dayCount": {
+        "one": "{{count}} job",
+        "other": "{{count}} jobs"
+      },
+      "empty": "No jobs scheduled for this day.",
+      "planned": "Recurring visit (not generated yet)",
+      "openJob": "Open job"
     },
     "profile": {
       "title": "Technician profile",
