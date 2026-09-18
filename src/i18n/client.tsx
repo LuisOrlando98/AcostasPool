@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useMemo } from "react";
 import type { Locale } from "@/i18n/config";
-import type { Messages, TranslatePluralFn, Translator } from "@/i18n/translate";
-import { createTranslator } from "@/i18n/translate";
+import type { Messages, TranslatePluralFn, Translator } from "@/i18n/core";
+import { createTranslator } from "@/i18n/core";
 
 type I18nContextValue = {
   locale: Locale;

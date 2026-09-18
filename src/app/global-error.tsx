@@ -3,7 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { LOCALE_COOKIE, defaultLocale, normalizeLocale } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { createTranslator, getMessages } from "@/i18n/translate";
+import { getShellTranslator } from "@/i18n/shell-messages";
 import "./globals.css";
 
 type GlobalErrorProps = {
@@ -17,6 +17,8 @@ const LOCALE_COOKIE_PATTERN = new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]*)`);
  * global-error sustituye al layout raíz (incluido I18nProvider), así que el
  * locale se lee de la cookie ap_locale en el navegador; en servidor se usa el
  * locale por defecto y useSyncExternalStore evita desajustes de hidratación.
+ * Los textos vienen del subconjunto síncrono de `@/i18n/shell-messages` (6
+ * cadenas por idioma) para no meter ningún diccionario en el bundle cliente.
  */
 function readLocaleFromCookie(): Locale {
   const match = document.cookie.match(LOCALE_COOKIE_PATTERN);
@@ -32,7 +34,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
     readLocaleFromCookie,
     getServerLocale
   );
-  const t = createTranslator(getMessages(locale));
+  const t = getShellTranslator(locale);
 
   useEffect(() => {
     // Fallo del layout raíz: se registra para diagnóstico (no es un log de depuración).

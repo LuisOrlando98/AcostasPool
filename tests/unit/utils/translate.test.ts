@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { Locale } from "@/i18n/config";
-import { getMessages, translate, type Messages } from "@/i18n/translate";
+import {
+  getMessages,
+  loadMessages,
+  translate,
+  type Messages,
+} from "@/i18n/translate";
 
-const en = getMessages("en");
-const es = getMessages("es");
+// Los diccionarios se cargan por locale (import dinámico); se precargan aquí
+// para poder ejercitar después la vía síncrona `getMessages`.
+const en = await loadMessages("en");
+const es = await loadMessages("es");
 
 const asMessages = (value: Record<string, unknown>) =>
   value as unknown as Messages;

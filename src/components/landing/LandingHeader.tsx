@@ -40,13 +40,48 @@ type LandingHeaderProps = {
  * below 760px and its unlayered rules would override any utility applied to
  * the standard classes. The `max-[761px]` / `min-[761px]` variants match the
  * `@media (max-width: 760px)` breakpoint used by the landing stylesheet.
+ *
+ * Two layout guards live here for the same reason (globals.css is unlayered
+ * and cannot be edited from this component):
+ * - Desktop: `.lp-header-inner` overflows its container around 1440px, which
+ *   squeezed `.lp-login-btn` into two lines. `whitespace-nowrap` keeps the pill
+ *   on one line and the CTA drops to icon-only below `2xl` (1536px), the width
+ *   at which the full row stops fitting.
+ * - Mobile (<=760px): globals.css turns `.lp-nav` into a four column grid whose
+ *   tracks are narrower than the brand and the section labels, so the wordmark
+ *   overlapped "Services". `NAV_CLASS` restores a single flex row where every item
+ *   keeps its intrinsic width, and `SECTION_NAV_LINK_CLASS` drops the section
+ *   anchors on phones - globals.css already hides four of those five, and the row
+ *   only fits the brand plus the two page links once the longer Spanish labels are
+ *   taken into account. The `!` modifiers are required because `display: grid`,
+ *   `flex-wrap: wrap`, `justify-content: center`, `overflow: visible` and the
+ *   `.lp-nav-link` display all come from unlayered rules that would otherwise win.
  */
 const HEADER_CTA_CLASS =
-  "hidden min-[761px]:inline-flex items-center justify-center gap-1.5 rounded-full border border-transparent " +
+  "hidden min-[761px]:inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-transparent " +
   "min-h-[2.75rem] px-4 text-[0.7rem] font-extrabold uppercase tracking-[0.08em] no-underline text-white " +
   "max-[1181px]:min-h-[2.45rem] max-[1181px]:px-[0.82rem] max-[1181px]:text-[0.62rem] " +
   "bg-[linear-gradient(145deg,var(--lp-brand),var(--lp-brand-2))] shadow-[0_10px_20px_rgba(16,153,219,0.26)] " +
   "transition-transform hover:-translate-y-px";
+
+/** Full CTA label only once the header row has room for it (see comment above). */
+const HEADER_CTA_LABEL_CLASS = "hidden 2xl:inline";
+
+/** Keeps the "Log in ->" pill on a single line even when the row is tight. */
+const LOGIN_CLASS = "lp-login-btn whitespace-nowrap";
+
+const BRAND_CLASS = "lp-brand shrink-0";
+
+const NAV_CLASS =
+  "lp-nav max-[760px]:flex! max-[760px]:flex-nowrap! max-[760px]:justify-start! " +
+  "max-[760px]:overflow-x-auto! max-[760px]:overflow-y-hidden!";
+
+const NAV_LINK_CLASS = "lp-nav-link whitespace-nowrap max-[760px]:shrink-0";
+
+const NAV_BRAND_CLASS = `${NAV_LINK_CLASS} lp-nav-logo-link`;
+
+/** In-page section anchors: desktop only, the mobile row has no space for them. */
+const SECTION_NAV_LINK_CLASS = `${NAV_LINK_CLASS} max-[760px]:hidden!`;
 
 const ANNOUNCE_TOOLS_CLASS = "hidden max-[761px]:inline-flex shrink-0 items-center gap-1.5";
 
@@ -112,14 +147,14 @@ export default function LandingHeader({
     <header className="lp-header">
       <div className="lp-container lp-header-inner">
         <BrandMark
-          className="lp-brand"
+          className={BRAND_CLASS}
           dotClassName="lp-brand-dot"
           textClassName="lp-brand-name"
         />
 
-        <nav className="lp-nav" aria-label={copy.primaryNavLabel}>
+        <nav className={NAV_CLASS} aria-label={copy.primaryNavLabel}>
           <BrandMark
-            className="lp-nav-link lp-nav-logo-link"
+            className={NAV_BRAND_CLASS}
             dotClassName="lp-nav-logo-dot"
             textClassName="lp-nav-logo-text"
             navKey="brand"
@@ -130,7 +165,7 @@ export default function LandingHeader({
               <a
                 key={item.id}
                 href={`#${item.id}`}
-                className="lp-nav-link"
+                className={SECTION_NAV_LINK_CLASS}
                 data-nav-key={item.id}
                 data-active={sectionNav.activeId === item.id}
                 data-pressed={sectionNav.pressedId === item.id}
@@ -140,7 +175,7 @@ export default function LandingHeader({
                 {copy.nav[item.id]}
               </a>
             ) : (
-              <Link key={item.id} href={`/#${item.id}`} className="lp-nav-link" data-nav-key={item.id}>
+              <Link key={item.id} href={`/#${item.id}`} className={SECTION_NAV_LINK_CLASS} data-nav-key={item.id}>
                 {copy.nav[item.id]}
               </Link>
             )
@@ -152,7 +187,7 @@ export default function LandingHeader({
               <Link
                 key={item.href}
                 href={item.href}
-                className="lp-nav-link lp-nav-link-page"
+                className={`${NAV_LINK_CLASS} lp-nav-link-page`}
                 data-nav-key={item.key}
                 data-active={activePage ? isActive : undefined}
                 aria-current={isActive ? "page" : undefined}
@@ -174,10 +209,10 @@ export default function LandingHeader({
             title={copy.whatsapp.description}
           >
             <WhatsAppIcon />
-            <span>{copy.whatsapp.label}</span>
+            <span className={HEADER_CTA_LABEL_CLASS}>{copy.whatsapp.label}</span>
           </a>
 
-          <Link href="/login" className="lp-login-btn">
+          <Link href="/login" className={LOGIN_CLASS}>
             {copy.nav.login}
           </Link>
         </div>

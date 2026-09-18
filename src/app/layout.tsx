@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import { I18nProvider } from "@/i18n/client";
-import { getMessages } from "@/i18n/translate";
-import { getRequestLocale, getTranslations } from "@/i18n/server";
+import { createTranslator } from "@/i18n/core";
+import { loadMessages } from "@/i18n/dictionaries";
+import { getRequestLocale } from "@/i18n/server";
 import PwaRegister from "@/components/pwa/PwaRegister";
 import "./globals.css";
 
@@ -54,8 +55,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
-  const messages = getMessages(locale);
-  const t = await getTranslations(locale);
+  const messages = await loadMessages(locale);
+  const t = createTranslator(messages);
 
   return (
     <html lang={locale}>

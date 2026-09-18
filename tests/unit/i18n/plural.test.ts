@@ -2,10 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   createTranslator,
   getMessages,
+  loadMessages,
   selectPluralForm,
   translatePlural,
   type Messages,
 } from "@/i18n/translate";
+
+// `getMessages` es síncrono sobre el mapa ya cargado: se precargan los dos
+// locales que usan los casos con diccionarios reales.
+await loadMessages("en");
+await loadMessages("es");
 
 const asMessages = (value: Record<string, unknown>) =>
   value as unknown as Messages;

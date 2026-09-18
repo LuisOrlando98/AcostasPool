@@ -1,7 +1,7 @@
 "use client";
 
 import { normalizeLocale, type Locale } from "@/i18n/config";
-import { createTranslator, getMessages } from "@/i18n/translate";
+import { getShellTranslator } from "@/i18n/shell-messages";
 
 export type PwaUpdateLabels = {
   readonly title: string;
@@ -12,7 +12,10 @@ export type PwaUpdateLabels = {
 /**
  * `PwaRegister` se monta fuera de `I18nProvider` (ver `app/layout.tsx`), así
  * que el locale se lee de `<html lang>` (que el layout fija con la misma
- * cookie) y las etiquetas `pwa.update.*` del diccionario, como en global-error.
+ * cookie) y las etiquetas `pwa.update.*` salen del subconjunto síncrono de
+ * `@/i18n/shell-messages`: son 3 cadenas por idioma, mucho más ligeras que
+ * cargar el diccionario completo en el bundle cliente, y `getPwaUpdateLabels`
+ * sigue siendo síncrona para `PwaRegister`.
  */
 export function readDocumentLocale(): Locale {
   if (typeof document === "undefined") {
@@ -22,7 +25,7 @@ export function readDocumentLocale(): Locale {
 }
 
 export function getPwaUpdateLabels(locale: Locale): PwaUpdateLabels {
-  const t = createTranslator(getMessages(locale));
+  const t = getShellTranslator(locale);
   return {
     title: t("pwa.update.title"),
     reload: t("pwa.update.reload"),
