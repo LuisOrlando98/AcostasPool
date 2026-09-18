@@ -8,6 +8,7 @@ import { LOCALE_COOKIE, normalizeLocale } from "@/i18n/config";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { normalizeEmail } from "@/lib/auth/email";
 import { isDeveloperEmail } from "@/lib/auth/developer";
+import { DEV_VIEW_COOKIE_NAME, DEV_VIEW_COOKIE_OPTIONS } from "@/lib/auth/dev-view";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -96,6 +97,15 @@ export async function POST(request: Request) {
       name: user.fullName,
     });
     response.headers.set("Cache-Control", "no-store");
+
+    // Una vista de desarrollador dejada por una sesión anterior (navegador
+    // cerrado, sesión caducada, app instalada) no debe heredarse: la cookie
+    // dura 12 h y sobreviviría a la sesión, y la cuenta entraría como cliente
+    // o técnico. Un desarrollador siempre inicia sesión como administrador.
+    response.cookies.set(DEV_VIEW_COOKIE_NAME, "", {
+      ...DEV_VIEW_COOKIE_OPTIONS,
+      maxAge: 0,
+    });
 
     response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,

@@ -1,5 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
-import { loginWithCredentials, type StorageState } from "./helpers/auth";
+import { loginWithCredentials, submitLoginForm, type StorageState } from "./helpers/auth";
 import { expectPageHeading, gotoOk } from "./helpers/assertions";
 import { DEFAULT_BASE_URL, ROLE_HOME } from "./helpers/constants";
 import { HEADINGS } from "./helpers/texts";
@@ -27,6 +27,7 @@ const SEGMENTED = '[data-testid="dev-view-segmented"]';
 const MENU_TRIGGER = '[data-testid="dev-view-menu-trigger"]';
 const MENU = '[data-testid="dev-view-menu"]';
 const AUTH_COOKIE_NAME = "ap_session";
+const DEV_VIEW_COOKIE_NAME = "ap_dev_view";
 const MOBILE_VIEWPORT = { width: 390, height: 844 } as const;
 
 type SwitchableRole = "ADMIN" | "TECH" | "CUSTOMER";
@@ -110,6 +111,29 @@ test.describe("developer view switcher", () => {
     await switchTo("ADMIN", ROLE_HOME.ADMIN);
 
     await expectPageHeading(page, HEADINGS.adminDashboard);
+  });
+
+  test("a view left behind by a previous session does not survive a new login", async () => {
+    // Navegador cerrado, sesión caducada o app instalada: `ap_session` desaparece
+    // pero la cookie de vista (12 h) se queda. La nueva sesión debe empezar como
+    // administrador, no heredar la vista de cliente.
+    await switchTo("CUSTOMER", ROLE_HOME.CUSTOMER);
+    await context.clearCookies({ name: AUTH_COOKIE_NAME });
+    expect((await context.cookies()).some((cookie) => cookie.name === DEV_VIEW_COOKIE_NAME)).toBe(
+      true
+    );
+
+    await submitLoginForm(page, DEVELOPER_CREDENTIALS);
+    await page.waitForURL(homePattern(ROLE_HOME.ADMIN));
+
+    await expectPageHeading(page, HEADINGS.adminDashboard);
+    await expect(page.locator(segmentedOption("ADMIN"))).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect((await context.cookies()).some((cookie) => cookie.name === DEV_VIEW_COOKIE_NAME)).toBe(
+      false
+    );
   });
 
   test("switches with a session token issued before the dev claim existed", async () => {
