@@ -7,11 +7,7 @@ import {
   getReportFilters,
 } from "@/lib/reports/filters";
 import { formatCustomerName } from "@/lib/customers/format";
-
-const escapeCsv = (value: unknown) => {
-  const safe = String(value ?? "");
-  return `"${safe.replace(/"/g, '""')}"`;
-};
+import { buildCsv } from "@/lib/reports/csv";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -51,9 +47,7 @@ export async function GET(request: Request) {
       invoice.createdAt.toISOString(),
     ]);
 
-    const csv = [headers, ...rows]
-      .map((row) => row.map(escapeCsv).join(","))
-      .join("\n");
+    const csv = buildCsv([headers, ...rows]);
 
     return new Response(csv, {
       headers: {
@@ -96,9 +90,7 @@ export async function GET(request: Request) {
     job.technician?.user.fullName ?? "",
   ]);
 
-  const csv = [headers, ...rows]
-    .map((row) => row.map(escapeCsv).join(","))
-    .join("\n");
+  const csv = buildCsv([headers, ...rows]);
 
   return new Response(csv, {
     headers: {

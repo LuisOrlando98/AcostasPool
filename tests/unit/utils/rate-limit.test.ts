@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import {
+  UNKNOWN_CLIENT_IP,
+  checkRateLimit,
+  getClientIp,
+  resolveTrustedProxyHops,
+} from "@/lib/security/rate-limit";
 
 const dbMock = vi.hoisted(() => ({
   deleteMany: vi.fn(),
@@ -24,46 +29,153 @@ function requestWithHeaders(headers: Record<string, string>) {
   return new Request("http://localhost/api", { headers });
 }
 
-describe("getClientIp", () => {
-  it("uses the first x-forwarded-for entry, trimmed", () => {
-    expect(
-      getClientIp(requestWithHeaders({ "x-forwarded-for": " 1.2.3.4 , 5.6.7.8" }))
-    ).toBe("1.2.3.4");
+const PRODUCTION_ENV = { NODE_ENV: "production" } as const;
+const DEVELOPMENT_ENV = { NODE_ENV: "development" } as const;
+const CLIENT_IP = "203.0.113.7";
+const SPOOFED_IP = "198.51.100.1";
+const PROXY_IP = "192.0.2.10";
+const REAL_IP_HEADER_VALUE = "9.9.9.9";
+
+describe("resolveTrustedProxyHops", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
   });
 
-  it("uses a single x-forwarded-for value", () => {
-    expect(getClientIp(requestWithHeaders({ "x-forwarded-for": "1.2.3.4" }))).toBe(
-      "1.2.3.4"
+  it("defaults to one trusted proxy in production", () => {
+    expect(resolveTrustedProxyHops(PRODUCTION_ENV)).toBe(1);
+  });
+
+  it("defaults to no trusted proxy outside production", () => {
+    expect(resolveTrustedProxyHops(DEVELOPMENT_ENV)).toBe(0);
+    expect(resolveTrustedProxyHops({})).toBe(0);
+  });
+
+  it("uses the configured number of hops", () => {
+    expect(
+      resolveTrustedProxyHops({ ...DEVELOPMENT_ENV, TRUSTED_PROXY_HOPS: " 2 " })
+    ).toBe(2);
+  });
+
+  it("falls back to the default and warns when the value is not a whole number", () => {
+    expect(
+      resolveTrustedProxyHops({ ...PRODUCTION_ENV, TRUSTED_PROXY_HOPS: "many" })
+    ).toBe(1);
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("TRUSTED_PROXY_HOPS")
     );
+  });
+
+  it("falls back to the default when the value is negative", () => {
+    expect(
+      resolveTrustedProxyHops({ ...PRODUCTION_ENV, TRUSTED_PROXY_HOPS: "-1" })
+    ).toBe(1);
+  });
+});
+
+describe("getClientIp", () => {
+  it("takes the last forwarded entry with one trusted proxy, ignoring a forged prefix", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({ "x-forwarded-for": `${SPOOFED_IP}, ${CLIENT_IP}` }),
+        PRODUCTION_ENV
+      )
+    ).toBe(CLIENT_IP);
+  });
+
+  it("skips the extra proxies when more hops are trusted", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({
+          "x-forwarded-for": `${SPOOFED_IP}, ${CLIENT_IP}, ${PROXY_IP}`,
+        }),
+        { ...PRODUCTION_ENV, TRUSTED_PROXY_HOPS: "2" }
+      )
+    ).toBe(CLIENT_IP);
+  });
+
+  it("uses a single forwarded value, trimmed", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({ "x-forwarded-for": `  ${CLIENT_IP}  ` }),
+        PRODUCTION_ENV
+      )
+    ).toBe(CLIENT_IP);
+  });
+
+  it("takes the leftmost entry when the chain is shorter than the trusted hops", () => {
+    expect(
+      getClientIp(requestWithHeaders({ "x-forwarded-for": `${CLIENT_IP}, ${PROXY_IP}` }), {
+        ...PRODUCTION_ENV,
+        TRUSTED_PROXY_HOPS: "5",
+      })
+    ).toBe(CLIENT_IP);
+  });
+
+  it("ignores forged blank entries instead of shifting the chain", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({ "x-forwarded-for": `, ,${SPOOFED_IP}, ${CLIENT_IP}` }),
+        PRODUCTION_ENV
+      )
+    ).toBe(CLIENT_IP);
+  });
+
+  it("ignores x-forwarded-for entirely when no proxy is trusted", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({ "x-forwarded-for": SPOOFED_IP }),
+        DEVELOPMENT_ENV
+      )
+    ).toBe(UNKNOWN_CLIENT_IP);
   });
 
   it("falls back to x-real-ip, trimmed", () => {
-    expect(getClientIp(requestWithHeaders({ "x-real-ip": "  9.9.9.9 " }))).toBe(
-      "9.9.9.9"
-    );
-  });
-
-  it("prefers x-forwarded-for over x-real-ip", () => {
     expect(
       getClientIp(
-        requestWithHeaders({ "x-forwarded-for": "1.2.3.4", "x-real-ip": "9.9.9.9" })
+        requestWithHeaders({ "x-real-ip": `  ${REAL_IP_HEADER_VALUE} ` }),
+        PRODUCTION_ENV
       )
-    ).toBe("1.2.3.4");
+    ).toBe(REAL_IP_HEADER_VALUE);
+  });
+
+  it("prefers a trusted x-forwarded-for entry over x-real-ip", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({
+          "x-forwarded-for": CLIENT_IP,
+          "x-real-ip": REAL_IP_HEADER_VALUE,
+        }),
+        PRODUCTION_ENV
+      )
+    ).toBe(CLIENT_IP);
+  });
+
+  it("uses x-real-ip when the forwarded header carries no trustworthy entry", () => {
+    expect(
+      getClientIp(
+        requestWithHeaders({
+          "x-forwarded-for": SPOOFED_IP,
+          "x-real-ip": REAL_IP_HEADER_VALUE,
+        }),
+        DEVELOPMENT_ENV
+      )
+    ).toBe(REAL_IP_HEADER_VALUE);
   });
 
   it("returns 'unknown' when no headers are present", () => {
-    expect(getClientIp(requestWithHeaders({}))).toBe("unknown");
+    expect(getClientIp(requestWithHeaders({}), PRODUCTION_ENV)).toBe(
+      UNKNOWN_CLIENT_IP
+    );
   });
 
-  it("skips to x-real-ip when the first forwarded entry is empty", () => {
+  it("returns 'unknown' when both headers are blank", () => {
     expect(
       getClientIp(
-        requestWithHeaders({ "x-forwarded-for": ", 1.2.3.4", "x-real-ip": "9.9.9.9" })
+        requestWithHeaders({ "x-forwarded-for": " , ", "x-real-ip": "   " }),
+        PRODUCTION_ENV
       )
-    ).toBe("9.9.9.9");
-    expect(
-      getClientIp(requestWithHeaders({ "x-forwarded-for": ", 1.2.3.4" }))
-    ).toBe("unknown");
+    ).toBe(UNKNOWN_CLIENT_IP);
   });
 });
 

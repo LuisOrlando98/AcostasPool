@@ -3,7 +3,10 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { createNotification } from "@/lib/notifications/create";
 import { logAuditEvent } from "@/lib/audit/log";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import {
+  PRIVATE_ASSET_CACHE_CONTROL,
+  storePublicAsset,
+} from "@/lib/storage/object-store";
 import {
   escapeHtml,
   renderEmailTemplate,
@@ -274,7 +277,7 @@ export async function POST(
       relativePath: buildCustomerJobPhotoAssetPath(job.customerId, fileName, now),
       buffer: jpegBuffer,
       contentType: "image/jpeg",
-      cacheControl: "public, max-age=31536000, immutable",
+      cacheControl: PRIVATE_ASSET_CACHE_CONTROL,
     });
     const photo = await prisma.jobPhoto.create({
       data: {

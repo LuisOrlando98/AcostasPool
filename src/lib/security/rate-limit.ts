@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import type { EnvSource } from "@/lib/config/env";
 
 type RateLimitState = {
   count: number;
@@ -39,19 +40,76 @@ function prune(now: number) {
   }
 }
 
-export function getClientIp(request: Request) {
+export const UNKNOWN_CLIENT_IP = "unknown";
+
+const PRODUCTION_NODE_ENV = "production";
+/** Render terminates TLS on one proxy in front of the app. */
+const PRODUCTION_TRUSTED_PROXY_HOPS = 1;
+/** `next dev` is reached directly: no proxy appends a trustworthy address. */
+const DEVELOPMENT_TRUSTED_PROXY_HOPS = 0;
+
+/** One warning per malformed value instead of one per request. */
+const warnedProxyHopValues = new Set<string>();
+
+function defaultTrustedProxyHops(env: EnvSource): number {
+  return env.NODE_ENV === PRODUCTION_NODE_ENV
+    ? PRODUCTION_TRUSTED_PROXY_HOPS
+    : DEVELOPMENT_TRUSTED_PROXY_HOPS;
+}
+
+/**
+ * Number of proxies the app trusts between itself and the client, read from
+ * `TRUSTED_PROXY_HOPS`. Defaults to 1 in production (Render) and 0 elsewhere.
+ * A non-integer or negative value falls back to the default and is reported.
+ */
+export function resolveTrustedProxyHops(env: EnvSource = process.env): number {
+  const fallback = defaultTrustedProxyHops(env);
+  const raw = env.TRUSTED_PROXY_HOPS?.trim();
+  if (!raw) {
+    return fallback;
+  }
+  const hops = Number(raw);
+  if (!Number.isInteger(hops) || hops < 0) {
+    if (!warnedProxyHopValues.has(raw)) {
+      warnedProxyHopValues.add(raw);
+      console.warn(
+        `Invalid TRUSTED_PROXY_HOPS ("${raw}"): expected a non-negative integer; using ${fallback}.`
+      );
+    }
+    return fallback;
+  }
+  return hops;
+}
+
+/**
+ * Client address used as the rate-limit key.
+ *
+ * `x-forwarded-for` grows left to right: every proxy appends the address it
+ * saw, so the entries a client can forge are the leftmost ones and the only
+ * trustworthy positions are the last `TRUSTED_PROXY_HOPS` ones. The client is
+ * therefore the entry `hops` positions from the end; with 0 trusted hops the
+ * header carries no trustworthy entry at all and is ignored. When the chain is
+ * shorter than the configured hops every entry was written by a trusted proxy,
+ * and the leftmost one is the address the outermost proxy saw.
+ */
+export function getClientIp(request: Request, env: EnvSource = process.env): string {
+  const hops = resolveTrustedProxyHops(env);
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    const first = forwardedFor.split(",")[0]?.trim();
-    if (first) {
-      return first;
+  if (forwardedFor && hops > 0) {
+    const chain = forwardedFor
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+    const trusted = chain[Math.max(0, chain.length - hops)];
+    if (trusted) {
+      return trusted;
     }
   }
-  const realIp = request.headers.get("x-real-ip");
+  const realIp = request.headers.get("x-real-ip")?.trim();
   if (realIp) {
-    return realIp.trim();
+    return realIp;
   }
-  return "unknown";
+  return UNKNOWN_CLIENT_IP;
 }
 
 function checkRateLimitInMemory({

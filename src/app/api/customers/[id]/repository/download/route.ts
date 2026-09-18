@@ -1,8 +1,11 @@
-import path from "path";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { buildCustomerRepositoryRoot, sanitizeRepositoryPath } from "@/lib/customers/repository";
+import {
+  getContentTypeForFileName,
+  sanitizeDownloadFileName,
+} from "@/lib/storage/content-type";
 import { readStoredAsset } from "@/lib/storage/object-store";
 
 export const runtime = "nodejs";
@@ -33,30 +36,6 @@ function isFilesPath(value: string) {
 
 function isInvoicesPath(value: string) {
   return value === "invoices" || value.startsWith("invoices/");
-}
-
-function contentTypeFromFileName(fileName: string) {
-  const extension = path.extname(fileName).toLowerCase();
-  if (extension === ".pdf") return "application/pdf";
-  if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
-  if (extension === ".png") return "image/png";
-  if (extension === ".webp") return "image/webp";
-  if (extension === ".gif") return "image/gif";
-  if (extension === ".csv") return "text/csv";
-  if (extension === ".txt" || extension === ".log") return "text/plain; charset=utf-8";
-  if (extension === ".json") return "application/json; charset=utf-8";
-  if (extension === ".zip") return "application/zip";
-  return "application/octet-stream";
-}
-
-function sanitizeDownloadName(value: string, fallback: string) {
-  const clean = value
-    .trim()
-    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, "_")
-    .replace(/\s+/g, " ")
-    .replace(/^\.+/, "")
-    .replace(/\.+$/, "");
-  return clean || fallback;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -138,7 +117,7 @@ export async function GET(request: Request, context: RouteContext) {
       }
 
       const buffer = await readStoredAsset(storagePath);
-      const downloadName = sanitizeDownloadName(
+      const downloadName = sanitizeDownloadFileName(
         `${resolvedInvoice.number}.pdf`,
         "invoice.pdf"
       );
@@ -146,7 +125,8 @@ export async function GET(request: Request, context: RouteContext) {
         headers: {
           "content-type": "application/pdf",
           "content-disposition": `attachment; filename="${downloadName}"`,
-          "cache-control": "no-store",
+          "cache-control": "private, no-store",
+          "x-content-type-options": "nosniff",
         },
       });
     }
@@ -161,12 +141,13 @@ export async function GET(request: Request, context: RouteContext) {
       const storagePath = `${rootPrefix}${sourceSubPath}`;
       const buffer = await readStoredAsset(storagePath);
       const rawName = sourceSubPath.split("/").pop() ?? "download.bin";
-      const downloadName = sanitizeDownloadName(rawName, "download.bin");
+      const downloadName = sanitizeDownloadFileName(rawName, "download.bin");
       return new NextResponse(buffer, {
         headers: {
-          "content-type": contentTypeFromFileName(downloadName),
+          "content-type": getContentTypeForFileName(downloadName),
           "content-disposition": `attachment; filename="${downloadName}"`,
-          "cache-control": "no-store",
+          "cache-control": "private, no-store",
+          "x-content-type-options": "nosniff",
         },
       });
     }

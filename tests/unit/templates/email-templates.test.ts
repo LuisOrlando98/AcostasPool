@@ -135,7 +135,7 @@ describe("renderEmailTemplate", () => {
     expect(rendered.subject).toBe("|{{a-b}}|{a}|{}|{{ a b }}");
   });
 
-  it("no es recursivo ni escapa HTML: los valores se insertan tal cual en los tres campos", () => {
+  it("no es recursivo: el valor interpolado nunca se vuelve a interpolar", () => {
     const rendered = renderEmailTemplate(
       { subject: "{{a}}", text: "{{a}}", html: "{{a}}" },
       { a: "<b>{{b}}</b>", b: "nope" }
@@ -143,7 +143,46 @@ describe("renderEmailTemplate", () => {
 
     expect(rendered.subject).toBe("<b>{{b}}</b>");
     expect(rendered.text).toBe("<b>{{b}}</b>");
-    expect(rendered.html).toBe("<b>{{b}}</b>");
+    expect(rendered.html).toBe("&lt;b&gt;{{b}}&lt;/b&gt;");
+  });
+
+  it("escapa los valores al interpolarlos en html y los deja crudos en subject y text", () => {
+    const scriptPayload = "<script>alert('x')</script>";
+    const imagePayload = '<img src=x onerror="alert(1)">';
+
+    const rendered = renderEmailTemplate(
+      { subject: "Hola {{a}}", text: "Hola {{a}} / {{b}}", html: "<p>{{a}}</p><p>{{b}}</p>" },
+      { a: scriptPayload, b: imagePayload }
+    );
+
+    expect(rendered.subject).toBe(`Hola ${scriptPayload}`);
+    expect(rendered.text).toBe(`Hola ${scriptPayload} / ${imagePayload}`);
+    expect(rendered.html).toBe(
+      `<p>${escapeHtml(scriptPayload)}</p><p>${escapeHtml(imagePayload)}</p>`
+    );
+    expect(rendered.html).not.toMatch(/<script|<img/i);
+  });
+
+  it("respeta las claves *_html: el llamante ya entrega HTML seguro y no se vuelve a escapar", () => {
+    const rawName = "Tom & <Jerry>";
+
+    const rendered = renderEmailTemplate(
+      {
+        subject: "{{name}}",
+        text: "{{name}}\n{{lines_text}}",
+        html: "<p>{{name_html}}</p><ol>{{lines_html}}</ol>",
+      },
+      {
+        name: rawName,
+        name_html: escapeHtml(rawName),
+        lines_text: "1. Cliente <x>",
+        lines_html: "<li>Cliente &lt;x&gt;</li>",
+      }
+    );
+
+    expect(rendered.html).toBe("<p>Tom &amp; &lt;Jerry&gt;</p><ol><li>Cliente &lt;x&gt;</li></ol>");
+    expect(rendered.subject).toBe(rawName);
+    expect(rendered.text).toBe("Tom & <Jerry>\n1. Cliente <x>");
   });
 
   it("no muta la plantilla de entrada", () => {
@@ -156,9 +195,9 @@ describe("renderEmailTemplate", () => {
     expect(rendered).toEqual({ subject: "x", text: "x", html: "x" });
   });
 
-  it.fails("los tokens que coinciden con propiedades heredadas de Object deberian resolverse a vacio", () => {
-    // Comportamiento actual: variables[key] resuelve por la cadena de prototipos y
-    // "{{constructor}}" se convierte en "function Object() { [native code] }".
+  it("los tokens que coinciden con propiedades heredadas de Object se resuelven a vacio", () => {
+    // interpolateTemplate resuelve solo propiedades propias (Object.hasOwn): "{{constructor}}"
+    // ya no se convierte en "function Object() { [native code] }".
     const rendered = renderEmailTemplate(
       { subject: "{{constructor}}", text: "{{toString}}", html: "{{__proto__}}" },
       {}
@@ -167,6 +206,17 @@ describe("renderEmailTemplate", () => {
     expect(rendered.subject).toBe("");
     expect(rendered.text).toBe("");
     expect(rendered.html).toBe("");
+  });
+
+  it("si esas claves llegan como propiedad propia, se interpola el valor propio", () => {
+    const rendered = renderEmailTemplate(
+      { subject: "{{constructor}}", text: "{{toString}}", html: "<p>{{constructor}}</p>" },
+      { constructor: "Ana", toString: "Luis" }
+    );
+
+    expect(rendered.subject).toBe("Ana");
+    expect(rendered.text).toBe("Luis");
+    expect(rendered.html).toBe("<p>Ana</p>");
   });
 });
 
@@ -321,9 +371,9 @@ describe("buildPremiumEmailTemplateHtml", () => {
     expect(html.indexOf(`${PARAGRAPH_OPEN}Para</p>`)).toBeGreaterThan(html.indexOf(lists[0] ?? ""));
   });
 
-  it.fails("el HTML premium no deberia insertar sin escapar los valores de los tokens de texto plano", () => {
-    // Los callers pasan customer_name (crudo) y customer_name_html (escapado), pero el HTML
-    // premium se genera desde `text`, que usa {{customer_name}}: el valor crudo acaba en el HTML.
+  it("el HTML premium no inserta sin escapar los valores de los tokens de texto plano", () => {
+    // El HTML premium se genera desde `text`, que usa {{customer_name}}: renderEmailTemplate
+    // escapa esos valores antes de interpolarlos, asi que el valor crudo no llega al HTML.
     const rawName = '<img src=x onerror="alert(1)">';
     const template = getDefaultEmailTemplatesConfig("EN").CUSTOMER_INVITE;
 
@@ -335,6 +385,59 @@ describe("buildPremiumEmailTemplateHtml", () => {
     });
 
     expect(rendered.html).not.toContain(rawName);
+    expect(rendered.html).not.toMatch(/<img/i);
+    expect(rendered.html).toContain(`${PARAGRAPH_OPEN}Hi ${escapeHtml(rawName)},</p>`);
+    expect(rendered.text).toContain(`Hi ${rawName},`);
+  });
+
+  it("escapa un nombre con <script> en el HTML y lo deja literal en el texto plano", () => {
+    const rawName = "<script>alert('x')</script>";
+    const template = getDefaultEmailTemplatesConfig("EN").CUSTOMER_INVITE;
+
+    const rendered = renderEmailTemplate(template, {
+      customer_name: rawName,
+      customer_name_html: escapeHtml(rawName),
+      invite_link: "https://x.test",
+      invite_hours: "48",
+    });
+
+    expect(rendered.html).not.toContain("<script");
+    expect(rendered.html).toContain(`${PARAGRAPH_OPEN}Hi ${escapeHtml(rawName)},</p>`);
+    expect(rendered.text).toContain(`Hi ${rawName},`);
+  });
+
+  it("conserva el markup de {{lines_html}} en los digests y escapa el resto de valores", () => {
+    const rawName = "Carlos <Diaz>";
+    const template = getDefaultEmailTemplatesConfig("EN").TECH_DAILY_DIGEST;
+
+    const rendered = renderEmailTemplate(template, {
+      tech_name: rawName,
+      tech_name_html: escapeHtml(rawName),
+      route_date: "03/01/2026",
+      lines_text: "1. Cliente <x>",
+      lines_html: "<li>Cliente &lt;x&gt;</li>",
+    });
+
+    expect(rendered.html).toContain("<li>Cliente &lt;x&gt;</li>");
+    expect(rendered.html).toContain(`Hola ${escapeHtml(rawName)},`);
+    expect(rendered.html).not.toContain(rawName);
+    expect(rendered.text).toContain(`Hola ${rawName},`);
+  });
+
+  it("no escapa el asunto: es texto plano aunque el cuerpo HTML si escape el mismo valor", () => {
+    const rawName = "Tom & <Jerry>";
+    const template = getDefaultEmailTemplatesConfig("EN").QUOTE_REQUEST;
+
+    const rendered = renderEmailTemplate(template, {
+      ...EMAIL_TEMPLATE_DEFINITIONS.QUOTE_REQUEST.previewValues,
+      name: rawName,
+      name_html: escapeHtml(rawName),
+    });
+
+    expect(rendered.subject).toBe("New quote request - Doral - Tom & <Jerry>");
+    expect(rendered.subject).not.toContain("&amp;");
+    expect(rendered.subject).not.toContain("&lt;");
+    expect(rendered.html).toContain(`Name: ${escapeHtml(rawName)}`);
   });
 });
 

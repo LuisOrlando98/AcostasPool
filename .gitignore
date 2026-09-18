@@ -52,3 +52,6 @@ next-env.d.ts
 
 # graphify knowledge graph
 /graphify-out
+
+# private local storage (STORAGE_DRIVER=local)
+/storage

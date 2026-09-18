@@ -73,6 +73,8 @@ La referencia completa, agrupada y comentada, esta en `.env.example`; copialo a 
 | `CRON_SECRET` | Cabecera `x-cron-secret` entre el worker y `/api/internal/routes/assistant/auto-optimize`. | El endpoint rechaza todas las llamadas y el worker omite la optimizacion diaria. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | Correo transaccional (invitaciones, reset de password, facturas, fotos, cotizaciones, digests). | No se envia ningun correo. `SMTP_PORT` por defecto 587; `SMTP_FROM` por defecto `SMTP_USER`. |
 | `CONTACT_INBOX_EMAIL` | Buzon de cotizaciones y respuestas de integraciones publicas. | Se usa `SMTP_USER`. |
+| `TRUSTED_PROXY_HOPS` | Numero de proxies delante de la app. `x-forwarded-for` crece por la derecha, asi que la IP real es la entrada situada a esas posiciones del final; en Render vale `1` (subelo si añades un CDN). | Por defecto `1` en produccion y `0` en desarrollo; con `0` se ignora la cabecera porque el cliente puede falsearla. |
+| `PUBLIC_INTEGRATION_TOKENS` | Lista separada por comas de los tokens que abren `/new-integrations/<token>` y su endpoint de respuesta. Para rotar: publica el token nuevo, manten el viejo mientras sus enlaces sigan vivos y luego quitalo. | Se usa el token por defecto incrustado en `src/lib/public-integrations.ts` (para no romper enlaces ya enviados) y se registra un aviso en produccion. |
 | `STORAGE_DRIVER` | `local` (archivos bajo `public/`, una sola instancia) o `s3`. | Se comporta como `local`. |
 | `AWS_REGION`, `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Credenciales S3. Obligatorias cuando `STORAGE_DRIVER=s3`. | Fallan subidas, avatares y PDFs de facturas. |
 | `NEXT_PUBLIC_CDN_URL` | Base publica (CDN) de los assets en S3. | Se usa la URL del bucket. |
@@ -87,7 +89,7 @@ La referencia completa, agrupada y comentada, esta en `.env.example`; copialo a 
 | --- | --- |
 | `NEXT_PUBLIC_NOTIFICATION_SOUND_URL` | Sonido de alerta personalizado (por defecto `/sounds/notification.mp3`). |
 | `NEXT_PUBLIC_LANDING_YOUTUBE_ID`, `NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_SRC`, `NEXT_PUBLIC_LANDING_SERVICES_BG_VIDEO_ENABLED` | Contenido multimedia de la landing. |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_TECH_EMAIL`, `SEED_TECH_PASSWORD`, `SEED_CUSTOMER_EMAIL`, `SEED_CUSTOMER_PASSWORD` | Cuentas demo de `npm run db:seed` (solo desarrollo y CI). |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_TECH_EMAIL`, `SEED_TECH_PASSWORD`, `SEED_CUSTOMER_EMAIL`, `SEED_CUSTOMER_PASSWORD` | Cuentas demo de `npm run db:seed` (solo desarrollo y CI). Sin la contraseña, el seed genera una aleatoria y la imprime una sola vez; con `NODE_ENV=production` aborta. |
 | `E2E_BASE_URL` | URL base para Playwright (por defecto `http://localhost:3000`). |
 
 ## Notificaciones en tiempo real

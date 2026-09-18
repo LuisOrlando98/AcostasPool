@@ -170,6 +170,8 @@ describe("validateEnv - required variables", () => {
       "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY",
       "BUSINESS_TIMEZONE",
       "NEXT_PUBLIC_BUSINESS_TIMEZONE",
+      "TRUSTED_PROXY_HOPS",
+      "PUBLIC_INTEGRATION_TOKENS",
     ];
 
     expect(ENV_VARIABLE_NAMES).toEqual(expect.arrayContaining(expected));
@@ -311,6 +313,49 @@ describe("validateEnv - e-mail and cron", () => {
 
     expect(warningsMentioning(missing, "CRON_SECRET")).toHaveLength(1);
     expect(warningsMentioning(present, "CRON_SECRET")).toEqual([]);
+  });
+});
+
+describe("validateEnv - public integrations and proxy hops", () => {
+  it("warns while PUBLIC_INTEGRATION_TOKENS is unset and stays quiet when present", () => {
+    const missing = validateEnv(VALID_REQUIRED);
+    const present = validateEnv(
+      withRequired({ PUBLIC_INTEGRATION_TOKENS: "token-a,token-b" })
+    );
+
+    expect(warningsMentioning(missing, "PUBLIC_INTEGRATION_TOKENS")).toHaveLength(1);
+    expect(warningsMentioning(present, "PUBLIC_INTEGRATION_TOKENS")).toEqual([]);
+  });
+
+  it("warns about a missing TRUSTED_PROXY_HOPS only in production", () => {
+    const development = validateEnv(withRequired({ NODE_ENV: "development" }));
+    const production = validateEnv(withRequired({ NODE_ENV: "production" }));
+    const configured = validateEnv(
+      withRequired({ NODE_ENV: "production", TRUSTED_PROXY_HOPS: "1" })
+    );
+
+    expect(warningsMentioning(development, "TRUSTED_PROXY_HOPS")).toEqual([]);
+    expect(warningsMentioning(production, "TRUSTED_PROXY_HOPS")).toHaveLength(1);
+    expect(warningsMentioning(configured, "TRUSTED_PROXY_HOPS")).toEqual([]);
+  });
+
+  it("warns about a TRUSTED_PROXY_HOPS that is not a whole number of hops", () => {
+    const notANumber = validateEnv(withRequired({ TRUSTED_PROXY_HOPS: "many" }));
+    const negative = validateEnv(withRequired({ TRUSTED_PROXY_HOPS: "-1" }));
+
+    expect(warningsMentioning(notANumber, "TRUSTED_PROXY_HOPS")).toHaveLength(1);
+    expect(warningsMentioning(negative, "TRUSTED_PROXY_HOPS")).toHaveLength(1);
+    expect(notANumber.ok).toBe(true);
+  });
+
+  it("accepts zero trusted proxy hops without a warning", () => {
+    const result = validateEnv(withRequired({ TRUSTED_PROXY_HOPS: "0" }));
+
+    expect(
+      result.warnings.filter((message) =>
+        message.includes("TRUSTED_PROXY_HOPS must")
+      )
+    ).toEqual([]);
   });
 });
 

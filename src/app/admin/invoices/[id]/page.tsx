@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import AppShell from "@/components/layout/AppShell";
 import InvoiceEditForm from "@/components/invoices/InvoiceEditForm";
+import { getAssetUrl } from "@/lib/assets";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
@@ -265,7 +266,8 @@ export default async function InvoiceEditorPage({
   const lockedTitle = t("admin.invoices.editor.locked.title");
   const lockedDescription = t("admin.invoices.editor.locked.description");
   const lockedSentAtLabel = t("admin.invoices.editor.locked.sentOn");
-  const previewPdfUrl = invoice.pdfUrl?.trim() ? invoice.pdfUrl : null;
+  // El PDF se sirve por `/api/files`, que exige sesion y autoriza por rol.
+  const previewPdfUrl = invoice.pdfUrl?.trim() ? getAssetUrl(invoice.pdfUrl) : null;
 
   const editorLabel = t("admin.invoices.editor.modes.editor");
   const previewLabel = t("admin.invoices.editor.modes.preview");

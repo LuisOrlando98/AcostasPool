@@ -6,7 +6,14 @@ import {
   sanitizeRepositoryName,
   sanitizeRepositoryPath,
 } from "@/lib/customers/repository";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import {
+  PRIVATE_ASSET_CACHE_CONTROL,
+  storePublicAsset,
+} from "@/lib/storage/object-store";
+import {
+  UPLOAD_SIGNATURE_SAMPLE_BYTES,
+  validateUploadFile,
+} from "@/lib/storage/upload-validation";
 
 export const runtime = "nodejs";
 
@@ -15,6 +22,11 @@ type RouteContext = {
 };
 
 const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+
+type ValidatedUpload = {
+  file: File;
+  contentType: string;
+};
 
 function isFilesPath(path: string) {
   return path === "files" || path.startsWith("files/");
@@ -78,15 +90,33 @@ export async function POST(request: Request, context: RouteContext) {
     }
   }
 
+  // Se valida todo el lote antes de escribir nada: basta la cabecera de cada
+  // archivo, así un tipo rechazado no deja subidos los archivos anteriores.
+  const validatedFiles: ValidatedUpload[] = [];
   for (const file of files) {
+    const head = Buffer.from(
+      await file.slice(0, UPLOAD_SIGNATURE_SAMPLE_BYTES).arrayBuffer()
+    );
+    const validation = validateUploadFile({
+      fileName: file.name,
+      declaredType: file.type,
+      bytes: head,
+    });
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: validation.status });
+    }
+    validatedFiles.push({ file, contentType: validation.contentType });
+  }
+
+  for (const { file, contentType } of validatedFiles) {
     const bytes = await file.arrayBuffer();
     const safeName = sanitizeFileName(file.name);
     const storagePath = `${rootPrefix}${subPath ? `${subPath}/` : ""}${safeName}`;
     await storePublicAsset({
       relativePath: storagePath,
       buffer: Buffer.from(bytes),
-      contentType: file.type || undefined,
-      cacheControl: "public, max-age=31536000, immutable",
+      contentType,
+      cacheControl: PRIVATE_ASSET_CACHE_CONTROL,
     });
   }
 

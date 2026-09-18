@@ -70,6 +70,16 @@ services:
       # Shared secret between the cron worker and the internal endpoints.
       - key: CRON_SECRET
         sync: false
+      # Proxies in front of the app: Render terminates TLS on one, so the client
+      # address is the last entry of x-forwarded-for. Raise it by one for every
+      # extra layer (for example a CDN) or rate limiting can be bypassed with a
+      # forged header.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      # Comma-separated tokens for /new-integrations/<token>. Unset, the app
+      # falls back to the token hard-coded in the source; set it and rotate.
+      - key: PUBLIC_INTEGRATION_TOKENS
+        sync: false
       # Realtime notifications (Pusher). Without the four server variables the
       # app falls back to an in-memory bus that only reaches browsers connected
       # to the same instance. The NEXT_PUBLIC_* pair is inlined into the browser

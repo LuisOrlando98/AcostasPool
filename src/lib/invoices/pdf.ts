@@ -1,7 +1,11 @@
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import {
+  PRIVATE_ASSET_CACHE_CONTROL,
+  storePublicAsset,
+} from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
+  formatTaxRateLabelSuffix,
   getInvoiceTemplateLocaleCopy,
   localizeInvoiceNotes,
   localizeInvoiceTemplate,
@@ -65,7 +69,7 @@ async function storeInvoicePdfBuffer(input: InvoicePdfInput, bytes: Uint8Array |
     ),
     buffer: Buffer.from(bytes),
     contentType: "application/pdf",
-    cacheControl: "public, max-age=31536000, immutable",
+    cacheControl: PRIVATE_ASSET_CACHE_CONTROL,
   });
 }
 
@@ -547,7 +551,7 @@ async function generateInvoicePdfWithPdfLibBytes(
     color: mutedColor,
   });
   drawRightText(`$${input.subtotal.toFixed(2)}`, summaryRight, summaryTop - 30, 11, boldFont, textColor);
-  page.drawText(`${template.taxLabel} (7%)`, {
+  page.drawText(`${template.taxLabel}${formatTaxRateLabelSuffix(input.subtotal, input.tax)}`, {
     x: summaryX + 12,
     y: summaryTop - 46,
     size: 11,

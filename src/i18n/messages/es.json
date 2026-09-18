@@ -2529,7 +2529,11 @@
         "addressRequired": "Completa direccion, ciudad, estado y codigo postal.",
         "saveFailed": "No se pudieron guardar los cambios del perfil.",
         "personalSaved": "Informacion personal actualizada.",
-        "addressSaved": "Direccion principal actualizada."
+        "addressSaved": "Direccion principal actualizada.",
+        "currentPasswordLabel": "Contraseña actual",
+        "currentPasswordHelp": "Cambiar tu correo de acceso requiere tu contraseña actual. También avisaremos a tu dirección anterior.",
+        "currentPasswordRequired": "Introduce tu contraseña actual para cambiar el correo.",
+        "currentPasswordInvalid": "La contraseña actual no es correcta."
       },
       "confirm": {
         "title": "Confirma cambios del perfil",

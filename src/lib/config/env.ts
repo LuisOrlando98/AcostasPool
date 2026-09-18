@@ -16,6 +16,7 @@ import { z } from "zod";
 export const AUTH_SECRET_MIN_LENGTH = 32;
 const MIN_TCP_PORT = 1;
 const MAX_TCP_PORT = 65535;
+const MIN_TRUSTED_PROXY_HOPS = 0;
 const DATABASE_URL_PATTERN = /^(postgres|postgresql|prisma):\/\//i;
 
 export const STORAGE_DRIVERS = ["local", "s3"] as const;
@@ -88,6 +89,14 @@ const optionalPort = z.coerce
   .min(MIN_TCP_PORT, `must be between ${MIN_TCP_PORT} and ${MAX_TCP_PORT}`)
   .max(MAX_TCP_PORT, `must be between ${MIN_TCP_PORT} and ${MAX_TCP_PORT}`)
   .optional();
+const optionalProxyHops = z.coerce
+  .number({ invalid_type_error: "must be a whole number of proxy hops" })
+  .int("must be a whole number of proxy hops")
+  .min(
+    MIN_TRUSTED_PROXY_HOPS,
+    `must be ${MIN_TRUSTED_PROXY_HOPS} or greater (number of proxies in front of the app)`
+  )
+  .optional();
 const optionalTimeZone = z
   .string()
   .refine(isValidTimeZone, {
@@ -127,6 +136,12 @@ export const envSchema = z.object({
 
   // Cron worker / internal endpoints
   CRON_SECRET: optionalString,
+
+  // Edge / reverse proxy
+  TRUSTED_PROXY_HOPS: optionalProxyHops,
+
+  // Public integration links (/new-integrations/<token>)
+  PUBLIC_INTEGRATION_TOKENS: optionalString,
 
   // Transactional e-mail
   SMTP_HOST: optionalString,
@@ -317,6 +332,30 @@ function cronIssues(env: NormalizedEnv): readonly EnvIssue[] {
   ];
 }
 
+function publicIntegrationIssues(env: NormalizedEnv): readonly EnvIssue[] {
+  if (env.PUBLIC_INTEGRATION_TOKENS) {
+    return [];
+  }
+  return [
+    envWarning(
+      "PUBLIC_INTEGRATION_TOKENS",
+      "PUBLIC_INTEGRATION_TOKENS is not set: /new-integrations falls back to the token shipped in the source code; set it (comma-separated list) and rotate the old link"
+    ),
+  ];
+}
+
+function trustedProxyIssues(env: NormalizedEnv): readonly EnvIssue[] {
+  if (env.NODE_ENV !== "production" || env.TRUSTED_PROXY_HOPS) {
+    return [];
+  }
+  return [
+    envWarning(
+      "TRUSTED_PROXY_HOPS",
+      "TRUSTED_PROXY_HOPS is not set: rate limiting assumes exactly one trusted proxy (Render). Set it to the number of proxies in front of the app"
+    ),
+  ];
+}
+
 function realtimeIssues(env: NormalizedEnv): readonly EnvIssue[] {
   const serverMissing = missingNames(env, PUSHER_SERVER_ENV_VARIABLES);
   const clientMissing = missingNames(env, PUSHER_CLIENT_ENV_VARIABLES);
@@ -413,6 +452,8 @@ const CROSS_FIELD_RULES: readonly ((env: NormalizedEnv) => readonly EnvIssue[])[
   authSecretIssues,
   emailIssues,
   cronIssues,
+  publicIntegrationIssues,
+  trustedProxyIssues,
   realtimeIssues,
   mapsIssues,
   timeZoneIssues,

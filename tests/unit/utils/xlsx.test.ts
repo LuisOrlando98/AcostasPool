@@ -1,15 +1,23 @@
+import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
-import { createWorkbookXlsx, parseWorkbookXlsx } from "@/lib/spreadsheets/xlsx";
+import {
+  MAX_XLSX_INFLATED_BYTES,
+  createWorkbookXlsx,
+  parseWorkbookXlsx,
+} from "@/lib/spreadsheets/xlsx";
 
 const ZIP_LOCAL_SIGNATURE = Buffer.from([0x50, 0x4b, 0x03, 0x04]);
 const LOCAL_HEADER_SIZE = 30;
 const CENTRAL_HEADER_SIZE = 46;
 const END_OF_CENTRAL_DIRECTORY_SIZE = 22;
 const STORED_METHOD = 0;
+const DEFLATE_METHOD = 8;
+/** One byte past the budget is enough to prove the cap is enforced. */
+const BOMB_OVERSHOOT_BYTES = 1;
 const MAX_SHEET_NAME_LENGTH = 31;
 const COLUMNS_BEYOND_Z = 30;
 
-type ZipEntry = { name: string; data: string; method?: number };
+type ZipEntry = { name: string; data: string | Buffer; method?: number };
 
 /** Test-only ZIP writer (stored entries) to craft workbooks the module cannot produce itself. */
 function buildStoredZip(entries: ZipEntry[]) {
@@ -19,7 +27,8 @@ function buildStoredZip(entries: ZipEntry[]) {
 
   for (const entry of entries) {
     const name = Buffer.from(entry.name, "utf8");
-    const data = Buffer.from(entry.data, "utf8");
+    const data =
+      typeof entry.data === "string" ? Buffer.from(entry.data, "utf8") : entry.data;
     const method = entry.method ?? STORED_METHOD;
 
     const localHeader = Buffer.alloc(LOCAL_HEADER_SIZE);
@@ -328,5 +337,42 @@ describe("parseWorkbookXlsx", () => {
       ["", "x"],
       ["", "y"],
     ]);
+  });
+
+  it("reads a deflated worksheet entry", () => {
+    const sheetXml = `<worksheet><sheetData><row r="1">${inlineCell(
+      "A1",
+      "header"
+    )}</row><row r="2">${inlineCell("A2", "value")}</row></sheetData></worksheet>`;
+    const buffer = buildStoredZip([
+      { name: "xl/workbook.xml", data: WORKBOOK_XML },
+      { name: "xl/_rels/workbook.xml.rels", data: WORKBOOK_RELS_XML },
+      {
+        name: "xl/worksheets/sheet1.xml",
+        data: deflateRawSync(Buffer.from(sheetXml, "utf8")),
+        method: DEFLATE_METHOD,
+      },
+    ]);
+
+    expect(parseWorkbookXlsx(buffer)).toEqual({
+      headers: ["header"],
+      rows: [["value"]],
+    });
+  });
+
+  it("refuses an entry that inflates past the size limit (zip bomb)", () => {
+    const bomb = deflateRawSync(
+      Buffer.alloc(MAX_XLSX_INFLATED_BYTES + BOMB_OVERSHOOT_BYTES, 0)
+    );
+    const buffer = buildStoredZip([
+      { name: "xl/workbook.xml", data: WORKBOOK_XML },
+      { name: "xl/_rels/workbook.xml.rels", data: WORKBOOK_RELS_XML },
+      { name: "xl/worksheets/sheet1.xml", data: bomb, method: DEFLATE_METHOD },
+    ]);
+
+    expect(bomb.length).toBeLessThan(MAX_XLSX_INFLATED_BYTES);
+    expect(() => parseWorkbookXlsx(buffer)).toThrow(
+      "El archivo XLSX se descomprime por encima del limite permitido."
+    );
   });
 });

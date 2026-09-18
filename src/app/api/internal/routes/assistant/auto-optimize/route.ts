@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { DateTime } from "luxon";
@@ -25,13 +26,31 @@ const bodySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
+/**
+ * Compares two secrets without leaking, through the comparison time, how many
+ * leading characters a guess got right. Lengths are compared first because
+ * `timingSafeEqual` requires buffers of the same size; the length of the secret
+ * is not itself a useful hint.
+ */
+function timingSafeEqualStrings(left: string, right: string) {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
 function hasValidCronSecret(request: Request) {
   const expected = process.env.CRON_SECRET?.trim();
   if (!expected) {
     return false;
   }
   const received = request.headers.get("x-cron-secret")?.trim();
-  return received === expected;
+  if (!received) {
+    return false;
+  }
+  return timingSafeEqualStrings(received, expected);
 }
 
 export async function POST(request: Request) {

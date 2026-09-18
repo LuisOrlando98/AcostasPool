@@ -32,6 +32,8 @@ type Props = {
 };
 
 const SAVE_SUCCESS_CLOSE_DELAY_MS = 850;
+/** The API answers 401 when the re-entered password does not match. */
+const UNAUTHORIZED_STATUS = 401;
 const FIELD_LABEL_CLASS =
   "text-xs font-semibold uppercase tracking-wider text-slate-500";
 
@@ -70,6 +72,9 @@ export default function ClientProfilePanel({ initialData }: Props) {
     estadoProvincia: initialData.estadoProvincia,
     codigoPostal: initialData.codigoPostal,
   });
+  // Kept out of `personalDraft`: it is a credential, never part of the profile
+  // payload unless the e-mail actually changes.
+  const [currentPassword, setCurrentPassword] = useState("");
   const [editor, setEditor] = useState<"personal" | "address" | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -92,6 +97,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     idiomaPreferencia: `${fieldId}-idioma`,
     telefono: `${fieldId}-telefono`,
     telefonoSecundario: `${fieldId}-telefono-secundario`,
+    currentPassword: `${fieldId}-current-password`,
     direccionLinea1: `${fieldId}-direccion-1`,
     direccionLinea2: `${fieldId}-direccion-2`,
     ciudad: `${fieldId}-ciudad`,
@@ -99,6 +105,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     codigoPostal: `${fieldId}-codigo-postal`,
     pauseFrom: `${fieldId}-pause-from`,
   };
+  const currentPasswordHelpId = `${fieldId}-current-password-help`;
   const editorTitleId = `${fieldId}-editor-title`;
   const editorSubtitleId = `${fieldId}-editor-subtitle`;
   const confirmTitleId = `${fieldId}-confirm-title`;
@@ -111,6 +118,12 @@ export default function ClientProfilePanel({ initialData }: Props) {
       }
     },
     []
+  );
+
+  const emailChanged = useMemo(
+    () =>
+      personalDraft.email.trim().toLowerCase() !== data.email.trim().toLowerCase(),
+    [data.email, personalDraft.email]
   );
 
   const hasAddress = useMemo(
@@ -140,6 +153,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
       telefonoSecundario: data.telefonoSecundario,
       idiomaPreferencia: data.idiomaPreferencia,
     });
+    setCurrentPassword("");
     setError(null);
     setEditor("personal");
     setConfirmOpen(false);
@@ -164,6 +178,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
     if (saving) {
       return;
     }
+    setCurrentPassword("");
     setEditor(null);
     setConfirmOpen(false);
     setSaveSuccess(false);
@@ -179,6 +194,10 @@ export default function ClientProfilePanel({ initialData }: Props) {
         !personalDraft.telefono.trim()
       ) {
         setError(t("client.profile.editor.personalRequired"));
+        return;
+      }
+      if (emailChanged && !currentPassword) {
+        setError(t("client.profile.editor.currentPasswordRequired"));
         return;
       }
     }
@@ -213,7 +232,11 @@ export default function ClientProfilePanel({ initialData }: Props) {
 
     const payload =
       editor === "personal"
-        ? { kind: "personal", ...personalDraft }
+        ? {
+            kind: "personal",
+            ...personalDraft,
+            ...(emailChanged ? { currentPassword } : {}),
+          }
         : { kind: "address", ...addressDraft };
 
     try {
@@ -225,6 +248,11 @@ export default function ClientProfilePanel({ initialData }: Props) {
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        if (response.status === UNAUTHORIZED_STATUS) {
+          setError(t("client.profile.editor.currentPasswordInvalid"));
+          setSaveSuccess(false);
+          return;
+        }
         setError(
           typeof body?.error === "string"
             ? body.error
@@ -240,6 +268,7 @@ export default function ClientProfilePanel({ initialData }: Props) {
           ...personalDraft,
           displayName: `${personalDraft.nombre} ${personalDraft.apellidos}`.trim(),
         }));
+        setCurrentPassword("");
         setNotice(t("client.profile.editor.personalSaved"));
       } else {
         setData((current) => ({
@@ -713,6 +742,31 @@ export default function ClientProfilePanel({ initialData }: Props) {
                     placeholder={t("common.labels.email")}
                   />
                 </div>
+                {emailChanged ? (
+                  <div className="sm:col-span-2">
+                    <label
+                      htmlFor={fieldIds.currentPassword}
+                      className={FIELD_LABEL_CLASS}
+                    >
+                      {t("client.profile.editor.currentPasswordLabel")}
+                    </label>
+                    <input
+                      id={fieldIds.currentPassword}
+                      type="password"
+                      autoComplete="current-password"
+                      aria-describedby={currentPasswordHelpId}
+                      value={currentPassword}
+                      onChange={(event) => setCurrentPassword(event.target.value)}
+                      className="app-input mt-2 w-full px-4 py-3 text-sm"
+                    />
+                    <p
+                      id={currentPasswordHelpId}
+                      className="mt-2 text-xs text-slate-500"
+                    >
+                      {t("client.profile.editor.currentPasswordHelp")}
+                    </p>
+                  </div>
+                ) : null}
                 <div>
                   <label htmlFor={fieldIds.idiomaPreferencia} className={FIELD_LABEL_CLASS}>
                     {t("common.labels.language")}

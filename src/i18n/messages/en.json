@@ -2529,7 +2529,11 @@
         "addressRequired": "Complete address, city, state, and postal code.",
         "saveFailed": "Unable to save profile changes.",
         "personalSaved": "Personal information updated.",
-        "addressSaved": "Primary address updated."
+        "addressSaved": "Primary address updated.",
+        "currentPasswordLabel": "Current password",
+        "currentPasswordHelp": "Changing your sign-in e-mail requires your current password. We will also notify your previous address.",
+        "currentPasswordRequired": "Enter your current password to change the e-mail address.",
+        "currentPasswordInvalid": "The current password is not correct."
       },
       "confirm": {
         "title": "Confirm profile changes",
