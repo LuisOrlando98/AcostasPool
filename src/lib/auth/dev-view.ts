@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
@@ -63,6 +64,11 @@ export type DevViewRole = (typeof DEV_VIEW_ROLES)[number];
 
 const devViewCookieSchema = z.object({
   role: z.enum(DEV_VIEW_ROLES),
+  /**
+   * `sid` del token de sesión que se firmó al elegir la vista. Sin él, o con
+   * otro distinto (cookie antigua, sesión nueva), la vista se ignora.
+   */
+  sid: z.string().min(1),
 });
 
 export type DevViewCookieValue = z.infer<typeof devViewCookieSchema>;
@@ -72,7 +78,7 @@ const COOKIE_ENCODING = "base64url";
 const JSON_ENCODING = "utf8";
 
 export function serializeDevViewCookie(value: DevViewCookieValue): string {
-  const payload = JSON.stringify({ role: value.role });
+  const payload = JSON.stringify({ role: value.role, sid: value.sid });
   return Buffer.from(payload, JSON_ENCODING).toString(COOKIE_ENCODING);
 }
 
@@ -159,6 +165,8 @@ export type ResolvedDevView = {
 type ResolveDevViewInput = {
   actor: DeveloperCandidate;
   cookieValue: DevViewCookieValue | null;
+  /** `sid` del token de sesión actual; la cookie solo vale para esa sesión. */
+  sessionId: string | null | undefined;
 };
 
 /**
@@ -171,8 +179,15 @@ type ResolveDevViewInput = {
 export async function resolveDevView({
   actor,
   cookieValue,
+  sessionId,
 }: ResolveDevViewInput): Promise<ResolvedDevView | null> {
   if (!cookieValue || !hasDeveloperAccess(actor)) {
+    return null;
+  }
+  // Una vista elegida en otra sesión (cookie de 12 h que sobrevivió a un
+  // cierre de navegador o a una caducidad) no se hereda: sin `sid` en el token
+  // o con uno distinto, el desarrollador ve la app como administrador.
+  if (!sessionId || cookieValue.sid !== sessionId) {
     return null;
   }
 
@@ -194,6 +209,8 @@ export async function resolveDevView({
 export type DeveloperSessionCookie = {
   readonly token: string;
   readonly maxAge: number;
+  /** `sid` firmado en el token; la cookie `ap_dev_view` debe llevar el mismo. */
+  readonly sid: string;
 };
 
 function nowInSeconds(): number {
@@ -226,6 +243,7 @@ export async function buildDeveloperSessionCookie(
 ): Promise<DeveloperSessionCookie> {
   const previous = authToken ? await verifySessionToken(authToken) : null;
   const expiresAt = previous?.exp;
+  const sid = randomUUID();
   const token = await signSessionToken(
     {
       sub: actor.id,
@@ -236,8 +254,9 @@ export async function buildDeveloperSessionCookie(
       role: "ADMIN",
       avatarUrl: actor.avatarUrl,
       dev: true,
+      sid,
     },
     expiresAt ? { expiresAt } : {}
   );
-  return { token, maxAge: resolveMaxAge(previous) };
+  return { token, maxAge: resolveMaxAge(previous), sid };
 }

@@ -17,7 +17,8 @@ import { clearRecentCache } from "@/lib/notifications/client-cache";
 import type { UserRole } from "@/lib/auth/config";
 
 /** Clave de sessionStorage del usuario del drawer. El sufijo permite invalidar formatos anteriores. */
-export const SHELL_USER_CACHE_KEY = "ap:me-cache:v1";
+/** v2: la entrada guarda también los datos de desarrollador (v1 los omitía y ocultaba el conmutador). */
+export const SHELL_USER_CACHE_KEY = "ap:me-cache:v2";
 /** Vida máxima de la entrada: pasada esta ventana se vuelve a pedir `/api/auth/me`. */
 export const SHELL_USER_CACHE_TTL_MS = 5 * 60 * 1000;
 

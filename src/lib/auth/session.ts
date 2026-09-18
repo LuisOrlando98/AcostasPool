@@ -82,6 +82,7 @@ export async function getSession(): Promise<Session | null> {
   const devView = await resolveDevView({
     actor: user,
     cookieValue: parseDevViewCookie(cookieStore.get(DEV_VIEW_COOKIE_NAME)?.value),
+    sessionId: tokenPayload.sid,
   });
 
   return {

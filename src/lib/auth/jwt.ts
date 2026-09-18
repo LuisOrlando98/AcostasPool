@@ -15,6 +15,14 @@ export type SessionPayload = {
    * `POST /api/developer/view` los vuelve a firmar con el claim.
    */
   dev?: boolean;
+  /**
+   * Identificador aleatorio de la sesión firmada por `POST /api/developer/view`.
+   * La cookie `ap_dev_view` guarda el mismo valor: una vista de desarrollador
+   * solo se aplica al token para el que se eligió, así que cualquier inicio
+   * de sesión nuevo (token sin `sid` o con otro) arranca como administrador
+   * aunque la cookie de vista siga en el navegador.
+   */
+  sid?: string;
 };
 
 /** Payload verificado: incluye los claims estándar que emite `SignJWT`. */
@@ -66,12 +74,14 @@ export async function verifySessionToken(
     });
     const role = payload.role;
     const dev = payload.dev;
+    const sid = payload.sid;
     if (
       typeof payload.sub !== "string" ||
       typeof payload.email !== "string" ||
       typeof payload.name !== "string" ||
       (role !== "ADMIN" && role !== "TECH" && role !== "CUSTOMER") ||
-      (dev !== undefined && typeof dev !== "boolean")
+      (dev !== undefined && typeof dev !== "boolean") ||
+      (sid !== undefined && typeof sid !== "string")
     ) {
       return null;
     }

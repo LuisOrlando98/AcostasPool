@@ -29,6 +29,9 @@ const DEVELOPER_EMAIL = "luiso.rodriguezcabrera@gmail.com";
 const DEVELOPER_ID = "user-dev";
 const AUTH_TOKEN = "signed.jwt.token";
 const REFRESHED_TOKEN = "refreshed.jwt.token";
+/** `sid` del token de sesión al que está ligada la cookie de vista. */
+const SESSION_ID = "session-1";
+const OTHER_SESSION_ID = "session-2";
 const TWELVE_HOURS_IN_SECONDS = 43200;
 const ONE_HOUR_IN_SECONDS = 3600;
 const MILLISECONDS_PER_SECOND = 1000;
@@ -72,23 +75,31 @@ describe("dev view cookie", () => {
   });
 
   it("round-trips a serialized value", () => {
-    const value = { role: "TECH" } as const;
+    const value = { role: "TECH", sid: SESSION_ID } as const;
 
     expect(parseDevViewCookie(serializeDevViewCookie(value))).toEqual(value);
   });
 
-  it("stores only the role, never a target user", () => {
-    const serialized = serializeDevViewCookie({ role: "CUSTOMER" });
+  it("stores only the role and the session id, never a target user", () => {
+    const serialized = serializeDevViewCookie({ role: "CUSTOMER", sid: SESSION_ID });
 
     expect(JSON.parse(Buffer.from(serialized, "base64url").toString("utf8"))).toEqual({
       role: "CUSTOMER",
+      sid: SESSION_ID,
     });
   });
 
   it("drops a targetUserId left over from an older cookie", () => {
     expect(
-      parseDevViewCookie(encodeCookie({ role: "TECH", targetUserId: "user-tech" }))
-    ).toEqual({ role: "TECH" });
+      parseDevViewCookie(
+        encodeCookie({ role: "TECH", sid: SESSION_ID, targetUserId: "user-tech" })
+      )
+    ).toEqual({ role: "TECH", sid: SESSION_ID });
+  });
+
+  it("returns null for a cookie without session id (written by an older build)", () => {
+    expect(parseDevViewCookie(encodeCookie({ role: "TECH" }))).toBeNull();
+    expect(parseDevViewCookie(encodeCookie({ role: "TECH", sid: "" }))).toBeNull();
   });
 
   it("returns null when the cookie is missing or empty", () => {
@@ -102,7 +113,7 @@ describe("dev view cookie", () => {
   });
 
   it("returns null when the role is not impersonatable", () => {
-    expect(parseDevViewCookie(encodeCookie({ role: "ADMIN" }))).toBeNull();
+    expect(parseDevViewCookie(encodeCookie({ role: "ADMIN", sid: SESSION_ID }))).toBeNull();
   });
 });
 
@@ -120,7 +131,11 @@ describe("hasDeveloperAccess", () => {
 
 describe("resolveDevView", () => {
   it("returns null without a cookie", async () => {
-    const resolved = await resolveDevView({ actor: developerActor, cookieValue: null });
+    const resolved = await resolveDevView({
+      actor: developerActor,
+      cookieValue: null,
+      sessionId: SESSION_ID,
+    });
 
     expect(resolved).toBeNull();
     expect(dbMock.technician.findUnique).not.toHaveBeenCalled();
@@ -129,10 +144,30 @@ describe("resolveDevView", () => {
   it("ignores the cookie for accounts that are not developers", async () => {
     const resolved = await resolveDevView({
       actor: outsiderActor,
-      cookieValue: { role: "TECH" },
+      cookieValue: { role: "TECH", sid: SESSION_ID },
+      sessionId: SESSION_ID,
     });
 
     expect(resolved).toBeNull();
+    expect(dbMock.technician.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("ignores a view chosen in another session (different or missing session id)", async () => {
+    dbMock.technician.findUnique.mockResolvedValue({ id: "technician-1" });
+
+    const fromOtherSession = await resolveDevView({
+      actor: developerActor,
+      cookieValue: { role: "TECH", sid: SESSION_ID },
+      sessionId: OTHER_SESSION_ID,
+    });
+    const tokenWithoutSid = await resolveDevView({
+      actor: developerActor,
+      cookieValue: { role: "TECH", sid: SESSION_ID },
+      sessionId: undefined,
+    });
+
+    expect(fromOtherSession).toBeNull();
+    expect(tokenWithoutSid).toBeNull();
     expect(dbMock.technician.findUnique).not.toHaveBeenCalled();
   });
 
@@ -141,7 +176,8 @@ describe("resolveDevView", () => {
 
     const resolved = await resolveDevView({
       actor: developerActor,
-      cookieValue: { role: "TECH" },
+      cookieValue: { role: "TECH", sid: SESSION_ID },
+      sessionId: SESSION_ID,
     });
 
     expect(resolved).toEqual({ role: "TECH" });
@@ -155,7 +191,8 @@ describe("resolveDevView", () => {
 
     const resolved = await resolveDevView({
       actor: developerActor,
-      cookieValue: { role: "TECH" },
+      cookieValue: { role: "TECH", sid: SESSION_ID },
+      sessionId: SESSION_ID,
     });
 
     expect(resolved).toBeNull();
@@ -166,7 +203,8 @@ describe("resolveDevView", () => {
 
     const resolved = await resolveDevView({
       actor: developerActor,
-      cookieValue: { role: "CUSTOMER" },
+      cookieValue: { role: "CUSTOMER", sid: SESSION_ID },
+      sessionId: SESSION_ID,
     });
 
     expect(resolved).toEqual({ role: "CUSTOMER" });
@@ -180,7 +218,8 @@ describe("resolveDevView", () => {
 
     const resolved = await resolveDevView({
       actor: developerActor,
-      cookieValue: { role: "CUSTOMER" },
+      cookieValue: { role: "CUSTOMER", sid: SESSION_ID },
+      sessionId: SESSION_ID,
     });
 
     expect(resolved).toBeNull();
@@ -249,6 +288,7 @@ describe("buildDeveloperSessionCookie", () => {
         role: "ADMIN",
         avatarUrl: "/avatars/dev.png",
         dev: true,
+        sid: expect.any(String),
       },
       {}
     );
@@ -280,6 +320,20 @@ describe("buildDeveloperSessionCookie", () => {
     const cookie = await buildDeveloperSessionCookie(actor, null);
 
     expect(jwtMock.verifySessionToken).not.toHaveBeenCalled();
-    expect(cookie).toEqual({ token: REFRESHED_TOKEN, maxAge: AUTH_COOKIE_MAX_AGE });
+    expect(cookie).toEqual({
+      token: REFRESHED_TOKEN,
+      maxAge: AUTH_COOKIE_MAX_AGE,
+      sid: expect.any(String),
+    });
+  });
+
+  it("binds the view cookie to the freshly signed token through a new session id", async () => {
+    const first = await buildDeveloperSessionCookie(actor, null);
+    const second = await buildDeveloperSessionCookie(actor, null);
+
+    const signedPayload = jwtMock.signSessionToken.mock.calls[0][0] as { sid?: string };
+    expect(first.sid).toBe(signedPayload.sid);
+    expect(first.sid).not.toBe("");
+    expect(second.sid).not.toBe(first.sid);
   });
 });

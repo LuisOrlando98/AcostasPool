@@ -130,7 +130,7 @@ export async function POST(request: Request) {
     });
     response.cookies.set(
       DEV_VIEW_COOKIE_NAME,
-      role === "ADMIN" ? "" : serializeDevViewCookie({ role }),
+      role === "ADMIN" ? "" : serializeDevViewCookie({ role, sid: session.sid }),
       {
         ...DEV_VIEW_COOKIE_OPTIONS,
         maxAge: role === "ADMIN" ? 0 : DEV_VIEW_COOKIE_MAX_AGE,

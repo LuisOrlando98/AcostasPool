@@ -30,6 +30,8 @@ const AUTH_TOKEN = "signed.jwt.token";
 const DEVELOPER_EMAIL = "luiso.rodriguezcabrera@gmail.com";
 const DEVELOPER_ID = "user-dev";
 const TECH_USER_ID = "user-tech";
+/** `sid` del token actual; la cookie de vista solo vale si lleva el mismo. */
+const SESSION_ID = "session-1";
 
 const developerUser = {
   id: DEVELOPER_ID,
@@ -57,7 +59,9 @@ beforeEach(() => {
   dbMock.user.findUnique.mockReset();
   dbMock.technician.findUnique.mockReset();
   dbMock.customer.findUnique.mockReset();
-  jwtMock.verifySessionToken.mockReset().mockResolvedValue({ sub: DEVELOPER_ID });
+  jwtMock.verifySessionToken
+    .mockReset()
+    .mockResolvedValue({ sub: DEVELOPER_ID, sid: SESSION_ID });
   jwtMock.signSessionToken.mockReset();
 });
 
@@ -77,7 +81,7 @@ describe("getSession", () => {
   it("ignores the dev view cookie for accounts that are not developers", async () => {
     jwtMock.verifySessionToken.mockResolvedValue({ sub: TECH_USER_ID });
     dbMock.user.findUnique.mockResolvedValue(technicianUser);
-    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH" }));
+    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH", sid: SESSION_ID }));
 
     const session = await getSession();
 
@@ -112,10 +116,25 @@ describe("getSession", () => {
     });
   });
 
+  it("ignores a view chosen in a previous session: a new login always starts as admin", async () => {
+    dbMock.user.findUnique.mockResolvedValue(developerUser);
+    dbMock.customer.findUnique.mockResolvedValue({ id: "customer-dev" });
+    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "CUSTOMER", sid: SESSION_ID }));
+    // Token nuevo (login): sin `sid`, o con otro distinto al de la cookie.
+    jwtMock.verifySessionToken.mockResolvedValueOnce({ sub: DEVELOPER_ID });
+
+    expect(await getSession()).toMatchObject({ role: "ADMIN", devView: null, isDeveloper: true });
+
+    jwtMock.verifySessionToken.mockResolvedValueOnce({ sub: DEVELOPER_ID, sid: "session-2" });
+
+    expect(await getSession()).toMatchObject({ role: "ADMIN", devView: null });
+    expect(dbMock.customer.findUnique).not.toHaveBeenCalled();
+  });
+
   it("falls back to the admin view when the test technician row is missing", async () => {
     dbMock.user.findUnique.mockResolvedValue(developerUser);
     dbMock.technician.findUnique.mockResolvedValue(null);
-    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH" }));
+    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH", sid: SESSION_ID }));
 
     const session = await getSession();
 
@@ -125,7 +144,7 @@ describe("getSession", () => {
   it("keeps the developer's own identity and only changes the role", async () => {
     dbMock.user.findUnique.mockResolvedValue(developerUser);
     dbMock.technician.findUnique.mockResolvedValue({ id: "technician-dev" });
-    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH" }));
+    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "TECH", sid: SESSION_ID }));
 
     const session = await getSession();
 
@@ -143,7 +162,7 @@ describe("getSession", () => {
   it("serves the client view from the developer's own customer row", async () => {
     dbMock.user.findUnique.mockResolvedValue(developerUser);
     dbMock.customer.findUnique.mockResolvedValue({ id: "customer-dev" });
-    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "CUSTOMER" }));
+    cookieJar.set(DEV_VIEW_COOKIE_NAME, serializeDevViewCookie({ role: "CUSTOMER", sid: SESSION_ID }));
 
     const session = await getSession();
 
