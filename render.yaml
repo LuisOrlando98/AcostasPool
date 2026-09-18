@@ -185,9 +185,9 @@ services:
 
 databases:
   - name: acostaspool-db
-    # The `free` plan has no backups or point-in-time recovery and Render
-    # suspends/expires free instances after a grace period. For production
-    # use a paid plan (basic-256mb or higher) with backups enabled.
-    # Left unchanged on purpose: upgrading the plan is a billing decision.
-    plan: free
+    # Must match the plan the database actually runs on: Render refuses a
+    # Blueprint sync that would downgrade it ("cannot downgrade database from
+    # Basic-256mb to Free", seen on 18 Sep 2026 while the file still said
+    # `free`). basic-256mb keeps daily backups and point-in-time recovery.
+    plan: basic-256mb
     databaseName: acostaspool
