@@ -10,13 +10,9 @@ import {
   type DevViewRole,
 } from "@/lib/auth/dev-view";
 
-/** Vista de desarrollador activa: quién mira (actor) y a quién ve (target). */
+/** Vista de desarrollador activa: el rol con el que se está mirando la app. */
 export type SessionDevView = {
-  actorUserId: string;
-  actorEmail: string;
-  actorName: string;
   role: DevViewRole;
-  targetLabel: string;
 };
 
 export type Session = {
@@ -26,18 +22,22 @@ export type Session = {
   role: UserRole;
   avatarUrl: string | null;
   isDeveloper: boolean;
-  /** `null` salvo que un desarrollador esté viendo la app como otro usuario. */
+  /** `null` salvo que un desarrollador esté mirando la app con otro rol. */
   devView: SessionDevView | null;
 };
 
 /**
  * Sesión efectiva de la petición.
  *
- * Un desarrollador ve siempre ADMIN, salvo que la cookie `ap_dev_view` apunte a
- * un objetivo válido: en ese caso la sesión devuelta ES la del usuario objetivo
- * (`sub`, `email`, `name`, `role`, `avatarUrl`), de modo que las páginas de
- * técnico y cliente encuentran su fila por `userId = session.sub` sin cambios.
- * Las cuentas que no son de desarrollador ignoran la cookie por completo.
+ * Un desarrollador ve siempre ADMIN, salvo que la cookie `ap_dev_view` pida
+ * otro rol: en ese caso la sesión devuelta sigue siendo LA SUYA (`sub`, `email`,
+ * `name`, `avatarUrl`) y solo cambia `role`, así que las páginas de técnico y
+ * cliente encuentran sus filas de pruebas por `userId = session.sub`. Las
+ * cuentas que no son de desarrollador ignoran la cookie por completo.
+ *
+ * El acceso de desarrollador se concede tanto por la marca `isDeveloper` sobre
+ * un correo de la lista como por el correo de la lista por sí solo, que es el
+ * mismo criterio que aplica `POST /api/developer/view`.
  */
 export async function getSession(): Promise<Session | null> {
   const cookieStore = await cookies();
@@ -83,31 +83,14 @@ export async function getSession(): Promise<Session | null> {
     actor: user,
     cookieValue: parseDevViewCookie(cookieStore.get(DEV_VIEW_COOKIE_NAME)?.value),
   });
-  if (!devView) {
-    return {
-      sub: user.id,
-      email: user.email,
-      name: user.fullName,
-      role: "ADMIN",
-      avatarUrl: user.avatarUrl,
-      isDeveloper: true,
-      devView: null,
-    };
-  }
 
   return {
-    sub: devView.targetUser.id,
-    email: devView.targetUser.email,
-    name: devView.targetUser.fullName,
-    role: devView.targetUser.role,
-    avatarUrl: devView.targetUser.avatarUrl,
+    sub: user.id,
+    email: user.email,
+    name: user.fullName,
+    role: devView?.role ?? "ADMIN",
+    avatarUrl: user.avatarUrl,
     isDeveloper: true,
-    devView: {
-      actorUserId: user.id,
-      actorEmail: user.email,
-      actorName: user.fullName,
-      role: devView.targetUser.role,
-      targetLabel: devView.label,
-    },
+    devView: devView ? { role: devView.role } : null,
   };
 }

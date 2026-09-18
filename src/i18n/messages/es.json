@@ -2846,21 +2846,12 @@
       "TECH": "T",
       "CUSTOMER": "C"
     },
-    "targetLabel": "Usuario objetivo",
-    "targetPlaceholder": "Selecciona un usuario",
-    "targetEmpty": "No hay usuarios disponibles para esta vista.",
-    "apply": "Aplicar vista",
-    "applying": "Cambiando…",
-    "loading": "Cargando objetivos…",
-    "banner": {
-      "text": "Vista de desarrollador: {{role}} · {{target}}",
-      "back": "Volver a administrador",
-      "returning": "Volviendo…"
-    },
     "errors": {
-      "load": "No se pudieron cargar los objetivos disponibles.",
       "switch": "No se pudo cambiar de vista.",
-      "target": "Elige primero un usuario objetivo."
-    }
+      "notDeveloper": "Tu cuenta no está marcada como desarrollador."
+    },
+    "menuLabel": "Vista de desarrollador: {{role}}",
+    "menuTitle": "Ver la aplicación como",
+    "activeSuffix": "vista actual"
   }
 }

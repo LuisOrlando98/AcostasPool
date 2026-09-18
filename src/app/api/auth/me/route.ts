@@ -15,15 +15,9 @@ export async function GET() {
       role: session.role,
       avatarUrl: session.avatarUrl ?? null,
       isDeveloper: session.isDeveloper === true,
-      // Vista de desarrollador activa (o null): la usan el conmutador del
-      // sidebar y la franja de aviso de AppShell.
-      devView: session.devView
-        ? {
-            role: session.devView.role,
-            targetLabel: session.devView.targetLabel,
-            actorName: session.devView.actorName,
-          }
-        : null,
+      // Vista de desarrollador activa (o null): la usa el conmutador de la
+      // cabecera, que se alimenta de esta misma llamada desde `AppShell`.
+      devView: session.devView ? { role: session.devView.role } : null,
     },
   }, { headers });
 }

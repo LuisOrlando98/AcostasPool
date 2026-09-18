@@ -11,10 +11,28 @@ export type SessionPayload = {
    * `true` para las cuentas de desarrollador. Permite que `src/proxy.ts`
    * (que solo lee el JWT, nunca la base de datos) deje pasar cualquier prefijo
    * protegido mientras la vista de desarrollador está activa. Es opcional:
-   * los tokens emitidos antes de este campo siguen siendo válidos, pero su
-   * titular debe volver a iniciar sesión una vez para obtener el claim.
+   * los tokens emitidos antes de este campo siguen siendo válidos y
+   * `POST /api/developer/view` los vuelve a firmar con el claim.
    */
   dev?: boolean;
+};
+
+/** Payload verificado: incluye los claims estándar que emite `SignJWT`. */
+export type VerifiedSessionPayload = SessionPayload & {
+  /** Caducidad en segundos desde epoch. */
+  readonly exp?: number;
+};
+
+/** Caducidad estándar de un token de sesión. */
+export const SESSION_TOKEN_EXPIRATION = "7d";
+
+export type SignSessionTokenOptions = {
+  /**
+   * Caducidad absoluta en segundos desde epoch. Se usa para volver a firmar un
+   * token sin alargar su vida (por ejemplo al añadir el claim `dev`); si falta
+   * se aplica `SESSION_TOKEN_EXPIRATION`.
+   */
+  readonly expiresAt?: number;
 };
 
 const getSecret = () => {
@@ -25,17 +43,22 @@ const getSecret = () => {
   return new TextEncoder().encode(secret);
 };
 
-export async function signSessionToken(payload: SessionPayload) {
+export async function signSessionToken(
+  payload: SessionPayload,
+  options: SignSessionTokenOptions = {}
+) {
   const secret = getSecret();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(options.expiresAt ?? SESSION_TOKEN_EXPIRATION)
     .setSubject(payload.sub)
     .sign(secret);
 }
 
-export async function verifySessionToken(token: string) {
+export async function verifySessionToken(
+  token: string
+): Promise<VerifiedSessionPayload | null> {
   try {
     const secret = getSecret();
     const { payload } = await jwtVerify(token, secret, {
@@ -52,7 +75,7 @@ export async function verifySessionToken(token: string) {
     ) {
       return null;
     }
-    return payload as SessionPayload;
+    return payload as VerifiedSessionPayload;
   } catch {
     return null;
   }

@@ -6,8 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
-import DeveloperViewBanner from "@/components/layout/DeveloperViewBanner";
-import { DeveloperViewSwitcherPanel } from "@/components/layout/DeveloperViewSwitcher";
+import DeveloperViewSwitcher from "@/components/layout/DeveloperViewSwitcher";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
 import { applyInertOutside } from "@/components/ui/AppModal";
 import ModalPresenceManager from "@/components/ui/ModalPresenceManager";
@@ -29,6 +28,29 @@ type MobileUser = {
   email?: string;
   avatarUrl?: string | null;
 };
+
+/**
+ * Cuenta de desarrollador leída de la MISMA respuesta de `/api/auth/me` que
+ * alimenta el drawer móvil: el conmutador de la cabecera no añade peticiones.
+ */
+type DeveloperAccount = {
+  isDeveloper: boolean;
+  /** Rol emulado ahora mismo, o `null` si el desarrollador se ve como admin. */
+  devViewRole: UserRole | null;
+};
+
+type MeResponseUser = {
+  name?: string;
+  email?: string;
+  avatarUrl?: string | null;
+  isDeveloper?: boolean;
+  devView?: { role?: string } | null;
+};
+
+function toDevViewRole(devView: MeResponseUser["devView"]): UserRole | null {
+  const role = devView?.role;
+  return role === "TECH" || role === "CUSTOMER" ? role : null;
+}
 
 const MOBILE_USER_CACHE_KEY = "ap:me-cache:v1";
 const MOBILE_USER_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -433,6 +455,15 @@ export default function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileNavPathname, setMobileNavPathname] = useState(pathname);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
+  const [developerAccount, setDeveloperAccount] = useState<DeveloperAccount | null>(
+    null
+  );
+  /**
+   * Vista marcada en el conmutador: el rol que la página ya renderiza (dato de
+   * servidor, disponible en el primer pintado) y, si faltara, el de la sesión.
+   */
+  const devViewActiveRole: UserRole =
+    role ?? developerAccount?.devViewRole ?? "ADMIN";
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
   const [loggingOut, setLoggingOut] = useState(false);
@@ -566,17 +597,26 @@ export default function AppShell({
 
       try {
         const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const data = await response.json().catch(() => ({ user: null }));
-        if (cancelled || !data?.user) {
+        const data = (await response.json().catch(() => null)) as {
+          user?: MeResponseUser | null;
+        } | null;
+        const user = data?.user;
+        if (cancelled || !user) {
           return;
         }
         const nextUser: MobileUser = {
-          name: data.user.name,
-          email: data.user.email,
-          avatarUrl: data.user.avatarUrl ?? null,
+          name: user.name,
+          email: user.email,
+          avatarUrl: user.avatarUrl ?? null,
         };
         setMobileUser(nextUser);
         writeCachedUser(nextUser);
+        // La vista activa no se cachea: una entrada obsoleta marcaría el rol
+        // equivocado en el conmutador de la cabecera.
+        setDeveloperAccount({
+          isDeveloper: user.isDeveloper === true,
+          devViewRole: toDevViewRole(user.devView),
+        });
       } catch {
         // Sin red o respuesta inválida: el drawer conserva la caché o el
         // fallback (iniciales "AP" y nombre de la app). Solo se evita el
@@ -811,6 +851,9 @@ export default function AppShell({
             </div>
 
             <div className="flex items-center gap-2">
+              {developerAccount?.isDeveloper ? (
+                <DeveloperViewSwitcher activeRole={devViewActiveRole} />
+              ) : null}
               <NotificationsBell />
             </div>
           </div>
@@ -970,9 +1013,6 @@ export default function AppShell({
                 <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
                   <InstallAppAction variant="sidebar" />
                 </div>
-                <div className="mt-2">
-                  <DeveloperViewSwitcherPanel />
-                </div>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1065,7 +1105,6 @@ export default function AppShell({
           tabIndex={-1}
           className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade focus:outline-none sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
         >
-          <DeveloperViewBanner />
           {children}
         </main>
       </div>
