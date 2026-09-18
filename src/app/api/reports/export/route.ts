@@ -10,11 +10,17 @@ import { formatCustomerName } from "@/lib/customers/format";
 import { getPropertyHealthRows } from "@/lib/reports/property-health";
 import { getContractStatusRows } from "@/lib/reports/contracts-health";
 import { getNeedsAttentionRows } from "@/lib/reports/needs-attention";
+import { buildCsv } from "@/lib/reports/csv";
 
-const escapeCsv = (value: unknown) => {
-  const safe = String(value ?? "");
-  return `"${safe.replace(/"/g, '""')}"`;
-};
+/** Every export goes through `buildCsv`, so each cell is quoted and formula-safe. */
+function csvResponse(filename: string, rows: readonly (readonly unknown[])[]): Response {
+  return new Response(buildCsv(rows), {
+    headers: {
+      "Content-Type": "text/csv",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -40,13 +46,7 @@ export async function GET(request: Request) {
       row.notes ?? "",
       row.updatedAt,
     ]);
-    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="property-health-report.csv"`,
-      },
-    });
+    return csvResponse("property-health-report.csv", [headers, ...csvRows]);
   }
 
   if (type === "contracts") {
@@ -60,13 +60,7 @@ export async function GET(request: Request) {
       row.sentAt ?? "",
       row.signedAt ?? "",
     ]);
-    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="contracts-report.csv"`,
-      },
-    });
+    return csvResponse("contracts-report.csv", [headers, ...csvRows]);
   }
 
   if (type === "needs-attention") {
@@ -91,13 +85,7 @@ export async function GET(request: Request) {
       row.overdueInvoiceCount.toString(),
       (row.overdueInvoiceTotalCents / 100).toFixed(2),
     ]);
-    const csv = [headers, ...csvRows].map((row) => row.map(escapeCsv).join(",")).join("\n");
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="needs-attention-report.csv"`,
-      },
-    });
+    return csvResponse("needs-attention-report.csv", [headers, ...csvRows]);
   }
 
   if (type === "invoices") {
@@ -126,16 +114,7 @@ export async function GET(request: Request) {
       invoice.createdAt.toISOString(),
     ]);
 
-    const csv = [headers, ...rows]
-      .map((row) => row.map(escapeCsv).join(","))
-      .join("\n");
-
-    return new Response(csv, {
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="invoices-report.csv"`,
-      },
-    });
+    return csvResponse("invoices-report.csv", [headers, ...rows]);
   }
 
   const jobs = await prisma.job.findMany({
@@ -171,14 +150,5 @@ export async function GET(request: Request) {
     job.technician?.user.fullName ?? "",
   ]);
 
-  const csv = [headers, ...rows]
-    .map((row) => row.map(escapeCsv).join(","))
-    .join("\n");
-
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="jobs-report.csv"`,
-    },
-  });
+  return csvResponse("jobs-report.csv", [headers, ...rows]);
 }

@@ -10,7 +10,6 @@
       "close": "Cerrar",
       "save": "Guardar",
       "cancel": "Cancelar",
-      "confirm": "Confirmar",
       "add": "Agregar item",
       "moveUp": "Subir",
       "moveDown": "Bajar",
@@ -20,7 +19,9 @@
       "view": "Ver",
       "edit": "Editar",
       "send": "Enviar",
-      "search": "Buscar"
+      "search": "Buscar",
+      "confirm": "Confirmar",
+      "clearFilters": "Limpiar filtros"
     },
     "feedback": {
       "saving": "Guardando...",
@@ -28,7 +29,8 @@
       "creating": "Creando...",
       "created": "Creado",
       "updating": "Actualizando...",
-      "updated": "Actualizado"
+      "updated": "Actualizado",
+      "deleting": "Eliminando..."
     },
     "status": {
       "active": "Activo",
@@ -43,9 +45,9 @@
       "firstName": "Nombre",
       "lastName": "Apellidos",
       "notAvailable": "No definido",
-      "all": "Todos",
       "yes": "Si",
-      "no": "No"
+      "no": "No",
+      "all": "Todos"
     },
     "navigation": {
       "menu": "Menu",
@@ -57,9 +59,11 @@
     "language": {
       "en": "Ingles",
       "es": "Espanol"
+    },
+    "errors": {
+      "network": "No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo."
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Plataforma de Operaciones",
     "nav": {
@@ -83,7 +87,7 @@
     "hero": {
       "kicker": "Operacion premium para piscinas",
       "title": "Controla cada ruta con claridad, confianza y evidencia.",
-    "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
+      "subtitle": "AcostasPool sincroniza trabajos, clientes y facturas para que crezcas sin caos.",
       "primaryCta": "Abrir panel admin",
       "secondaryCta": "Explorar portal cliente",
       "badge1": "Rutas optimizadas",
@@ -114,7 +118,7 @@
       },
       "billing": {
         "title": "Facturacion inteligente",
-      "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
+        "desc": "Crea facturas profesionales, envia en segundos y guarda historial."
       },
       "clients": {
         "title": "Experiencia del cliente",
@@ -148,27 +152,27 @@
       "value4": "Operacion centrada en el cliente",
       "note": "Combinamos experiencia de campo con sistemas modernos para resultados medibles."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
       "calendar": "Calendario",
-      "requests": "Solicitudes",
       "technicians": "Tecnicos",
       "customers": "Clientes",
-      "accounting": "Contabilidad",
+      "invoices": "Billing",
       "reports": "Reportes",
       "settings": "Ajustes",
       "routes": "Rutas y trabajos",
       "serviceAgreement": "Acuerdo de servicio",
-      "helpCenter": "Ayuda"
+      "helpCenter": "Ayuda",
+      "requests": "Solicitudes",
+      "accounting": "Contabilidad"
     },
     "tech": {
       "route": "Mi ruta",
       "history": "Historial",
-      "calculator": "Calculadora",
-      "profile": "Perfil"
+      "profile": "Perfil",
+      "calculator": "Calculadora"
     },
     "client": {
       "home": "Inicio",
@@ -278,8 +282,6 @@
     "serviceRescheduled": "Servicio reprogramado",
     "routeUpdated": "Ruta actualizada",
     "invoiceSent": "Factura enviada",
-    "paymentReceived": "Pago recibido",
-    "membershipPaymentFailed": "Cobro automatico fallido",
     "preferences": {
       "helper": "Elige que alertas quieres recibir en esta cuenta.",
       "enabledCount": "{{enabled}} de {{total}} activas",
@@ -317,7 +319,9 @@
       "INVOICE_SENT": "Factura enviada",
       "PAYMENT_RECEIVED": "Pago recibido",
       "MEMBERSHIP_PAYMENT_FAILED": "Cobro automatico fallido"
-    }
+    },
+    "paymentReceived": "Pago recibido",
+    "membershipPaymentFailed": "Cobro automatico fallido"
   },
   "account": {
     "title": "Mi cuenta",
@@ -329,15 +333,6 @@
     "profile": {
       "title": "Perfil",
       "name": "Nombre completo"
-    },
-    "errors": {
-      "required": "El nombre y el correo son obligatorios.",
-      "userNotFound": "Usuario no encontrado.",
-      "emailInUse": "Ese correo ya esta en uso por otra cuenta."
-    },
-    "feedback": {
-      "profileSaved": "Perfil actualizado.",
-      "profileError": "No se pudo guardar tu perfil: {{error}}"
     },
     "photo": {
       "title": "Foto de perfil"
@@ -369,6 +364,15 @@
         "normalize": "No se pudo procesar la imagen.",
         "upload": "No se pudo subir."
       }
+    },
+    "errors": {
+      "required": "El nombre y el correo son obligatorios.",
+      "userNotFound": "Usuario no encontrado.",
+      "emailInUse": "Ese correo ya esta en uso por otra cuenta."
+    },
+    "feedback": {
+      "profileSaved": "Perfil actualizado.",
+      "profileError": "No se pudo guardar tu perfil: {{error}}"
     }
   },
   "auth": {
@@ -405,7 +409,11 @@
       "passwordPlaceholder": "••••••••",
       "submit": "Iniciar sesion",
       "loading": "Ingresando...",
-      "error": "No se pudo iniciar sesion."
+      "error": "No se pudo iniciar sesion.",
+      "showPassword": "Mostrar contrasena",
+      "hidePassword": "Ocultar contrasena",
+      "show": "Mostrar",
+      "hide": "Ocultar"
     },
     "reset": {
       "title": "Restablecer contrasena",
@@ -437,7 +445,6 @@
       "submit": "Completar perfil",
       "loadingSubmit": "Guardando...",
       "success": "Perfil completado. Ya puedes iniciar sesion.",
-      "successHint": "Tu cuenta esta lista. Inicia sesion con tu correo y la contrasena que acabas de crear para acceder a tu portal.",
       "notFound": "No se encontro el perfil.",
       "errors": {
         "token": "Token requerido.",
@@ -446,13 +453,32 @@
         "mismatch": "Las contrasenas no coinciden.",
         "required": "Nombre, apellidos y telefono son obligatorios.",
         "submit": "No se pudo completar el perfil."
-      }
+      },
+      "successHint": "Tu cuenta esta lista. Inicia sesion con tu correo y la contrasena que acabas de crear para acceder a tu portal."
     },
     "unauthorized": {
       "kicker": "Acceso restringido",
       "title": "No tienes permisos",
       "subtitle": "Tu cuenta no tiene acceso a esta seccion. Contacta al administrador para permisos.",
-      "backToLogin": "Volver al login"
+      "backToLogin": "Volver al login",
+      "goBack": "Volver"
+    },
+    "legal": {
+      "title": "Legal",
+      "navLabel": "Enlaces legales",
+      "copyright": "Copyright {{year}} AcostasPool. Todos los derechos reservados.",
+      "links": {
+        "terms": "Terminos de Servicio",
+        "termsShort": "Terminos",
+        "privacy": "Politica de Privacidad",
+        "privacyShort": "Privacidad",
+        "payments": "Pago y Cancelacion",
+        "paymentsShort": "Pagos",
+        "liability": "Descargo y Responsabilidad",
+        "liabilityShort": "Responsabilidad",
+        "cookies": "Aviso de Cookies",
+        "cookiesShort": "Cookies"
+      }
     }
   },
   "address": {
@@ -543,62 +569,12 @@
       "noEvidence": "No hay evidencias disponibles.",
       "evidenceAlt": "Evidencia",
       "noAccess": "No tienes acceso a este trabajo.",
-      "serviceTitle": "Servicio"
+      "serviceTitle": "Servicio",
+      "evidenceCountPlural": {
+        "one": "{{count}} foto",
+        "other": "{{count}} fotos"
+      }
     }
-  },
-  "poolCalculator": {
-    "title": "Calculadora de cloro",
-    "subtitle": "Ingresa las lecturas de tu tira reactiva para saber cuanto cloro agregar.",
-    "fields": {
-      "volume": "Volumen de la piscina (galones)",
-      "ph": "pH",
-      "freeChlorine": "Cloro libre (ppm)",
-      "totalAlkalinity": "Alcalinidad total (ppm)",
-      "stabilizer": "Estabilizador / CYA (ppm)",
-      "product": "Producto de cloro",
-      "customStrength": "Concentracion (%)"
-    },
-    "placeholders": {
-      "volume": "ej. 15000",
-      "ph": "ej. 7.4",
-      "freeChlorine": "ej. 1.5",
-      "totalAlkalinity": "ej. 90",
-      "stabilizer": "ej. 40"
-    },
-    "products": {
-      "LIQUID_10": "Cloro liquido (10%)",
-      "LIQUID_12_5": "Cloro liquido (12.5%)",
-      "CAL_HYPO_65": "Hipoclorito de calcio granulado (65%)",
-      "CAL_HYPO_73": "Hipoclorito de calcio granulado (73%)",
-      "CUSTOM": "Otro (concentracion personalizada)"
-    },
-    "incompleteHint": "Completa todos los campos para ver el resultado.",
-    "units": {
-      "gal": "gal",
-      "oz": "oz"
-    },
-    "results": {
-      "doseTitle": "Cloro a agregar",
-      "doseNone": "El cloro libre ya esta dentro del rango objetivo. No es necesario agregar cloro ahora.",
-      "doseAmount": "Agrega {{amount}} {{unit}} de {{product}}",
-      "currentToTarget": "Cloro libre actual {{current}} ppm -> objetivo {{target}} ppm.",
-      "targetRangeTitle": "Cloro libre objetivo (segun estabilizador)",
-      "minimum": "Minimo",
-      "target": "Objetivo",
-      "shock": "Choque/algas",
-      "phTitle": "pH",
-      "alkalinityTitle": "Alcalinidad total",
-      "status": {
-        "low": "Bajo",
-        "ok": "En rango",
-        "high": "Alto"
-      },
-      "phLowHint": "Sube con incrementador de pH (carbonato de sodio).",
-      "phHighHint": "Baja con reductor de pH (acido muriatico/seco).",
-      "alkalinityLowHint": "Sube con bicarbonato de sodio.",
-      "alkalinityHighHint": "Baja con acido muriatico y luego airea el agua."
-    },
-    "disclaimer": "Estimado segun la guia estandar de la industria de piscinas (relacion cloro libre / estabilizador). Sigue siempre los procedimientos de tu empresa y usa tu criterio profesional antes de dosificar."
   },
   "plans": {
     "frequency": {
@@ -688,6 +664,11 @@
           "open": "Abiertas",
           "paid": "Pagadas"
         }
+      },
+      "developer": {
+        "kicker": "Acceso de desarrollador",
+        "title": "Consola de pruebas y auditoría",
+        "cta": "Abrir consola de desarrollador"
       }
     },
     "routes": {
@@ -696,10 +677,6 @@
       "tabs": {
         "calendar": "Calendario",
         "assistant": "Route assistant"
-      },
-      "calendar": {
-        "previousMonth": "Mes anterior",
-        "nextMonth": "Mes siguiente"
       },
       "assistant": {
         "pageTitle": "Route assistant",
@@ -796,7 +773,8 @@
         "createFailed": "No se pudieron crear los trabajos.",
         "saveFailed": "No se pudieron guardar los cambios.",
         "saveJobFailed": "No se pudieron guardar los cambios del trabajo.",
-        "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado."
+        "deleteJobFailed": "No se pudo eliminar el trabajo seleccionado.",
+        "network": "Problema de conexion. Revisa tu conexion a internet e intentalo de nuevo."
       },
       "filters": {
         "toolbar": "Filtros",
@@ -817,7 +795,9 @@
         "rangeMonth": "Mes",
         "rangeCustom": "Personalizado",
         "apply": "Aplicar",
-        "reset": "Limpiar"
+        "reset": "Limpiar",
+        "technicianFilter": "Filtrar por técnico",
+        "allTechnicians": "Todos los técnicos"
       },
       "table": {
         "customer": "Cliente",
@@ -839,7 +819,8 @@
         "helper": "Toca un dia para ver las rutas en detalle.",
         "loadLow": "Carga baja",
         "loadHigh": "Carga alta",
-        "empty": "No hay rutas programadas para este dia."
+        "empty": "No hay rutas programadas para este dia.",
+        "editHelper": "Modo edicion: toca un dia para mover, eliminar o asignar trabajos desde el modal."
       },
       "actions": {
         "creating": "Creando...",
@@ -848,7 +829,9 @@
         "saveChanges": "Guardar cambios",
         "assignJobs": "Asignar trabajos",
         "addJob": "Agregar otro trabajo",
-        "assignTechnician": "Asignar tecnico"
+        "assignTechnician": "Asignar tecnico",
+        "currentMonth": "Este mes",
+        "editCalendar": "Editar calendario"
       },
       "labels": {
         "technicianFallback": "Tecnico",
@@ -865,8 +848,6 @@
         "noProperties": "Sin propiedades",
         "noEmail": "Sin email",
         "noPhone": "Sin telefono",
-        "customerRequest": "Solicitud del cliente",
-        "customerRequestBadge": "Del cliente",
         "withSpa": "Con spa",
         "withoutSpa": "Sin spa",
         "unassigned": "Sin asignar",
@@ -889,7 +870,34 @@
         "waterType": "Agua",
         "order": "Orden",
         "jobNumber": "Trabajo #{{count}}",
-        "completedNoEvidence": "Trabajo completado sin evidencia."
+        "completedNoEvidence": "Trabajo completado sin evidencia.",
+        "saveSuccess": "Cambios guardados.",
+        "nextMonthJobs": "Proximo mes",
+        "statusPlanned": "Planificado",
+        "jobsToday": "Trabajos hoy",
+        "enableEditToAssign": "Activar editar para asignar",
+        "dropHint": "Arrastra aqui o pulsa para asignar",
+        "customerRequest": "Solicitud del cliente",
+        "customerRequestBadge": "Del cliente"
+      },
+      "helper": {
+        "editMode": "Modo edicion activo: en movil abre un dia y edita desde el modal.",
+        "quickFilters": "Filtra por urgentes, sin tecnico o por trabajos de hoy."
+      },
+      "move": {
+        "title": "Mover a",
+        "hint": "Se guarda al momento, igual que al arrastrar la tarjeta.",
+        "hintEditMode": "Queda pendiente hasta pulsar Guardar cambios, igual que al arrastrar la tarjeta.",
+        "action": "Mover",
+        "open": "Mover {{customer}}...",
+        "saveDisabledInEditMode": "En modo edicion usa Guardar cambios del calendario"
+      },
+      "a11y": {
+        "assignJobsOnDay": "Asignar trabajos: {{date}}"
+      },
+      "calendar": {
+        "previousMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente"
       }
     },
     "technicians": {
@@ -907,42 +915,17 @@
         "inviteHint": "Al crear el tecnico, se envia automaticamente una invitacion por email para que complete y asegure su cuenta.",
         "actions": {
           "create": "Crear tecnico y enviar invitacion"
-        }
-      },
-      "transfer": {
-        "trigger": "Transferir trabajo",
-        "kicker": "Reasignacion masiva",
-        "title": "Transferir trabajo entre tecnicos",
-        "subtitle": "Mueve todos los trabajos pendientes y rutas activas de un tecnico a otro, manteniendo el mismo orden.",
-        "from": "Desde",
-        "to": "Hacia",
-        "selectTechnician": "Selecciona un tecnico",
-        "jobsCount": "{{count}} trabajo(s) pendiente(s)",
-        "plansCount": "{{count}} ruta(s) activa(s)",
-        "upcomingLabel": "Proximos trabajos",
-        "upcomingMore": "+{{count}} mas",
-        "deactivate": "Desactivar a {{name}} despues de transferir",
-        "deactivateGeneric": "Desactivar al tecnico de origen despues de transferir",
-        "continue": "Continuar",
-        "back": "Atras",
-        "action": "Transferir ahora",
-        "transferring": "Transfiriendo...",
-        "confirm": {
-          "title": "Esto no se puede deshacer desde aqui",
-          "body": "Vas a mover todos los trabajos pendientes y rutas activas de {{from}} a {{to}}:",
-          "jobsLine": "{{count}} trabajo(s) pendiente(s) cambiaran de tecnico",
-          "plansLine": "{{count}} ruta(s) activa(s) cambiaran de tecnico",
-          "deactivateLine": "La cuenta de {{name}} quedara desactivada",
-          "typeLabel": "Escribe \"{{name}}\" para confirmar"
         },
-        "success": {
-          "title": "Transferencia completada",
-          "body": "Se transfirieron {{jobs}} trabajo(s) y {{plans}} ruta(s)."
-        },
-        "errors": {
-          "selectBoth": "Selecciona el tecnico de origen y el de destino.",
-          "sameTechnician": "El tecnico de origen y de destino no pueden ser el mismo.",
-          "generic": "Algo salio mal. Intenta de nuevo."
+        "form": {
+          "required": "Este campo es obligatorio.",
+          "invalidEmail": "Ingresa un email válido.",
+          "invalidPhone": "Ingresa un teléfono válido de EE. UU.",
+          "emailInUse": "Este email ya está en uso.",
+          "completeRequired": "Completa los campos requeridos para continuar.",
+          "createError": "No se pudo crear el técnico. Revisa los datos.",
+          "unexpectedError": "Error inesperado al crear el técnico.",
+          "inviteSuccess": "Técnico creado e invitación enviada.",
+          "closing": "Cerrando formulario..."
         }
       },
       "overview": {
@@ -989,6 +972,11 @@
           "actions": "Acciones",
           "todayCount": "{{count}} trabajos",
           "noRoute": "Sin ruta"
+        },
+        "delete": {
+          "confirmTitle": "Eliminar tecnico",
+          "confirmMessage": "Se eliminara la cuenta del tecnico {{name}} y se desasignaran sus trabajos. Deseas continuar?",
+          "error": "No se pudo eliminar el tecnico. Intentalo de nuevo."
         }
       },
       "detail": {
@@ -1094,6 +1082,42 @@
             "propertyFallback": "Propiedad"
           }
         }
+      },
+      "transfer": {
+        "trigger": "Transferir trabajo",
+        "kicker": "Reasignacion masiva",
+        "title": "Transferir trabajo entre tecnicos",
+        "subtitle": "Mueve todos los trabajos pendientes y rutas activas de un tecnico a otro, manteniendo el mismo orden.",
+        "from": "Desde",
+        "to": "Hacia",
+        "selectTechnician": "Selecciona un tecnico",
+        "jobsCount": "{{count}} trabajo(s) pendiente(s)",
+        "plansCount": "{{count}} ruta(s) activa(s)",
+        "upcomingLabel": "Proximos trabajos",
+        "upcomingMore": "+{{count}} mas",
+        "deactivate": "Desactivar a {{name}} despues de transferir",
+        "deactivateGeneric": "Desactivar al tecnico de origen despues de transferir",
+        "continue": "Continuar",
+        "back": "Atras",
+        "action": "Transferir ahora",
+        "transferring": "Transfiriendo...",
+        "confirm": {
+          "title": "Esto no se puede deshacer desde aqui",
+          "body": "Vas a mover todos los trabajos pendientes y rutas activas de {{from}} a {{to}}:",
+          "jobsLine": "{{count}} trabajo(s) pendiente(s) cambiaran de tecnico",
+          "plansLine": "{{count}} ruta(s) activa(s) cambiaran de tecnico",
+          "deactivateLine": "La cuenta de {{name}} quedara desactivada",
+          "typeLabel": "Escribe \"{{name}}\" para confirmar"
+        },
+        "success": {
+          "title": "Transferencia completada",
+          "body": "Se transfirieron {{jobs}} trabajo(s) y {{plans}} ruta(s)."
+        },
+        "errors": {
+          "selectBoth": "Selecciona el tecnico de origen y el de destino.",
+          "sameTechnician": "El tecnico de origen y de destino no pueden ser el mismo.",
+          "generic": "Algo salio mal. Intenta de nuevo."
+        }
       }
     },
     "customers": {
@@ -1142,7 +1166,8 @@
           "modalTitle": "Filtros de clientes",
           "modalSubtitle": "Filtra por nombre/email, estado, portal y orden de listado.",
           "apply": "Aplicar filtros",
-          "activeCount": "{{count}} filtros activos"
+          "activeCount": "{{count}} filtros activos",
+          "clear": "Limpiar filtros"
         },
         "portal": {
           "active": "Activo",
@@ -1181,11 +1206,11 @@
           "invoices": "Facturas",
           "action": "Accion"
         },
+        "empty": "No hay clientes para mostrar.",
         "health": {
           "RED": "Necesita atencion: problema critico abierto (ver Reportes)",
           "YELLOW": "Necesita atencion: problema menor abierto (ver Reportes)"
-        },
-        "empty": "No hay clientes para mostrar."
+        }
       },
       "new": {
         "kicker": "Nuevo cliente",
@@ -1232,18 +1257,18 @@
         "created": "Cliente guardado correctamente.",
         "deleted": "Cliente eliminado correctamente.",
         "saved": "Cambios del cliente guardados.",
+        "propertyCreated": "Propiedad creada correctamente.",
+        "propertySaved": "Propiedad actualizada correctamente.",
+        "propertyDeleted": "Propiedad eliminada correctamente.",
+        "jobCreated": "Trabajo creado correctamente.",
+        "planCreated": "Plan recurrente creado correctamente.",
         "financialsSaved": "Informacion financiera guardada.",
         "contractGenerated": "Contrato generado correctamente.",
         "contractSent": "Contrato enviado al cliente.",
         "contractSigned": "Contrato firmado correctamente.",
         "contractGenerateFailed": "No se pudo generar el contrato: {{error}}",
         "contractSendFailed": "No se pudo enviar el contrato: {{error}}",
-        "contractSignFailed": "No se pudo guardar la firma: {{error}}",
-        "propertyCreated": "Propiedad creada correctamente.",
-        "propertySaved": "Propiedad actualizada correctamente.",
-        "propertyDeleted": "Propiedad eliminada correctamente.",
-        "jobCreated": "Trabajo creado correctamente.",
-        "planCreated": "Plan recurrente creado correctamente."
+        "contractSignFailed": "No se pudo guardar la firma: {{error}}"
       },
       "assignments": {
         "kicker": "Rutas semanales",
@@ -1307,15 +1332,15 @@
           "addressLabel": "Direccion",
           "propertiesTitle": "Propiedades",
           "propertiesSubtitle": "Datos completos de cada piscina.",
+          "plansTitle": "Planes recurrentes",
+          "plansSubtitle": "Planes semanales, bisemanales o mensuales.",
+          "jobsTitle": "Trabajos",
           "financialsTitle": "Informacion financiera",
           "financialsSubtitle": "Plan, precio y forma de pago del cliente.",
           "membershipTitle": "Membresia / Cobro automatico",
           "membershipSubtitle": "Estado del cobro automatico de Stripe para la propiedad principal del cliente.",
           "contractTitle": "Contrato de servicio",
-          "contractSubtitle": "Genera, envia y firma el contrato de servicio del cliente.",
-          "plansTitle": "Planes recurrentes",
-          "plansSubtitle": "Planes semanales, bisemanales o mensuales.",
-          "jobsTitle": "Trabajos"
+          "contractSubtitle": "Genera, envia y firma el contrato de servicio del cliente."
         },
         "labels": {
           "total": "{{count}} total",
@@ -1326,10 +1351,6 @@
           "altPhone": "Alt",
           "noAddress": "Sin direccion registrada.",
           "noWeekends": "Sin fines de semana"
-        },
-        "profileFields": {
-          "name": "Nombre",
-          "weekends": "Fines de semana"
         },
         "properties": {
           "empty": "No hay propiedades registradas.",
@@ -1367,21 +1388,21 @@
             "fiberglass": "Fibra",
             "vinyl": "Vinilo",
             "altMaterial": "Material alternativo",
-            "jacuzzi": "Jacuzzi / spa",
             "salt": "Sal",
             "chlorine": "Cloro",
             "other": "Otro",
             "filterSand": "Arena",
             "filterCartridge": "Cartucho",
-            "filterDE": "D.E."
+            "filterDE": "D.E.",
+            "jacuzzi": "Jacuzzi / spa"
           },
           "edit": {
             "summary": "Editar propiedad",
             "sections": {
               "identity": "Identidad de propiedad",
               "specs": "Especificaciones de piscina",
-              "equipment": "Equipo",
-              "access": "Acceso y ubicacion"
+              "access": "Acceso y ubicacion",
+              "equipment": "Equipo"
             },
             "danger": {
               "title": "Zona de eliminacion",
@@ -1389,6 +1410,8 @@
               "confirm": "Confirmar eliminacion"
             }
           },
+          "spaNo": "Spa: No",
+          "spaYes": "Spa: Si",
           "equipment": {
             "filter": "Filtro",
             "pump": "Bomba de agua",
@@ -1423,9 +1446,87 @@
               "BAD": "Malo",
               "GOOD": "Bueno"
             }
+          }
+        },
+        "plans": {
+          "empty": "No hay planes recurrentes activos.",
+          "nextRun": "Proximo:",
+          "paused": "Pausado",
+          "modalKicker": "Nuevo plan",
+          "modalTitle": "Plan recurrente",
+          "modalSubtitle": "Asigna una ruta semanal al cliente y vinculala a un tecnico. Las citas creadas desde el portal o la app quedan como Custom Service.",
+          "fields": {
+            "name": "Nombre del plan",
+            "frequency": "Frecuencia",
+            "nextDate": "Proxima fecha",
+            "startDate": "Fecha de inicio del plan",
+            "weeklyRoute": "Ruta semanal",
+            "notes": "Notas del plan"
           },
-          "spaNo": "Spa: No",
-          "spaYes": "Spa: Si"
+          "globalOptions": {
+            "monday": "Plan de lunes",
+            "tuesday": "Plan de martes",
+            "wednesday": "Plan de miercoles",
+            "thursday": "Plan de jueves",
+            "friday": "Plan de viernes",
+            "saturday": "Plan de sabado"
+          },
+          "placeholders": {
+            "name": "Plan semanal principal",
+            "selectTechnician": "Selecciona un tecnico"
+          }
+        },
+        "jobs": {
+          "empty": "No hay trabajos registrados.",
+          "modalKicker": "Nuevo trabajo",
+          "modalTitle": "Programar trabajo",
+          "modalSubtitle": "Configura fecha, tecnico y checklist."
+        },
+        "errors": {
+          "invalidInput": "Faltan datos o hay campos no válidos. Revisa el formulario e inténtalo de nuevo.",
+          "customerNotFound": "Cliente no encontrado.",
+          "propertyNotFound": "La propiedad seleccionada no pertenece a este cliente.",
+          "planNotFound": "No se encontró el plan recurrente de este cliente.",
+          "emailInUse": "Ese email ya pertenece a otro usuario.",
+          "inviteFailed": "No se pudo enviar la invitación al portal. Revisa el email del cliente e inténtalo de nuevo.",
+          "propertyHasJobs": "Esta propiedad tiene trabajos vinculados y no se puede eliminar.",
+          "propertyHasPlans": "Esta propiedad tiene planes recurrentes vinculados y no se puede eliminar.",
+          "confirmationMismatch": "Escribe la palabra de confirmación para eliminar este cliente.",
+          "firstNameRequired": "El nombre es obligatorio.",
+          "phoneInvalid": "El teléfono no es un número válido de EE. UU.",
+          "secondaryPhoneInvalid": "El teléfono secundario no es un número válido de EE. UU.",
+          "addressIncomplete": "Completa calle, ciudad, estado y código postal, o deja la dirección vacía.",
+          "propertyAddressRequired": "La dirección de la propiedad es obligatoria.",
+          "accessNotesRequired": "Las notas de acceso y ubicación son obligatorias.",
+          "poolVolumeInvalid": "El volumen de la piscina debe ser un número entero de galones.",
+          "paymentInfoInvalid": "Revisa la fecha de inicio del servicio, el día de pago, el precio y el tipo de pago.",
+          "propertyRequired": "Selecciona una propiedad.",
+          "dateRequired": "Selecciona una fecha.",
+          "dateInvalid": "La fecha o la hora no son válidas.",
+          "technicianRequired": "Selecciona un técnico.",
+          "durationInvalid": "La duración estimada debe ser un número entero de minutos (0 o más).",
+          "hasFinancialRecords": "Este cliente tiene contratos, pagos o membresías y no puede eliminarse. Desactívalo en su lugar."
+        },
+        "invoices": {
+          "sort": {
+            "dateDesc": "{{label}} (reciente)",
+            "dateAsc": "{{label}} (antiguo)",
+            "totalDesc": "{{label}} (mayor)",
+            "totalAsc": "{{label}} (menor)"
+          },
+          "emptyFiltered": "No hay facturas que coincidan con los filtros activos."
+        },
+        "delete": {
+          "kicker": "Accion permanente",
+          "title": "Eliminar este cliente?",
+          "description": "Escribe la palabra {{keyword}} para confirmar que eliminaras este cliente, su portal de usuario, propiedades, trabajos, facturas, planes, documentos y cualquier registro historico relacionado.",
+          "inputLabel": "Escribe \"{{keyword}}\" para continuar",
+          "irreversible": "Esta accion no se puede deshacer.",
+          "pending": "Eliminando..."
+        },
+        "profileFields": {
+          "name": "Nombre",
+          "weekends": "Fines de semana"
         },
         "financials": {
           "fields": {
@@ -1521,40 +1622,6 @@
             "PORTAL": "Firmado desde el portal del cliente",
             "IN_PERSON_ADMIN": "Firmado en persona"
           }
-        },
-        "plans": {
-          "empty": "No hay planes recurrentes activos.",
-          "nextRun": "Proximo:",
-          "paused": "Pausado",
-          "modalKicker": "Nuevo plan",
-          "modalTitle": "Plan recurrente",
-          "modalSubtitle": "Asigna una ruta semanal al cliente y vinculala a un tecnico. Las citas creadas desde el portal o la app quedan como Custom Service.",
-          "fields": {
-            "name": "Nombre del plan",
-            "frequency": "Frecuencia",
-            "nextDate": "Proxima fecha",
-            "startDate": "Fecha de inicio del plan",
-            "weeklyRoute": "Ruta semanal",
-            "notes": "Notas del plan"
-          },
-          "globalOptions": {
-            "monday": "Plan de lunes",
-            "tuesday": "Plan de martes",
-            "wednesday": "Plan de miercoles",
-            "thursday": "Plan de jueves",
-            "friday": "Plan de viernes",
-            "saturday": "Plan de sabado"
-          },
-          "placeholders": {
-            "name": "Plan semanal principal",
-            "selectTechnician": "Selecciona un tecnico"
-          }
-        },
-        "jobs": {
-          "empty": "No hay trabajos registrados.",
-          "modalKicker": "Nuevo trabajo",
-          "modalTitle": "Programar trabajo",
-          "modalSubtitle": "Configura fecha, tecnico y checklist."
         }
       },
       "repository": {
@@ -1595,7 +1662,8 @@
         "prompts": {
           "folderName": "Nombre de la carpeta",
           "rename": "Nuevo nombre",
-          "deleteConfirm": "Eliminar {{kind}} \"{{name}}\"?"
+          "deleteConfirm": "Eliminar {{kind}} \"{{name}}\"?",
+          "deleteDescription": "Esta accion no se puede deshacer."
         },
         "feedback": {
           "folderCreated": "Carpeta creada.",
@@ -1716,12 +1784,16 @@
         "status": {
           "paused": "Pausado"
         }
+      },
+      "filters": {
+        "all": "Todos"
       }
     },
     "invoices": {
       "title": "Billing",
       "subtitle": "Facturas, datos de servicio y seguimiento de pagos.",
       "views": {
+        "subtitle": "Cambia entre la gestion de facturas y la tabla interna de pagos.",
         "invoices": "Facturas",
         "servicePayment": "Info de servicio y pago"
       },
@@ -1735,16 +1807,6 @@
         "sent": "Enviada",
         "paid": "Pagada",
         "overdue": "Vencida"
-      },
-      "stats": {
-        "outstanding": "Por cobrar",
-        "outstandingHelper": "{{count}} factura(s) pendiente(s) de pago",
-        "paid": "Cobrado",
-        "paidHelper": "{{count}} factura(s) pagada(s)",
-        "overdue": "Vencido",
-        "overdueHelper": "{{count}} factura(s) vencida(s)",
-        "drafts": "Borradores",
-        "draftsHelper": "Aun no enviadas al cliente"
       },
       "list": {
         "title": "Billing",
@@ -1807,31 +1869,22 @@
           "TO_WORK": "X-Trabajar",
           "WORKED": "Trabajado"
         },
-        "autopay": {
-          "ACTIVE": "Autopay activo",
-          "PAST_DUE": "Autopay - cobro fallido",
-          "NONE": "Pago manual"
-        },
         "table": {
           "customer": "Cliente",
           "property": "Propiedad",
-          "plan": "Plan contratado",
-          "autopay": "Autopay",
           "serviceStartDate": "Fecha de inicio del servicio",
           "paymentDay": "Dia de pago",
           "price": "Precio",
           "paymentType": "Tipo de pago",
           "notes": "Notas",
-          "actions": "Acciones"
+          "actions": "Acciones",
+          "plan": "Plan contratado",
+          "autopay": "Autopay"
         },
         "actions": {
           "openTable": "Abrir tabla de billing",
           "reviewSave": "Revisar cambios",
           "saving": "Guardando..."
-        },
-        "errors": {
-          "propertyRequired": "No hay propiedad seleccionada.",
-          "invalidInput": "Revisa el dia de pago, el precio y la fecha de inicio - alguno no es valido."
         },
         "filters": {
           "open": "Abrir filtros",
@@ -1842,17 +1895,17 @@
           "allCustomers": "Todos los clientes",
           "paymentType": "Tipo de pago",
           "allPaymentTypes": "Todos los tipos de pago",
-          "autopay": "Estado de autopay",
-          "allAutopay": "Todos los estados de autopay",
-          "plan": "Plan contratado",
-          "allPlans": "Todos los planes",
           "notes": "Notas",
           "notesAll": "Con y sin notas",
           "notesWith": "Solo con notas",
           "notesWithout": "Solo sin notas",
           "sort": "Ordenar por",
           "apply": "Aplicar",
-          "reset": "Limpiar filtros"
+          "reset": "Limpiar filtros",
+          "autopay": "Estado de autopay",
+          "allAutopay": "Todos los estados de autopay",
+          "plan": "Plan contratado",
+          "allPlans": "Todos los planes"
         },
         "sort": {
           "customer": "Cliente",
@@ -1874,6 +1927,16 @@
           "subtitle": "Revisa la informacion actualizada de {{property}} para {{customer}} antes de guardar.",
           "back": "Volver",
           "confirm": "Guardar cambios"
+        },
+        "errors": {
+          "save": "No se pudieron guardar los cambios de billing. Intentalo de nuevo.",
+          "propertyRequired": "No hay propiedad seleccionada.",
+          "invalidInput": "Revisa el dia de pago, el precio y la fecha de inicio - alguno no es valido."
+        },
+        "autopay": {
+          "ACTIVE": "Autopay activo",
+          "PAST_DUE": "Autopay - cobro fallido",
+          "NONE": "Pago manual"
         }
       },
       "filters": {
@@ -1927,20 +1990,25 @@
           "removeLine": "Quitar"
         },
         "errors": {
-          "invalidLineItems": "Lineas de servicio invalidas.",
+          "create": "No se pudo crear la factura. Intentalo de nuevo.",
           "customerRequired": "Selecciona un cliente.",
+          "invalidLineItems": "Lineas de servicio invalidas.",
           "lineItemsRequired": "Agrega al menos una linea con un monto mayor a cero.",
           "customerNotFound": "Cliente no encontrado.",
           "invalidJob": "El trabajo seleccionado no pertenece a este cliente.",
           "pdfFailed": "No se pudo generar el PDF de la factura. Intenta de nuevo.",
           "belowMinimum": "El total debe ser de al menos ${{amount}} - los procesadores de tarjeta rechazan montos menores."
-        }
+        },
+        "requiredLegend": "* Campo obligatorio"
       },
       "send": {
         "submit": "Enviar",
         "loading": "Enviando...",
         "success": "Enviada.",
-        "error": "No se pudo enviar."
+        "error": "No se pudo enviar.",
+        "alreadySent": "Esta factura ya fue enviada. Enviarla de nuevo?",
+        "resend": "Enviar de nuevo",
+        "postSendWarning": "El correo se envio, pero fallo un paso posterior. Revisa el estado de la factura."
       },
       "editor": {
         "title": "Factura {{number}}",
@@ -1948,13 +2016,6 @@
         "notFoundTitle": "Editor de factura",
         "notFoundSubtitle": "Factura no encontrada",
         "back": "Volver a Billing",
-        "hero": {
-          "status": "Estado",
-          "total": "Total",
-          "paid": "Pagado",
-          "balance": "Saldo pendiente",
-          "fullyPaid": "Pagada por completo"
-        },
         "defaults": {
           "service": "Servicio"
         },
@@ -1977,10 +2038,32 @@
           "saving": "Guardando...",
           "updated": "Actualizado"
         },
+        "hero": {
+          "status": "Estado",
+          "total": "Total",
+          "paid": "Pagado",
+          "balance": "Saldo pendiente",
+          "fullyPaid": "Pagada por completo"
+        },
         "errors": {
           "numberRequired": "Ingresa un numero de factura.",
           "locked": "Esta factura ya fue enviada y no se puede editar."
         }
+      },
+      "delete": {
+        "confirmTitle": "Eliminar factura",
+        "confirmMessage": "Se eliminara esta factura de forma permanente. Deseas continuar?",
+        "error": "No se pudo eliminar la factura. Intentalo de nuevo."
+      },
+      "stats": {
+        "outstanding": "Por cobrar",
+        "outstandingHelper": "{{count}} factura(s) pendiente(s) de pago",
+        "paid": "Cobrado",
+        "paidHelper": "{{count}} factura(s) pagada(s)",
+        "overdue": "Vencido",
+        "overdueHelper": "{{count}} factura(s) vencida(s)",
+        "drafts": "Borradores",
+        "draftsHelper": "Aun no enviadas al cliente"
       },
       "payments": {
         "title": "Pagos",
@@ -1999,193 +2082,9 @@
         }
       }
     },
-    "accounting": {
-      "title": "Contabilidad",
-      "subtitle": "Ingresos, membresias y actividad de pagos de todo el negocio.",
-      "tabs": {
-        "dashboard": "Panel",
-        "invoices": "Facturas",
-        "servicePayment": "Info de servicio y pago"
-      },
-      "filters": {
-        "showing": "Mostrando",
-        "export": "Exportar CSV",
-        "open": "Abrir filtros",
-        "toolbar": "Filtros",
-        "modalTitle": "Elige un rango de fechas",
-        "range7": "7 dias",
-        "range30": "30 dias",
-        "range90": "90 dias",
-        "range365": "12 meses",
-        "rangeCustom": "Personalizado",
-        "customRange": "Rango personalizado",
-        "from": "Desde",
-        "to": "Hasta",
-        "apply": "Aplicar"
-      },
-      "stats": {
-        "revenue": "Ingresos",
-        "revenueHelper": "Netos de reembolsos, pagos por Stripe y manuales, rango seleccionado",
-        "mrr": "Ingreso recurrente mensual",
-        "mrrHelper": "{{count}} membresia(s) activa(s)",
-        "mrrAtRisk": "MRR en riesgo",
-        "mrrAtRiskHelper": "Membresias activas configuradas para cancelarse al final del periodo",
-        "overdue": "Facturas vencidas",
-        "overdueHelper": "{{count}} factura(s) sin pagar",
-        "momentum": "vs. periodo anterior equivalente",
-        "newLabel": "nuevas",
-        "canceledLabel": "canceladas"
-      },
-      "charts": {
-        "revenueTitle": "Ingresos en el tiempo",
-        "revenueSubtitle": "Ingreso neto del rango seleccionado.",
-        "oneTime": "Pagos unicos",
-        "recurring": "Membresias de cobro automatico",
-        "tableView": "Ver tabla",
-        "chartView": "Ver grafico",
-        "methodTitle": "Desglose por metodo de pago",
-        "methodSubtitle": "Pagos exitosos por metodo, rango seleccionado.",
-        "methodEmpty": "Todavia no hay pagos registrados.",
-        "topCustomersTitle": "Mejores clientes",
-        "topCustomersSubtitle": "Mayor ingreso, rango seleccionado.",
-        "topCustomersEmpty": "Todavia no hay pagos registrados.",
-        "membershipTrendTitle": "Actividad de membresias",
-        "membershipTrendSubtitle": "Membresias de cobro automatico nuevas vs. canceladas, rango seleccionado.",
-        "activated": "Activadas",
-        "canceled": "Canceladas",
-        "invoiceStatusTitle": "Estado de facturas",
-        "invoiceStatusSubtitle": "Todas las facturas segun su estado actual.",
-        "invoiceStatusEmpty": "Todavia no hay facturas."
-      },
-      "pastDue": {
-        "title": "Membresias con cobro vencido",
-        "subtitle": "Cobros automaticos que fallaron. Reintenta ahora o cancela la membresia.",
-        "empty": "No hay membresias con cobro vencido. Todo esta al dia.",
-        "retry": "Reintentar cobro",
-        "cancel": "Cancelar",
-        "errors": {
-          "generic": "Algo salio mal. Intenta de nuevo.",
-          "retryFailed": "El reintento fallo - la tarjeta puede seguir siendo rechazada.",
-          "cancelFailed": "No se pudo cancelar esta membresia. Intenta de nuevo."
-        }
-      },
-      "reconcile": {
-        "status": "Ultima verificacion con Stripe: {{date}} ({{checked}} revisadas, {{corrected}} corregidas)",
-        "neverRun": "Ultima verificacion con Stripe: aun no se ha ejecutado"
-      },
-      "recentPayments": {
-        "title": "Pagos recientes",
-        "empty": "Todavia no hay pagos registrados."
-      },
-      "overdueInvoices": {
-        "title": "Facturas vencidas",
-        "empty": "No hay facturas vencidas.",
-        "notSent": "Aun no enviada"
-      }
-    },
     "reports": {
       "title": "Reportes",
       "subtitle": "Rendimiento operativo, productividad del equipo y facturacion.",
-      "tabs": {
-        "operations": "Operaciones",
-        "needsAttention": "Necesita atencion",
-        "propertyHealth": "Salud de propiedades",
-        "contracts": "Contratos"
-      },
-      "needsAttention": {
-        "title": "Necesita atencion",
-        "subtitle": "Cada cliente con un problema abierto - componentes de piscina rotos, contratos vencidos o pagos fallidos - ordenados por urgencia.",
-        "stats": {
-          "total": "Clientes marcados",
-          "totalHelper": "Al menos un problema abierto",
-          "critical": "Alta prioridad",
-          "criticalHelper": "Multiples problemas o problemas severos abiertos",
-          "payment": "Problemas de pago",
-          "paymentHelper": "Autopay fallido o facturas vencidas",
-          "property": "Problemas de propiedad",
-          "propertyHelper": "{{count}} tambien tienen contrato vencido o sin registrar"
-        },
-        "table": {
-          "title": "Clientes",
-          "showing": "Mostrando {{count}} de {{total}} clientes.",
-          "searchPlaceholder": "Buscar cliente...",
-          "empty": "Nadie necesita atencion en este momento.",
-          "autopayFailed": "Autopay fallido: {{amount}}",
-          "overdueInvoices": "{{count}} factura(s) vencida(s): {{amount}}"
-        }
-      },
-      "propertyHealth": {
-        "title": "Salud de propiedades",
-        "subtitle": "Condicion de la piscina en cada propiedad: que esta roto, que se esta desgastando y que esta bien.",
-        "stats": {
-          "critical": "Critico",
-          "criticalHelper": "Propiedades con al menos un componente roto",
-          "warning": "Necesita atencion",
-          "warningHelper": "Propiedades con componentes desgastados, nada roto",
-          "good": "Todo bien",
-          "goodHelper": "Todos los componentes marcados como buenos",
-          "unset": "Sin evaluar",
-          "unsetHelper": "Aun no se ha registrado la condicion"
-        },
-        "flags": {
-          "RED": "Critico",
-          "YELLOW": "Necesita atencion",
-          "GREEN": "Todo bien",
-          "UNSET": "Sin evaluar"
-        },
-        "table": {
-          "title": "Propiedades",
-          "showing": "Mostrando {{count}} de {{total}} propiedades.",
-          "activeCount": "{{count}} activos",
-          "searchPlaceholder": "Buscar cliente, propiedad, direccion, componente...",
-          "sort": {
-            "severity": "Mas critico primero",
-            "updated": "Actualizado mas reciente",
-            "customer": "Nombre del cliente"
-          },
-          "empty": "Ninguna propiedad coincide con los filtros actuales.",
-          "viewCustomer": "Ver cliente",
-          "updated": "Actualizado {{date}}",
-          "page": "Pagina {{page}} de {{total}}"
-        }
-      },
-      "contracts": {
-        "title": "Contratos",
-        "subtitle": "Estado del contrato de servicio de cada cliente: firmado, pendiente, vencido o nunca enviado.",
-        "stats": {
-          "signed": "Firmados",
-          "signedHelper": "Firmado para el periodo actual",
-          "pending": "Pendientes de firma",
-          "pendingHelper": "Enviado o en borrador este periodo, aun sin firmar",
-          "stale": "Vencidos",
-          "staleHelper": "Enviado o en borrador en un periodo anterior, nunca firmado",
-          "none": "Sin contrato",
-          "noneHelper": "Clientes sin ningun contrato registrado"
-        },
-        "category": {
-          "SIGNED": "Firmado",
-          "PENDING": "Pendiente",
-          "STALE": "Vencido",
-          "NONE": "Sin contrato"
-        },
-        "status": {
-          "NONE": "Sin contrato"
-        },
-        "table": {
-          "title": "Clientes",
-          "showing": "Mostrando {{count}} de {{total}} clientes.",
-          "activeCount": "{{count}} activos",
-          "searchPlaceholder": "Buscar cliente...",
-          "empty": "Ningun cliente coincide con los filtros actuales.",
-          "customer": "Cliente",
-          "status": "Estado",
-          "period": "Periodo",
-          "sentAt": "Enviado el",
-          "signedAt": "Firmado el",
-          "actions": "Acciones",
-          "page": "Pagina {{page}} de {{total}}"
-        }
-      },
       "filters": {
         "toolbar": "Filtros",
         "open": "Abrir filtros",
@@ -2294,48 +2193,106 @@
           "cleared": "Se borraron {{count}} registros del historial.",
           "noneToClear": "No habia registros para borrar con ese filtro."
         }
-      }
-    },
-    "requests": {
-      "title": "Solicitudes",
-      "subtitle": "Todo lo que los clientes reportan desde la app, en un solo lugar.",
-      "stats": {
-        "unassigned": "Sin asignar",
-        "unassignedHelper": "Necesitan un tecnico",
-        "assigned": "Asignadas",
-        "assignedHelper": "En proceso",
-        "resolved": "Resueltas",
-        "resolvedHelper": "Completadas",
-        "urgent": "Urgentes",
-        "urgentHelper": "Marcadas como emergencia"
       },
-      "filters": {
-        "UNASSIGNED": "Sin asignar",
-        "ASSIGNED": "Asignadas",
-        "RESOLVED": "Resueltas",
-        "ALL": "Todas"
+      "tabs": {
+        "operations": "Operaciones",
+        "needsAttention": "Necesita atencion",
+        "propertyHealth": "Salud de propiedades",
+        "contracts": "Contratos"
       },
-      "table": {
-        "title": "Registro de solicitudes",
-        "showing": "Mostrando {{count}} de {{total}}",
-        "searchPlaceholder": "Buscar cliente, propiedad, descripcion...",
-        "empty": "No hay solicitudes con este filtro.",
-        "viewInCalendar": "Ver en calendario",
-        "assignedTo": "Asignado a {{name}}",
-        "scheduledFor": "Programada para {{date}}",
-        "customerAvailable": "Cliente disponible:",
-        "selectTechnician": "Selecciona un tecnico",
-        "selectDate": "Fecha",
-        "selectTime": "Hora",
-        "assign": "Asignar",
-        "confirmDelete": "Esta solicitud se eliminara de forma permanente. Deseas continuar?",
-        "page": "Pagina {{page}} de {{total}}"
+      "needsAttention": {
+        "title": "Necesita atencion",
+        "subtitle": "Cada cliente con un problema abierto - componentes de piscina rotos, contratos vencidos o pagos fallidos - ordenados por urgencia.",
+        "stats": {
+          "total": "Clientes marcados",
+          "totalHelper": "Al menos un problema abierto",
+          "critical": "Alta prioridad",
+          "criticalHelper": "Multiples problemas o problemas severos abiertos",
+          "payment": "Problemas de pago",
+          "paymentHelper": "Autopay fallido o facturas vencidas",
+          "property": "Problemas de propiedad",
+          "propertyHelper": "{{count}} tambien tienen contrato vencido o sin registrar"
+        },
+        "table": {
+          "title": "Clientes",
+          "showing": "Mostrando {{count}} de {{total}} clientes.",
+          "searchPlaceholder": "Buscar cliente...",
+          "empty": "Nadie necesita atencion en este momento.",
+          "autopayFailed": "Autopay fallido: {{amount}}",
+          "overdueInvoices": "{{count}} factura(s) vencida(s): {{amount}}"
+        }
       },
-      "errors": {
-        "generic": "Algo salio mal. Intenta de nuevo.",
-        "assignFieldsRequired": "Selecciona un tecnico y una fecha antes de asignar.",
-        "invalidDate": "Ingresa una fecha valida.",
-        "deleteBlocked": "Esta solicitud ya tiene fotos o una factura asociada y no se puede eliminar."
+      "propertyHealth": {
+        "title": "Salud de propiedades",
+        "subtitle": "Condicion de la piscina en cada propiedad: que esta roto, que se esta desgastando y que esta bien.",
+        "stats": {
+          "critical": "Critico",
+          "criticalHelper": "Propiedades con al menos un componente roto",
+          "warning": "Necesita atencion",
+          "warningHelper": "Propiedades con componentes desgastados, nada roto",
+          "good": "Todo bien",
+          "goodHelper": "Todos los componentes marcados como buenos",
+          "unset": "Sin evaluar",
+          "unsetHelper": "Aun no se ha registrado la condicion"
+        },
+        "flags": {
+          "RED": "Critico",
+          "YELLOW": "Necesita atencion",
+          "GREEN": "Todo bien",
+          "UNSET": "Sin evaluar"
+        },
+        "table": {
+          "title": "Propiedades",
+          "showing": "Mostrando {{count}} de {{total}} propiedades.",
+          "activeCount": "{{count}} activos",
+          "searchPlaceholder": "Buscar cliente, propiedad, direccion, componente...",
+          "sort": {
+            "severity": "Mas critico primero",
+            "updated": "Actualizado mas reciente",
+            "customer": "Nombre del cliente"
+          },
+          "empty": "Ninguna propiedad coincide con los filtros actuales.",
+          "viewCustomer": "Ver cliente",
+          "updated": "Actualizado {{date}}",
+          "page": "Pagina {{page}} de {{total}}"
+        }
+      },
+      "contracts": {
+        "title": "Contratos",
+        "subtitle": "Estado del contrato de servicio de cada cliente: firmado, pendiente, vencido o nunca enviado.",
+        "stats": {
+          "signed": "Firmados",
+          "signedHelper": "Firmado para el periodo actual",
+          "pending": "Pendientes de firma",
+          "pendingHelper": "Enviado o en borrador este periodo, aun sin firmar",
+          "stale": "Vencidos",
+          "staleHelper": "Enviado o en borrador en un periodo anterior, nunca firmado",
+          "none": "Sin contrato",
+          "noneHelper": "Clientes sin ningun contrato registrado"
+        },
+        "category": {
+          "SIGNED": "Firmado",
+          "PENDING": "Pendiente",
+          "STALE": "Vencido",
+          "NONE": "Sin contrato"
+        },
+        "status": {
+          "NONE": "Sin contrato"
+        },
+        "table": {
+          "title": "Clientes",
+          "showing": "Mostrando {{count}} de {{total}} clientes.",
+          "activeCount": "{{count}} activos",
+          "searchPlaceholder": "Buscar cliente...",
+          "empty": "Ningun cliente coincide con los filtros actuales.",
+          "customer": "Cliente",
+          "status": "Estado",
+          "period": "Periodo",
+          "sentAt": "Enviado el",
+          "signedAt": "Firmado el",
+          "actions": "Acciones",
+          "page": "Pagina {{page}} de {{total}}"
+        }
       }
     },
     "settings": {
@@ -2374,38 +2331,6 @@
           "label": "Pagos",
           "hint": "Estado de Stripe"
         }
-      },
-      "signature": {
-        "title": "Firma de la empresa",
-        "subtitle": "Dibuja la firma del presidente de Acosta's Pool. Se usara automaticamente en todos los contratos de servicio.",
-        "current": "Firma actual",
-        "clear": "Borrar firma",
-        "save": "Guardar firma",
-        "remove": "Eliminar firma",
-        "missing": "Dibuja una firma antes de guardar.",
-        "feedback": {
-          "saved": "Firma guardada correctamente.",
-          "saveFailed": "No se pudo guardar la firma: {{error}}",
-          "removed": "Firma eliminada.",
-          "removeFailed": "No se pudo eliminar la firma: {{error}}"
-        }
-      },
-      "payments": {
-        "title": "Pagos (Stripe)",
-        "subtitle": "Estado de conexion para pagos en linea y membresias de cobro automatico. Las claves se configuran como variables de entorno, no se guardan aqui.",
-        "fields": {
-          "secretKey": "Clave secreta",
-          "webhookSecret": "Secreto del webhook",
-          "mode": "Modo"
-        },
-        "status": {
-          "configured": "Configurado",
-          "missing": "No configurado",
-          "live": "En vivo",
-          "test": "Prueba"
-        },
-        "keysHint": "Configura STRIPE_SECRET_KEY y STRIPE_WEBHOOK_SECRET en el entorno de hosting. Usa claves de modo prueba hasta que estes listo para aceptar cobros reales.",
-        "viewDashboard": "Ver panel de contabilidad"
       },
       "landing": {
         "title": "Configuracion del landing",
@@ -2541,7 +2466,13 @@
           "modalTitle": "Preview de factura - {{theme}}",
           "previewLabel": "Pagina completa",
           "previewHint": "Se muestra toda la hoja en miniatura. Toca para abrir en pantalla completa.",
-          "open": "Abrir"
+          "open": "Abrir",
+          "frameTitle": "Vista previa PDF de la factura ({{theme}})",
+          "loading": "Generando la vista previa en PDF...",
+          "refresh": "Actualizar vista previa",
+          "error": "No se pudo generar la vista previa. Inténtalo de nuevo.",
+          "unsupported": "Si tu navegador no muestra el PDF aquí, ábrelo en una pestaña nueva.",
+          "openInNewTab": "Abrir el PDF en una pestaña nueva"
         }
       },
       "compliance": {
@@ -2615,7 +2546,9 @@
         "loading": "Cargando paquetes de servicio...",
         "empty": "No hay paquetes configurados.",
         "labels": {
-          "checklist": "Checklist"
+          "checklist": "Checklist",
+          "active": "Paquete activo",
+          "newItem": "Nuevo item del checklist"
         },
         "placeholders": {
           "name": "Nombre del paquete",
@@ -2633,7 +2566,8 @@
           "showInactive": "Mostrar inactivos",
           "hideInactive": "Ocultar inactivos",
           "saving": "Guardando...",
-          "deactivate": "Desactivar"
+          "deactivate": "Desactivar",
+          "drag": "Arrastrar para reordenar"
         },
         "errors": {
           "load": "No se pudieron cargar los paquetes.",
@@ -2659,6 +2593,38 @@
         "completedJob": "Trabajo completado",
         "invoiceSent": "Factura enviada",
         "newCustomer": "Nuevo cliente registrado"
+      },
+      "signature": {
+        "title": "Firma de la empresa",
+        "subtitle": "Dibuja la firma del presidente de Acosta's Pool. Se usara automaticamente en todos los contratos de servicio.",
+        "current": "Firma actual",
+        "clear": "Borrar firma",
+        "save": "Guardar firma",
+        "remove": "Eliminar firma",
+        "missing": "Dibuja una firma antes de guardar.",
+        "feedback": {
+          "saved": "Firma guardada correctamente.",
+          "saveFailed": "No se pudo guardar la firma: {{error}}",
+          "removed": "Firma eliminada.",
+          "removeFailed": "No se pudo eliminar la firma: {{error}}"
+        }
+      },
+      "payments": {
+        "title": "Pagos (Stripe)",
+        "subtitle": "Estado de conexion para pagos en linea y membresias de cobro automatico. Las claves se configuran como variables de entorno, no se guardan aqui.",
+        "fields": {
+          "secretKey": "Clave secreta",
+          "webhookSecret": "Secreto del webhook",
+          "mode": "Modo"
+        },
+        "status": {
+          "configured": "Configurado",
+          "missing": "No configurado",
+          "live": "En vivo",
+          "test": "Prueba"
+        },
+        "keysHint": "Configura STRIPE_SECRET_KEY y STRIPE_WEBHOOK_SECRET en el entorno de hosting. Usa claves de modo prueba hasta que estes listo para aceptar cobros reales.",
+        "viewDashboard": "Ver panel de contabilidad"
       }
     },
     "developer": {
@@ -2684,11 +2650,6 @@
         }
       },
       "links": {
-        "poolCalculator": {
-          "kicker": "Herramientas",
-          "title": "Calculadora de cloro",
-          "subtitle": "La misma herramienta que usan los tecnicos - revisala aqui."
-        },
         "tests": {
           "kicker": "Pruebas",
           "title": "Suite de diagnosticos",
@@ -2703,6 +2664,11 @@
           "kicker": "Infraestructura",
           "title": "DB health endpoint",
           "subtitle": "Solo developer: estado de conectividad de base de datos."
+        },
+        "poolCalculator": {
+          "kicker": "Herramientas",
+          "title": "Calculadora de cloro",
+          "subtitle": "La misma herramienta que usan los tecnicos - revisala aqui."
         }
       },
       "audit": {
@@ -2831,19 +2797,148 @@
         "from": "Desde",
         "to": "Hasta",
         "apply": "Aplicar",
-        "reset": "Limpiar filtros"
+        "reset": "Limpiar filtros",
+        "deliveryProcessing": "Procesando"
       }
     },
     "placeholder": {
       "kicker": "En construccion",
       "body": "Este modulo se esta disenando con enfoque premium para la operacion del negocio. Proximamente tendras aqui los flujos completos."
+    },
+    "accounting": {
+      "title": "Contabilidad",
+      "subtitle": "Ingresos, membresias y actividad de pagos de todo el negocio.",
+      "tabs": {
+        "dashboard": "Panel",
+        "invoices": "Facturas",
+        "servicePayment": "Info de servicio y pago"
+      },
+      "filters": {
+        "showing": "Mostrando",
+        "export": "Exportar CSV",
+        "open": "Abrir filtros",
+        "toolbar": "Filtros",
+        "modalTitle": "Elige un rango de fechas",
+        "range7": "7 dias",
+        "range30": "30 dias",
+        "range90": "90 dias",
+        "range365": "12 meses",
+        "rangeCustom": "Personalizado",
+        "customRange": "Rango personalizado",
+        "from": "Desde",
+        "to": "Hasta",
+        "apply": "Aplicar"
+      },
+      "stats": {
+        "revenue": "Ingresos",
+        "revenueHelper": "Netos de reembolsos, pagos por Stripe y manuales, rango seleccionado",
+        "mrr": "Ingreso recurrente mensual",
+        "mrrHelper": "{{count}} membresia(s) activa(s)",
+        "mrrAtRisk": "MRR en riesgo",
+        "mrrAtRiskHelper": "Membresias activas configuradas para cancelarse al final del periodo",
+        "overdue": "Facturas vencidas",
+        "overdueHelper": "{{count}} factura(s) sin pagar",
+        "momentum": "vs. periodo anterior equivalente",
+        "newLabel": "nuevas",
+        "canceledLabel": "canceladas"
+      },
+      "charts": {
+        "revenueTitle": "Ingresos en el tiempo",
+        "revenueSubtitle": "Ingreso neto del rango seleccionado.",
+        "oneTime": "Pagos unicos",
+        "recurring": "Membresias de cobro automatico",
+        "tableView": "Ver tabla",
+        "chartView": "Ver grafico",
+        "methodTitle": "Desglose por metodo de pago",
+        "methodSubtitle": "Pagos exitosos por metodo, rango seleccionado.",
+        "methodEmpty": "Todavia no hay pagos registrados.",
+        "topCustomersTitle": "Mejores clientes",
+        "topCustomersSubtitle": "Mayor ingreso, rango seleccionado.",
+        "topCustomersEmpty": "Todavia no hay pagos registrados.",
+        "membershipTrendTitle": "Actividad de membresias",
+        "membershipTrendSubtitle": "Membresias de cobro automatico nuevas vs. canceladas, rango seleccionado.",
+        "activated": "Activadas",
+        "canceled": "Canceladas",
+        "invoiceStatusTitle": "Estado de facturas",
+        "invoiceStatusSubtitle": "Todas las facturas segun su estado actual.",
+        "invoiceStatusEmpty": "Todavia no hay facturas."
+      },
+      "pastDue": {
+        "title": "Membresias con cobro vencido",
+        "subtitle": "Cobros automaticos que fallaron. Reintenta ahora o cancela la membresia.",
+        "empty": "No hay membresias con cobro vencido. Todo esta al dia.",
+        "retry": "Reintentar cobro",
+        "cancel": "Cancelar",
+        "errors": {
+          "generic": "Algo salio mal. Intenta de nuevo.",
+          "retryFailed": "El reintento fallo - la tarjeta puede seguir siendo rechazada.",
+          "cancelFailed": "No se pudo cancelar esta membresia. Intenta de nuevo."
+        }
+      },
+      "reconcile": {
+        "status": "Ultima verificacion con Stripe: {{date}} ({{checked}} revisadas, {{corrected}} corregidas)",
+        "neverRun": "Ultima verificacion con Stripe: aun no se ha ejecutado"
+      },
+      "recentPayments": {
+        "title": "Pagos recientes",
+        "empty": "Todavia no hay pagos registrados."
+      },
+      "overdueInvoices": {
+        "title": "Facturas vencidas",
+        "empty": "No hay facturas vencidas.",
+        "notSent": "Aun no enviada"
+      }
+    },
+    "requests": {
+      "title": "Solicitudes",
+      "subtitle": "Todo lo que los clientes reportan desde la app, en un solo lugar.",
+      "stats": {
+        "unassigned": "Sin asignar",
+        "unassignedHelper": "Necesitan un tecnico",
+        "assigned": "Asignadas",
+        "assignedHelper": "En proceso",
+        "resolved": "Resueltas",
+        "resolvedHelper": "Completadas",
+        "urgent": "Urgentes",
+        "urgentHelper": "Marcadas como emergencia"
+      },
+      "filters": {
+        "UNASSIGNED": "Sin asignar",
+        "ASSIGNED": "Asignadas",
+        "RESOLVED": "Resueltas",
+        "ALL": "Todas"
+      },
+      "table": {
+        "title": "Registro de solicitudes",
+        "showing": "Mostrando {{count}} de {{total}}",
+        "searchPlaceholder": "Buscar cliente, propiedad, descripcion...",
+        "empty": "No hay solicitudes con este filtro.",
+        "viewInCalendar": "Ver en calendario",
+        "assignedTo": "Asignado a {{name}}",
+        "scheduledFor": "Programada para {{date}}",
+        "customerAvailable": "Cliente disponible:",
+        "selectTechnician": "Selecciona un tecnico",
+        "selectDate": "Fecha",
+        "selectTime": "Hora",
+        "assign": "Asignar",
+        "confirmDelete": "Esta solicitud se eliminara de forma permanente. Deseas continuar?",
+        "page": "Pagina {{page}} de {{total}}"
+      },
+      "errors": {
+        "generic": "Algo salio mal. Intenta de nuevo.",
+        "assignFieldsRequired": "Selecciona un tecnico y una fecha antes de asignar.",
+        "invalidDate": "Ingresa una fecha valida.",
+        "deleteBlocked": "Esta solicitud ya tiene fotos o una factura asociada y no se puede eliminar."
+      }
     }
   },
   "offline": {
     "kicker": "Sin conexion",
     "title": "No hay conexion a internet",
     "subtitle": "Cuando vuelva la conexion, recarga para seguir usando la app.",
-    "backToLogin": "Ir a login"
+    "backToLogin": "Ir a login",
+    "retry": "Reintentar",
+    "autoRetry": "Reintentaremos automáticamente en cuanto vuelva la conexión."
   },
   "client": {
     "home": {
@@ -2886,31 +2981,91 @@
       "subtitle": "Crea una visita adicional fuera del plan.",
       "formTitle": "Detalle de la solicitud",
       "formSubtitle": "Dinos que dias te funcionan - revisaremos y confirmaremos la hora exacta.",
+      "leadTime": "Anticipacion minima: {{days}} dias",
+      "calendar": {
+        "stepDate": "Paso 1 - Selecciona fecha",
+        "stepTime": "Paso 2 - Selecciona hora",
+        "previousMonth": "Mes anterior",
+        "nextMonth": "Mes siguiente",
+        "prev": "Ant",
+        "next": "Sig",
+        "selectDateHint": "Selecciona una fecha para ver horarios disponibles.",
+        "availableShort": "Disponible",
+        "unavailableShort": "No disponible",
+        "available": "Disponible",
+        "unavailable": "No disponible",
+        "selection": "Seleccionado: {{date}} a las {{time}}"
+      },
       "fields": {
         "property": "Propiedad",
         "noProperty": "Sin propiedades registradas",
+        "noAvailability": "No se encontraron horarios disponibles",
         "reason": "Motivo",
+        "mode": "Modo de agenda",
+        "weeks": "Duracion (semanas)",
+        "visitsPerWeek": "Visitas por semana",
+        "availableDate": "Fecha disponible",
+        "availableTime": "Hora disponible",
+        "preferredDate": "Fecha preferida",
+        "preferredTime": "Horario sugerido",
+        "urgentOverride": "Necesito una fecha mas cercana (revision manual)",
+        "description": "Cuentanos que esta pasando",
         "category": "Que tipo de problema tienes?",
         "issue": "Que es exactamente?",
         "availableDays": "Dias disponibles",
-        "description": "Cuentanos que esta pasando",
         "urgent": "Es una emergencia?",
         "urgentHint": "Ej: fuga grave de agua, falla electrica peligrosa"
       },
       "placeholders": {
         "description": "Explica el problema o el servicio requerido."
       },
-      "availableDaysHint": "Necesitamos al menos {{days}} dias de antelacion antes de la visita.",
+      "modes": {
+        "single": "Visita unica",
+        "recurring": "Servicio recurrente"
+      },
+      "options": {
+        "oncePerWeek": "1 visita / semana",
+        "twicePerWeek": "2 visitas / semana",
+        "visitsPerWeekCount": "{{count}} visitas / semana",
+        "weeksCount": "{{count}} semana(s)",
+        "dayCapacity": "{{date}} · {{count}} espacio(s)",
+        "timeCapacity": "{{time}} · {{count}} espacio(s)"
+      },
       "notice": "Te contactaremos para confirmar la fecha y hora exacta.",
+      "noticeUrgent": "Las solicitudes urgentes fuera del tiempo minimo pasan a revision manual.",
       "submit": "Enviar solicitud",
       "loading": "Enviando...",
       "errors": {
         "property": "Selecciona una propiedad.",
+        "availability": "Selecciona fecha y hora.",
+        "recurringPaused": "El servicio recurrente esta pausado. Reanudalo en tu perfil antes de crear una solicitud recurrente.",
+        "submit": "No se pudo enviar la solicitud.",
         "category": "Selecciona que tipo de problema es.",
         "description": "Cuentanos brevemente que esta pasando.",
-        "availableDays": "Selecciona al menos un dia disponible.",
-        "submit": "No se pudo enviar la solicitud."
+        "availableDays": "Selecciona al menos un dia disponible."
       },
+      "successCount": "Solicitud programada correctamente. Visitas creadas: {{count}}.",
+      "successRecurringConfigured": "Servicio recurrente configurado: {{visits}} visita(s) por semana con {{plans}} plan(es) activo(s).",
+      "successReview": "Solicitud urgente enviada. Nuestro equipo la revisara y confirmara lo antes posible.",
+      "successPartial": "Se creo una programacion parcial por disponibilidad limitada. Visitas creadas: {{count}}.",
+      "hints": {
+        "recurringResidential": "El modo recurrente queda activo de forma indefinida. Cuentas residenciales permiten hasta 2 visitas por semana.",
+        "recurringCommercial": "El modo recurrente queda activo de forma indefinida. Cuentas comerciales permiten hasta 5 visitas por semana.",
+        "recurringPaused": "Tu servicio recurrente esta pausado desde el perfil."
+      },
+      "reasons": {
+        "emergency": "Emergencia / Bomba",
+        "quickCleaning": "Limpieza rapida",
+        "chemBalance": "Balance quimico urgente",
+        "general": "Revision general"
+      },
+      "confirmation": {
+        "kicker": "Solicitud enviada",
+        "title": "Tu solicitud fue registrada correctamente",
+        "continue": "Continuar",
+        "body": "Puedes ver el progreso de tu solicitud aqui mismo, arriba de este formulario."
+      },
+      "availableDaysHint": "Necesitamos al menos {{days}} dias de antelacion antes de la visita.",
       "categories": {
         "HYDRAULIC": "Hidraulica",
         "ELECTRICAL": "Electricidad",
@@ -2940,12 +3095,6 @@
           "onTheWay": "En camino",
           "completed": "Completada"
         }
-      },
-      "confirmation": {
-        "kicker": "Solicitud enviada",
-        "title": "Tu solicitud fue registrada correctamente",
-        "body": "Puedes ver el progreso de tu solicitud aqui mismo, arriba de este formulario.",
-        "continue": "Continuar"
       }
     },
     "profile": {
@@ -2981,7 +3130,11 @@
         "addressRequired": "Completa direccion, ciudad, estado y codigo postal.",
         "saveFailed": "No se pudieron guardar los cambios del perfil.",
         "personalSaved": "Informacion personal actualizada.",
-        "addressSaved": "Direccion principal actualizada."
+        "addressSaved": "Direccion principal actualizada.",
+        "currentPasswordLabel": "Contraseña actual",
+        "currentPasswordHelp": "Cambiar tu correo de acceso requiere tu contraseña actual. También avisaremos a tu dirección anterior.",
+        "currentPasswordRequired": "Introduce tu contraseña actual para cambiar el correo.",
+        "currentPasswordInvalid": "La contraseña actual no es correcta."
       },
       "confirm": {
         "title": "Confirma cambios del perfil",
@@ -3015,7 +3168,8 @@
         "pausedOk": "Servicios pausados desde {{date}} en adelante.",
         "resumedOk": "Servicios recurrentes reanudados.",
         "pauseError": "No se pudo pausar servicios desde la fecha seleccionada.",
-        "resumeError": "No se pudo reanudar el servicio recurrente."
+        "resumeError": "No se pudo reanudar el servicio recurrente.",
+        "pauseFromLabel": "Pausar desde"
       },
       "property": {
         "pool": "Piscina",
@@ -3243,9 +3397,184 @@
           "file": "Selecciona una foto.",
           "checklist": "Completa el checklist antes de finalizar.",
           "completed": "Este trabajo ya esta completado.",
-          "submit": "No se pudo subir la evidencia."
-        }
+          "submit": "No se pudo subir la evidencia.",
+          "network": "No se pudieron subir las fotos. Revisa tu conexión e inténtalo de nuevo; tus fotos y notas siguen aquí.",
+          "fileTooLarge": "Estas fotos superan {{maxMb}} MB y se omitieron: {{names}}"
+        },
+        "photoMaxSize": "Máximo {{maxMb}} MB por foto.",
+        "takePhotoCamera": "Tomar foto",
+        "chooseFromGallery": "Elegir de la galería",
+        "photoPreviewAlt": "Vista previa de {{name}}",
+        "removePhoto": "Quitar",
+        "removePhotoAria": "Quitar la foto {{name}}",
+        "preparingPhotos": "Preparando fotos...",
+        "backToRoutes": "Volver a mis rutas"
       }
+    },
+    "loading": {
+      "title": "Cargando"
+    },
+    "error": {
+      "kicker": "Algo salió mal",
+      "title": "No se pudo cargar esta página",
+      "description": "Inténtalo de nuevo. Si el problema continúa, avisa al equipo admin.",
+      "reference": "Referencia: {{digest}}",
+      "retry": "Reintentar",
+      "backHome": "Volver a mis rutas"
     }
+  },
+  "layout": {
+    "logout": {
+      "error": "No se pudo cerrar sesion. Intenta de nuevo."
+    },
+    "account": {
+      "loadError": "No se pudo cargar tu cuenta."
+    },
+    "notifications": {
+      "loadError": "No se pudieron cargar las notificaciones.",
+      "retry": "Reintentar",
+      "bellLabel": "Notificaciones, {{count}} sin leer",
+      "bellLabelEmpty": "Notificaciones, ninguna sin leer",
+      "announceNewOne": "1 notificación nueva",
+      "announceNewMany": "{{count}} notificaciones nuevas",
+      "soundToggle": "Sonido de notificaciones",
+      "soundOn": "Sonido activado",
+      "soundOff": "Sonido desactivado",
+      "deleteItem": "Eliminar notificación: {{source}}",
+      "actionError": "No se pudo completar la acción. Inténtalo de nuevo."
+    },
+    "sidebar": {
+      "collapse": "Contraer barra lateral",
+      "expand": "Expandir barra lateral"
+    },
+    "navigation": {
+      "primary": "Navegación principal"
+    }
+  },
+  "invoices": {
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviada",
+      "paid": "Pagada",
+      "overdue": "Vencida"
+    }
+  },
+  "globalShell": {
+    "skipToContent": "Saltar al contenido principal",
+    "loading": {
+      "label": "Cargando contenido..."
+    },
+    "notFound": {
+      "kicker": "Error 404",
+      "title": "Página no encontrada",
+      "subtitle": "La página que buscas no existe o se ha movido.",
+      "backHome": "Ir al inicio"
+    },
+    "error": {
+      "kicker": "Algo salió mal",
+      "title": "No pudimos cargar esta página",
+      "subtitle": "Ocurrió un error inesperado. Inténtalo de nuevo; si persiste, contacta al administrador.",
+      "digest": "Referencia: {{digest}}",
+      "retry": "Reintentar"
+    },
+    "globalError": {
+      "kicker": "Error crítico",
+      "title": "La app no pudo iniciarse",
+      "subtitle": "Un error inesperado impidió cargar la app. Inténtalo de nuevo o vuelve al inicio.",
+      "digest": "Referencia: {{digest}}",
+      "retry": "Reintentar",
+      "backHome": "Ir al inicio"
+    }
+  },
+  "pwa": {
+    "update": {
+      "title": "Nueva versión disponible",
+      "reload": "Recargar",
+      "dismiss": "Más tarde"
+    }
+  },
+  "devView": {
+    "title": "Vista de desarrollador",
+    "groupLabel": "Elegir la vista",
+    "roles": {
+      "ADMIN": "Administrador",
+      "TECH": "Técnico",
+      "CUSTOMER": "Cliente"
+    },
+    "roleInitials": {
+      "ADMIN": "A",
+      "TECH": "T",
+      "CUSTOMER": "C"
+    },
+    "targetLabel": "Usuario objetivo",
+    "targetPlaceholder": "Selecciona un usuario",
+    "targetEmpty": "No hay usuarios disponibles para esta vista.",
+    "apply": "Aplicar vista",
+    "applying": "Cambiando…",
+    "loading": "Cargando objetivos…",
+    "banner": {
+      "text": "Vista de desarrollador: {{role}} · {{target}}",
+      "back": "Volver a administrador",
+      "returning": "Volviendo…"
+    },
+    "errors": {
+      "load": "No se pudieron cargar los objetivos disponibles.",
+      "switch": "No se pudo cambiar de vista.",
+      "target": "Elige primero un usuario objetivo."
+    }
+  },
+  "poolCalculator": {
+    "title": "Calculadora de cloro",
+    "subtitle": "Ingresa las lecturas de tu tira reactiva para saber cuanto cloro agregar.",
+    "fields": {
+      "volume": "Volumen de la piscina (galones)",
+      "ph": "pH",
+      "freeChlorine": "Cloro libre (ppm)",
+      "totalAlkalinity": "Alcalinidad total (ppm)",
+      "stabilizer": "Estabilizador / CYA (ppm)",
+      "product": "Producto de cloro",
+      "customStrength": "Concentracion (%)"
+    },
+    "placeholders": {
+      "volume": "ej. 15000",
+      "ph": "ej. 7.4",
+      "freeChlorine": "ej. 1.5",
+      "totalAlkalinity": "ej. 90",
+      "stabilizer": "ej. 40"
+    },
+    "products": {
+      "LIQUID_10": "Cloro liquido (10%)",
+      "LIQUID_12_5": "Cloro liquido (12.5%)",
+      "CAL_HYPO_65": "Hipoclorito de calcio granulado (65%)",
+      "CAL_HYPO_73": "Hipoclorito de calcio granulado (73%)",
+      "CUSTOM": "Otro (concentracion personalizada)"
+    },
+    "incompleteHint": "Completa todos los campos para ver el resultado.",
+    "units": {
+      "gal": "gal",
+      "oz": "oz"
+    },
+    "results": {
+      "doseTitle": "Cloro a agregar",
+      "doseNone": "El cloro libre ya esta dentro del rango objetivo. No es necesario agregar cloro ahora.",
+      "doseAmount": "Agrega {{amount}} {{unit}} de {{product}}",
+      "currentToTarget": "Cloro libre actual {{current}} ppm -> objetivo {{target}} ppm.",
+      "targetRangeTitle": "Cloro libre objetivo (segun estabilizador)",
+      "minimum": "Minimo",
+      "target": "Objetivo",
+      "shock": "Choque/algas",
+      "phTitle": "pH",
+      "alkalinityTitle": "Alcalinidad total",
+      "status": {
+        "low": "Bajo",
+        "ok": "En rango",
+        "high": "Alto"
+      },
+      "phLowHint": "Sube con incrementador de pH (carbonato de sodio).",
+      "phHighHint": "Baja con reductor de pH (acido muriatico/seco).",
+      "alkalinityLowHint": "Sube con bicarbonato de sodio.",
+      "alkalinityHighHint": "Baja con acido muriatico y luego airea el agua."
+    },
+    "disclaimer": "Estimado segun la guia estandar de la industria de piscinas (relacion cloro libre / estabilizador). Sigue siempre los procedimientos de tu empresa y usa tu criterio profesional antes de dosificar."
   }
 }

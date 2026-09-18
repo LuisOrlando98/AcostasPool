@@ -27,12 +27,12 @@ const INDEX_COPY = {
   },
   es: {
     kicker: "Centro legal de AcostasPool",
-    title: "Politicas legales y de cumplimiento",
+    title: "Políticas legales y de cumplimiento",
     subtitle:
-      "Consulta nuestras politicas vigentes sobre privacidad, terminos del servicio, pagos y limites operativos.",
+      "Consulta nuestras políticas vigentes sobre privacidad, términos del servicio, pagos y límites operativos.",
     summaryTitle: "Resumen del documento",
     effective: "Vigencia",
-    action: "Ver politica",
+    action: "Ver política",
   },
 } as const;
 

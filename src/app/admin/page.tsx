@@ -102,17 +102,17 @@ export default async function AdminPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                Developer Access
+                {t("admin.dashboard.developer.kicker")}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-slate-900">
-                Consola de pruebas y auditoria
+                {t("admin.dashboard.developer.title")}
               </h2>
             </div>
             <Link
               href="/admin/developer"
               className="app-button-secondary px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
             >
-              Abrir developer console
+              {t("admin.dashboard.developer.cta")}
             </Link>
           </div>
         </section>

@@ -45,3 +45,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# test artifacts
+/test-results
+/playwright-report
+
+# graphify knowledge graph
+/graphify-out
+
+# private local storage (STORAGE_DRIVER=local)
+/storage

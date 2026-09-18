@@ -10,7 +10,6 @@
       "close": "Close",
       "save": "Save",
       "cancel": "Cancel",
-      "confirm": "Confirm",
       "add": "Add item",
       "moveUp": "Up",
       "moveDown": "Down",
@@ -20,7 +19,9 @@
       "view": "View",
       "edit": "Edit",
       "send": "Send",
-      "search": "Search"
+      "search": "Search",
+      "confirm": "Confirm",
+      "clearFilters": "Clear filters"
     },
     "feedback": {
       "saving": "Saving...",
@@ -28,7 +29,8 @@
       "creating": "Creating...",
       "created": "Created",
       "updating": "Updating...",
-      "updated": "Updated"
+      "updated": "Updated",
+      "deleting": "Deleting..."
     },
     "status": {
       "active": "Active",
@@ -43,9 +45,9 @@
       "firstName": "First name",
       "lastName": "Last name",
       "notAvailable": "Not available",
-      "all": "All",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "all": "All"
     },
     "navigation": {
       "menu": "Menu",
@@ -57,9 +59,11 @@
     "language": {
       "en": "English",
       "es": "Spanish"
+    },
+    "errors": {
+      "network": "We couldn't reach the server. Check your connection and try again."
     }
-  }
-  ,
+  },
   "landing": {
     "tagline": "Pool Operations Platform",
     "nav": {
@@ -148,27 +152,27 @@
       "value4": "Client-first operations",
       "note": "We blend field expertise with modern systems to deliver measurable results."
     }
-  }
-  ,
+  },
   "nav": {
     "admin": {
       "dashboard": "Dashboard",
       "calendar": "Calendar",
-      "requests": "Requests",
       "technicians": "Technicians",
       "customers": "Customers",
-      "accounting": "Accounting",
+      "invoices": "Billing",
       "reports": "Reports",
       "settings": "Settings",
       "routes": "Routes & Jobs",
       "serviceAgreement": "Service Agreement",
-      "helpCenter": "Help"
+      "helpCenter": "Help",
+      "requests": "Requests",
+      "accounting": "Accounting"
     },
     "tech": {
       "route": "My Route",
       "history": "History",
-      "calculator": "Calculator",
-      "profile": "Profile"
+      "profile": "Profile",
+      "calculator": "Calculator"
     },
     "client": {
       "home": "Home",
@@ -278,8 +282,6 @@
     "serviceRescheduled": "Service rescheduled",
     "routeUpdated": "Route updated",
     "invoiceSent": "Invoice sent",
-    "paymentReceived": "Payment received",
-    "membershipPaymentFailed": "Autopay charge failed",
     "preferences": {
       "helper": "Choose the alerts this account should receive.",
       "enabledCount": "{{enabled}} of {{total}} active",
@@ -317,7 +319,9 @@
       "INVOICE_SENT": "Invoice sent",
       "PAYMENT_RECEIVED": "Payment received",
       "MEMBERSHIP_PAYMENT_FAILED": "Autopay charge failed"
-    }
+    },
+    "paymentReceived": "Payment received",
+    "membershipPaymentFailed": "Autopay charge failed"
   },
   "account": {
     "title": "My account",
@@ -329,15 +333,6 @@
     "profile": {
       "title": "Profile",
       "name": "Full name"
-    },
-    "errors": {
-      "required": "Name and email are required.",
-      "userNotFound": "User not found.",
-      "emailInUse": "That email is already in use by another account."
-    },
-    "feedback": {
-      "profileSaved": "Profile updated.",
-      "profileError": "Could not save your profile: {{error}}"
     },
     "photo": {
       "title": "Profile photo"
@@ -369,6 +364,15 @@
         "normalize": "Unable to process the image.",
         "upload": "Unable to upload."
       }
+    },
+    "errors": {
+      "required": "Name and email are required.",
+      "userNotFound": "User not found.",
+      "emailInUse": "That email is already in use by another account."
+    },
+    "feedback": {
+      "profileSaved": "Profile updated.",
+      "profileError": "Could not save your profile: {{error}}"
     }
   },
   "auth": {
@@ -405,7 +409,11 @@
       "passwordPlaceholder": "••••••••",
       "submit": "Sign in",
       "loading": "Signing in...",
-      "error": "Unable to sign in."
+      "error": "Unable to sign in.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "show": "Show",
+      "hide": "Hide"
     },
     "reset": {
       "title": "Reset password",
@@ -437,7 +445,6 @@
       "submit": "Complete profile",
       "loadingSubmit": "Saving...",
       "success": "Profile completed. You can sign in now.",
-      "successHint": "Your account is ready. Sign in with your email and the password you just created to access your portal.",
       "notFound": "Profile not found.",
       "errors": {
         "token": "Token required.",
@@ -446,13 +453,32 @@
         "mismatch": "Passwords do not match.",
         "required": "First name, last name, and phone are required.",
         "submit": "Unable to complete profile."
-      }
+      },
+      "successHint": "Your account is ready. Sign in with your email and the password you just created to access your portal."
     },
     "unauthorized": {
       "kicker": "Access restricted",
       "title": "You don't have access",
       "subtitle": "Your account doesn't have permission for this section. Contact the administrator for access.",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "goBack": "Go back"
+    },
+    "legal": {
+      "title": "Legal",
+      "navLabel": "Legal links",
+      "copyright": "Copyright {{year}} AcostasPool. All rights reserved.",
+      "links": {
+        "terms": "Terms of Service",
+        "termsShort": "Terms",
+        "privacy": "Privacy Policy",
+        "privacyShort": "Privacy",
+        "payments": "Payment & Cancellation",
+        "paymentsShort": "Payments",
+        "liability": "Disclaimer & Liability",
+        "liabilityShort": "Liability",
+        "cookies": "Cookie Notice",
+        "cookiesShort": "Cookies"
+      }
     }
   },
   "address": {
@@ -543,62 +569,12 @@
       "noEvidence": "No evidence available.",
       "evidenceAlt": "Evidence",
       "noAccess": "You don't have access to this job.",
-      "serviceTitle": "Service"
+      "serviceTitle": "Service",
+      "evidenceCountPlural": {
+        "one": "{{count}} photo",
+        "other": "{{count}} photos"
+      }
     }
-  },
-  "poolCalculator": {
-    "title": "Chlorine calculator",
-    "subtitle": "Enter your test strip readings to see how much chlorine to add.",
-    "fields": {
-      "volume": "Pool volume (gallons)",
-      "ph": "pH",
-      "freeChlorine": "Free chlorine (ppm)",
-      "totalAlkalinity": "Total alkalinity (ppm)",
-      "stabilizer": "Stabilizer / CYA (ppm)",
-      "product": "Chlorine product",
-      "customStrength": "Strength (%)"
-    },
-    "placeholders": {
-      "volume": "e.g. 15000",
-      "ph": "e.g. 7.4",
-      "freeChlorine": "e.g. 1.5",
-      "totalAlkalinity": "e.g. 90",
-      "stabilizer": "e.g. 40"
-    },
-    "products": {
-      "LIQUID_10": "Liquid chlorine (10%)",
-      "LIQUID_12_5": "Liquid chlorine (12.5%)",
-      "CAL_HYPO_65": "Cal-hypo granular (65%)",
-      "CAL_HYPO_73": "Cal-hypo granular (73%)",
-      "CUSTOM": "Other (custom %)"
-    },
-    "incompleteHint": "Fill in all fields to see the result.",
-    "units": {
-      "gal": "gal",
-      "oz": "oz"
-    },
-    "results": {
-      "doseTitle": "Chlorine to add",
-      "doseNone": "Free chlorine is already within the target range. No chlorine needed right now.",
-      "doseAmount": "Add {{amount}} {{unit}} of {{product}}",
-      "currentToTarget": "Current FC {{current}} ppm -> target {{target}} ppm.",
-      "targetRangeTitle": "Target free chlorine (based on stabilizer)",
-      "minimum": "Minimum",
-      "target": "Target",
-      "shock": "Shock/algae",
-      "phTitle": "pH",
-      "alkalinityTitle": "Total alkalinity",
-      "status": {
-        "low": "Low",
-        "ok": "In range",
-        "high": "High"
-      },
-      "phLowHint": "Raise with pH increaser (soda ash).",
-      "phHighHint": "Lower with pH decreaser (muriatic/dry acid).",
-      "alkalinityLowHint": "Raise with sodium bicarbonate (baking soda).",
-      "alkalinityHighHint": "Lower with muriatic acid, then aerate."
-    },
-    "disclaimer": "Estimate based on standard pool industry guidance (free chlorine / stabilizer relationship). Always follow your company's procedures and use professional judgment before dosing."
   },
   "plans": {
     "frequency": {
@@ -688,6 +664,11 @@
           "open": "Open",
           "paid": "Paid"
         }
+      },
+      "developer": {
+        "kicker": "Developer access",
+        "title": "Testing and audit console",
+        "cta": "Open developer console"
       }
     },
     "routes": {
@@ -696,10 +677,6 @@
       "tabs": {
         "calendar": "Calendar",
         "assistant": "Route assistant"
-      },
-      "calendar": {
-        "previousMonth": "Previous month",
-        "nextMonth": "Next month"
       },
       "assistant": {
         "pageTitle": "Route assistant",
@@ -796,7 +773,8 @@
         "createFailed": "Unable to create the jobs.",
         "saveFailed": "Unable to save the changes.",
         "saveJobFailed": "Unable to save the job changes.",
-        "deleteJobFailed": "Unable to delete the selected job."
+        "deleteJobFailed": "Unable to delete the selected job.",
+        "network": "Connection problem. Check your internet connection and try again."
       },
       "filters": {
         "toolbar": "Filters",
@@ -817,7 +795,9 @@
         "rangeMonth": "Month",
         "rangeCustom": "Custom",
         "apply": "Apply",
-        "reset": "Reset"
+        "reset": "Reset",
+        "technicianFilter": "Filter by technician",
+        "allTechnicians": "All technicians"
       },
       "table": {
         "customer": "Customer",
@@ -839,7 +819,8 @@
         "helper": "Tap a day to see routes in detail.",
         "loadLow": "Low load",
         "loadHigh": "High load",
-        "empty": "No routes scheduled for this day."
+        "empty": "No routes scheduled for this day.",
+        "editHelper": "Edit mode: tap a day to move, delete, or assign jobs from the modal."
       },
       "actions": {
         "creating": "Creating...",
@@ -848,7 +829,9 @@
         "saveChanges": "Save changes",
         "assignJobs": "Assign jobs",
         "addJob": "Add another job",
-        "assignTechnician": "Assign technician"
+        "assignTechnician": "Assign technician",
+        "currentMonth": "Current month",
+        "editCalendar": "Edit calendar"
       },
       "labels": {
         "technicianFallback": "Technician",
@@ -865,8 +848,6 @@
         "noProperties": "No properties",
         "noEmail": "No email",
         "noPhone": "No phone",
-        "customerRequest": "Customer's request",
-        "customerRequestBadge": "From the customer",
         "withSpa": "With spa",
         "withoutSpa": "No spa",
         "unassigned": "Unassigned",
@@ -889,7 +870,34 @@
         "waterType": "Water type",
         "order": "Order",
         "jobNumber": "Job #{{count}}",
-        "completedNoEvidence": "Job completed without evidence."
+        "completedNoEvidence": "Job completed without evidence.",
+        "saveSuccess": "Changes saved.",
+        "nextMonthJobs": "Next month",
+        "statusPlanned": "Planned",
+        "jobsToday": "Jobs today",
+        "enableEditToAssign": "Turn on edit mode to assign",
+        "dropHint": "Drag here or click to assign",
+        "customerRequest": "Customer's request",
+        "customerRequestBadge": "From the customer"
+      },
+      "helper": {
+        "editMode": "Edit mode active: on mobile open a day and edit from the modal.",
+        "quickFilters": "Filter by urgent, unassigned, or jobs for today."
+      },
+      "move": {
+        "title": "Move to",
+        "hint": "Saved right away, just like dragging the card.",
+        "hintEditMode": "Stays pending until you press Save changes, just like dragging the card.",
+        "action": "Move",
+        "open": "Move {{customer}}...",
+        "saveDisabledInEditMode": "While editing, use the calendar's Save changes"
+      },
+      "a11y": {
+        "assignJobsOnDay": "Assign jobs: {{date}}"
+      },
+      "calendar": {
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month"
       }
     },
     "technicians": {
@@ -907,42 +915,17 @@
         "inviteHint": "After creating the technician, an email invitation is sent automatically so they can complete and secure the account.",
         "actions": {
           "create": "Create technician and send invite"
-        }
-      },
-      "transfer": {
-        "trigger": "Transfer work",
-        "kicker": "Bulk reassignment",
-        "title": "Transfer work between technicians",
-        "subtitle": "Move every pending job and active route from one technician to another, keeping the same order.",
-        "from": "From",
-        "to": "To",
-        "selectTechnician": "Select a technician",
-        "jobsCount": "{{count}} pending job(s)",
-        "plansCount": "{{count}} active route(s)",
-        "upcomingLabel": "Upcoming jobs",
-        "upcomingMore": "+{{count}} more",
-        "deactivate": "Deactivate {{name}} after transferring",
-        "deactivateGeneric": "Deactivate the source technician after transferring",
-        "continue": "Continue",
-        "back": "Back",
-        "action": "Transfer now",
-        "transferring": "Transferring...",
-        "confirm": {
-          "title": "This can't be undone from here",
-          "body": "You're about to move every pending job and active route from {{from}} to {{to}}:",
-          "jobsLine": "{{count}} pending job(s) will change technician",
-          "plansLine": "{{count}} active route(s) will change technician",
-          "deactivateLine": "{{name}}'s account will be deactivated",
-          "typeLabel": "Type \"{{name}}\" to confirm"
         },
-        "success": {
-          "title": "Transfer complete",
-          "body": "{{jobs}} job(s) and {{plans}} route(s) were transferred."
-        },
-        "errors": {
-          "selectBoth": "Select both a source and a destination technician.",
-          "sameTechnician": "The source and destination technician can't be the same.",
-          "generic": "Something went wrong. Please try again."
+        "form": {
+          "required": "This field is required.",
+          "invalidEmail": "Enter a valid email.",
+          "invalidPhone": "Enter a valid U.S. phone number.",
+          "emailInUse": "This email is already in use.",
+          "completeRequired": "Complete the required fields to continue.",
+          "createError": "Could not create technician. Check the data.",
+          "unexpectedError": "Unexpected error while creating technician.",
+          "inviteSuccess": "Technician created and invitation sent.",
+          "closing": "Closing form..."
         }
       },
       "overview": {
@@ -989,6 +972,11 @@
           "actions": "Actions",
           "todayCount": "{{count}} jobs",
           "noRoute": "No route"
+        },
+        "delete": {
+          "confirmTitle": "Delete technician",
+          "confirmMessage": "This will delete the technician account of {{name}} and unassign their jobs. Do you want to continue?",
+          "error": "The technician could not be deleted. Please try again."
         }
       },
       "detail": {
@@ -1094,6 +1082,42 @@
             "propertyFallback": "Property"
           }
         }
+      },
+      "transfer": {
+        "trigger": "Transfer work",
+        "kicker": "Bulk reassignment",
+        "title": "Transfer work between technicians",
+        "subtitle": "Move every pending job and active route from one technician to another, keeping the same order.",
+        "from": "From",
+        "to": "To",
+        "selectTechnician": "Select a technician",
+        "jobsCount": "{{count}} pending job(s)",
+        "plansCount": "{{count}} active route(s)",
+        "upcomingLabel": "Upcoming jobs",
+        "upcomingMore": "+{{count}} more",
+        "deactivate": "Deactivate {{name}} after transferring",
+        "deactivateGeneric": "Deactivate the source technician after transferring",
+        "continue": "Continue",
+        "back": "Back",
+        "action": "Transfer now",
+        "transferring": "Transferring...",
+        "confirm": {
+          "title": "This can't be undone from here",
+          "body": "You're about to move every pending job and active route from {{from}} to {{to}}:",
+          "jobsLine": "{{count}} pending job(s) will change technician",
+          "plansLine": "{{count}} active route(s) will change technician",
+          "deactivateLine": "{{name}}'s account will be deactivated",
+          "typeLabel": "Type \"{{name}}\" to confirm"
+        },
+        "success": {
+          "title": "Transfer complete",
+          "body": "{{jobs}} job(s) and {{plans}} route(s) were transferred."
+        },
+        "errors": {
+          "selectBoth": "Select both a source and a destination technician.",
+          "sameTechnician": "The source and destination technician can't be the same.",
+          "generic": "Something went wrong. Please try again."
+        }
       }
     },
     "customers": {
@@ -1142,7 +1166,8 @@
           "modalTitle": "Customer filters",
           "modalSubtitle": "Filter by name/email, account status, portal, and list order.",
           "apply": "Apply filters",
-          "activeCount": "{{count}} active filters"
+          "activeCount": "{{count}} active filters",
+          "clear": "Clear filters"
         },
         "portal": {
           "active": "Active",
@@ -1181,11 +1206,11 @@
           "invoices": "Invoices",
           "action": "Action"
         },
+        "empty": "No customers to display.",
         "health": {
           "RED": "Needs attention: critical issue open (see Reports)",
           "YELLOW": "Needs attention: minor issue open (see Reports)"
-        },
-        "empty": "No customers to display."
+        }
       },
       "new": {
         "kicker": "New customer",
@@ -1232,18 +1257,18 @@
         "created": "Customer saved successfully.",
         "deleted": "Customer deleted successfully.",
         "saved": "Customer changes saved.",
+        "propertyCreated": "Property created successfully.",
+        "propertySaved": "Property updated successfully.",
+        "propertyDeleted": "Property deleted successfully.",
+        "jobCreated": "Job created successfully.",
+        "planCreated": "Recurring plan created successfully.",
         "financialsSaved": "Financial information saved.",
         "contractGenerated": "Contract generated successfully.",
         "contractSent": "Contract sent to the customer.",
         "contractSigned": "Contract signed successfully.",
         "contractGenerateFailed": "Could not generate the contract: {{error}}",
         "contractSendFailed": "Could not send the contract: {{error}}",
-        "contractSignFailed": "Could not save the signature: {{error}}",
-        "propertyCreated": "Property created successfully.",
-        "propertySaved": "Property updated successfully.",
-        "propertyDeleted": "Property deleted successfully.",
-        "jobCreated": "Job created successfully.",
-        "planCreated": "Recurring plan created successfully."
+        "contractSignFailed": "Could not save the signature: {{error}}"
       },
       "assignments": {
         "kicker": "Weekly routes",
@@ -1307,15 +1332,15 @@
           "addressLabel": "Address",
           "propertiesTitle": "Properties",
           "propertiesSubtitle": "Full pool details for each site.",
+          "plansTitle": "Recurring plans",
+          "plansSubtitle": "Weekly, biweekly, or monthly plans.",
+          "jobsTitle": "Jobs",
           "financialsTitle": "Financial information",
           "financialsSubtitle": "Plan, price, and payment method for this customer.",
           "membershipTitle": "Membership / Autopay",
           "membershipSubtitle": "Stripe autopay status for this customer's primary property.",
           "contractTitle": "Service contract",
-          "contractSubtitle": "Generate, send, and sign the customer's service contract.",
-          "plansTitle": "Recurring plans",
-          "plansSubtitle": "Weekly, biweekly, or monthly plans.",
-          "jobsTitle": "Jobs"
+          "contractSubtitle": "Generate, send, and sign the customer's service contract."
         },
         "labels": {
           "total": "{{count}} total",
@@ -1326,10 +1351,6 @@
           "altPhone": "Alt",
           "noAddress": "No address on file.",
           "noWeekends": "No weekend booking"
-        },
-        "profileFields": {
-          "name": "Name",
-          "weekends": "Weekends"
         },
         "properties": {
           "empty": "No properties registered.",
@@ -1367,21 +1388,21 @@
             "fiberglass": "Fiberglass",
             "vinyl": "Vinyl",
             "altMaterial": "Alternative material",
-            "jacuzzi": "Jacuzzi / spa",
             "salt": "Salt",
             "chlorine": "Chlorine",
             "other": "Other",
             "filterSand": "Sand",
             "filterCartridge": "Cartridge",
-            "filterDE": "D.E."
+            "filterDE": "D.E.",
+            "jacuzzi": "Jacuzzi / spa"
           },
           "edit": {
             "summary": "Edit property",
             "sections": {
               "identity": "Property identity",
               "specs": "Pool specs",
-              "equipment": "Equipment",
-              "access": "Access and location notes"
+              "access": "Access and location notes",
+              "equipment": "Equipment"
             },
             "danger": {
               "title": "Danger zone",
@@ -1389,6 +1410,8 @@
               "confirm": "Confirm deletion"
             }
           },
+          "spaNo": "Spa: No",
+          "spaYes": "Spa: Yes",
           "equipment": {
             "filter": "Filter",
             "pump": "Water pump",
@@ -1423,9 +1446,87 @@
               "BAD": "Bad",
               "GOOD": "Good"
             }
+          }
+        },
+        "plans": {
+          "empty": "No active recurring plans.",
+          "nextRun": "Next:",
+          "paused": "Paused",
+          "modalKicker": "New plan",
+          "modalTitle": "Recurring plan",
+          "modalSubtitle": "Assign a weekly route to the customer and bind it to a technician. Appointments created from the portal or app are saved as Custom Service.",
+          "fields": {
+            "name": "Plan name",
+            "frequency": "Frequency",
+            "nextDate": "Next date",
+            "startDate": "Plan start date",
+            "weeklyRoute": "Weekly route",
+            "notes": "Plan notes"
           },
-          "spaNo": "Spa: No",
-          "spaYes": "Spa: Yes"
+          "globalOptions": {
+            "monday": "Monday plan",
+            "tuesday": "Tuesday plan",
+            "wednesday": "Wednesday plan",
+            "thursday": "Thursday plan",
+            "friday": "Friday plan",
+            "saturday": "Saturday plan"
+          },
+          "placeholders": {
+            "name": "Primary weekly plan",
+            "selectTechnician": "Select a technician"
+          }
+        },
+        "jobs": {
+          "empty": "No jobs registered.",
+          "modalKicker": "New job",
+          "modalTitle": "Schedule job",
+          "modalSubtitle": "Set date, technician, and checklist."
+        },
+        "errors": {
+          "invalidInput": "Some fields are missing or invalid. Review the form and try again.",
+          "customerNotFound": "Customer not found.",
+          "propertyNotFound": "The selected property does not belong to this customer.",
+          "planNotFound": "The recurring plan was not found for this customer.",
+          "emailInUse": "That email already belongs to another user.",
+          "inviteFailed": "The portal invite could not be sent. Check the customer's email and try again.",
+          "propertyHasJobs": "This property has jobs linked to it and cannot be deleted.",
+          "propertyHasPlans": "This property has recurring plans linked to it and cannot be deleted.",
+          "confirmationMismatch": "Type the confirmation word to delete this customer.",
+          "firstNameRequired": "First name is required.",
+          "phoneInvalid": "The phone number is not a valid US number.",
+          "secondaryPhoneInvalid": "The secondary phone number is not a valid US number.",
+          "addressIncomplete": "Complete street, city, state and ZIP code, or leave the address empty.",
+          "propertyAddressRequired": "The property address is required.",
+          "accessNotesRequired": "Access and location notes are required.",
+          "poolVolumeInvalid": "Pool volume must be a whole number of gallons.",
+          "paymentInfoInvalid": "Check the service start date, payment day, price and payment type.",
+          "propertyRequired": "Select a property.",
+          "dateRequired": "Select a date.",
+          "dateInvalid": "The date or time is not valid.",
+          "technicianRequired": "Select a technician.",
+          "durationInvalid": "The estimated duration must be a whole number of minutes (0 or more).",
+          "hasFinancialRecords": "This customer has contracts, payments or memberships and cannot be deleted. Archive it instead."
+        },
+        "invoices": {
+          "sort": {
+            "dateDesc": "{{label}} (newest)",
+            "dateAsc": "{{label}} (oldest)",
+            "totalDesc": "{{label}} (high)",
+            "totalAsc": "{{label}} (low)"
+          },
+          "emptyFiltered": "No invoices match the active filters."
+        },
+        "delete": {
+          "kicker": "Permanent action",
+          "title": "Delete this customer?",
+          "description": "Type the word {{keyword}} to confirm that you will delete this customer, their portal user, properties, jobs, invoices, plans, documents, and any related historical records.",
+          "inputLabel": "Type \"{{keyword}}\" to continue",
+          "irreversible": "This action cannot be undone.",
+          "pending": "Deleting..."
+        },
+        "profileFields": {
+          "name": "Name",
+          "weekends": "Weekends"
         },
         "financials": {
           "fields": {
@@ -1521,40 +1622,6 @@
             "PORTAL": "Signed from the customer portal",
             "IN_PERSON_ADMIN": "Signed in person"
           }
-        },
-        "plans": {
-          "empty": "No active recurring plans.",
-          "nextRun": "Next:",
-          "paused": "Paused",
-          "modalKicker": "New plan",
-          "modalTitle": "Recurring plan",
-          "modalSubtitle": "Assign a weekly route to the customer and bind it to a technician. Appointments created from the portal or app are saved as Custom Service.",
-          "fields": {
-            "name": "Plan name",
-            "frequency": "Frequency",
-            "nextDate": "Next date",
-            "startDate": "Plan start date",
-            "weeklyRoute": "Weekly route",
-            "notes": "Plan notes"
-          },
-          "globalOptions": {
-            "monday": "Monday plan",
-            "tuesday": "Tuesday plan",
-            "wednesday": "Wednesday plan",
-            "thursday": "Thursday plan",
-            "friday": "Friday plan",
-            "saturday": "Saturday plan"
-          },
-          "placeholders": {
-            "name": "Primary weekly plan",
-            "selectTechnician": "Select a technician"
-          }
-        },
-        "jobs": {
-          "empty": "No jobs registered.",
-          "modalKicker": "New job",
-          "modalTitle": "Schedule job",
-          "modalSubtitle": "Set date, technician, and checklist."
         }
       },
       "repository": {
@@ -1595,7 +1662,8 @@
         "prompts": {
           "folderName": "Folder name",
           "rename": "New name",
-          "deleteConfirm": "Delete {{kind}} \"{{name}}\"?"
+          "deleteConfirm": "Delete {{kind}} \"{{name}}\"?",
+          "deleteDescription": "This action cannot be undone."
         },
         "feedback": {
           "folderCreated": "Folder created.",
@@ -1716,12 +1784,16 @@
         "status": {
           "paused": "Paused"
         }
+      },
+      "filters": {
+        "all": "All"
       }
     },
     "invoices": {
       "title": "Billing",
       "subtitle": "Invoices, service billing details, and payment tracking.",
       "views": {
+        "subtitle": "Switch between invoice management and the admin-only payment table.",
         "invoices": "Invoices",
         "servicePayment": "Service & Payment Info"
       },
@@ -1735,16 +1807,6 @@
         "sent": "Sent",
         "paid": "Paid",
         "overdue": "Overdue"
-      },
-      "stats": {
-        "outstanding": "Outstanding",
-        "outstandingHelper": "{{count}} invoice(s) awaiting payment",
-        "paid": "Paid",
-        "paidHelper": "{{count}} invoice(s) paid",
-        "overdue": "Overdue",
-        "overdueHelper": "{{count}} invoice(s) past due",
-        "drafts": "Drafts",
-        "draftsHelper": "Not sent to the customer yet"
       },
       "list": {
         "title": "Billing",
@@ -1807,31 +1869,22 @@
           "TO_WORK": "To Work",
           "WORKED": "Worked"
         },
-        "autopay": {
-          "ACTIVE": "Autopay active",
-          "PAST_DUE": "Autopay - payment failed",
-          "NONE": "Manual payment"
-        },
         "table": {
           "customer": "Customer",
           "property": "Property",
-          "plan": "Contracted plan",
-          "autopay": "Autopay",
           "serviceStartDate": "Service Start Date",
           "paymentDay": "Payment Day",
           "price": "Price",
           "paymentType": "Type of Payment",
           "notes": "Notes",
-          "actions": "Actions"
+          "actions": "Actions",
+          "plan": "Contracted plan",
+          "autopay": "Autopay"
         },
         "actions": {
           "openTable": "Open billing table",
           "reviewSave": "Review changes",
           "saving": "Saving..."
-        },
-        "errors": {
-          "propertyRequired": "No property selected.",
-          "invalidInput": "Check the payment day, price, and start date - one of them isn't valid."
         },
         "filters": {
           "open": "Open filters",
@@ -1842,17 +1895,17 @@
           "allCustomers": "All customers",
           "paymentType": "Payment type",
           "allPaymentTypes": "All payment types",
-          "autopay": "Autopay status",
-          "allAutopay": "All autopay statuses",
-          "plan": "Contracted plan",
-          "allPlans": "All plans",
           "notes": "Notes",
           "notesAll": "With and without notes",
           "notesWith": "Only with notes",
           "notesWithout": "Only without notes",
           "sort": "Sort by",
           "apply": "Apply",
-          "reset": "Clear filters"
+          "reset": "Clear filters",
+          "autopay": "Autopay status",
+          "allAutopay": "All autopay statuses",
+          "plan": "Contracted plan",
+          "allPlans": "All plans"
         },
         "sort": {
           "customer": "Customer",
@@ -1874,6 +1927,16 @@
           "subtitle": "Review the updated information for {{property}} under {{customer}} before saving.",
           "back": "Back",
           "confirm": "Save changes"
+        },
+        "errors": {
+          "save": "Unable to save the billing changes. Please try again.",
+          "propertyRequired": "No property selected.",
+          "invalidInput": "Check the payment day, price, and start date - one of them isn't valid."
+        },
+        "autopay": {
+          "ACTIVE": "Autopay active",
+          "PAST_DUE": "Autopay - payment failed",
+          "NONE": "Manual payment"
         }
       },
       "filters": {
@@ -1927,20 +1990,25 @@
           "removeLine": "Remove"
         },
         "errors": {
-          "invalidLineItems": "Invalid line items.",
+          "create": "Unable to create the invoice. Please try again.",
           "customerRequired": "Select a customer.",
+          "invalidLineItems": "Invalid line items.",
           "lineItemsRequired": "Add at least one line item with an amount greater than zero.",
           "customerNotFound": "Customer not found.",
           "invalidJob": "The selected job doesn't belong to this customer.",
           "pdfFailed": "Could not generate the invoice PDF. Try again.",
           "belowMinimum": "The total must be at least ${{amount}} - card processors reject anything smaller."
-        }
+        },
+        "requiredLegend": "* Required field"
       },
       "send": {
         "submit": "Send",
         "loading": "Sending...",
         "success": "Sent.",
-        "error": "Unable to send."
+        "error": "Unable to send.",
+        "alreadySent": "This invoice was already sent. Send it again?",
+        "resend": "Send again",
+        "postSendWarning": "The email was sent, but a follow-up step failed. Check the invoice status."
       },
       "editor": {
         "title": "Invoice {{number}}",
@@ -1948,13 +2016,6 @@
         "notFoundTitle": "Invoice editor",
         "notFoundSubtitle": "Invoice not found",
         "back": "Back to Billing",
-        "hero": {
-          "status": "Status",
-          "total": "Total",
-          "paid": "Paid",
-          "balance": "Balance due",
-          "fullyPaid": "Fully paid"
-        },
         "defaults": {
           "service": "Service"
         },
@@ -1977,10 +2038,32 @@
           "saving": "Saving...",
           "updated": "Updated"
         },
+        "hero": {
+          "status": "Status",
+          "total": "Total",
+          "paid": "Paid",
+          "balance": "Balance due",
+          "fullyPaid": "Fully paid"
+        },
         "errors": {
           "numberRequired": "Enter an invoice number.",
           "locked": "This invoice was already sent and can no longer be edited."
         }
+      },
+      "delete": {
+        "confirmTitle": "Delete invoice",
+        "confirmMessage": "This invoice will be permanently deleted. Do you want to continue?",
+        "error": "The invoice could not be deleted. Please try again."
+      },
+      "stats": {
+        "outstanding": "Outstanding",
+        "outstandingHelper": "{{count}} invoice(s) awaiting payment",
+        "paid": "Paid",
+        "paidHelper": "{{count}} invoice(s) paid",
+        "overdue": "Overdue",
+        "overdueHelper": "{{count}} invoice(s) past due",
+        "drafts": "Drafts",
+        "draftsHelper": "Not sent to the customer yet"
       },
       "payments": {
         "title": "Payments",
@@ -1999,193 +2082,9 @@
         }
       }
     },
-    "accounting": {
-      "title": "Accounting",
-      "subtitle": "Revenue, memberships, and payment activity across the business.",
-      "tabs": {
-        "dashboard": "Dashboard",
-        "invoices": "Invoices",
-        "servicePayment": "Service & Payment Info"
-      },
-      "filters": {
-        "showing": "Showing",
-        "export": "Export CSV",
-        "open": "Open filters",
-        "toolbar": "Filters",
-        "modalTitle": "Choose a date range",
-        "range7": "7 days",
-        "range30": "30 days",
-        "range90": "90 days",
-        "range365": "12 months",
-        "rangeCustom": "Custom",
-        "customRange": "Custom range",
-        "from": "From",
-        "to": "To",
-        "apply": "Apply"
-      },
-      "stats": {
-        "revenue": "Revenue",
-        "revenueHelper": "Net of refunds, Stripe and manual payments, selected range",
-        "mrr": "Monthly recurring revenue",
-        "mrrHelper": "{{count}} active membership(s)",
-        "mrrAtRisk": "MRR at risk",
-        "mrrAtRiskHelper": "Active memberships set to cancel at period end",
-        "overdue": "Overdue invoices",
-        "overdueHelper": "{{count}} unpaid invoice(s)",
-        "momentum": "vs. previous equal period",
-        "newLabel": "new",
-        "canceledLabel": "canceled"
-      },
-      "charts": {
-        "revenueTitle": "Revenue over time",
-        "revenueSubtitle": "Net revenue for the selected range.",
-        "oneTime": "One-time payments",
-        "recurring": "Autopay memberships",
-        "tableView": "Table view",
-        "chartView": "Chart view",
-        "methodTitle": "Payment method breakdown",
-        "methodSubtitle": "Successful payments by method, selected range.",
-        "methodEmpty": "No payments recorded yet.",
-        "topCustomersTitle": "Top customers",
-        "topCustomersSubtitle": "Highest revenue, selected range.",
-        "topCustomersEmpty": "No payments recorded yet.",
-        "membershipTrendTitle": "Membership activity",
-        "membershipTrendSubtitle": "New vs. canceled autopay memberships, selected range.",
-        "activated": "Activated",
-        "canceled": "Canceled",
-        "invoiceStatusTitle": "Invoice pipeline",
-        "invoiceStatusSubtitle": "All invoices by current status.",
-        "invoiceStatusEmpty": "No invoices yet."
-      },
-      "pastDue": {
-        "title": "Past-due memberships",
-        "subtitle": "Autopay charges that failed. Retry now or cancel the membership.",
-        "empty": "No past-due memberships. Everything is up to date.",
-        "retry": "Retry charge",
-        "cancel": "Cancel",
-        "errors": {
-          "generic": "Something went wrong. Please try again.",
-          "retryFailed": "The retry failed - the card may still be declined.",
-          "cancelFailed": "Could not cancel this membership. Please try again."
-        }
-      },
-      "reconcile": {
-        "status": "Last Stripe check: {{date}} ({{checked}} checked, {{corrected}} corrected)",
-        "neverRun": "Last Stripe check: not run yet"
-      },
-      "recentPayments": {
-        "title": "Recent payments",
-        "empty": "No payments recorded yet."
-      },
-      "overdueInvoices": {
-        "title": "Overdue invoices",
-        "empty": "No overdue invoices.",
-        "notSent": "Not sent yet"
-      }
-    },
     "reports": {
       "title": "Reports",
       "subtitle": "Operational performance, team productivity, and billing insights.",
-      "tabs": {
-        "operations": "Operations",
-        "needsAttention": "Needs attention",
-        "propertyHealth": "Property health",
-        "contracts": "Contracts"
-      },
-      "needsAttention": {
-        "title": "Needs attention",
-        "subtitle": "Every customer with an open issue - broken pool components, stale contracts, or failed payments - ranked by urgency.",
-        "stats": {
-          "total": "Customers flagged",
-          "totalHelper": "At least one open issue",
-          "critical": "High priority",
-          "criticalHelper": "Multiple or severe issues open",
-          "payment": "Payment issues",
-          "paymentHelper": "Failed autopay or overdue invoices",
-          "property": "Property issues",
-          "propertyHelper": "{{count}} also have a stale or missing contract"
-        },
-        "table": {
-          "title": "Customers",
-          "showing": "Showing {{count}} of {{total}} customers.",
-          "searchPlaceholder": "Search customer...",
-          "empty": "Nobody needs attention right now.",
-          "autopayFailed": "Autopay failed: {{amount}}",
-          "overdueInvoices": "{{count}} overdue invoice(s): {{amount}}"
-        }
-      },
-      "propertyHealth": {
-        "title": "Property health",
-        "subtitle": "Pool condition across every property: what's broken, what's wearing out, and what's fine.",
-        "stats": {
-          "critical": "Critical",
-          "criticalHelper": "Properties with at least one broken component",
-          "warning": "Needs attention",
-          "warningHelper": "Properties with worn components, nothing broken",
-          "good": "All good",
-          "goodHelper": "Every component marked good",
-          "unset": "Not evaluated",
-          "unsetHelper": "No condition recorded yet"
-        },
-        "flags": {
-          "RED": "Critical",
-          "YELLOW": "Needs attention",
-          "GREEN": "All good",
-          "UNSET": "Not evaluated"
-        },
-        "table": {
-          "title": "Properties",
-          "showing": "Showing {{count}} of {{total}} properties.",
-          "activeCount": "{{count}} active",
-          "searchPlaceholder": "Search customer, property, address, component...",
-          "sort": {
-            "severity": "Most critical first",
-            "updated": "Most recently updated",
-            "customer": "Customer name"
-          },
-          "empty": "No properties match the current filters.",
-          "viewCustomer": "View customer",
-          "updated": "Updated {{date}}",
-          "page": "Page {{page}} of {{total}}"
-        }
-      },
-      "contracts": {
-        "title": "Contracts",
-        "subtitle": "Service contract status for every customer: signed, pending, stale, or never sent.",
-        "stats": {
-          "signed": "Signed",
-          "signedHelper": "Signed for the current period",
-          "pending": "Pending signature",
-          "pendingHelper": "Sent or drafted this period, not signed yet",
-          "stale": "Stale",
-          "staleHelper": "Sent or drafted in a past period, never signed",
-          "none": "No contract",
-          "noneHelper": "Customers with no contract on file"
-        },
-        "category": {
-          "SIGNED": "Signed",
-          "PENDING": "Pending",
-          "STALE": "Stale",
-          "NONE": "No contract"
-        },
-        "status": {
-          "NONE": "No contract"
-        },
-        "table": {
-          "title": "Customers",
-          "showing": "Showing {{count}} of {{total}} customers.",
-          "activeCount": "{{count}} active",
-          "searchPlaceholder": "Search customer...",
-          "empty": "No customers match the current filters.",
-          "customer": "Customer",
-          "status": "Status",
-          "period": "Period",
-          "sentAt": "Sent on",
-          "signedAt": "Signed on",
-          "actions": "Actions",
-          "page": "Page {{page}} of {{total}}"
-        }
-      },
       "filters": {
         "toolbar": "Filters",
         "open": "Open filters",
@@ -2294,48 +2193,106 @@
           "cleared": "{{count}} history records were deleted.",
           "noneToClear": "No records matched the current filter."
         }
-      }
-    },
-    "requests": {
-      "title": "Requests",
-      "subtitle": "Everything customers report from the app, in one place.",
-      "stats": {
-        "unassigned": "Unassigned",
-        "unassignedHelper": "Need a technician",
-        "assigned": "Assigned",
-        "assignedHelper": "In progress",
-        "resolved": "Resolved",
-        "resolvedHelper": "Completed",
-        "urgent": "Urgent",
-        "urgentHelper": "Marked as emergency"
       },
-      "filters": {
-        "UNASSIGNED": "Unassigned",
-        "ASSIGNED": "Assigned",
-        "RESOLVED": "Resolved",
-        "ALL": "All"
+      "tabs": {
+        "operations": "Operations",
+        "needsAttention": "Needs attention",
+        "propertyHealth": "Property health",
+        "contracts": "Contracts"
       },
-      "table": {
-        "title": "Request log",
-        "showing": "Showing {{count}} of {{total}}",
-        "searchPlaceholder": "Search customer, property, description...",
-        "empty": "No requests match this filter.",
-        "viewInCalendar": "View in calendar",
-        "assignedTo": "Assigned to {{name}}",
-        "scheduledFor": "Scheduled for {{date}}",
-        "customerAvailable": "Customer available:",
-        "selectTechnician": "Select a technician",
-        "selectDate": "Date",
-        "selectTime": "Time",
-        "assign": "Assign",
-        "confirmDelete": "This request will be permanently deleted. Do you want to continue?",
-        "page": "Page {{page}} of {{total}}"
+      "needsAttention": {
+        "title": "Needs attention",
+        "subtitle": "Every customer with an open issue - broken pool components, stale contracts, or failed payments - ranked by urgency.",
+        "stats": {
+          "total": "Customers flagged",
+          "totalHelper": "At least one open issue",
+          "critical": "High priority",
+          "criticalHelper": "Multiple or severe issues open",
+          "payment": "Payment issues",
+          "paymentHelper": "Failed autopay or overdue invoices",
+          "property": "Property issues",
+          "propertyHelper": "{{count}} also have a stale or missing contract"
+        },
+        "table": {
+          "title": "Customers",
+          "showing": "Showing {{count}} of {{total}} customers.",
+          "searchPlaceholder": "Search customer...",
+          "empty": "Nobody needs attention right now.",
+          "autopayFailed": "Autopay failed: {{amount}}",
+          "overdueInvoices": "{{count}} overdue invoice(s): {{amount}}"
+        }
       },
-      "errors": {
-        "generic": "Something went wrong. Please try again.",
-        "assignFieldsRequired": "Select a technician and a date before assigning.",
-        "invalidDate": "Enter a valid date.",
-        "deleteBlocked": "This request already has photos or an invoice attached and can't be deleted."
+      "propertyHealth": {
+        "title": "Property health",
+        "subtitle": "Pool condition across every property: what's broken, what's wearing out, and what's fine.",
+        "stats": {
+          "critical": "Critical",
+          "criticalHelper": "Properties with at least one broken component",
+          "warning": "Needs attention",
+          "warningHelper": "Properties with worn components, nothing broken",
+          "good": "All good",
+          "goodHelper": "Every component marked good",
+          "unset": "Not evaluated",
+          "unsetHelper": "No condition recorded yet"
+        },
+        "flags": {
+          "RED": "Critical",
+          "YELLOW": "Needs attention",
+          "GREEN": "All good",
+          "UNSET": "Not evaluated"
+        },
+        "table": {
+          "title": "Properties",
+          "showing": "Showing {{count}} of {{total}} properties.",
+          "activeCount": "{{count}} active",
+          "searchPlaceholder": "Search customer, property, address, component...",
+          "sort": {
+            "severity": "Most critical first",
+            "updated": "Most recently updated",
+            "customer": "Customer name"
+          },
+          "empty": "No properties match the current filters.",
+          "viewCustomer": "View customer",
+          "updated": "Updated {{date}}",
+          "page": "Page {{page}} of {{total}}"
+        }
+      },
+      "contracts": {
+        "title": "Contracts",
+        "subtitle": "Service contract status for every customer: signed, pending, stale, or never sent.",
+        "stats": {
+          "signed": "Signed",
+          "signedHelper": "Signed for the current period",
+          "pending": "Pending signature",
+          "pendingHelper": "Sent or drafted this period, not signed yet",
+          "stale": "Stale",
+          "staleHelper": "Sent or drafted in a past period, never signed",
+          "none": "No contract",
+          "noneHelper": "Customers with no contract on file"
+        },
+        "category": {
+          "SIGNED": "Signed",
+          "PENDING": "Pending",
+          "STALE": "Stale",
+          "NONE": "No contract"
+        },
+        "status": {
+          "NONE": "No contract"
+        },
+        "table": {
+          "title": "Customers",
+          "showing": "Showing {{count}} of {{total}} customers.",
+          "activeCount": "{{count}} active",
+          "searchPlaceholder": "Search customer...",
+          "empty": "No customers match the current filters.",
+          "customer": "Customer",
+          "status": "Status",
+          "period": "Period",
+          "sentAt": "Sent on",
+          "signedAt": "Signed on",
+          "actions": "Actions",
+          "page": "Page {{page}} of {{total}}"
+        }
       }
     },
     "settings": {
@@ -2374,38 +2331,6 @@
           "label": "Payments",
           "hint": "Stripe status"
         }
-      },
-      "signature": {
-        "title": "Company signature",
-        "subtitle": "Draw the signature of Acosta's Pool's president. It will be used automatically on every service contract.",
-        "current": "Current signature",
-        "clear": "Clear signature",
-        "save": "Save signature",
-        "remove": "Remove signature",
-        "missing": "Draw a signature before saving.",
-        "feedback": {
-          "saved": "Signature saved successfully.",
-          "saveFailed": "Could not save the signature: {{error}}",
-          "removed": "Signature removed.",
-          "removeFailed": "Could not remove the signature: {{error}}"
-        }
-      },
-      "payments": {
-        "title": "Payments (Stripe)",
-        "subtitle": "Connection status for online payments and autopay memberships. Keys are configured as environment variables, not stored here.",
-        "fields": {
-          "secretKey": "Secret key",
-          "webhookSecret": "Webhook secret",
-          "mode": "Mode"
-        },
-        "status": {
-          "configured": "Configured",
-          "missing": "Not configured",
-          "live": "Live",
-          "test": "Test"
-        },
-        "keysHint": "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in the hosting environment. Use test-mode keys until you're ready to accept real charges.",
-        "viewDashboard": "View accounting dashboard"
       },
       "landing": {
         "title": "Landing page configuration",
@@ -2541,7 +2466,13 @@
           "modalTitle": "Invoice preview - {{theme}}",
           "previewLabel": "Full page",
           "previewHint": "The full sheet is shown as a thumbnail. Tap to open fullscreen.",
-          "open": "Open"
+          "open": "Open",
+          "frameTitle": "Invoice PDF preview ({{theme}})",
+          "loading": "Generating the PDF preview...",
+          "refresh": "Refresh preview",
+          "error": "The preview could not be generated. Try again.",
+          "unsupported": "If your browser does not display the PDF here, open it in a new tab.",
+          "openInNewTab": "Open PDF in a new tab"
         }
       },
       "compliance": {
@@ -2615,7 +2546,9 @@
         "loading": "Loading service tiers...",
         "empty": "No service tiers configured yet.",
         "labels": {
-          "checklist": "Checklist items"
+          "checklist": "Checklist items",
+          "active": "Active tier",
+          "newItem": "New checklist item"
         },
         "placeholders": {
           "name": "Tier name",
@@ -2628,13 +2561,14 @@
           "active": "Active",
           "inactive": "Inactive"
         },
-      "actions": {
-        "add": "Add tier",
-        "showInactive": "Show inactive",
-        "hideInactive": "Hide inactive",
-        "saving": "Saving...",
-        "deactivate": "Deactivate"
-      },
+        "actions": {
+          "add": "Add tier",
+          "showInactive": "Show inactive",
+          "hideInactive": "Hide inactive",
+          "saving": "Saving...",
+          "deactivate": "Deactivate",
+          "drag": "Drag to reorder"
+        },
         "errors": {
           "load": "Unable to load service tiers.",
           "save": "Unable to save the service tier.",
@@ -2659,6 +2593,38 @@
         "completedJob": "Job completed",
         "invoiceSent": "Invoice sent",
         "newCustomer": "New customer registered"
+      },
+      "signature": {
+        "title": "Company signature",
+        "subtitle": "Draw the signature of Acosta's Pool's president. It will be used automatically on every service contract.",
+        "current": "Current signature",
+        "clear": "Clear signature",
+        "save": "Save signature",
+        "remove": "Remove signature",
+        "missing": "Draw a signature before saving.",
+        "feedback": {
+          "saved": "Signature saved successfully.",
+          "saveFailed": "Could not save the signature: {{error}}",
+          "removed": "Signature removed.",
+          "removeFailed": "Could not remove the signature: {{error}}"
+        }
+      },
+      "payments": {
+        "title": "Payments (Stripe)",
+        "subtitle": "Connection status for online payments and autopay memberships. Keys are configured as environment variables, not stored here.",
+        "fields": {
+          "secretKey": "Secret key",
+          "webhookSecret": "Webhook secret",
+          "mode": "Mode"
+        },
+        "status": {
+          "configured": "Configured",
+          "missing": "Not configured",
+          "live": "Live",
+          "test": "Test"
+        },
+        "keysHint": "Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in the hosting environment. Use test-mode keys until you're ready to accept real charges.",
+        "viewDashboard": "View accounting dashboard"
       }
     },
     "developer": {
@@ -2684,11 +2650,6 @@
         }
       },
       "links": {
-        "poolCalculator": {
-          "kicker": "Tools",
-          "title": "Chlorine calculator",
-          "subtitle": "Same tool technicians use - review it here."
-        },
         "tests": {
           "kicker": "Testing",
           "title": "Diagnostics suite",
@@ -2703,6 +2664,11 @@
           "kicker": "Infrastructure",
           "title": "DB health endpoint",
           "subtitle": "Developer-only database connectivity status."
+        },
+        "poolCalculator": {
+          "kicker": "Tools",
+          "title": "Chlorine calculator",
+          "subtitle": "Same tool technicians use - review it here."
         }
       },
       "audit": {
@@ -2831,19 +2797,148 @@
         "from": "From",
         "to": "To",
         "apply": "Apply",
-        "reset": "Reset filters"
+        "reset": "Reset filters",
+        "deliveryProcessing": "Processing"
       }
     },
     "placeholder": {
       "kicker": "Under construction",
       "body": "This module is being crafted with a premium operational focus. Full workflows will appear here soon."
+    },
+    "accounting": {
+      "title": "Accounting",
+      "subtitle": "Revenue, memberships, and payment activity across the business.",
+      "tabs": {
+        "dashboard": "Dashboard",
+        "invoices": "Invoices",
+        "servicePayment": "Service & Payment Info"
+      },
+      "filters": {
+        "showing": "Showing",
+        "export": "Export CSV",
+        "open": "Open filters",
+        "toolbar": "Filters",
+        "modalTitle": "Choose a date range",
+        "range7": "7 days",
+        "range30": "30 days",
+        "range90": "90 days",
+        "range365": "12 months",
+        "rangeCustom": "Custom",
+        "customRange": "Custom range",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply"
+      },
+      "stats": {
+        "revenue": "Revenue",
+        "revenueHelper": "Net of refunds, Stripe and manual payments, selected range",
+        "mrr": "Monthly recurring revenue",
+        "mrrHelper": "{{count}} active membership(s)",
+        "mrrAtRisk": "MRR at risk",
+        "mrrAtRiskHelper": "Active memberships set to cancel at period end",
+        "overdue": "Overdue invoices",
+        "overdueHelper": "{{count}} unpaid invoice(s)",
+        "momentum": "vs. previous equal period",
+        "newLabel": "new",
+        "canceledLabel": "canceled"
+      },
+      "charts": {
+        "revenueTitle": "Revenue over time",
+        "revenueSubtitle": "Net revenue for the selected range.",
+        "oneTime": "One-time payments",
+        "recurring": "Autopay memberships",
+        "tableView": "Table view",
+        "chartView": "Chart view",
+        "methodTitle": "Payment method breakdown",
+        "methodSubtitle": "Successful payments by method, selected range.",
+        "methodEmpty": "No payments recorded yet.",
+        "topCustomersTitle": "Top customers",
+        "topCustomersSubtitle": "Highest revenue, selected range.",
+        "topCustomersEmpty": "No payments recorded yet.",
+        "membershipTrendTitle": "Membership activity",
+        "membershipTrendSubtitle": "New vs. canceled autopay memberships, selected range.",
+        "activated": "Activated",
+        "canceled": "Canceled",
+        "invoiceStatusTitle": "Invoice pipeline",
+        "invoiceStatusSubtitle": "All invoices by current status.",
+        "invoiceStatusEmpty": "No invoices yet."
+      },
+      "pastDue": {
+        "title": "Past-due memberships",
+        "subtitle": "Autopay charges that failed. Retry now or cancel the membership.",
+        "empty": "No past-due memberships. Everything is up to date.",
+        "retry": "Retry charge",
+        "cancel": "Cancel",
+        "errors": {
+          "generic": "Something went wrong. Please try again.",
+          "retryFailed": "The retry failed - the card may still be declined.",
+          "cancelFailed": "Could not cancel this membership. Please try again."
+        }
+      },
+      "reconcile": {
+        "status": "Last Stripe check: {{date}} ({{checked}} checked, {{corrected}} corrected)",
+        "neverRun": "Last Stripe check: not run yet"
+      },
+      "recentPayments": {
+        "title": "Recent payments",
+        "empty": "No payments recorded yet."
+      },
+      "overdueInvoices": {
+        "title": "Overdue invoices",
+        "empty": "No overdue invoices.",
+        "notSent": "Not sent yet"
+      }
+    },
+    "requests": {
+      "title": "Requests",
+      "subtitle": "Everything customers report from the app, in one place.",
+      "stats": {
+        "unassigned": "Unassigned",
+        "unassignedHelper": "Need a technician",
+        "assigned": "Assigned",
+        "assignedHelper": "In progress",
+        "resolved": "Resolved",
+        "resolvedHelper": "Completed",
+        "urgent": "Urgent",
+        "urgentHelper": "Marked as emergency"
+      },
+      "filters": {
+        "UNASSIGNED": "Unassigned",
+        "ASSIGNED": "Assigned",
+        "RESOLVED": "Resolved",
+        "ALL": "All"
+      },
+      "table": {
+        "title": "Request log",
+        "showing": "Showing {{count}} of {{total}}",
+        "searchPlaceholder": "Search customer, property, description...",
+        "empty": "No requests match this filter.",
+        "viewInCalendar": "View in calendar",
+        "assignedTo": "Assigned to {{name}}",
+        "scheduledFor": "Scheduled for {{date}}",
+        "customerAvailable": "Customer available:",
+        "selectTechnician": "Select a technician",
+        "selectDate": "Date",
+        "selectTime": "Time",
+        "assign": "Assign",
+        "confirmDelete": "This request will be permanently deleted. Do you want to continue?",
+        "page": "Page {{page}} of {{total}}"
+      },
+      "errors": {
+        "generic": "Something went wrong. Please try again.",
+        "assignFieldsRequired": "Select a technician and a date before assigning.",
+        "invalidDate": "Enter a valid date.",
+        "deleteBlocked": "This request already has photos or an invoice attached and can't be deleted."
+      }
     }
   },
   "offline": {
     "kicker": "Offline",
     "title": "No internet connection",
     "subtitle": "When the connection is back, reload to keep using the app.",
-    "backToLogin": "Go to login"
+    "backToLogin": "Go to login",
+    "retry": "Retry",
+    "autoRetry": "We'll retry automatically as soon as the connection is back."
   },
   "client": {
     "home": {
@@ -2886,31 +2981,91 @@
       "subtitle": "Create an additional visit outside the plan.",
       "formTitle": "Request details",
       "formSubtitle": "Tell us which days work for you - we'll review and confirm the exact time.",
+      "leadTime": "Minimum lead time: {{days}} days",
+      "calendar": {
+        "stepDate": "Step 1 - Select date",
+        "stepTime": "Step 2 - Select time",
+        "previousMonth": "Previous month",
+        "nextMonth": "Next month",
+        "prev": "Prev",
+        "next": "Next",
+        "selectDateHint": "Select a date to see available times.",
+        "availableShort": "Available",
+        "unavailableShort": "Unavailable",
+        "available": "Available",
+        "unavailable": "Not available",
+        "selection": "Selected: {{date}} at {{time}}"
+      },
       "fields": {
         "property": "Property",
         "noProperty": "No properties registered",
+        "noAvailability": "No available slots found",
         "reason": "Reason",
+        "mode": "Scheduling mode",
+        "weeks": "Duration (weeks)",
+        "visitsPerWeek": "Visits per week",
+        "availableDate": "Available date",
+        "availableTime": "Available time",
+        "preferredDate": "Preferred date",
+        "preferredTime": "Preferred time",
+        "urgentOverride": "Need a sooner date? Send as urgent request (manual review)",
+        "description": "Describe what's happening",
         "category": "What kind of problem is it?",
         "issue": "What exactly is going on?",
         "availableDays": "Available days",
-        "description": "Describe what's happening",
         "urgent": "Is this an emergency?",
         "urgentHint": "Ex: major water leak, dangerous electrical fault"
       },
       "placeholders": {
         "description": "Describe the issue or requested service."
       },
-      "availableDaysHint": "We need at least {{days}} days notice before the visit.",
+      "modes": {
+        "single": "Single visit",
+        "recurring": "Recurring schedule"
+      },
+      "options": {
+        "oncePerWeek": "1 visit / week",
+        "twicePerWeek": "2 visits / week",
+        "visitsPerWeekCount": "{{count}} visits / week",
+        "weeksCount": "{{count}} week(s)",
+        "dayCapacity": "{{date}} · {{count}} slot(s)",
+        "timeCapacity": "{{time}} · {{count}} slot(s)"
+      },
       "notice": "We'll contact you to confirm the exact date and time.",
+      "noticeUrgent": "Urgent requests under the lead time are sent for manual review.",
       "submit": "Send request",
       "loading": "Sending...",
       "errors": {
         "property": "Select a property.",
+        "availability": "Select date and time.",
+        "recurringPaused": "Recurring service is paused. Resume it in your profile before creating a recurring request.",
+        "submit": "Unable to submit the request.",
         "category": "Select what kind of problem it is.",
         "description": "Tell us briefly what's happening.",
-        "availableDays": "Select at least one available day.",
-        "submit": "Unable to submit the request."
+        "availableDays": "Select at least one available day."
       },
+      "successCount": "Request scheduled successfully. Visits created: {{count}}.",
+      "successRecurringConfigured": "Recurring service configured: {{visits}} visit(s) per week with {{plans}} active recurring plan(s).",
+      "successReview": "Urgent request sent. Our team will review and confirm as soon as possible.",
+      "successPartial": "Partial schedule created due limited availability. Visits created: {{count}}.",
+      "hints": {
+        "recurringResidential": "Recurring mode stays active indefinitely. Residential accounts support up to 2 visits per week.",
+        "recurringCommercial": "Recurring mode stays active indefinitely. Commercial accounts support up to 5 visits per week.",
+        "recurringPaused": "Your recurring service is currently paused from profile settings."
+      },
+      "reasons": {
+        "emergency": "Emergency / Pump",
+        "quickCleaning": "Quick cleaning",
+        "chemBalance": "Urgent chemical balance",
+        "general": "General checkup"
+      },
+      "confirmation": {
+        "kicker": "Request sent",
+        "title": "Your request was submitted successfully",
+        "continue": "Continue",
+        "body": "You can see the progress of your request right here, above this form."
+      },
+      "availableDaysHint": "We need at least {{days}} days notice before the visit.",
       "categories": {
         "HYDRAULIC": "Hydraulic",
         "ELECTRICAL": "Electrical",
@@ -2940,12 +3095,6 @@
           "onTheWay": "On the way",
           "completed": "Completed"
         }
-      },
-      "confirmation": {
-        "kicker": "Request sent",
-        "title": "Your request was submitted successfully",
-        "body": "You can see the progress of your request right here, above this form.",
-        "continue": "Continue"
       }
     },
     "profile": {
@@ -2981,7 +3130,11 @@
         "addressRequired": "Complete address, city, state, and postal code.",
         "saveFailed": "Unable to save profile changes.",
         "personalSaved": "Personal information updated.",
-        "addressSaved": "Primary address updated."
+        "addressSaved": "Primary address updated.",
+        "currentPasswordLabel": "Current password",
+        "currentPasswordHelp": "Changing your sign-in e-mail requires your current password. We will also notify your previous address.",
+        "currentPasswordRequired": "Enter your current password to change the e-mail address.",
+        "currentPasswordInvalid": "The current password is not correct."
       },
       "confirm": {
         "title": "Confirm profile changes",
@@ -3015,7 +3168,8 @@
         "pausedOk": "Services paused from {{date}} onward.",
         "resumedOk": "Recurring services resumed.",
         "pauseError": "Unable to pause services from the selected date.",
-        "resumeError": "Unable to resume recurring services."
+        "resumeError": "Unable to resume recurring services.",
+        "pauseFromLabel": "Pause from"
       },
       "property": {
         "pool": "Pool",
@@ -3243,9 +3397,184 @@
           "file": "Select a photo.",
           "checklist": "Complete the checklist before finishing the job.",
           "completed": "This job is already completed.",
-          "submit": "Unable to upload evidence."
-        }
+          "submit": "Unable to upload evidence.",
+          "network": "The photos couldn't be uploaded. Check your connection and try again; your photos and notes are still here.",
+          "fileTooLarge": "These photos exceed {{maxMb}} MB and were skipped: {{names}}"
+        },
+        "photoMaxSize": "Max {{maxMb}} MB per photo.",
+        "takePhotoCamera": "Take photo",
+        "chooseFromGallery": "Choose from gallery",
+        "photoPreviewAlt": "Preview of {{name}}",
+        "removePhoto": "Remove",
+        "removePhotoAria": "Remove photo {{name}}",
+        "preparingPhotos": "Preparing photos...",
+        "backToRoutes": "Back to my routes"
       }
+    },
+    "loading": {
+      "title": "Loading"
+    },
+    "error": {
+      "kicker": "Something went wrong",
+      "title": "We couldn't load this page",
+      "description": "Try again. If the problem continues, let the admin team know.",
+      "reference": "Reference: {{digest}}",
+      "retry": "Try again",
+      "backHome": "Back to my routes"
     }
+  },
+  "layout": {
+    "logout": {
+      "error": "We couldn't sign you out. Please try again."
+    },
+    "account": {
+      "loadError": "We couldn't load your account details."
+    },
+    "notifications": {
+      "loadError": "We couldn't load your notifications.",
+      "retry": "Retry",
+      "bellLabel": "Notifications, {{count}} unread",
+      "bellLabelEmpty": "Notifications, no unread",
+      "announceNewOne": "1 new notification",
+      "announceNewMany": "{{count}} new notifications",
+      "soundToggle": "Notification sound",
+      "soundOn": "Sound on",
+      "soundOff": "Sound off",
+      "deleteItem": "Delete notification: {{source}}",
+      "actionError": "We couldn't complete that action. Please try again."
+    },
+    "sidebar": {
+      "collapse": "Collapse sidebar",
+      "expand": "Expand sidebar"
+    },
+    "navigation": {
+      "primary": "Main navigation"
+    }
+  },
+  "invoices": {
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    }
+  },
+  "globalShell": {
+    "skipToContent": "Skip to main content",
+    "loading": {
+      "label": "Loading content..."
+    },
+    "notFound": {
+      "kicker": "Error 404",
+      "title": "Page not found",
+      "subtitle": "The page you are looking for does not exist or was moved.",
+      "backHome": "Go to home"
+    },
+    "error": {
+      "kicker": "Something went wrong",
+      "title": "We couldn't load this page",
+      "subtitle": "An unexpected error occurred. Try again; if it keeps happening, contact the administrator.",
+      "digest": "Reference: {{digest}}",
+      "retry": "Retry"
+    },
+    "globalError": {
+      "kicker": "Critical error",
+      "title": "The app couldn't start",
+      "subtitle": "An unexpected error prevented the app from loading. Try again or go back to the home page.",
+      "digest": "Reference: {{digest}}",
+      "retry": "Retry",
+      "backHome": "Go to home"
+    }
+  },
+  "pwa": {
+    "update": {
+      "title": "New version available",
+      "reload": "Reload",
+      "dismiss": "Later"
+    }
+  },
+  "devView": {
+    "title": "Developer view",
+    "groupLabel": "Choose the view",
+    "roles": {
+      "ADMIN": "Administrator",
+      "TECH": "Technician",
+      "CUSTOMER": "Client"
+    },
+    "roleInitials": {
+      "ADMIN": "A",
+      "TECH": "T",
+      "CUSTOMER": "C"
+    },
+    "targetLabel": "Target user",
+    "targetPlaceholder": "Select a user",
+    "targetEmpty": "No users available for this view.",
+    "apply": "Apply view",
+    "applying": "Switching…",
+    "loading": "Loading targets…",
+    "banner": {
+      "text": "Developer view: {{role}} · {{target}}",
+      "back": "Back to administrator",
+      "returning": "Returning…"
+    },
+    "errors": {
+      "load": "The available targets could not be loaded.",
+      "switch": "The view could not be changed.",
+      "target": "Pick a target user first."
+    }
+  },
+  "poolCalculator": {
+    "title": "Chlorine calculator",
+    "subtitle": "Enter your test strip readings to see how much chlorine to add.",
+    "fields": {
+      "volume": "Pool volume (gallons)",
+      "ph": "pH",
+      "freeChlorine": "Free chlorine (ppm)",
+      "totalAlkalinity": "Total alkalinity (ppm)",
+      "stabilizer": "Stabilizer / CYA (ppm)",
+      "product": "Chlorine product",
+      "customStrength": "Strength (%)"
+    },
+    "placeholders": {
+      "volume": "e.g. 15000",
+      "ph": "e.g. 7.4",
+      "freeChlorine": "e.g. 1.5",
+      "totalAlkalinity": "e.g. 90",
+      "stabilizer": "e.g. 40"
+    },
+    "products": {
+      "LIQUID_10": "Liquid chlorine (10%)",
+      "LIQUID_12_5": "Liquid chlorine (12.5%)",
+      "CAL_HYPO_65": "Cal-hypo granular (65%)",
+      "CAL_HYPO_73": "Cal-hypo granular (73%)",
+      "CUSTOM": "Other (custom %)"
+    },
+    "incompleteHint": "Fill in all fields to see the result.",
+    "units": {
+      "gal": "gal",
+      "oz": "oz"
+    },
+    "results": {
+      "doseTitle": "Chlorine to add",
+      "doseNone": "Free chlorine is already within the target range. No chlorine needed right now.",
+      "doseAmount": "Add {{amount}} {{unit}} of {{product}}",
+      "currentToTarget": "Current FC {{current}} ppm -> target {{target}} ppm.",
+      "targetRangeTitle": "Target free chlorine (based on stabilizer)",
+      "minimum": "Minimum",
+      "target": "Target",
+      "shock": "Shock/algae",
+      "phTitle": "pH",
+      "alkalinityTitle": "Total alkalinity",
+      "status": {
+        "low": "Low",
+        "ok": "In range",
+        "high": "High"
+      },
+      "phLowHint": "Raise with pH increaser (soda ash).",
+      "phHighHint": "Lower with pH decreaser (muriatic/dry acid).",
+      "alkalinityLowHint": "Raise with sodium bicarbonate (baking soda).",
+      "alkalinityHighHint": "Lower with muriatic acid, then aerate."
+    },
+    "disclaimer": "Estimate based on standard pool industry guidance (free chlorine / stabilizer relationship). Always follow your company's procedures and use professional judgment before dosing."
   }
 }

@@ -768,8 +768,24 @@ const ENGLISH_HINT_PATTERN =
 
 const TEMPLATE_TOKEN = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
 
+/** Sufijo de las claves cuyo valor ya llega listo para HTML (escapado por el llamante o markup intencional). */
+const HTML_VARIABLE_SUFFIX = "_html";
+
+/**
+ * Resuelve unicamente propiedades propias: `{{constructor}}` o `{{toString}}` no
+ * deben filtrar la cadena de prototipos de `variables`.
+ */
+function resolveTemplateVariable(variables: Record<string, string>, key: string) {
+  if (!Object.hasOwn(variables, key)) {
+    return "";
+  }
+  return String(variables[key] ?? "");
+}
+
 function interpolateTemplate(content: string, variables: Record<string, string>) {
-  return content.replace(TEMPLATE_TOKEN, (_match, key: string) => variables[key] ?? "");
+  return content.replace(TEMPLATE_TOKEN, (_match, key: string) =>
+    resolveTemplateVariable(variables, key)
+  );
 }
 
 export function escapeHtml(value: string) {
@@ -779,6 +795,24 @@ export function escapeHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/**
+ * Copia de las variables lista para interpolar en el cuerpo HTML del correo.
+ *
+ * El HTML premium se genera a partir de `text`, asi que usa los tokens de texto
+ * plano (`{{customer_name}}`): sus valores llegan crudos y hay que escaparlos
+ * antes de interpolarlos. Las claves `*_html` se dejan intactas porque el
+ * llamante ya entrega HTML seguro (`escapeHtml(...)`, `{{lines_html}}`,
+ * `{{notes_html}}`).
+ */
+function toHtmlSafeVariables(variables: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(variables).map(([key, value]) => {
+      const raw = String(value ?? "");
+      return [key, key.endsWith(HTML_VARIABLE_SUFFIX) ? raw : escapeHtml(raw)];
+    })
+  );
 }
 
 function buildEmailButtonHtml(hrefToken: string, label: string, backgroundColor: string) {
@@ -905,7 +939,9 @@ export function buildPremiumEmailTemplateHtml(
 ) {
   const meta = EMAIL_TEMPLATE_DEFINITIONS[templateId];
   const bodyBlocks = buildEmailBodyBlocks(templateId, text);
-  const appOrigin = getPublicAppUrl();
+  // getPublicAppUrl() always returns a valid http(s) URL (validated APP_URL or the
+  // safe default), so this cannot throw; only the origin is used for legal links.
+  const appOrigin = new URL(getPublicAppUrl()).origin;
   const legalCenterUrl = `${appOrigin}/legal`;
   const privacyUrl = `${appOrigin}/legal/privacy-policy`;
   const termsUrl = `${appOrigin}/legal/terms-of-service`;
@@ -1184,6 +1220,13 @@ export function normalizeEmailTemplates(
   }, {} as EmailTemplatesConfig);
 }
 
+/**
+ * Interpola `variables` en las tres piezas del correo.
+ *
+ * `subject` y `text` reciben los valores crudos (son texto plano); `html`
+ * recibe la copia escapada para que un nombre con `<img src=x onerror=...>` se
+ * muestre literal en lugar de ejecutarse en el cliente de correo.
+ */
 export function renderEmailTemplate(
   template: EmailTemplateContent,
   variables: Record<string, string>
@@ -1191,7 +1234,7 @@ export function renderEmailTemplate(
   return {
     subject: interpolateTemplate(template.subject, variables),
     text: interpolateTemplate(template.text, variables),
-    html: interpolateTemplate(template.html, variables),
+    html: interpolateTemplate(template.html, toHtmlSafeVariables(variables)),
   };
 }
 

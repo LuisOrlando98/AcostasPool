@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent } from "react";
 import { useI18n } from "@/i18n/client";
 
@@ -55,7 +55,7 @@ export default function ServiceTiersManager() {
   const { t } = useI18n();
   const [tiers, setTiers] = useState<ServiceTierDraft[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [savedTierId, setSavedTierId] = useState<string | null>(null);
 
@@ -68,13 +68,9 @@ export default function ServiceTiersManager() {
     [showInactive, tiers]
   );
 
-  const loadTiers = async () => {
-    setLoading(true);
-    setError(null);
-    const res = await fetch("/api/admin/service-tiers");
+  const applyLoadedTiers = useCallback(async (res: Response) => {
     if (!res.ok) {
-      setError(t("admin.settings.tiers.errors.load"));
-      setLoading(false);
+      setErrorKey("admin.settings.tiers.errors.load");
       return;
     }
     const data = await res.json().catch(() => ({ tiers: [] }));
@@ -100,12 +96,21 @@ export default function ServiceTiersManager() {
       );
     });
     lastSavedPayload.current = nextSaved;
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    loadTiers();
-  }, []);
+    const loadTiers = async () => {
+      try {
+        const res = await fetch("/api/admin/service-tiers");
+        await applyLoadedTiers(res);
+      } catch {
+        setErrorKey("admin.settings.tiers.errors.load");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadTiers();
+  }, [applyLoadedTiers]);
 
   const updateTier = (
     id: string,
@@ -146,51 +151,55 @@ export default function ServiceTiersManager() {
       isActive: tier.isActive,
     };
     if (!payload.name) {
-      setError(t("admin.settings.tiers.errors.name"));
+      setErrorKey("admin.settings.tiers.errors.name");
       return;
     }
     updateTier(tier.id, { saving: true }, { silent: true });
-    const res = await fetch(
-      tier.isNew ? "/api/admin/service-tiers" : `/api/admin/service-tiers/${tier.id}`,
-      {
-        method: tier.isNew ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (!res.ok) {
-      setError(t("admin.settings.tiers.errors.save"));
-      updateTier(tier.id, { saving: false }, { silent: true });
-      return;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (tier.isNew && data?.tier?.id) {
-      updateTier(
-        tier.id,
+    try {
+      const res = await fetch(
+        tier.isNew ? "/api/admin/service-tiers" : `/api/admin/service-tiers/${tier.id}`,
         {
-          id: data.tier.id,
-          isNew: false,
-          saving: false,
-        },
-        { silent: true }
+          method: tier.isNew ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
       );
-      const nextKey = data.tier.id as string;
-      const payloadKey = JSON.stringify(payload);
-      lastSavedPayload.current.delete(tier.id);
-      lastSavedPayload.current.set(nextKey, payloadKey);
-      setSavedTierId(nextKey);
-    } else {
+      if (!res.ok) {
+        setErrorKey("admin.settings.tiers.errors.save");
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (tier.isNew && data?.tier?.id) {
+        updateTier(
+          tier.id,
+          {
+            id: data.tier.id,
+            isNew: false,
+            saving: false,
+          },
+          { silent: true }
+        );
+        const nextKey = data.tier.id as string;
+        const payloadKey = JSON.stringify(payload);
+        lastSavedPayload.current.delete(tier.id);
+        lastSavedPayload.current.set(nextKey, payloadKey);
+        setSavedTierId(nextKey);
+      } else {
+        lastSavedPayload.current.set(tier.id, JSON.stringify(payload));
+        setSavedTierId(tier.id);
+      }
+      if (savedBadgeTimer.current) {
+        clearTimeout(savedBadgeTimer.current);
+      }
+      savedBadgeTimer.current = setTimeout(() => {
+        setSavedTierId(null);
+      }, 1600);
+      setErrorKey(null);
+    } catch {
+      setErrorKey("admin.settings.tiers.errors.save");
+    } finally {
       updateTier(tier.id, { saving: false }, { silent: true });
-      lastSavedPayload.current.set(tier.id, JSON.stringify(payload));
-      setSavedTierId(tier.id);
     }
-    if (savedBadgeTimer.current) {
-      clearTimeout(savedBadgeTimer.current);
-    }
-    savedBadgeTimer.current = setTimeout(() => {
-      setSavedTierId(null);
-    }, 1600);
-    setError(null);
   };
 
   const tiersRef = useRef<ServiceTierDraft[]>([]);
@@ -367,9 +376,12 @@ export default function ServiceTiersManager() {
         </button>
       </div>
 
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-          {error}
+      {errorKey ? (
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600"
+        >
+          {t(errorKey)}
         </div>
       ) : null}
 
@@ -402,12 +414,14 @@ export default function ServiceTiersManager() {
                           placeholder={t(
                             "admin.settings.tiers.placeholders.name"
                           )}
+                          aria-label={t("admin.settings.tiers.placeholders.name")}
                         />
                         <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             className="app-toggle"
                             checked={tier.isActive}
+                            aria-label={t("admin.settings.tiers.labels.active")}
                             onChange={(event) =>
                               updateTier(tier.id, {
                                 isActive: event.target.checked,
@@ -425,23 +439,29 @@ export default function ServiceTiersManager() {
                         </div>
                       </div>
                       {tier.saving ? (
-                        <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div
+                          role="status"
+                          className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400"
+                        >
                           {t("admin.settings.tiers.actions.saving")}
                         </div>
                       ) : savedTierId === tier.id ? (
-                        <div className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600">
+                        <div
+                          role="status"
+                          className="flex items-center text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600"
+                        >
                           {t("common.feedback.saved")}
                         </div>
                       ) : null}
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <label className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                         {t("admin.settings.tiers.labels.checklist")}
                         <span className="ml-2 text-[10px] font-semibold text-slate-400">
                           ({countChecklistItems(tier.checklistText)})
                         </span>
-                      </label>
+                      </p>
                       <span className="text-xs text-slate-400">
                         {t("admin.settings.tiers.placeholders.checklist")}
                       </span>
@@ -507,9 +527,9 @@ export default function ServiceTiersManager() {
                                     draggable
                                     onDragStart={beginDrag(tier.id, index)}
                                     onDragEnd={clearDragState}
-                                    aria-label="Drag"
+                                    aria-label={t("admin.settings.tiers.actions.drag")}
                                   >
-                                    |||
+                                    <span aria-hidden="true">|||</span>
                                   </button>
                                   <button
                                     type="button"
@@ -517,6 +537,7 @@ export default function ServiceTiersManager() {
                                       removeChecklistItem(tier, index)
                                     }
                                     className="app-button-ghost px-2 py-1 text-[10px] font-semibold text-slate-500 hover:text-rose-600"
+                                    aria-label={`${t("common.actions.delete")}: ${item}`}
                                   >
                                     {t("common.actions.delete")}
                                   </button>
@@ -546,6 +567,7 @@ export default function ServiceTiersManager() {
                         placeholder={t(
                           "admin.settings.tiers.placeholders.checklist"
                         )}
+                        aria-label={t("admin.settings.tiers.labels.newItem")}
                       />
                       <button
                         type="button"

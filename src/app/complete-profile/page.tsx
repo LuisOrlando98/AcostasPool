@@ -2,27 +2,26 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import AddressAutocomplete from "@/components/ui/AddressAutocomplete";
 import { LANDING_LOCALE_STORAGE_KEY } from "@/components/landing/preferences";
 import { useI18n } from "@/i18n/client";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
-const emptyProfile = {
-  nombre: "",
-  apellidos: "",
-  email: "",
-  telefono: "",
-  telefonoSecundario: "",
-  idiomaPreferencia: "EN",
-  direccionLinea1: "",
-  direccionLinea2: "",
-  ciudad: "",
-  estadoProvincia: "",
-  codigoPostal: "",
+type ProfileData = {
+  nombre: string;
+  apellidos: string;
+  email: string;
+  telefono: string;
+  telefonoSecundario: string;
+  idiomaPreferencia: string;
+  direccionLinea1: string;
+  direccionLinea2: string;
+  ciudad: string;
+  estadoProvincia: string;
+  codigoPostal: string;
 };
 
-type ProfileData = typeof emptyProfile;
 type InviteAccountType = "CUSTOMER" | "TECH";
 
 type ApiResponse = {
@@ -32,6 +31,34 @@ type ApiResponse = {
   error?: string;
 };
 
+const LEGAL_LINKS = [
+  {
+    href: "/legal/terms-of-service",
+    labelKey: "auth.legal.links.terms",
+    shortLabelKey: "auth.legal.links.termsShort",
+  },
+  {
+    href: "/legal/privacy-policy",
+    labelKey: "auth.legal.links.privacy",
+    shortLabelKey: "auth.legal.links.privacyShort",
+  },
+  {
+    href: "/legal/payment-cancellation-policy",
+    labelKey: "auth.legal.links.payments",
+    shortLabelKey: "auth.legal.links.paymentsShort",
+  },
+  {
+    href: "/legal/disclaimer-limitation-of-liability",
+    labelKey: "auth.legal.links.liability",
+    shortLabelKey: "auth.legal.links.liabilityShort",
+  },
+  {
+    href: "/legal/cookie-notice",
+    labelKey: "auth.legal.links.cookies",
+    shortLabelKey: "auth.legal.links.cookiesShort",
+  },
+] as const;
+
 export default function CompleteProfilePage() {
   const { t, locale } = useI18n();
   const searchParams = useSearchParams();
@@ -40,52 +67,27 @@ export default function CompleteProfilePage() {
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [accountType, setAccountType] = useState<InviteAccountType | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(() => Boolean(token));
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(() =>
+    token ? null : t("auth.complete.errors.token")
+  );
   const [submitting, setSubmitting] = useState(false);
   const [switchingLocale, setSwitchingLocale] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
-
-  const legalLinks = [
-    {
-      href: "/legal/terms-of-service",
-      en: "Terms of Service",
-      es: "Terminos de Servicio",
-      shortEn: "Terms",
-      shortEs: "Terminos",
-    },
-    {
-      href: "/legal/privacy-policy",
-      en: "Privacy Policy",
-      es: "Politica de Privacidad",
-      shortEn: "Privacy",
-      shortEs: "Privacidad",
-    },
-    {
-      href: "/legal/payment-cancellation-policy",
-      en: "Payment & Cancellation",
-      es: "Pago y Cancelacion",
-      shortEn: "Payments",
-      shortEs: "Pagos",
-    },
-    {
-      href: "/legal/disclaimer-limitation-of-liability",
-      en: "Disclaimer & Liability",
-      es: "Descargo y Responsabilidad",
-      shortEn: "Liability",
-      shortEs: "Responsabilidad",
-    },
-    {
-      href: "/legal/cookie-notice",
-      en: "Cookie Notice",
-      es: "Aviso de Cookies",
-      shortEn: "Cookies",
-      shortEs: "Cookies",
-    },
-  ] as const;
+  const fieldId = useId();
+  const fieldIds = {
+    nombre: `${fieldId}-nombre`,
+    apellidos: `${fieldId}-apellidos`,
+    email: `${fieldId}-email`,
+    idiomaPreferencia: `${fieldId}-idioma`,
+    telefono: `${fieldId}-telefono`,
+    telefonoSecundario: `${fieldId}-telefono-secundario`,
+    password: `${fieldId}-password`,
+    confirm: `${fieldId}-confirm`,
+  };
 
   const handleLocaleChange = (nextLocale: "en" | "es") => {
     if (nextLocale === locale) {
@@ -102,10 +104,8 @@ export default function CompleteProfilePage() {
 
   useEffect(() => {
     if (!token) {
-      setMessage(t("auth.complete.errors.token"));
       return;
     }
-    setLoadingProfile(true);
     fetch(`/api/auth/complete-profile?token=${token}`)
       .then((res) => res.json() as Promise<ApiResponse>)
       .then((data) => {
@@ -343,7 +343,11 @@ export default function CompleteProfilePage() {
             {loadingProfile ? (
               <p className="mt-6 text-sm text-slate-600">{t("auth.complete.loading")}</p>
             ) : isSuccessMessage ? (
-              <div className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-center">
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-6 text-center"
+              >
                 <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <svg
                     viewBox="0 0 20 20"
@@ -373,10 +377,14 @@ export default function CompleteProfilePage() {
               <form ref={formRef} className="mt-6 space-y-5" onSubmit={handleFormSubmit}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.nombre}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("common.labels.firstName")}
                     </label>
                     <input
+                      id={fieldIds.nombre}
                       name="nombre"
                       defaultValue={profile.nombre}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
@@ -385,10 +393,14 @@ export default function CompleteProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.apellidos}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("common.labels.lastName")}
                     </label>
                     <input
+                      id={fieldIds.apellidos}
                       name="apellidos"
                       defaultValue={profile.apellidos}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
@@ -400,10 +412,14 @@ export default function CompleteProfilePage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.email}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("common.labels.email")}
                     </label>
                     <input
+                      id={fieldIds.email}
                       value={profile.email}
                       readOnly
                       autoComplete="off"
@@ -411,10 +427,14 @@ export default function CompleteProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.idiomaPreferencia}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("common.labels.language")}
                     </label>
                     <select
+                      id={fieldIds.idiomaPreferencia}
                       name="idiomaPreferencia"
                       defaultValue={profile.idiomaPreferencia}
                       className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
@@ -427,10 +447,14 @@ export default function CompleteProfilePage() {
 
                 <div className={`grid gap-3 ${accountType === "CUSTOMER" ? "sm:grid-cols-2" : ""}`}>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.telefono}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("common.labels.phone")}
                     </label>
                     <input
+                      id={fieldIds.telefono}
                       name="telefono"
                       defaultValue={profile.telefono}
                       className="app-input mt-2 w-full px-4 py-3 text-sm"
@@ -440,10 +464,14 @@ export default function CompleteProfilePage() {
                   </div>
                   {accountType === "CUSTOMER" ? (
                     <div>
-                      <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      <label
+                        htmlFor={fieldIds.telefonoSecundario}
+                        className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                      >
                         {t("common.labels.phoneSecondary")}
                       </label>
                       <input
+                        id={fieldIds.telefonoSecundario}
                         name="telefonoSecundario"
                         defaultValue={profile.telefonoSecundario}
                         className="app-input mt-2 w-full px-4 py-3 text-sm"
@@ -472,10 +500,14 @@ export default function CompleteProfilePage() {
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.password}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("auth.complete.password")}
                     </label>
                     <input
+                      id={fieldIds.password}
                       type="password"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
@@ -485,10 +517,14 @@ export default function CompleteProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                    <label
+                      htmlFor={fieldIds.confirm}
+                      className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
+                    >
                       {t("auth.complete.passwordConfirm")}
                     </label>
                     <input
+                      id={fieldIds.confirm}
                       type="password"
                       value={confirm}
                       onChange={(event) => setConfirm(event.target.value)}
@@ -500,7 +536,10 @@ export default function CompleteProfilePage() {
                 </div>
 
                 {message ? (
-                  <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+                  >
                     {message}
                   </div>
                 ) : null}
@@ -514,30 +553,32 @@ export default function CompleteProfilePage() {
                 </button>
               </form>
             ) : (
-              <p className="mt-6 text-sm text-slate-600">{message ?? t("auth.complete.notFound")}</p>
+              <p role="alert" className="mt-6 text-sm text-slate-600">
+                {message ?? t("auth.complete.notFound")}
+              </p>
             )}
           </section>
         </div>
 
         <div className="mt-8 border-t border-slate-200/80 pt-3">
           <p className="text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-            Legal
+            {t("auth.legal.title")}
           </p>
           <nav
-            aria-label={locale === "es" ? "Enlaces legales" : "Legal links"}
+            aria-label={t("auth.legal.navLabel")}
             className="mx-auto mt-2 max-w-3xl rounded-2xl border border-sky-200/70 bg-[linear-gradient(135deg,rgba(4,36,58,0.95),rgba(5,68,96,0.88))] px-3 py-2"
           >
             <ul className="flex flex-wrap items-center justify-center gap-y-1 text-center">
-              {legalLinks.map((item, index) => (
+              {LEGAL_LINKS.map((item, index) => (
                 <li key={item.href} className="inline-flex items-center">
                   <a
                     href={item.href}
                     className="px-2 text-[10px] font-medium text-sky-50/92 transition hover:text-white sm:text-[11px]"
                   >
-                    <span className="sm:hidden">{locale === "es" ? item.shortEs : item.shortEn}</span>
-                    <span className="hidden sm:inline">{locale === "es" ? item.es : item.en}</span>
+                    <span className="sm:hidden">{t(item.shortLabelKey)}</span>
+                    <span className="hidden sm:inline">{t(item.labelKey)}</span>
                   </a>
-                  {index < legalLinks.length - 1 ? (
+                  {index < LEGAL_LINKS.length - 1 ? (
                     <span aria-hidden="true" className="px-1 text-[10px] text-sky-100/55">
                       |
                     </span>
@@ -547,8 +588,7 @@ export default function CompleteProfilePage() {
             </ul>
           </nav>
           <p className="mt-4 text-center text-[11px] text-slate-500">
-            Copyright {currentYear} AcostasPool.{" "}
-            {locale === "es" ? "Todos los derechos reservados." : "All rights reserved."}
+            {t("auth.legal.copyright", { year: currentYear })}
           </p>
         </div>
       </div>

@@ -1,5 +1,12 @@
 # AcostasPool Service Administration System - V1
 
+> **Estado a 18 sep 2026**: objetivo, usuarios y problema siguen vigentes tal cual. Dos puntos de
+> "Fuera de alcance V1" ya no aplican: sí hay mapas dentro del sistema (asistente de rutas con
+> Google Maps y geocodificación) y sí hay integraciones externas (Pusher, S3, SMTP, Google Maps);
+> los pagos automáticos en línea siguen fuera de alcance. El supuesto de "operación 100% local"
+> también cambió: producción corre en Render (web + worker + Postgres), con almacenamiento local
+> o S3 según `STORAGE_DRIVER`. Ver `docs/Architecture.md`.
+
 ## Objetivo
 Centralizar la operacion del negocio de servicios a piscinas: rutas de trabajo, evidencias fotograficas e invoices en una plataforma web moderna y organizada.
 

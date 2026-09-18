@@ -17,7 +17,11 @@ import {
   getReportFilters,
   type ReportFilters,
 } from "@/lib/reports/filters";
+import { getMailConfig } from "@/lib/mail/transport";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
+
+/** Variables que `getMailConfig()` exige; solo se muestran sus nombres en el aviso. */
+const SMTP_REQUIRED_ENV_KEYS = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS"] as const;
 
 type ReportsPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -216,6 +220,8 @@ async function getReportSnapshot(filters: ReportFilters) {
   };
 }
 
+type ReportSnapshot = Awaited<ReturnType<typeof getReportSnapshot>>;
+
 function buildLogsWhere(filters: ReportFilters, logsFilters: LogsFilters) {
   const query = logsFilters.query.trim();
   const where: Prisma.EmailLogWhereInput = {
@@ -322,7 +328,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : Number(logsPageRaw);
   const logsPageSize = 15;
   const emptySnapshot = {
-    technicians: [] as Awaited<ReturnType<typeof prisma.technician.findMany>>,
+    technicians: [] as ReportSnapshot["technicians"],
     jobStatusGroups: [] as Array<{ status: string; _count: { _all: number } }>,
     jobTypeGroups: [] as Array<{ type: string; _count: { _all: number } }>,
     serviceGroups: [] as Array<{ serviceType: string; _count: { _all: number } }>,
@@ -432,14 +438,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     logsFilters.query.length > 0,
     logsFilters.status !== "ALL",
   ].filter(Boolean).length;
-  const smtpMissingKeys = [
-    ["SMTP_HOST", process.env.SMTP_HOST],
-    ["SMTP_USER", process.env.SMTP_USER],
-    ["SMTP_PASS", process.env.SMTP_PASS],
-  ]
-    .filter(([, value]) => !value)
-    .map(([key]) => key);
-  const smtpConfigured = smtpMissingKeys.length === 0;
+  const smtpConfigured = getMailConfig() !== null;
 
   const buildReportsHref = (options?: {
     logsPage?: number;
@@ -825,7 +824,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {!smtpConfigured ? (
           <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             {t("admin.reports.emails.smtp.help", {
-              keys: smtpMissingKeys.join(", "),
+              keys: SMTP_REQUIRED_ENV_KEYS.join(", "),
             })}
           </div>
         ) : null}

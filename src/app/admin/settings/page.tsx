@@ -6,7 +6,7 @@ import ActionFeedbackToast from "@/components/ui/ActionFeedbackToast";
 import { withFeedbackParam } from "@/lib/ui/action-feedback";
 import NotificationPreferences from "@/components/settings/NotificationPreferences";
 import ServiceTiersManager from "@/components/settings/ServiceTiersManager";
-import DocumentPreviewModal from "@/components/settings/DocumentPreviewModal";
+import InvoicePreviewFrame from "@/components/settings/InvoicePreviewFrame";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import {
   EMAIL_TEMPLATE_DEFINITIONS,
@@ -20,7 +20,7 @@ import {
   normalizeInvoiceTemplateConfig,
   type InvoiceTemplateTheme,
 } from "@/lib/invoice-template";
-import { generateInvoicePdfBytes } from "@/lib/invoices/pdf";
+import { resolveInvoicePreviewTheme } from "@/lib/invoices/preview-sample";
 import {
   COMPLIANCE_DOC_DEFINITIONS,
   COMPLIANCE_DOC_IDS,
@@ -214,13 +214,6 @@ function resolveTemplateMode(value: string | undefined): TemplateViewMode {
     return "web";
   }
   return "split";
-}
-
-function resolveInvoiceTheme(value: string | undefined): InvoiceTemplateTheme {
-  if (value === "SPECIAL" || value === "ESTIMATE") {
-    return value;
-  }
-  return "STANDARD";
 }
 
 function settingsFeedbackPath(tab: string, feedback: string) {
@@ -458,7 +451,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const templateMode = resolveTemplateMode(
     getFirstSearchValue(resolvedSearchParams?.mode)
   );
-  const invoiceThemePreview = resolveInvoiceTheme(
+  const invoiceThemePreview = resolveInvoicePreviewTheme(
     getFirstSearchValue(resolvedSearchParams?.invoiceTheme)
   );
   const complianceDocQuery = getFirstSearchValue(resolvedSearchParams?.complianceDoc);
@@ -507,32 +500,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     selectedTemplate,
     selectedTemplateMeta.previewValues
   );
-  const previewItems = [
-    { label: "Weekly cleaning", quantity: 1, unitPrice: 125, amount: 125 },
-    { label: "Chemicals and supplies", quantity: 2, unitPrice: 24.25, amount: 48.5 },
-  ];
-  const previewSubtotal = previewItems.reduce((sum, item) => sum + item.amount, 0);
-  const previewTax = previewSubtotal * 0.07;
-  const previewTotal = previewSubtotal + previewTax;
-  const invoiceTemplatePreviewBytes = await generateInvoicePdfBytes({
-    invoiceNumber: "INV-2026-1042",
-    issueDate: new Date("2026-03-03T00:00:00.000Z"),
-    customerName: "Sample Customer",
-    customerAddress: "123 Palm Ave, Miami, FL 33101",
-    customerEmail: "customer@example.com",
-    customerPhone: "+1 (786) 555-0199",
-    items: previewItems,
-    subtotal: previewSubtotal,
-    tax: previewTax,
-    total: previewTotal,
-    notes: "Service completed and balanced. Thank you for trusting us.",
-    locale: adminLocale,
-    theme: invoiceThemePreview,
-    template: invoiceTemplate,
-  });
-  const invoiceTemplatePreviewPdfSrc = `data:application/pdf;base64,${Buffer.from(
-    invoiceTemplatePreviewBytes
-  ).toString("base64")}`;
   const selectedComplianceDocId = isComplianceDocId(complianceDocQuery)
     ? complianceDocQuery
     : COMPLIANCE_DOC_IDS[0];
@@ -662,7 +629,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                   href={`/admin/settings?${params.toString()}`}
                   className={`settings-top-nav-item ${isActive ? "is-active" : ""}`}
                 >
-                  <span className="settings-top-nav-icon">
+                  <span className="settings-top-nav-icon" aria-hidden="true">
                     <SettingsTabIcon tabId={tab.id} />
                   </span>
                   <span className="settings-top-nav-text">
@@ -689,6 +656,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     <span className="flex items-center gap-2">
                       <span
                         className={`inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br text-white ${field.iconTone}`}
+                        aria-hidden="true"
                       >
                         <SocialNetworkIcon network={field.icon} />
                       </span>
@@ -1230,15 +1198,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                     <p className="mt-2 text-sm text-slate-600">
                       {t("admin.settings.invoiceEditor.preview.subtitle")}
                     </p>
-                    <DocumentPreviewModal
-                      title={t("admin.settings.invoiceEditor.preview.modalTitle", {
-                        theme: invoiceThemePreview,
-                      })}
-                      src={invoiceTemplatePreviewPdfSrc}
-                      previewLabel={t("admin.settings.invoiceEditor.preview.previewLabel")}
-                      previewHint={t("admin.settings.invoiceEditor.preview.previewHint")}
-                      openLabel={t("admin.settings.invoiceEditor.preview.open")}
-                    />
+                    <InvoicePreviewFrame theme={invoiceThemePreview} />
                   </div>
                 ) : null}
               </div>

@@ -1,22 +1,20 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { JobStatus } from "@prisma/client";
 import { DateTime } from "luxon";
-import { prisma } from "@/lib/db";
-import { formatCustomerName } from "@/lib/customers/format";
 import { parseDateOnly } from "@/lib/jobs/capacity";
 import { applyJobLifecycleUpdate } from "@/lib/jobs/lifecycle";
-import {
-  buildRecurringRouteGroupId,
-  buildRecurringRouteGroupLabel,
-  getGlobalRecurringPlanByWeekday,
-  isGlobalRecurringPlanName,
-} from "@/lib/jobs/recurring-plan-templates";
+import { getGlobalRecurringPlanByWeekday } from "@/lib/jobs/recurring-plan-templates";
 import {
   buildRouteAssistantPlans,
   DEFAULT_ROUTE_ORIGIN_ADDRESS,
 } from "@/lib/routing/planner";
 import { geocodeAddresses } from "@/lib/routing/geo";
+import {
+  getRouteAssistantTechnicianIds,
+  loadRouteAssistantJobs,
+  ROUTE_ASSISTANT_JOB_STATUSES,
+} from "@/lib/routing/job-source";
 import {
   BUSINESS_TIMEZONE,
   endOfBusinessDay,
@@ -24,11 +22,24 @@ import {
 } from "@/lib/timezone";
 import { getRouteAssistantConfig } from "@/lib/site-settings";
 
-const statusValues = ["SCHEDULED", "PENDING", "ON_THE_WAY", "IN_PROGRESS"] as const;
-
 const bodySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
+
+/**
+ * Compares two secrets without leaking, through the comparison time, how many
+ * leading characters a guess got right. Lengths are compared first because
+ * `timingSafeEqual` requires buffers of the same size; the length of the secret
+ * is not itself a useful hint.
+ */
+function timingSafeEqualStrings(left: string, right: string) {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
 
 function hasValidCronSecret(request: Request) {
   const expected = process.env.CRON_SECRET?.trim();
@@ -36,7 +47,10 @@ function hasValidCronSecret(request: Request) {
     return false;
   }
   const received = request.headers.get("x-cron-secret")?.trim();
-  return received === expected;
+  if (!received) {
+    return false;
+  }
+  return timingSafeEqualStrings(received, expected);
 }
 
 export async function POST(request: Request) {
@@ -78,9 +92,13 @@ export async function POST(request: Request) {
   const dayStart = startOfBusinessDay(routeDate) ?? routeDate;
   const dayEnd = endOfBusinessDay(routeDate) ?? routeDate;
 
-  const jobs = await prisma.job.findMany({
+  const {
+    records,
+    technicians: techniciansData,
+    jobs: plannedJobs,
+  } = await loadRouteAssistantJobs({
     where: {
-      status: { in: [...statusValues] as JobStatus[] },
+      status: { in: [...ROUTE_ASSISTANT_JOB_STATUSES] },
       scheduledDate: { gte: dayStart, lte: dayEnd },
       plan: {
         is: {
@@ -88,34 +106,9 @@ export async function POST(request: Request) {
         },
       },
     },
-    orderBy: [{ scheduledDate: "asc" }, { sortOrder: "asc" }],
-    select: {
-      id: true,
-      scheduledDate: true,
-      technicianId: true,
-      estimatedDurationMinutes: true,
-      customer: {
-        select: {
-          nombre: true,
-          apellidos: true,
-        },
-      },
-      property: {
-        select: {
-          address: true,
-        },
-      },
-      plan: {
-        select: {
-          id: true,
-          name: true,
-          technicianId: true,
-        },
-      },
-    },
   });
 
-  if (jobs.length === 0) {
+  if (records.length === 0) {
     return NextResponse.json({
       ok: true,
       skipped: true,
@@ -125,86 +118,20 @@ export async function POST(request: Request) {
     });
   }
 
-  const technicianIdsInScope = Array.from(
-    new Set(
-      jobs
-        .map((job) => job.plan?.technicianId ?? job.technicianId ?? null)
-        .filter((value): value is string => Boolean(value))
-    )
-  );
-
-  if (technicianIdsInScope.length === 0) {
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: "no-technicians",
-      date: routeDateKey,
-      planName: recurringPlan.name,
-    });
-  }
-
-  const technicians = await prisma.technician.findMany({
-    where: {
-      id: { in: technicianIdsInScope },
-      user: { isActive: true },
-    },
-    orderBy: { user: { fullName: "asc" } },
-    select: {
-      id: true,
-      user: { select: { fullName: true } },
-    },
-  });
-
-  const techniciansData = technicians.map((technician) => ({
-    id: technician.id,
-    name: technician.user.fullName,
-  }));
   if (techniciansData.length === 0) {
+    const hasTechniciansInScope =
+      getRouteAssistantTechnicianIds(records).length > 0;
     return NextResponse.json({
       ok: true,
       skipped: true,
-      reason: "no-active-technicians",
+      reason: hasTechniciansInScope ? "no-active-technicians" : "no-technicians",
       date: routeDateKey,
       planName: recurringPlan.name,
     });
   }
 
-  const geocoded = await geocodeAddresses([
-    DEFAULT_ROUTE_ORIGIN_ADDRESS,
-    ...jobs.map((job) => job.property.address),
-  ]);
-  const originCoordinates = geocoded.get(DEFAULT_ROUTE_ORIGIN_ADDRESS) ?? null;
-
-  const plannedJobs = jobs.map((job) => ({
-    id: job.id,
-    customerName: formatCustomerName(job.customer),
-    address: job.property.address,
-    technicianId: job.technicianId,
-    planName: job.plan?.name ?? null,
-    routeGroupId: job.plan?.name
-      ? buildRecurringRouteGroupId({
-          planName: job.plan.name,
-          technicianId: job.plan.technicianId ?? job.technicianId,
-        })
-      : null,
-    routeGroupLabel: job.plan?.name
-      ? buildRecurringRouteGroupLabel({
-          planName: job.plan.name,
-          technicianName:
-            techniciansData.find(
-              (technician) =>
-                technician.id === (job.plan?.technicianId ?? job.technicianId)
-            )?.name ?? null,
-        })
-      : null,
-    lockedTechnicianId:
-      job.plan?.name && isGlobalRecurringPlanName(job.plan.name)
-        ? (job.plan.technicianId ?? job.technicianId ?? null)
-        : null,
-    scheduledDate: job.scheduledDate,
-    estimatedDurationMinutes: job.estimatedDurationMinutes,
-    coordinates: geocoded.get(job.property.address) ?? null,
-  }));
+  const originGeocoded = await geocodeAddresses([DEFAULT_ROUTE_ORIGIN_ADDRESS]);
+  const originCoordinates = originGeocoded.get(DEFAULT_ROUTE_ORIGIN_ADDRESS) ?? null;
 
   const plans = await buildRouteAssistantPlans({
     jobs: plannedJobs,

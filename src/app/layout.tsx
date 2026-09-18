@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import { I18nProvider } from "@/i18n/client";
-import { getMessages } from "@/i18n/translate";
+import { createTranslator } from "@/i18n/core";
+import { loadMessages } from "@/i18n/dictionaries";
 import { getRequestLocale } from "@/i18n/server";
 import PwaRegister from "@/components/pwa/PwaRegister";
 import "./globals.css";
@@ -44,6 +45,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
+  // Necesario para que los env(safe-area-inset-*) de globals.css actúen en iPhone (notch / home bar).
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -52,13 +55,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
-  const messages = getMessages(locale);
+  const messages = await loadMessages(locale);
+  const t = createTranslator(messages);
 
   return (
     <html lang={locale}>
       <body
         className={`${manrope.variable} ${playfair.variable} ${jetbrains.variable} antialiased`}
       >
+        {/* Saltar al contenido (WCAG 2.4.1): visible solo con foco de teclado; destino #main-content. */}
+        <a href="#main-content" className="skip-link sr-only focus:not-sr-only">
+          {t("globalShell.skipToContent")}
+        </a>
         <I18nProvider locale={locale} messages={messages}>
           {children}
         </I18nProvider>

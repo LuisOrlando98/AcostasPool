@@ -67,11 +67,15 @@ export default async function DeveloperAuditLogPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-600">
                         <p className="font-semibold text-slate-800">
-                          {entry.user.fullName}
+                          {entry.user?.fullName ??
+                            entry.actorName ??
+                            t("admin.developer.audit.notAvailable")}
                         </p>
-                        <p className="text-xs text-slate-500">{entry.user.email}</p>
+                        <p className="text-xs text-slate-500">
+                          {entry.user?.email ?? entry.actorEmail ?? ""}
+                        </p>
                         <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                          {entry.user.role}
+                          {entry.user?.role ?? ""}
                         </p>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">

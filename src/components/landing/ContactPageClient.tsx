@@ -1,33 +1,23 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
 import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
+import LandingHeader, { WhatsAppIcon } from "@/components/landing/LandingHeader";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
 import ContactRequestForm from "@/components/landing/ContactRequestForm";
 import CoverageMapCard from "@/components/landing/CoverageMapCard";
+import { LANDING_CONTACT, LANDING_IMAGES, buildWhatsAppLink } from "@/lib/landing-config";
 
 type SocialLinks = LandingSocialLinks;
 
-const PHONE_DISPLAY = "+1 (786) 793-0081";
-const PHONE_E164 = "+17867930081";
-const SUPPORT_EMAIL = "contact@acostaspool.com";
+const HERO_IMAGE = LANDING_IMAGES.weeklyTechnician;
+const FULL_WIDTH_IMAGE_SIZES = "(max-width: 760px) 94vw, 88vw";
 
 const CONTACT_COPY: Record<
   LandingLocale,
   {
-    nav: {
-      overview: string;
-      services: string;
-      gallery: string;
-      video: string;
-      reviews: string;
-      about: string;
-      contact: string;
-      login: string;
-    };
-    announce: string;
     hero: {
       title: string;
       lead: string;
@@ -56,17 +46,6 @@ const CONTACT_COPY: Record<
   }
 > = {
   en: {
-    nav: {
-      overview: "Home",
-      services: "Services",
-      gallery: "Gallery",
-      video: "Video",
-      reviews: "Reviews",
-      about: "About",
-      contact: "Contact",
-      login: "Log in",
-    },
-    announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
     hero: {
       title: "Get In Touch Now",
       lead:
@@ -102,92 +81,41 @@ const CONTACT_COPY: Record<
     },
   },
   es: {
-    nav: {
-      overview: "Inicio",
-      services: "Servicios",
-      gallery: "Galeria",
-      video: "Video",
-      reviews: "Resenas",
-      about: "Nosotros",
-      contact: "Contacto",
-      login: "Acceso",
-    },
-    announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
     hero: {
-      title: "Contactanos ahora",
+      title: "Contáctanos ahora",
       lead:
-        "Comparte la ubicacion de tu piscina, condicion actual y frecuencia preferida. Te responderemos con una recomendacion clara.",
+        "Comparte la ubicación de tu piscina, condición actual y frecuencia preferida. Te responderemos con una recomendación clara.",
       whatsapp: "Comenzar por WhatsApp",
       call: "Llamar",
       email: "Enviar correo",
-      message: "Hola AcostasPool, me gustaria recibir una cotizacion premium de mantenimiento.",
+      message: "Hola AcostasPool, me gustaría recibir una cotización premium de mantenimiento.",
     },
     hub: {
       title: "Contacto directo",
       lead:
-        "Elige tu canal preferido o envia tu solicitud con el formulario. Cubrimos hasta Miramar y Miami Gardens, y todo hacia el sur. Normalmente respondemos en menos de 24 horas.",
+        "Elige tu canal preferido o envía tu solicitud con el formulario. Cubrimos hasta Miramar y Miami Gardens, y todo hacia el sur. Normalmente respondemos en menos de 24 horas.",
       whatsAppLabel: "WhatsApp",
       whatsAppSub: "Iniciar chat",
-      callLabel: "Llamanos",
+      callLabel: "Llámanos",
       hoursTitle: "Horario:",
-      hoursValue: "Lunes a sabado, 8:00 AM a 6:00 PM.",
+      hoursValue: "Lunes a sábado, 8:00 AM a 6:00 PM.",
       inboxTitle: "Correo directo:",
     },
     support: {
-      includeTitle: "Que incluir en tu primer mensaje",
+      includeTitle: "Qué incluir en tu primer mensaje",
       includeItems: [
-        "Tamano de la piscina y condicion actual del agua",
-        "Cualquier preocupacion de equipos que hayas notado",
+        "Tamaño de la piscina y condición actual del agua",
+        "Cualquier preocupación de equipos que hayas notado",
         "Frecuencia semanal de servicio preferida",
-        "Fotos opcionales para evaluar mas rapido",
+        "Fotos opcionales para evaluar más rápido",
       ],
-      detailsTitle: "Necesitas mas detalles antes de reservar?",
+      detailsTitle: "¿Necesitas más detalles antes de reservar?",
       detailsLead:
-        "Conoce como organizamos el ritmo de rutas, chequeos tecnicos y reportes al propietario antes de la primera visita.",
+        "Conoce cómo organizamos el ritmo de rutas, chequeos técnicos y reportes al propietario antes de la primera visita.",
       detailsAction: "Conocer al equipo",
     },
   },
 };
-
-const SECTION_NAV_ITEMS = [
-  { id: "overview" },
-  { id: "services" },
-  { id: "gallery" },
-  { id: "video" },
-  { id: "reviews" },
-] as const;
-
-const PAGE_NAV_ITEMS = [
-  { href: "/about", key: "about" },
-  { href: "/contact", key: "contact" },
-  { href: "/login", key: "login" },
-] as const;
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M20.1 14.8A8.7 8.7 0 1 1 9.2 3.9a7 7 0 1 0 10.9 10.9Z" />
-    </svg>
-  );
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-      <path d="M12 21a9 9 0 1 0-4.5-1.2L4 21l1.3-3.3A9 9 0 0 0 12 21Z" />
-      <path d="M9.3 8.8c.3-.3.5-.3.7.1l.6 1.3c.1.2.1.4-.1.6l-.5.5c-.2.2-.2.4 0 .6.3.6.8 1.1 1.4 1.4.2.1.4.1.6 0l.5-.5c.2-.2.4-.2.6-.1l1.3.6c.3.2.4.4.1.7l-.6.7c-.6.6-1.4.8-2.2.5-1.4-.5-2.7-1.7-3.7-3.1-.8-1.1-1.1-2.1-.7-2.9l.7-.8Z" />
-    </svg>
-  );
-}
 
 function PhoneIcon() {
   return (
@@ -200,135 +128,33 @@ function PhoneIcon() {
 export default function ContactPageClient({ socialLinks }: { socialLinks?: SocialLinks }) {
   const { language, setLanguage, theme, setTheme } = useLandingPreferences();
   const copy = CONTACT_COPY[language];
-  const sectionLabels: Record<(typeof SECTION_NAV_ITEMS)[number]["id"], string> = {
-    overview: copy.nav.overview,
-    services: copy.nav.services,
-    gallery: copy.nav.gallery,
-    video: copy.nav.video,
-    reviews: copy.nav.reviews,
-  };
-
-  const whatsappLink = useMemo(() => {
-    if (socialLinks?.whatsappUrl) {
-      return socialLinks.whatsappUrl;
-    }
-    return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${encodeURIComponent(copy.hero.message)}`;
-  }, [copy.hero.message, socialLinks?.whatsappUrl]);
+  const whatsappLink = socialLinks?.whatsappUrl || buildWhatsAppLink(copy.hero.message);
 
   return (
     <div className="lp-shell lp-contact-page" data-theme={theme}>
-      <header className="lp-header">
-        <div className="lp-container lp-header-inner">
-          <Link href="/" className="lp-brand">
-            <span className="lp-brand-dot" aria-hidden="true" />
-            <span className="lp-brand-name">
-              <span>Acostas</span>
-              <span>Pool</span>
-            </span>
-          </Link>
+      <LandingHeader
+        language={language}
+        theme={theme}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
+        whatsappLink={whatsappLink}
+        activePage="contact"
+      />
 
-          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
-            <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
-              <span className="lp-nav-logo-dot" aria-hidden="true" />
-              <span className="lp-nav-logo-text">
-                <span>Acostas</span>
-                <span>Pool</span>
-              </span>
-            </Link>
-
-            {SECTION_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.id}
-                href={`/#${item.id}`}
-                className="lp-nav-link"
-                data-nav-key={item.id}
-              >
-                {sectionLabels[item.id]}
-              </Link>
-            ))}
-
-            {PAGE_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="lp-nav-link lp-nav-link-page"
-                data-nav-key={item.key}
-                data-active={item.href === "/contact"}
-              >
-                {copy.nav[item.key]}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "en"}
-                onClick={() => setLanguage("en")}
-                aria-label={language === "es" ? "Ingles" : "English"}
-                title={language === "es" ? "Ingles" : "English"}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "es"}
-                onClick={() => setLanguage("es")}
-                aria-label={language === "es" ? "Espanol" : "Spanish"}
-                title={language === "es" ? "Espanol" : "Spanish"}
-              >
-                ES
-              </button>
-            </div>
-
-            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "ocean"}
-                onClick={() => setTheme("ocean")}
-                aria-label={language === "es" ? "Tema claro" : "Light theme"}
-                title={language === "es" ? "Tema claro" : "Light theme"}
-              >
-                <SunIcon />
-              </button>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "night"}
-                onClick={() => setTheme("night")}
-                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
-                title={language === "es" ? "Tema oscuro" : "Dark theme"}
-              >
-                <MoonIcon />
-              </button>
-            </div>
-
-            <Link href="/login" className="lp-login-btn">
-              {copy.nav.login}
-            </Link>
-          </div>
-        </div>
-
-        <div className="lp-announce">
-          <div className="lp-container lp-announce-inner">
-            <p>{copy.announce}</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="lp-main">
+      <main id="main-content" className="lp-main" tabIndex={-1}>
         <section className="lp-section">
           <div className="lp-container">
             <article className="lp-contact-hero lp-surface">
-              <img
-                src="/landing/media/curated/images/pool-service-weekly-technician.jpg"
+              <Image
+                src={HERO_IMAGE.src}
+                width={HERO_IMAGE.width}
+                height={HERO_IMAGE.height}
+                sizes={FULL_WIDTH_IMAGE_SIZES}
+                priority
+                fetchPriority="high"
                 alt={
                   language === "es"
-                    ? "Tecnico de piscina limpiando una piscina residencial"
+                    ? "Técnico de piscina limpiando una piscina residencial"
                     : "Pool service technician cleaning a residential swimming pool"
                 }
               />
@@ -339,10 +165,10 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                   <a href={whatsappLink} className="lp-btn lp-btn-primary">
                     {copy.hero.whatsapp}
                   </a>
-                  <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
-                    {copy.hero.call} {PHONE_DISPLAY}
+                  <a href={`tel:${LANDING_CONTACT.phoneE164}`} className="lp-btn lp-btn-ghost">
+                    {copy.hero.call} {LANDING_CONTACT.phoneDisplay}
                   </a>
-                  <a href={`mailto:${SUPPORT_EMAIL}`} className="lp-btn lp-btn-ghost">
+                  <a href={`mailto:${LANDING_CONTACT.supportEmail}`} className="lp-btn lp-btn-ghost">
                     {copy.hero.email}
                   </a>
                 </div>
@@ -373,13 +199,13 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                   </span>
                 </a>
 
-                <a href={`tel:${PHONE_E164}`} className="lp-contact-method">
+                <a href={`tel:${LANDING_CONTACT.phoneE164}`} className="lp-contact-method">
                   <span className="lp-contact-method-icon">
                     <PhoneIcon />
                   </span>
                   <span>
                     <strong>{copy.hub.callLabel}</strong>
-                    <em>{PHONE_DISPLAY}</em>
+                    <em>{LANDING_CONTACT.phoneDisplay}</em>
                   </span>
                 </a>
               </div>
@@ -389,7 +215,7 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
                   <strong>{copy.hub.hoursTitle}</strong> {copy.hub.hoursValue}
                 </p>
                 <p>
-                  <strong>{copy.hub.inboxTitle}</strong> {SUPPORT_EMAIL}
+                  <strong>{copy.hub.inboxTitle}</strong> {LANDING_CONTACT.supportEmail}
                 </p>
               </div>
             </article>
@@ -429,8 +255,8 @@ export default function ContactPageClient({ socialLinks }: { socialLinks?: Socia
       <LandingFooter
         language={language}
         theme={theme}
-        onLanguageChange={(nextLocale) => setLanguage(nextLocale)}
-        onThemeChange={(nextTheme) => setTheme(nextTheme)}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
         socialLinks={socialLinks}
       />
     </div>

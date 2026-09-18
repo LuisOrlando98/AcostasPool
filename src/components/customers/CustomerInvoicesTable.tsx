@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useI18n } from "@/i18n/client";
 import { getAssetUrl } from "@/lib/assets";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
@@ -32,6 +32,14 @@ type SortKey =
   | "number_asc"
   | "number_desc";
 
+/** Destino del enlace de la primera celda: el PDF si existe; la edición solo en borradores. */
+function resolveInvoiceHref(invoice: InvoiceRow, canEdit: boolean): string | null {
+  if (invoice.pdfUrl) {
+    return getAssetUrl(invoice.pdfUrl);
+  }
+  return canEdit ? `/admin/invoices/${invoice.id}` : null;
+}
+
 export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTableProps) {
   const { t, locale } = useI18n();
   const [page, setPage] = useState(1);
@@ -39,23 +47,21 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [themeFilter, setThemeFilter] = useState("ALL");
   const [sortKey, setSortKey] = useState<SortKey>("date_desc");
-  const allLabel = locale === "es" ? "Todos" : "All";
-  const sortDateDescLabel =
-    locale === "es"
-      ? `${t("admin.invoices.list.table.date")} (reciente)`
-      : `${t("admin.invoices.list.table.date")} (newest)`;
-  const sortDateAscLabel =
-    locale === "es"
-      ? `${t("admin.invoices.list.table.date")} (antiguo)`
-      : `${t("admin.invoices.list.table.date")} (oldest)`;
-  const sortTotalDescLabel =
-    locale === "es"
-      ? `${t("admin.invoices.list.table.total")} (mayor)`
-      : `${t("admin.invoices.list.table.total")} (high)`;
-  const sortTotalAscLabel =
-    locale === "es"
-      ? `${t("admin.invoices.list.table.total")} (menor)`
-      : `${t("admin.invoices.list.table.total")} (low)`;
+  const allLabel = t("admin.customers.filters.all");
+  const dateLabel = t("admin.invoices.list.table.date");
+  const totalLabel = t("admin.invoices.list.table.total");
+  const sortDateDescLabel = t("admin.customers.detail.invoices.sort.dateDesc", {
+    label: dateLabel,
+  });
+  const sortDateAscLabel = t("admin.customers.detail.invoices.sort.dateAsc", {
+    label: dateLabel,
+  });
+  const sortTotalDescLabel = t("admin.customers.detail.invoices.sort.totalDesc", {
+    label: totalLabel,
+  });
+  const sortTotalAscLabel = t("admin.customers.detail.invoices.sort.totalAsc", {
+    label: totalLabel,
+  });
 
   const statusOptions = useMemo(
     () =>
@@ -151,10 +157,6 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
     return list;
   }, [filteredRows, sortKey]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter, themeFilter, sortKey]);
-
   const totalPages = Math.max(1, Math.ceil(sortedRows.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedRows = useMemo(() => {
@@ -167,9 +169,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
     themeFilter !== "ALL" ||
     sortKey !== "date_desc";
   const emptyMessage = hasActiveFilters
-    ? locale === "es"
-      ? "No hay facturas que coincidan con los filtros activos."
-      : "No invoices match the active filters."
+    ? t("admin.customers.detail.invoices.emptyFiltered")
     : t("admin.invoices.list.empty");
   const openInvoiceFromRow = (invoice: InvoiceRow, canEdit: boolean) => {
     if (invoice.pdfUrl) {
@@ -181,7 +181,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
       return;
     }
     if (canEdit) {
-      window.location.href = `/admin/invoices/${invoice.id}`;
+      window.location.assign(`/admin/invoices/${invoice.id}`);
     }
   };
 
@@ -217,7 +217,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
             </svg>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder={t("admin.invoices.filters.invoiceNumberPlaceholder")}
               className="ui-search-input w-full"
             />
@@ -225,7 +228,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="ALL">
@@ -240,7 +246,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={themeFilter}
-            onChange={(event) => setThemeFilter(event.target.value)}
+            onChange={(event) => {
+              setThemeFilter(event.target.value);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="ALL">
@@ -259,7 +268,10 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
 
           <select
             value={sortKey}
-            onChange={(event) => setSortKey(event.target.value as SortKey)}
+            onChange={(event) => {
+              setSortKey(event.target.value as SortKey);
+              setPage(1);
+            }}
             className="ui-select w-full px-3 py-2 text-xs"
           >
             <option value="date_desc">{sortDateDescLabel}</option>
@@ -280,6 +292,7 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                 setStatusFilter("ALL");
                 setThemeFilter("ALL");
                 setSortKey("date_desc");
+                setPage(1);
               }}
               className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
             >
@@ -294,13 +307,13 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
           <table className="customers-table customer-invoices-table w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.16em] text-slate-100/85">
               <tr>
-                <th className="w-[18%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.invoice")}</th>
-                <th className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.status")}</th>
-                <th className="w-[9%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.theme")}</th>
-                <th className="w-[27%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.job")}</th>
-                <th className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.date")}</th>
-                <th className="w-[10%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.total")}</th>
-                <th className="w-[16%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.actions")}</th>
+                <th scope="col" className="w-[18%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.invoice")}</th>
+                <th scope="col" className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.status")}</th>
+                <th scope="col" className="w-[9%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.theme")}</th>
+                <th scope="col" className="w-[27%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.job")}</th>
+                <th scope="col" className="w-[10%] px-2 py-2 sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.date")}</th>
+                <th scope="col" className="w-[10%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.total")}</th>
+                <th scope="col" className="w-[16%] px-2 py-2 text-right sm:px-2.5 sm:py-2.5">{t("admin.invoices.list.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -316,7 +329,8 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                     `admin.invoices.status.${invoice.status.toLowerCase()}`
                   );
                   const canEdit = invoice.status === "DRAFT";
-                  const rowIsInteractive = Boolean(invoice.pdfUrl) || canEdit;
+                  const invoiceHref = resolveInvoiceHref(invoice, canEdit);
+                  const rowIsInteractive = invoiceHref !== null;
                   const themeLabel =
                     invoice.theme === "SPECIAL"
                       ? t("admin.invoices.theme.special")
@@ -327,32 +341,34 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                   return (
                     <tr
                       key={invoice.id}
-                      tabIndex={rowIsInteractive ? 0 : -1}
                       onClick={
                         rowIsInteractive
                           ? () => openInvoiceFromRow(invoice, canEdit)
                           : undefined
                       }
-                      onKeyDown={
-                        rowIsInteractive
-                          ? (event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                openInvoiceFromRow(invoice, canEdit);
-                              }
-                            }
-                          : undefined
-                      }
                       className={`bg-white transition ${
                         rowIsInteractive
-                          ? "cursor-pointer hover:bg-sky-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-200"
+                          ? "cursor-pointer hover:bg-sky-50/50"
                           : "hover:bg-sky-50/40"
                       }`}
                     >
                       <td className="px-2 py-2 font-semibold text-slate-900 sm:px-2.5 sm:py-2.5">
-                        <p className="max-w-[8.75rem] truncate" title={invoice.number}>
-                          {invoice.number}
-                        </p>
+                        {invoiceHref ? (
+                          <a
+                            href={invoiceHref}
+                            target={invoice.pdfUrl ? "_blank" : undefined}
+                            rel={invoice.pdfUrl ? "noopener noreferrer" : undefined}
+                            onClick={(event) => event.stopPropagation()}
+                            className="block max-w-[8.75rem] truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                            title={invoice.number}
+                          >
+                            {invoice.number}
+                          </a>
+                        ) : (
+                          <p className="max-w-[8.75rem] truncate" title={invoice.number}>
+                            {invoice.number}
+                          </p>
+                        )}
                       </td>
                       <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">{statusLabel}</td>
                       <td className="px-2 py-2 sm:px-2.5 sm:py-2.5">{themeLabel}</td>
@@ -375,7 +391,6 @@ export default function CustomerInvoicesTable({ rows }: CustomerInvoicesTablePro
                       <td
                         className="px-2 py-2 sm:px-2.5 sm:py-2.5"
                         onClick={(event) => event.stopPropagation()}
-                        onKeyDown={(event) => event.stopPropagation()}
                       >
                         <div className="flex flex-wrap items-center justify-end gap-1">
                           {canEdit ? (

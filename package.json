@@ -6,7 +6,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "worker:cron": "node scripts/cron-worker.cjs",
+    "worker:cron": "tsx scripts/cron-worker.ts",
     "lint": "eslint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -14,7 +14,13 @@
     "db:create-admin": "node scripts/create-admin.cjs",
     "db:create-developer": "node scripts/create-developer.cjs",
     "db:seed": "node scripts/seed.cjs",
-    "db:backfill-notifications": "node scripts/backfill-notifications.cjs"
+    "db:backfill-notifications": "node scripts/backfill-notifications.cjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "verify": "npm run typecheck && npm run lint && npm run test:unit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.917.0",
@@ -41,13 +47,18 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/luxon": "^3.7.1",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.9",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^3.2.7",
+    "embedded-postgres": "^18.4.0-beta.17",
     "eslint": "^9",
-    "eslint-config-next": "16.1.6"
+    "eslint-config-next": "16.1.6",
+    "tsx": "^4.23.13",
+    "vitest": "^3.2.7"
   }
 }

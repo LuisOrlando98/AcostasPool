@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
 import { useRouter } from "next/navigation";
 import { DateTime } from "luxon";
@@ -72,6 +73,14 @@ export default function NewRequestForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const fieldId = useId();
+  const fieldIds = {
+    property: `${fieldId}-property`,
+    description: `${fieldId}-description`,
+  };
+  const confirmationTitleId = `${fieldId}-confirmation-title`;
+  const confirmationBodyId = `${fieldId}-confirmation-body`;
+  const continueButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,29 +162,34 @@ export default function NewRequestForm() {
     setLoading(true);
     setMessage(null);
 
-    const res = await fetch("/api/client/requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        propertyId,
-        category,
-        issue: issue ?? undefined,
-        description: description.trim(),
-        urgent,
-        availableWeekdays,
-      }),
-    });
+    try {
+      const res = await fetch("/api/client/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          propertyId,
+          category,
+          issue: issue ?? undefined,
+          description: description.trim(),
+          urgent,
+          availableWeekdays,
+        }),
+      });
 
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
 
-    if (!res.ok) {
-      setMessage(data.error ?? t("client.request.errors.submit"));
+      if (!res.ok) {
+        setMessage(data.error ?? t("client.request.errors.submit"));
+        return;
+      }
+
+      setShowConfirmationModal(true);
+    } catch {
+      // The form keeps every selected value so the customer can simply retry.
+      setMessage(t("common.errors.network"));
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    setShowConfirmationModal(true);
   };
 
   const closeConfirmation = () => {
@@ -195,12 +209,23 @@ export default function NewRequestForm() {
         <p className="text-sm text-slate-500">{t("client.request.formSubtitle")}</p>
       </div>
 
-      <div className="mt-5 space-y-5">
+      <form
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit();
+        }}
+        className="mt-5 space-y-5"
+      >
         <div>
-          <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <label
+            htmlFor={fieldIds.property}
+            className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+          >
             {t("client.request.fields.property")}
           </label>
           <select
+            id={fieldIds.property}
             value={propertyId}
             onChange={(event) => setPropertyId(event.target.value)}
             className="app-input mt-2 w-full bg-white px-4 py-3 text-sm text-slate-700"
@@ -217,10 +242,10 @@ export default function NewRequestForm() {
           </select>
         </div>
 
-        <div>
-          <label className="text-sm font-semibold text-slate-700">
+        <fieldset>
+          <legend className="text-sm font-semibold text-slate-700">
             {t("client.request.fields.category")}
-          </label>
+          </legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
             {REQUEST_CATEGORY_VALUES.map((value) => {
               const isSelected = category === value;
@@ -228,6 +253,7 @@ export default function NewRequestForm() {
                 <button
                   key={value}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => selectCategory(value)}
                   className={`flex min-h-[92px] flex-col items-center justify-center gap-2 rounded-2xl border-2 px-3 py-4 text-center transition ${
                     isSelected
@@ -245,13 +271,13 @@ export default function NewRequestForm() {
               );
             })}
           </div>
-        </div>
+        </fieldset>
 
         {category && category !== "OTHER" ? (
-          <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          <fieldset>
+            <legend className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {t("client.request.fields.issue")}
-            </label>
+            </legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {REQUEST_ISSUE_OPTIONS[category].map((value) => {
                 const isSelected = issue === value;
@@ -259,6 +285,7 @@ export default function NewRequestForm() {
                   <button
                     key={value}
                     type="button"
+                    aria-pressed={isSelected}
                     onClick={() => setIssue(value)}
                     className={`rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
                       isSelected
@@ -271,16 +298,20 @@ export default function NewRequestForm() {
                 );
               })}
             </div>
-          </div>
+          </fieldset>
         ) : null}
 
         {category ? (
           <>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <label
+                htmlFor={fieldIds.description}
+                className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+              >
                 {t("client.request.fields.description")}
               </label>
               <textarea
+                id={fieldIds.description}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 className="app-input mt-2 min-h-[120px] w-full px-4 py-3 text-sm text-slate-700"
@@ -305,10 +336,10 @@ export default function NewRequestForm() {
               </span>
             </label>
 
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <fieldset>
+              <legend className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {t("client.request.fields.availableDays")}
-              </label>
+              </legend>
               <div className="mt-2 flex flex-wrap gap-2">
                 {weekdayOptions.map((day) => {
                   const isSelected = availableWeekdays.includes(day.value);
@@ -316,6 +347,7 @@ export default function NewRequestForm() {
                     <button
                       key={day.value}
                       type="button"
+                      aria-pressed={isSelected}
                       onClick={() => toggleWeekday(day.value)}
                       className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
                         isSelected
@@ -331,10 +363,13 @@ export default function NewRequestForm() {
               <p className="mt-2 text-xs text-slate-500">
                 {t("client.request.availableDaysHint", { days: String(MIN_BOOKING_LEAD_DAYS) })}
               </p>
-            </div>
+            </fieldset>
 
             {message ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div
+                role="alert"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+              >
                 {message}
               </div>
             ) : null}
@@ -342,8 +377,7 @@ export default function NewRequestForm() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs text-slate-400">{t("client.request.notice")}</p>
               <button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={loading}
                 className="app-button-primary px-5 py-2.5 text-sm font-semibold disabled:opacity-70"
               >
@@ -352,40 +386,40 @@ export default function NewRequestForm() {
             </div>
           </>
         ) : null}
-      </div>
+      </form>
 
-      {showConfirmationModal ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <button
-            type="button"
-            className="app-modal-backdrop absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]"
-            aria-label={t("common.actions.close")}
-            onClick={closeConfirmation}
-          />
-          <div className="app-modal-card relative z-10 w-full max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl">
-            <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
-                {t("client.request.confirmation.kicker")}
-              </p>
-              <h3 className="mt-2 text-xl font-semibold text-slate-900">
-                {t("client.request.confirmation.title")}
-              </h3>
-              <p className="mt-3 text-sm text-slate-600">
-                {t("client.request.confirmation.body")}
-              </p>
-              <div className="mt-5 flex justify-end">
-                <button
-                  type="button"
-                  onClick={closeConfirmation}
-                  className="app-button-primary px-4 py-2 text-sm font-semibold"
-                >
-                  {t("client.request.confirmation.continue")}
-                </button>
-              </div>
-            </div>
+      <AppModal
+        open={showConfirmationModal}
+        onClose={closeConfirmation}
+        titleId={confirmationTitleId}
+        describedBy={confirmationBodyId}
+        layerClassName="overflow-y-auto p-3 sm:p-6"
+        backdropClassName="app-modal-backdrop bg-slate-950/60 backdrop-blur-[2px]"
+        cardClassName="max-w-md overflow-hidden rounded-3xl border border-sky-200 bg-white shadow-2xl"
+        initialFocusRef={continueButtonRef}
+      >
+        <div className="bg-[linear-gradient(120deg,rgba(14,165,233,0.18),rgba(34,197,94,0.14),rgba(255,255,255,0.95))] p-5 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
+            {t("client.request.confirmation.kicker")}
+          </p>
+          <h3 id={confirmationTitleId} className="mt-2 text-xl font-semibold text-slate-900">
+            {t("client.request.confirmation.title")}
+          </h3>
+          <p id={confirmationBodyId} className="mt-3 text-sm text-slate-600">
+            {t("client.request.confirmation.body")}
+          </p>
+          <div className="mt-5 flex justify-end">
+            <button
+              ref={continueButtonRef}
+              type="button"
+              onClick={closeConfirmation}
+              className="app-button-primary px-4 py-2 text-sm font-semibold"
+            >
+              {t("client.request.confirmation.continue")}
+            </button>
           </div>
         </div>
-      ) : null}
+      </AppModal>
     </section>
   );
 }

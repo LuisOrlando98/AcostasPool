@@ -10,6 +10,8 @@ import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 import { cancelMembership } from "@/lib/payments/cancel";
 import { revalidateAttentionPaths } from "@/lib/reports/revalidate";
+import { formatCurrency } from "@/lib/format/currency";
+import { getInvoiceStatusLabel } from "@/lib/invoices/status-label";
 
 async function cancelMembershipAction(formData: FormData) {
   "use server";
@@ -145,7 +147,7 @@ export default async function ClientInvoicesPage({
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">
-                    ${invoice.total.toFixed(2)}
+                    {formatCurrency(invoice.total.toNumber(), locale)}
                   </p>
                   <span
                     className="app-chip mt-1 inline-flex px-2.5 py-0.5 text-[11px] font-semibold"
@@ -157,7 +159,7 @@ export default async function ClientInvoicesPage({
                           : "warning"
                     }
                   >
-                    {invoice.status}
+                    {getInvoiceStatusLabel(invoice.status, t)}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
@@ -210,7 +212,7 @@ export default async function ClientInvoicesPage({
                       {property.name ?? property.address}
                     </p>
                     <p className="text-xs text-slate-500">
-                      ${Number(property.servicePrice).toFixed(2)}/
+                      {formatCurrency(Number(property.servicePrice), locale)}/
                       {t("client.invoices.membership.perMonth")}
                     </p>
                   </div>

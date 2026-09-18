@@ -18,6 +18,10 @@ function toBusinessDateKey(value: Date) {
   return DateTime.fromJSDate(value).setZone(BUSINESS_TIMEZONE).toFormat("yyyy-MM-dd");
 }
 
+function getLatestUpdatedAtMs(items: Array<{ updatedAt: Date }>) {
+  return items.reduce((latest, item) => Math.max(latest, item.updatedAt.getTime()), 0);
+}
+
 function resolveMonthStart(rawMonth?: string) {
   if (rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth)) {
     const parsed = DateTime.fromFormat(rawMonth, "yyyy-MM", {
@@ -42,6 +46,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
   const monthParam = Array.isArray(monthRaw) ? monthRaw[0] : monthRaw;
 
   const monthStart = resolveMonthStart(monthParam);
+  const monthKey = toMonthKey(monthStart);
   const monthStartEt = DateTime.fromJSDate(monthStart)
     .setZone(BUSINESS_TIMEZONE)
     .startOf("month");
@@ -93,7 +98,13 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
         notes: true,
         customerNotes: true,
         checklist: true,
-        photos: { select: { id: true, url: true, takenAt: true } },
+        updatedAt: true,
+        // El modal de detalle muestra la galeria completa (id, url, takenAt),
+        // por lo que no basta con `_count` ni `take: 1`.
+        photos: {
+          select: { id: true, url: true, takenAt: true },
+          orderBy: { takenAt: "asc" },
+        },
         plan: {
           select: {
             id: true,
@@ -148,6 +159,7 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
         preferredTime: true,
         estimatedDurationMinutes: true,
         notes: true,
+        updatedAt: true,
         customer: {
           select: {
             id: true,
@@ -178,14 +190,19 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
       select: { id: true, colorHex: true, user: { select: { fullName: true } } },
       orderBy: { user: { fullName: "asc" } },
     }),
+    // El calendario necesita todos los clientes (selector del formulario de
+    // nuevos trabajos), pero solo id, nombre/apellidos y propiedades (id,
+    // address): ~150-250 bytes por cliente con 1-2 propiedades.
     prisma.customer.findMany({
-      orderBy: { nombre: "asc" },
+      orderBy: [{ nombre: "asc" }, { apellidos: "asc" }],
       select: {
         id: true,
         nombre: true,
         apellidos: true,
-        email: true,
-        properties: { select: { id: true, address: true } },
+        properties: {
+          select: { id: true, address: true },
+          orderBy: { address: "asc" },
+        },
       },
     }),
     getServiceTiers(),
@@ -359,6 +376,15 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
     return occurrences;
   });
 
+  // Version determinista de los datos: forma parte de la key del calendario para
+  // que un re-render del servidor con datos nuevos lo remonte (reset de estado local).
+  const dataVersion = [
+    jobs.length,
+    getLatestUpdatedAtMs(jobs),
+    planOccurrencesData.length,
+    getLatestUpdatedAtMs(plans),
+  ].join(":");
+
   const techniciansData = technicians.map((tech) => ({
     id: tech.id,
     name: tech.user.fullName,
@@ -400,12 +426,13 @@ export default async function RoutesPage({ searchParams }: RoutesPageProps) {
     >
       <div className="space-y-4">
         <RoutesCalendar
+          key={`${monthKey}:${dataVersion}`}
           jobs={jobsData}
           planOccurrences={planOccurrencesData}
           technicians={techniciansData}
           customers={customersData}
           serviceTiers={serviceTiersData}
-          monthKey={toMonthKey(monthStart)}
+          monthKey={monthKey}
           nextMonthJobsCount={nextMonthJobsCount}
         />
       </div>

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { defaultLocale } from "@/i18n/config";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -12,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "portrait",
     background_color: "#f8fafc",
     theme_color: "#0f172a",
-    lang: "es-US",
+    lang: defaultLocale,
     icons: [
       {
         src: "/newlogo.png",

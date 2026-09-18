@@ -1,10 +1,13 @@
 import { revalidatePath } from "next/cache";
+import type { Role } from "@prisma/client";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { customerTransferPayloadSchema } from "@/lib/customers/transfer";
 import {
   getCustomerTransferDisplayName,
   sanitizeImportedTransferCustomer,
+  type CustomerTransferPayload,
+  type ImportedTransferCustomer,
 } from "@/lib/customers/transfer";
 import {
   parseCustomerTransferCsv,
@@ -21,11 +24,28 @@ type ImportIssue = {
   message: string;
 };
 
+type PreparedTransferCustomer = {
+  customerLabel: string;
+  sanitized: ImportedTransferCustomer | null;
+  error: unknown;
+};
+
+type ExistingTransferUser = {
+  id: string;
+  email: string;
+  role: Role;
+  customer: { id: string } | null;
+};
+
 function asErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
     return error.message;
   }
   return "Error inesperado durante el import.";
+}
+
+function toImportIssue(customer: string, error: unknown): ImportIssue {
+  return { customer, message: asErrorMessage(error) };
 }
 
 async function readImportPayload(
@@ -75,6 +95,89 @@ async function readImportPayload(
   return customerTransferPayloadSchema.parse(parsedJson);
 }
 
+async function prepareTransferCustomer(
+  item: CustomerTransferPayload["customers"][number]
+): Promise<PreparedTransferCustomer> {
+  const customerLabel = getCustomerTransferDisplayName(item);
+  try {
+    const sanitized = await sanitizeImportedTransferCustomer(item);
+    return { customerLabel, sanitized, error: null };
+  } catch (error) {
+    return { customerLabel, sanitized: null, error };
+  }
+}
+
+// Secuencial a proposito: la normalizacion de direcciones puede llamar a una API externa.
+function prepareTransferCustomers(items: CustomerTransferPayload["customers"]) {
+  return items.reduce<Promise<PreparedTransferCustomer[]>>(
+    async (previous, item) => [
+      ...(await previous),
+      await prepareTransferCustomer(item),
+    ],
+    Promise.resolve([])
+  );
+}
+
+function uniqueNonEmpty(values: Array<string | null>) {
+  return [
+    ...new Set(values.filter((value): value is string => Boolean(value))),
+  ];
+}
+
+async function findExistingCustomerIds(ids: string[]) {
+  if (ids.length === 0) {
+    return new Set<string>();
+  }
+  const customers = await prisma.customer.findMany({
+    where: { id: { in: ids } },
+    select: { id: true },
+  });
+  return new Set(customers.map((customer) => customer.id));
+}
+
+async function findExistingCustomerEmails(emails: string[]) {
+  if (emails.length === 0) {
+    return new Set<string>();
+  }
+  const customers = await prisma.customer.findMany({
+    where: { email: { in: emails } },
+    select: { email: true },
+  });
+  return new Set(customers.map((customer) => customer.email));
+}
+
+async function findUsersByEmail(emails: string[]) {
+  if (emails.length === 0) {
+    return new Map<string, ExistingTransferUser>();
+  }
+  const users = await prisma.user.findMany({
+    where: { email: { in: emails } },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      customer: { select: { id: true } },
+    },
+  });
+  return new Map<string, ExistingTransferUser>(
+    users.map((user) => [user.email, user])
+  );
+}
+
+async function loadExistingRecords(customers: ImportedTransferCustomer[]) {
+  const emails = uniqueNonEmpty(customers.map((customer) => customer.email));
+  const sourceCustomerIds = uniqueNonEmpty(
+    customers.map((customer) => customer.sourceCustomerId)
+  );
+  const [existingCustomerIds, existingCustomerEmails, usersByEmail] =
+    await Promise.all([
+      findExistingCustomerIds(sourceCustomerIds),
+      findExistingCustomerEmails(emails),
+      findUsersByEmail(emails),
+    ]);
+  return { existingCustomerIds, existingCustomerEmails, usersByEmail };
+}
+
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session || !session.isDeveloper) {
@@ -109,6 +212,25 @@ export async function POST(request: Request) {
     );
   }
 
+  const preparedCustomers = await prepareTransferCustomers(
+    payloadResult.data.customers
+  );
+  const sanitizedCustomers = preparedCustomers.flatMap((prepared) =>
+    prepared.sanitized ? [prepared.sanitized] : []
+  );
+
+  let existing;
+  try {
+    existing = await loadExistingRecords(sanitizedCustomers);
+  } catch (error) {
+    console.error("Customer transfer import lookup failed:", error);
+    return Response.json(
+      { error: "No se pudieron consultar los clientes existentes." },
+      { status: 500 }
+    );
+  }
+  const { existingCustomerIds, existingCustomerEmails, usersByEmail } = existing;
+
   const summary = {
     totalEntries: payloadResult.data.customers.length,
     createdCustomers: 0,
@@ -121,12 +243,14 @@ export async function POST(request: Request) {
   const seenSourceCustomerIds = new Set<string>();
   const seenEmails = new Set<string>();
 
-  for (const item of payloadResult.data.customers) {
-    const customerLabel = getCustomerTransferDisplayName(item);
+  for (const { customerLabel, sanitized, error } of preparedCustomers) {
+    if (!sanitized) {
+      summary.errorCount += 1;
+      issues.push(toImportIssue(customerLabel, error));
+      continue;
+    }
 
     try {
-      const sanitized = await sanitizeImportedTransferCustomer(item);
-
       if (
         sanitized.sourceCustomerId &&
         seenSourceCustomerIds.has(sanitized.sourceCustomerId)
@@ -154,41 +278,21 @@ export async function POST(request: Request) {
         seenEmails.add(sanitized.email);
       }
 
-      if (sanitized.sourceCustomerId) {
-        const existingBySourceId = await prisma.customer.findUnique({
-          where: { id: sanitized.sourceCustomerId },
-          select: { id: true },
-        });
-        if (existingBySourceId) {
-          summary.skippedCustomers += 1;
-          continue;
-        }
+      if (
+        sanitized.sourceCustomerId &&
+        existingCustomerIds.has(sanitized.sourceCustomerId)
+      ) {
+        summary.skippedCustomers += 1;
+        continue;
       }
 
-      if (sanitized.email) {
-        const existingCustomerByEmail = await prisma.customer.findFirst({
-          where: {
-            email: { equals: sanitized.email, mode: "insensitive" },
-          },
-          select: { id: true },
-        });
-        if (existingCustomerByEmail) {
-          summary.skippedCustomers += 1;
-          continue;
-        }
+      if (sanitized.email && existingCustomerEmails.has(sanitized.email)) {
+        summary.skippedCustomers += 1;
+        continue;
       }
 
       const existingUser = sanitized.email
-        ? await prisma.user.findFirst({
-            where: {
-              email: { equals: sanitized.email, mode: "insensitive" },
-            },
-            select: {
-              id: true,
-              role: true,
-              customer: { select: { id: true } },
-            },
-          })
+        ? (usersByEmail.get(sanitized.email) ?? null)
         : null;
 
       if (existingUser && existingUser.role !== "CUSTOMER") {
@@ -277,10 +381,7 @@ export async function POST(request: Request) {
       summary.skippedProperties += skippedPropertiesForCustomer;
     } catch (error) {
       summary.errorCount += 1;
-      issues.push({
-        customer: customerLabel,
-        message: asErrorMessage(error),
-      });
+      issues.push(toImportIssue(customerLabel, error));
     }
   }
 

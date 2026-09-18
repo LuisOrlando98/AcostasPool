@@ -397,20 +397,28 @@ export default async function TechnicianDetailPage({
               <input type="hidden" name="technicianId" value={technician.id} />
               <input type="hidden" name="userId" value={technician.user.id} />
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <label
+                  htmlFor="technician-phone"
+                  className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"
+                >
                   {t("admin.technicians.detail.profile.fields.phone")}
                 </label>
                 <input
+                  id="technician-phone"
                   name="phone"
                   defaultValue={formatUsPhone(technician.phone) ?? ""}
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <label
+                  htmlFor="technician-status"
+                  className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"
+                >
                   {t("admin.technicians.detail.profile.fields.status")}
                 </label>
                 <select
+                  id="technician-status"
                   name="isActive"
                   defaultValue={technician.user.isActive ? "true" : "false"}
                   className="h-11 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm shadow-sm focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-100"
@@ -422,11 +430,15 @@ export default async function TechnicianDetailPage({
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <label
+                  htmlFor="technician-color"
+                  className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"
+                >
                   {t("admin.technicians.detail.profile.fields.color")}
                 </label>
                 <div className="flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 shadow-sm">
                   <input
+                    id="technician-color"
                     name="colorHex"
                     type="color"
                     defaultValue={technician.colorHex ?? "#38bdf8"}
@@ -438,10 +450,14 @@ export default async function TechnicianDetailPage({
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                <label
+                  htmlFor="technician-notes"
+                  className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"
+                >
                   {t("admin.technicians.detail.profile.fields.notes")}
                 </label>
                 <textarea
+                  id="technician-notes"
                   name="notes"
                   defaultValue={technician.notes ?? ""}
                   rows={1}

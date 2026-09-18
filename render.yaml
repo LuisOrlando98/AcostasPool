@@ -24,6 +24,8 @@ services:
         value: production
       - key: PLAYWRIGHT_BROWSERS_PATH
         value: "0"
+      # Required: the server refuses to start in production without these three
+      # (validated by src/lib/config/env.ts from src/instrumentation.ts).
       - key: DATABASE_URL
         fromDatabase:
           name: acostaspool-db
@@ -32,6 +34,7 @@ services:
         sync: false
       - key: APP_URL
         value: https://acostaspool.com
+      # File storage: with STORAGE_DRIVER=s3 every AWS_* variable is required.
       - key: STORAGE_DRIVER
         value: s3
       - key: NEXT_PUBLIC_CDN_URL
@@ -44,8 +47,13 @@ services:
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
+      # Google Maps: browser key (address autocomplete) and server key
+      # (geocoding / route assistant). Keep them as two different keys.
       - key: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
         sync: false
+      - key: GOOGLE_MAPS_SERVER_API_KEY
+        sync: false
+      # Transactional e-mail.
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
@@ -56,12 +64,48 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      # Inbox for quote requests and public-integration replies (defaults to SMTP_USER).
+      - key: CONTACT_INBOX_EMAIL
+        sync: false
+      # Shared secret between the cron worker and the internal endpoints.
       - key: CRON_SECRET
         sync: false
+      # Stripe: secret API key and the signing secret of /api/webhooks/stripe.
+      # Without them the online checkout, memberships and the reconcile task are
+      # disabled and the webhook rejects every event.
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
+      # Proxies in front of the app: Render terminates TLS on one, so the client
+      # address is the last entry of x-forwarded-for. Raise it by one for every
+      # extra layer (for example a CDN) or rate limiting can be bypassed with a
+      # forged header.
+      - key: TRUSTED_PROXY_HOPS
+        value: "1"
+      # Comma-separated tokens for /new-integrations/<token>. Unset, the app
+      # falls back to the token hard-coded in the source; set it and rotate.
+      - key: PUBLIC_INTEGRATION_TOKENS
+        sync: false
+      # Realtime notifications (Pusher). Without the four server variables the
+      # app falls back to an in-memory bus that only reaches browsers connected
+      # to the same instance. The NEXT_PUBLIC_* pair is inlined into the browser
+      # bundle at build time and must match PUSHER_KEY / PUSHER_CLUSTER.
+      - key: PUSHER_APP_ID
+        sync: false
+      - key: PUSHER_KEY
+        sync: false
+      - key: PUSHER_SECRET
+        sync: false
+      - key: PUSHER_CLUSTER
+        sync: false
+      - key: NEXT_PUBLIC_PUSHER_KEY
+        sync: false
+      - key: NEXT_PUBLIC_PUSHER_CLUSTER
+        sync: false
+      # IANA time zone for scheduling, digests and reports.
+      - key: BUSINESS_TIMEZONE
+        value: America/New_York
 
   - type: worker
     name: acostaspool-cron-worker
@@ -97,12 +141,38 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      - key: CONTACT_INBOX_EMAIL
+        sync: false
       - key: CRON_SECRET
         sync: false
+      # Server-side integrations shared with the web service so that a worker
+      # built on the src/ modules (Pusher publishing, geocoding, business time
+      # zone) works without extra dashboard changes. scripts/cron-worker.ts
+      # currently reads only DATABASE_URL, APP_URL, CRON_SECRET and SMTP_*; the
+      # Stripe work runs in the web service behind /api/internal/stripe/reconcile.
+      - key: PUSHER_APP_ID
+        sync: false
+      - key: PUSHER_KEY
+        sync: false
+      - key: PUSHER_SECRET
+        sync: false
+      - key: PUSHER_CLUSTER
+        sync: false
+      - key: GOOGLE_MAPS_SERVER_API_KEY
+        sync: false
+      - key: BUSINESS_TIMEZONE
+        value: America/New_York
+      # Kept from the pre-integration worker config: not read by the current
+      # worker (Stripe runs in the web service) but left in place so a future
+      # worker-side Stripe call does not need a dashboard change.
       - key: STRIPE_SECRET_KEY
         sync: false
 
 databases:
   - name: acostaspool-db
+    # The `free` plan has no backups or point-in-time recovery and Render
+    # suspends/expires free instances after a grace period. For production
+    # use a paid plan (basic-256mb or higher) with backups enabled.
+    # Left unchanged on purpose: upgrading the plan is a billing decision.
     plan: free
     databaseName: acostaspool

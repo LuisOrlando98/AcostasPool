@@ -133,7 +133,7 @@ export default async function ClientJobDetailPage({
               {t("jobs.detail.fields.evidence")}
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
-              {t("jobs.detail.evidenceCount", { count: job.photos.length })}
+              {t.plural("jobs.detail.evidenceCountPlural", job.photos.length)}
             </p>
           </article>
         </div>

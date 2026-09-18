@@ -46,13 +46,17 @@ export default function AccountingFiltersBar({ defaults, exportHref }: Accountin
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<FilterState>(defaults);
   const [draft, setDraft] = useState<FilterState>(defaults);
-
-  useEffect(() => {
+  // Sync with new server defaults (and reset the draft while the panel is
+  // closed) during render instead of in an effect, so there is no extra
+  // render pass with stale filters. Same semantics as the previous effect.
+  const [synced, setSynced] = useState({ defaults, open });
+  if (synced.defaults !== defaults || synced.open !== open) {
+    setSynced({ defaults, open });
     setState(defaults);
     if (!open) {
       setDraft(defaults);
     }
-  }, [defaults, open]);
+  }
 
   useEffect(() => {
     if (!open) {

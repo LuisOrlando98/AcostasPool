@@ -1,8 +1,11 @@
-import { createRequire } from "node:module";
 import { PDFDocument, StandardFonts, degrees, rgb } from "pdf-lib";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import {
+  PRIVATE_ASSET_CACHE_CONTROL,
+  storePublicAsset,
+} from "@/lib/storage/object-store";
 import { buildInvoicePdfAssetPath } from "@/lib/storage/paths";
 import {
+  formatTaxRateLabelSuffix,
   getInvoiceTemplateLocaleCopy,
   localizeInvoiceNotes,
   localizeInvoiceTemplate,
@@ -13,10 +16,9 @@ import {
   type InvoiceTemplateConfig,
   type InvoiceTemplateLocale,
   type InvoiceTemplateTheme,
+  type NormalizedInvoiceTemplateConfig,
 } from "@/lib/invoice-template";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
-
-const require = createRequire(import.meta.url);
 
 type ChromiumLauncher = {
   launch: (options?: {
@@ -42,11 +44,10 @@ type ChromiumLauncher = {
   }>;
 };
 
-function loadChromium(): ChromiumLauncher {
+async function loadChromium(): Promise<ChromiumLauncher> {
   try {
-    const moduleName = `play${"wright"}`;
-    const mod = require(moduleName) as { chromium?: ChromiumLauncher };
-    if (!mod?.chromium) {
+    const mod = await import("playwright");
+    if (!mod.chromium) {
       throw new Error("Chromium launcher not available.");
     }
     return mod.chromium;
@@ -68,7 +69,7 @@ async function storeInvoicePdfBuffer(input: InvoicePdfInput, bytes: Uint8Array |
     ),
     buffer: Buffer.from(bytes),
     contentType: "application/pdf",
-    cacheControl: "public, max-age=31536000, immutable",
+    cacheControl: PRIVATE_ASSET_CACHE_CONTROL,
   });
 }
 
@@ -126,7 +127,7 @@ function normalizeItems(items: InvoiceLineItem[], serviceFallbackLabel: string) 
 async function generateInvoicePdfWithPdfLibBytes(
   input: InvoicePdfRenderInput,
   items: ReturnType<typeof normalizeItems>,
-  template: InvoiceTemplateConfig,
+  template: NormalizedInvoiceTemplateConfig,
   theme: InvoiceTemplateTheme,
   locale: InvoiceTemplateLocale
 ) {
@@ -550,7 +551,7 @@ async function generateInvoicePdfWithPdfLibBytes(
     color: mutedColor,
   });
   drawRightText(`$${input.subtotal.toFixed(2)}`, summaryRight, summaryTop - 30, 11, boldFont, textColor);
-  page.drawText(`${template.taxLabel} (7%)`, {
+  page.drawText(`${template.taxLabel}${formatTaxRateLabelSuffix(input.subtotal, input.tax)}`, {
     x: summaryX + 12,
     y: summaryTop - 46,
     size: 11,
@@ -806,7 +807,7 @@ export async function generateInvoicePdfBytes(input: InvoicePdfRenderInput) {
   });
 
   try {
-    const chromium = loadChromium();
+    const chromium = await loadChromium();
     const browser = await chromium.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],

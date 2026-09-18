@@ -1,14 +1,26 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import LandingFooter, { type LandingSocialLinks } from "@/components/landing/LandingFooter";
+import LandingHeader from "@/components/landing/LandingHeader";
+import {
+  LANDING_SECTION_NAV_ITEMS,
+  getLandingShellCopy,
+  type LandingSectionId,
+} from "@/components/landing/landing-copy";
 import type { LandingLocale } from "@/components/landing/preferences";
 import { useLandingPreferences } from "@/components/landing/useLandingPreferences";
+import { useIsHydrated, useMediaQuery } from "@/components/landing/useMediaQuery";
 import {
   DEFAULT_LANDING_PROMO_COPY,
+  LANDING_CONTACT,
+  LANDING_IMAGES,
+  buildWhatsAppLink,
   getLandingYoutubeEmbedSrc,
+  type LandingImageAsset,
   type LandingPromoCopyByLocale,
 } from "@/lib/landing-config";
 
@@ -24,17 +36,6 @@ type LandingConfig = {
 const LANDING_COPY: Record<
   LandingLocale,
   {
-    nav: {
-      overview: string;
-      services: string;
-      gallery: string;
-      video: string;
-      reviews: string;
-      about: string;
-      contact: string;
-      login: string;
-    };
-    announce: string;
     hero: {
       title: string;
       subtitle: string;
@@ -52,6 +53,9 @@ const LANDING_COPY: Record<
     };
     gallery: {
       title: string;
+      carouselLabel: string;
+      pauseLabel: string;
+      slideLabel: (position: number, total: number) => string;
     };
     visit: {
       title: string;
@@ -69,17 +73,6 @@ const LANDING_COPY: Record<
   }
 > = {
   en: {
-    nav: {
-      overview: "Home",
-      services: "Services",
-      gallery: "Gallery",
-      video: "Video",
-      reviews: "Reviews",
-      about: "About",
-      contact: "Contact",
-      login: "Log in",
-    },
-    announce: "Need pool service today? Tap the WhatsApp button to contact us instantly.",
     hero: {
       title: "Professional pool care that feels effortless for your home.",
       subtitle:
@@ -98,6 +91,9 @@ const LANDING_COPY: Record<
     },
     gallery: {
       title: "Visual quality standards from real service environments.",
+      carouselLabel: "Service gallery",
+      pauseLabel: "Pause automatic rotation",
+      slideLabel: (position, total) => `Image ${position} of ${total}`,
     },
     visit: {
       title: "What each visit includes.",
@@ -115,83 +111,67 @@ const LANDING_COPY: Record<
     },
   },
   es: {
-    nav: {
-      overview: "Inicio",
-      services: "Servicios",
-      gallery: "Galeria",
-      video: "Video",
-      reviews: "Resenas",
-      about: "Nosotros",
-      contact: "Contacto",
-      login: "Acceso",
-    },
-    announce: "Necesitas servicio de piscina hoy? Toca el boton de WhatsApp para contactarnos al instante.",
     hero: {
-      title: "Cuidado profesional de piscinas para que tu hogar funcione sin friccion.",
+      title: "Cuidado profesional de piscinas para que tu hogar funcione sin fricción.",
       subtitle:
-        "Planes semanales confiables, comunicacion clara y mantenimiento preventivo para propietarios que exigen calidad.",
+        "Planes semanales confiables, comunicación clara y mantenimiento preventivo para propietarios que exigen calidad.",
       whatsapp: "Comenzar por WhatsApp",
-      quote: "Solicitar cotizacion",
+      quote: "Solicitar cotización",
       callPrefix: "Llamar",
       responseTime: "Tiempo promedio de respuesta",
-      satisfaction: "Satisfaccion del cliente",
-      yearsValue: "5+ anos",
+      satisfaction: "Satisfacción del cliente",
+      yearsValue: "5+ años",
       yearsService: "Servicio en South Florida",
       mediaNote:
-        "Cada visita puede incluir fotos del servicio, chequeo quimico y notas de equipos.",
+        "Cada visita puede incluir fotos del servicio, chequeo químico y notas de equipos.",
     },
     services: {
-      title: "Servicios de piscina pensados para agua limpia y operacion confiable.",
+      title: "Servicios de piscina pensados para agua limpia y operación confiable.",
     },
     gallery: {
-      title: "Estandares visuales de calidad en entornos reales de servicio.",
+      title: "Estándares visuales de calidad en entornos reales de servicio.",
+      carouselLabel: "Galería de servicios",
+      pauseLabel: "Pausar la rotación automática",
+      slideLabel: (position, total) => `Imagen ${position} de ${total}`,
     },
     visit: {
-      title: "Que incluye cada visita.",
+      title: "Qué incluye cada visita.",
       kicker: "Protocolo de visita",
       heading: "Chequeos de calidad en cada servicio rutinario",
       subtitle:
-        "Cada parada sigue una secuencia consistente para mantener controlados la calidad del agua, el rendimiento de equipos y la presentacion.",
+        "Cada parada sigue una secuencia consistente para mantener controlados la calidad del agua, el rendimiento de equipos y la presentación.",
       listA: [
-        "Prueba y balanceo de quimica del agua",
+        "Prueba y balanceo de química del agua",
         "Limpieza de superficie, cepillado y aspirado",
       ],
       listB: [
-        "Revision de bomba, filtro y circulacion",
+        "Revisión de bomba, filtro y circulación",
         "Reporte corto con hallazgos clave",
       ],
       tags: [
-        "Ejecucion con checklist",
+        "Ejecución con checklist",
         "Acabado visual listo para fotos",
         "Enfoque preventivo en equipos",
       ],
-      action: "Conoce mas sobre nuestro proceso",
+      action: "Conoce más sobre nuestro proceso",
     },
     reviews: {
-      title: "Resenas de propietarios premium.",
+      title: "Reseñas de propietarios premium.",
     },
   },
 };
 
-const PHONE_DISPLAY = "+1 (786) 793-0081";
-const PHONE_E164 = "+17867930081";
+const HERO_IMAGE = LANDING_IMAGES.heroDeck;
 
-const HERO_IMAGE =
-  "/landing/media/curated/images/pool-premium-residential-deck.jpg";
+/* `sizes` hints approximate the rendered width of each image slot (see globals.css grids). */
+const FULL_WIDTH_IMAGE_SIZES = "(max-width: 760px) 94vw, 88vw";
+const HALF_WIDTH_IMAGE_SIZES = "(max-width: 1180px) 94vw, 44vw";
+const SERVICE_CARD_IMAGE_SIZES = "(max-width: 760px) 84vw, (max-width: 1180px) 44vw, 22vw";
 
-const SECTION_NAV_ITEMS = [
-  { id: "overview" },
-  { id: "services" },
-  { id: "gallery" },
-  { id: "video" },
-  { id: "reviews" },
-] as const;
-
-const PAGE_NAV_ITEMS = [
-  { href: "/about", key: "about" },
-  { href: "/contact", key: "contact" },
-  { href: "/login", key: "login" },
-] as const;
+const CAROUSEL_INTERVAL_MS = 5500;
+const BACK_TO_TOP_THRESHOLD_PX = 520;
+const NAV_PRESS_FEEDBACK_MS = 220;
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 const TRUST_SIGNALS_COPY: Record<
   LandingLocale,
@@ -217,12 +197,12 @@ const TRUST_SIGNALS_COPY: Record<
   es: [
     {
       title: "Licenciados y asegurados",
-      detail: "Operacion alineada con Florida para servicio residencial y trazabilidad de atencion.",
+      detail: "Operación alineada con Florida para servicio residencial y trazabilidad de atención.",
       icon: "shield",
     },
     {
-      title: "Notas con evidencia fotografica",
-      detail: "Cada visita incluye bitacora visual con observaciones de quimica y equipos.",
+      title: "Notas con evidencia fotográfica",
+      detail: "Cada visita incluye bitácora visual con observaciones de química y equipos.",
       icon: "camera",
     },
     {
@@ -238,7 +218,7 @@ const SERVICE_PILLARS_COPY: Record<
   Array<{
     title: string;
     subtitle: string;
-    image: string;
+    image: LandingImageAsset;
     icon: ServicePillarIconName;
     points: string[];
   }>
@@ -247,7 +227,7 @@ const SERVICE_PILLARS_COPY: Record<
     {
       title: "One-Month Pool Cleaning",
       subtitle: "A one-month reset to bring your pool back to clear, comfortable condition.",
-      image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
+      image: LANDING_IMAGES.weeklyTechnician,
       icon: "clean",
       points: [
         "Deep cleaning visit",
@@ -260,7 +240,7 @@ const SERVICE_PILLARS_COPY: Record<
     {
       title: "Regular Maintenance",
       subtitle: "Consistent weekly care that keeps water balanced and equipment performing right.",
-      image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
+      image: LANDING_IMAGES.surfaceNetCloseup,
       icon: "spark",
       points: [
         "Full cleaning and vacuum",
@@ -273,7 +253,7 @@ const SERVICE_PILLARS_COPY: Record<
     {
       title: "Pool Cleaning + Leak Detection",
       subtitle: "Detailed cleaning with early leak diagnostics to protect pool structure and flow.",
-      image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+      image: LANDING_IMAGES.waterChemistryTesting,
       icon: "chemistry",
       points: [
         "Leak diagnostics and targeted repair",
@@ -286,7 +266,7 @@ const SERVICE_PILLARS_COPY: Record<
       title: "Pool Repair",
       subtitle:
         "Repair-focused service for pool body, finish, and circulation lines to restore safe, clean operation.",
-      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+      image: LANDING_IMAGES.underwaterView,
       icon: "repair",
       points: [
         "Shell and crack condition assessment",
@@ -299,59 +279,59 @@ const SERVICE_PILLARS_COPY: Record<
   es: [
     {
       title: "Limpieza de piscina por un mes",
-      subtitle: "Reinicio de un mes para devolver tu piscina a una condicion clara y comoda.",
-      image: "/landing/media/curated/images/pool-service-weekly-technician.jpg",
+      subtitle: "Reinicio de un mes para devolver tu piscina a una condición clara y cómoda.",
+      image: LANDING_IMAGES.weeklyTechnician,
       icon: "clean",
       points: [
         "Visita de limpieza profunda",
-        "Remocion de residuos y algas",
+        "Remoción de residuos y algas",
         "Aspirado y cepillado completo",
-        "Revision del sistema de filtracion",
+        "Revisión del sistema de filtración",
         "Ideal para eventos o reinicio de temporada",
       ],
     },
     {
       title: "Mantenimiento regular",
       subtitle: "Cuidado semanal consistente para mantener el agua balanceada y los equipos operando bien.",
-      image: "/landing/media/curated/images/pool-service-surface-net-closeup.jpg",
+      image: LANDING_IMAGES.surfaceNetCloseup,
       icon: "spark",
       points: [
         "Limpieza completa y aspirado",
-        "Balanceo de quimica del agua",
-        "Inspeccion de equipos",
+        "Balanceo de química del agua",
+        "Inspección de equipos",
         "Limpieza de canastas y superficie",
         "Plan continuo de mantenimiento",
       ],
     },
     {
-      title: "Limpieza de piscina + deteccion de fugas",
-      subtitle: "Limpieza detallada con diagnostico temprano de fugas para proteger estructura y flujo.",
-      image: "/landing/media/curated/images/pool-service-water-chemistry-testing.jpg",
+      title: "Limpieza de piscina + detección de fugas",
+      subtitle: "Limpieza detallada con diagnóstico temprano de fugas para proteger estructura y flujo.",
+      image: LANDING_IMAGES.waterChemistryTesting,
       icon: "chemistry",
       points: [
-        "Diagnostico de fugas y reparacion dirigida",
-        "Lavado de filtro y optimizacion de flujo",
+        "Diagnóstico de fugas y reparación dirigida",
+        "Lavado de filtro y optimización de flujo",
         "Cepillado de paredes y azulejos",
-        "Servicio de aspirado de precision",
+        "Servicio de aspirado de precisión",
       ],
     },
     {
-      title: "Reparacion de piscina",
+      title: "Reparación de piscina",
       subtitle:
-        "Servicio enfocado en reparacion de estructura, acabados y lineas de circulacion para recuperar operacion segura.",
-      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+        "Servicio enfocado en reparación de estructura, acabados y líneas de circulación para recuperar operación segura.",
+      image: LANDING_IMAGES.underwaterView,
       icon: "repair",
       points: [
-        "Evaluacion de casco y grietas",
-        "Plan de reparacion de azulejo, grout y coping",
-        "Aislamiento de fugas en tuberias y estructura",
+        "Evaluación de casco y grietas",
+        "Plan de reparación de azulejo, grout y coping",
+        "Aislamiento de fugas en tuberías y estructura",
         "Correcciones en skimmer, retornos y drenajes",
       ],
     },
   ],
 };
 
-const SERVICES_BACKGROUND_IMAGE = "/landing/media/curated/images/pool-home-services-hero-technician.jpg";
+const SERVICES_BACKGROUND_IMAGE = LANDING_IMAGES.servicesHeroTechnician;
 const DEFAULT_SERVICES_BACKGROUND_VIDEO =
   "/landing/media/curated/videos/pool-services-clean-water-promo.mp4";
 const CONFIGURED_SERVICES_BACKGROUND_VIDEO =
@@ -369,51 +349,51 @@ const GALLERY_SLIDES_COPY: Record<
   Array<{
     id: string;
     title: string;
-    image: string;
+    image: LandingImageAsset;
   }>
 > = {
   en: [
     {
       id: "pool-1",
       title: "Resort-level finish, every week",
-      image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
+      image: LANDING_IMAGES.galleryVacuumCloseup,
     },
     {
       id: "pool-2",
       title: "Balanced chemistry and healthy circulation",
-      image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
+      image: LANDING_IMAGES.galleryToolsSet,
     },
     {
       id: "pool-3",
       title: "Clean presentation for premium properties",
-      image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
+      image: LANDING_IMAGES.galleryFullService,
     },
     {
       id: "pool-4",
       title: "Equipment health and preventive checks",
-      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+      image: LANDING_IMAGES.underwaterView,
     },
   ],
   es: [
     {
       id: "pool-1",
       title: "Acabado tipo resort, cada semana",
-      image: "/landing/media/curated/images/pool-gallery-cleaning-vacuum-closeup.jpg",
+      image: LANDING_IMAGES.galleryVacuumCloseup,
     },
     {
       id: "pool-2",
-      title: "Quimica balanceada y circulacion saludable",
-      image: "/landing/media/curated/images/pool-gallery-maintenance-tools-set.jpg",
+      title: "Química balanceada y circulación saludable",
+      image: LANDING_IMAGES.galleryToolsSet,
     },
     {
       id: "pool-3",
-      title: "Presentacion limpia para propiedades premium",
-      image: "/landing/media/curated/images/pool-gallery-full-service-cleaning.jpg",
+      title: "Presentación limpia para propiedades premium",
+      image: LANDING_IMAGES.galleryFullService,
     },
     {
       id: "pool-4",
       title: "Salud de equipos y chequeos preventivos",
-      image: "/landing/media/curated/images/pool-gallery-lifestyle-underwater-view.jpg",
+      image: LANDING_IMAGES.underwaterView,
     },
   ],
 };
@@ -430,7 +410,7 @@ const REVIEWS_COPY: Record<
 > = {
   en: [
     {
-      author: "R. Martinez",
+      author: "R. Martínez",
       zone: "Coral Gables",
       rating: 5,
       plan: "Regular Maintenance",
@@ -456,48 +436,40 @@ const REVIEWS_COPY: Record<
   ],
   es: [
     {
-      author: "R. Martinez",
+      author: "R. Martínez",
       zone: "Coral Gables",
       rating: 5,
       plan: "Mantenimiento regular",
       quote:
-        "Calidad de servicio consistente cada semana. El equipo mantiene una comunicacion clara y directa.",
+        "Calidad de servicio consistente cada semana. El equipo mantiene una comunicación clara y directa.",
     },
     {
       author: "S. Henderson",
       zone: "Kendall",
       rating: 5,
-      plan: "Limpieza de piscina + deteccion de fugas",
+      plan: "Limpieza de piscina + detección de fugas",
       quote:
-        "Resolvieron problemas recurrentes del agua rapido y documentaron cada recomendacion con claridad.",
+        "Resolvieron problemas recurrentes del agua rápido y documentaron cada recomendación con claridad.",
     },
     {
       author: "A. Patel",
       zone: "Doral",
       rating: 5,
-      plan: "Reparacion de piscina",
+      plan: "Reparación de piscina",
       quote:
         "Excelente nivel de detalle. Nuestra piscina se ve impecable y detectaron reparaciones a tiempo.",
     },
   ],
 };
 
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M20.1 14.8A8.7 8.7 0 1 1 9.2 3.9a7 7 0 1 0 10.9 10.9Z" />
-    </svg>
-  );
-}
+/*
+ * The carousel toggle is styled with utilities because `.lp-slide-nav` pins its
+ * buttons to the vertical center with unlayered rules that would win over any
+ * utility override (see LandingHeader.tsx for the same constraint).
+ */
+const CAROUSEL_TOGGLE_CLASS =
+  "absolute right-[0.62rem] top-[0.62rem] z-[4] inline-flex h-[2.45rem] w-[2.45rem] items-center justify-center " +
+  "rounded-full border border-white/35 bg-[rgba(7,18,32,0.52)] text-[#f2f9ff]";
 
 function StarIcon({ filled }: { filled: boolean }) {
   return (
@@ -506,6 +478,23 @@ function StarIcon({ filled }: { filled: boolean }) {
         strokeWidth="1.7"
         d="m12 3.2 2.7 5.5 6 .9-4.3 4.2 1 5.9L12 16.8 6.6 19.7l1-5.9L3.3 9.6l6-.9L12 3.2Z"
       />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="14" height="14">
+      <rect x="6" y="4.5" width="4" height="15" rx="1" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1" />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="14" height="14">
+      <path d="M8 5.2v13.6a1 1 0 0 0 1.5.9l10.4-6.8a1 1 0 0 0 0-1.7L9.5 4.3A1 1 0 0 0 8 5.2Z" />
     </svg>
   );
 }
@@ -573,6 +562,29 @@ function ServicePillarIcon({ id }: { id: ServicePillarIconName }) {
   );
 }
 
+function supportsIntersectionObserver(): boolean {
+  return typeof window !== "undefined" && "IntersectionObserver" in window;
+}
+
+function isServicesVideoPlaybackAllowed(reducedMotion: boolean): boolean {
+  const connection = (
+    navigator as Navigator & {
+      connection?: {
+        saveData?: boolean;
+        effectiveType?: string;
+      };
+    }
+  ).connection;
+  const saveData = Boolean(connection?.saveData);
+  const effectiveType = connection?.effectiveType?.toLowerCase() ?? "";
+  const slowConnection =
+    effectiveType.includes("slow-2g") ||
+    effectiveType.includes("2g") ||
+    effectiveType.includes("3g");
+
+  return !reducedMotion && !saveData && !slowConnection;
+}
+
 export default function ClientLanding({
   socialLinks,
   landingConfig,
@@ -585,10 +597,11 @@ export default function ClientLanding({
 
   const { language, setLanguage, theme, setTheme } = useLandingPreferences();
   const [activeSlide, setActiveSlide] = useState(0);
-  const [pauseCarousel, setPauseCarousel] = useState(false);
-  const [activeNav, setActiveNav] =
-    useState<(typeof SECTION_NAV_ITEMS)[number]["id"]>("overview");
-  const [pressedNav, setPressedNav] = useState<string | null>(null);
+  const [hoverPaused, setHoverPaused] = useState(false);
+  /** `null` follows the reduced-motion preference; a boolean is an explicit user choice. */
+  const [userPaused, setUserPaused] = useState<boolean | null>(null);
+  const [activeNav, setActiveNav] = useState<LandingSectionId>("overview");
+  const [pressedNav, setPressedNav] = useState<LandingSectionId | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [servicesVideoAllowed, setServicesVideoAllowed] =
     useState(SERVICES_BACKGROUND_VIDEO_ENABLED);
@@ -597,11 +610,25 @@ export default function ClientLanding({
   const servicesIntroRef = useRef<HTMLDivElement | null>(null);
   const servicesVideoRef = useRef<HTMLVideoElement | null>(null);
   const copy = LANDING_COPY[language];
+  const shellCopy = getLandingShellCopy(language);
   const trustSignals = TRUST_SIGNALS_COPY[language];
   const servicePillars = SERVICE_PILLARS_COPY[language];
   const gallerySlides = GALLERY_SLIDES_COPY[language];
   const reviews = REVIEWS_COPY[language];
   const promoCopy = landingConfig?.promo[language] ?? DEFAULT_LANDING_PROMO_COPY[language];
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
+  const isHydrated = useIsHydrated();
+  const carouselPaused = userPaused ?? reducedMotion;
+  const autoplayActive = !hoverPaused && !carouselPaused;
+
+  /*
+   * Scroll-reveal is opt-in: the attribute is only rendered after hydration,
+   * when IntersectionObserver is available and reduced motion is not requested.
+   * Server HTML (and no-JS visitors) therefore never get `[data-lp-reveal]`,
+   * the selector globals.css uses to start elements at `opacity: 0`.
+   */
+  const revealEnabled = isHydrated && !reducedMotion && supportsIntersectionObserver();
+  const revealAttribute = revealEnabled ? "" : undefined;
 
   const cityParam = (searchParams.get("city") ?? "").trim();
   const servingRegion = cityParam
@@ -610,15 +637,8 @@ export default function ClientLanding({
       : `${cityParam} and South Florida`
     : "South Florida";
 
-  const defaultWhatsAppLink = useMemo(() => {
-    const text = encodeURIComponent(
-      language === "es"
-        ? "Hola AcostasPool, quiero un plan premium de mantenimiento para mi piscina."
-        : "Hi AcostasPool, I want a premium maintenance plan for my pool."
-    );
-    return `https://wa.me/${PHONE_E164.replace("+", "")}?text=${text}`;
-  }, [language]);
-  const whatsappLink = socialLinks?.whatsappUrl || defaultWhatsAppLink;
+  const whatsappLink =
+    socialLinks?.whatsappUrl || buildWhatsAppLink(shellCopy.whatsapp.message);
 
   const youtubeSrc = getLandingYoutubeEmbedSrc(
     landingConfig?.youtubeUrl,
@@ -628,11 +648,11 @@ export default function ClientLanding({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        let candidate: (typeof SECTION_NAV_ITEMS)[number]["id"] | null = null;
+        let candidate: LandingSectionId | null = null;
         let candidateRatio = 0;
         for (const entry of entries) {
           if (entry.isIntersecting && entry.intersectionRatio >= candidateRatio) {
-            candidate = entry.target.id as (typeof SECTION_NAV_ITEMS)[number]["id"];
+            candidate = entry.target.id as LandingSectionId;
             candidateRatio = entry.intersectionRatio;
           }
         }
@@ -646,7 +666,7 @@ export default function ClientLanding({
       }
     );
 
-    for (const item of SECTION_NAV_ITEMS) {
+    for (const item of LANDING_SECTION_NAV_ITEMS) {
       const el = document.getElementById(item.id);
       if (el) {
         observer.observe(el);
@@ -657,6 +677,14 @@ export default function ClientLanding({
   }, []);
 
   useEffect(() => {
+    if (!revealEnabled) {
+      return;
+    }
+
+    // Flags JS availability on the root element for stylesheets that want to
+    // scope reveal styles (e.g. `html.lp-js [data-lp-reveal]`).
+    document.documentElement.classList.add("lp-js");
+
     const revealElements = Array.from(
       document.querySelectorAll<HTMLElement>("[data-lp-reveal]")
     );
@@ -681,32 +709,7 @@ export default function ClientLanding({
     }
 
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!SERVICES_BACKGROUND_VIDEO_ENABLED) {
-      setServicesVideoAllowed(false);
-      return;
-    }
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const connection = (
-      navigator as Navigator & {
-        connection?: {
-          saveData?: boolean;
-          effectiveType?: string;
-        };
-      }
-    ).connection;
-    const saveData = Boolean(connection?.saveData);
-    const effectiveType = connection?.effectiveType?.toLowerCase() ?? "";
-    const slowConnection =
-      effectiveType.includes("slow-2g") ||
-      effectiveType.includes("2g") ||
-      effectiveType.includes("3g");
-
-    setServicesVideoAllowed(!reducedMotion && !saveData && !slowConnection);
-  }, []);
+  }, [revealEnabled]);
 
   useEffect(() => {
     if (!servicesVideoAllowed) {
@@ -720,10 +723,15 @@ export default function ClientLanding({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setServicesVideoVisible(true);
-          observer.disconnect();
+        if (!entries.some((entry) => entry.isIntersecting)) {
+          return;
         }
+        observer.disconnect();
+        if (!isServicesVideoPlaybackAllowed(reducedMotion)) {
+          setServicesVideoAllowed(false);
+          return;
+        }
+        setServicesVideoVisible(true);
       },
       {
         rootMargin: "240px 0px",
@@ -733,7 +741,7 @@ export default function ClientLanding({
 
     observer.observe(section);
     return () => observer.disconnect();
-  }, [servicesVideoAllowed]);
+  }, [servicesVideoAllowed, reducedMotion]);
 
   useEffect(() => {
     if (!servicesVideoAllowed || !servicesVideoVisible) {
@@ -754,18 +762,18 @@ export default function ClientLanding({
   }, [servicesVideoAllowed, servicesVideoVisible, servicesVideoSourceIndex]);
 
   useEffect(() => {
-    if (pauseCarousel) {
+    if (!autoplayActive) {
       return;
     }
     const timer = window.setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % gallerySlides.length);
-    }, 5500);
+    }, CAROUSEL_INTERVAL_MS);
     return () => window.clearInterval(timer);
-  }, [gallerySlides.length, pauseCarousel]);
+  }, [gallerySlides.length, autoplayActive]);
 
   useEffect(() => {
     const onScroll = () => {
-      setShowBackToTop(window.scrollY > 520);
+      setShowBackToTop(window.scrollY > BACK_TO_TOP_THRESHOLD_PX);
     };
 
     onScroll();
@@ -781,10 +789,7 @@ export default function ClientLanding({
     };
   }, []);
 
-  function handleNavClick(
-    event: MouseEvent<HTMLAnchorElement>,
-    sectionId: (typeof SECTION_NAV_ITEMS)[number]["id"]
-  ) {
+  function handleNavClick(event: MouseEvent<HTMLAnchorElement>, sectionId: LandingSectionId) {
     event.preventDefault();
     setPressedNav(sectionId);
     setActiveNav(sectionId);
@@ -799,128 +804,24 @@ export default function ClientLanding({
     }
     navPressTimer.current = window.setTimeout(() => {
       setPressedNav(null);
-    }, 220);
+    }, NAV_PRESS_FEEDBACK_MS);
   }
-
-  const sectionLabels: Record<(typeof SECTION_NAV_ITEMS)[number]["id"], string> = {
-    overview: copy.nav.overview,
-    services: copy.nav.services,
-    gallery: copy.nav.gallery,
-    video: copy.nav.video,
-    reviews: copy.nav.reviews,
-  };
 
   return (
     <div className="lp-shell" data-theme={theme}>
-      <header className="lp-header">
-        <div className="lp-container lp-header-inner">
-          <Link href="/" className="lp-brand">
-            <span className="lp-brand-dot" aria-hidden="true" />
-            <span className="lp-brand-name">
-              <span>Acostas</span>
-              <span>Pool</span>
-            </span>
-          </Link>
+      <LandingHeader
+        language={language}
+        theme={theme}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
+        whatsappLink={whatsappLink}
+        sectionNav={{ activeId: activeNav, pressedId: pressedNav, onNavigate: handleNavClick }}
+      />
 
-          <nav className="lp-nav" aria-label={language === "es" ? "Principal" : "Primary"}>
-            <Link href="/" className="lp-nav-link lp-nav-logo-link" data-nav-key="brand">
-              <span className="lp-nav-logo-dot" aria-hidden="true" />
-              <span className="lp-nav-logo-text">
-                <span>Acostas</span>
-                <span>Pool</span>
-              </span>
-            </Link>
-
-            {SECTION_NAV_ITEMS.map((item) => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className="lp-nav-link"
-                data-nav-key={item.id}
-                data-active={activeNav === item.id}
-                data-pressed={pressedNav === item.id}
-                onClick={(event) => handleNavClick(event, item.id)}
-              >
-                {sectionLabels[item.id]}
-              </a>
-            ))}
-
-            {PAGE_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="lp-nav-link lp-nav-link-page"
-                data-nav-key={item.key}
-              >
-                {copy.nav[item.key]}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="lp-header-actions">
-            <div className="lp-lang-switch" role="group" aria-label={language === "es" ? "Idioma" : "Language"}>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "en"}
-                onClick={() => setLanguage("en")}
-                aria-label={language === "es" ? "Ingles" : "English"}
-                title={language === "es" ? "Ingles" : "English"}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "es"}
-                onClick={() => setLanguage("es")}
-                aria-label={language === "es" ? "Espanol" : "Spanish"}
-                title={language === "es" ? "Espanol" : "Spanish"}
-              >
-                ES
-              </button>
-            </div>
-
-            <div className="lp-theme-switch" role="group" aria-label={language === "es" ? "Tema" : "Theme"}>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "ocean"}
-                onClick={() => setTheme("ocean")}
-                aria-label={language === "es" ? "Tema claro" : "Light theme"}
-                title={language === "es" ? "Tema claro" : "Light theme"}
-              >
-                <SunIcon />
-              </button>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "night"}
-                onClick={() => setTheme("night")}
-                aria-label={language === "es" ? "Tema oscuro" : "Dark theme"}
-                title={language === "es" ? "Tema oscuro" : "Dark theme"}
-              >
-                <MoonIcon />
-              </button>
-            </div>
-
-            <Link href="/login" className="lp-login-btn">
-              {copy.nav.login}
-            </Link>
-          </div>
-        </div>
-
-        <div className="lp-announce">
-          <div className="lp-container lp-announce-inner">
-            <p>{copy.announce}</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="lp-main">
+      <main id="main-content" className="lp-main" tabIndex={-1}>
         <section id="overview" className="lp-hero">
           <div className="lp-container lp-hero-grid">
-            <article className="lp-hero-copy lp-surface" data-lp-reveal>
+            <article className="lp-hero-copy lp-surface">
               <p className="lp-kicker">
                 {language === "es"
                   ? `Sirviendo hogares premium en ${servingRegion}`
@@ -936,8 +837,8 @@ export default function ClientLanding({
                 <Link href="/contact" className="lp-btn lp-btn-ghost">
                   {copy.hero.quote}
                 </Link>
-                <a href={`tel:${PHONE_E164}`} className="lp-btn lp-btn-ghost">
-                  {copy.hero.callPrefix} {PHONE_DISPLAY}
+                <a href={`tel:${LANDING_CONTACT.phoneE164}`} className="lp-btn lp-btn-ghost">
+                  {copy.hero.callPrefix} {LANDING_CONTACT.phoneDisplay}
                 </a>
               </div>
 
@@ -957,9 +858,14 @@ export default function ClientLanding({
               </div>
             </article>
 
-            <div className="lp-hero-media lp-surface" data-lp-reveal>
-              <img
-                src={HERO_IMAGE}
+            <div className="lp-hero-media lp-surface">
+              <Image
+                src={HERO_IMAGE.src}
+                width={HERO_IMAGE.width}
+                height={HERO_IMAGE.height}
+                sizes={HALF_WIDTH_IMAGE_SIZES}
+                priority
+                fetchPriority="high"
                 alt={
                   language === "es"
                     ? "Piscina residencial de lujo en el sur de Florida"
@@ -979,13 +885,16 @@ export default function ClientLanding({
             <div
               ref={servicesIntroRef}
               className="lp-services-intro-shell lp-surface"
-              data-lp-reveal
+              data-lp-reveal={revealAttribute}
             >
-              <img
-                src={SERVICES_BACKGROUND_IMAGE}
+              <Image
+                src={SERVICES_BACKGROUND_IMAGE.src}
+                width={SERVICES_BACKGROUND_IMAGE.width}
+                height={SERVICES_BACKGROUND_IMAGE.height}
+                sizes={FULL_WIDTH_IMAGE_SIZES}
                 alt={
                   language === "es"
-                    ? "Area premium de piscina con palmeras y arquitectura moderna"
+                    ? "Área premium de piscina con palmeras y arquitectura moderna"
                     : "Premium pool deck with palm trees and modern architecture"
                 }
                 className="lp-services-intro-bg"
@@ -1000,7 +909,7 @@ export default function ClientLanding({
                   loop
                   playsInline
                   preload="none"
-                  poster={SERVICES_BACKGROUND_IMAGE}
+                  poster={SERVICES_BACKGROUND_IMAGE.src}
                   aria-hidden="true"
                   onError={() => {
                     if (servicesVideoSourceIndex < SERVICES_BACKGROUND_VIDEO_SOURCES.length - 1) {
@@ -1022,13 +931,13 @@ export default function ClientLanding({
                 <div className="lp-services-intro-copy">
                   <p className="lp-kicker">
                     {language === "es"
-                      ? "Disenado para hogares del sur de Florida"
+                      ? "Diseñado para hogares del sur de Florida"
                       : "Designed for South Florida homes"}
                   </p>
                   <h2>{copy.services.title}</h2>
                   <p className="lp-section-head-copy">
                     {language === "es"
-                      ? "Flujos semanales estructurados, reportes claros y ejecucion enfocada en detalle para mantener tu piscina saludable y consistente."
+                      ? "Flujos semanales estructurados, reportes claros y ejecución enfocada en detalle para mantener tu piscina saludable y consistente."
                       : "Structured weekly workflows, clear reporting, and detail-focused execution to keep your pool healthy and visually consistent."}
                   </p>
                 </div>
@@ -1049,7 +958,7 @@ export default function ClientLanding({
               </div>
             </div>
 
-            <aside className="lp-service-promo lp-surface" data-lp-reveal>
+            <aside className="lp-service-promo lp-surface" data-lp-reveal={revealAttribute}>
               <div className="lp-service-promo-copy">
                 <p className="lp-service-promo-badge">{promoCopy.badge}</p>
                 <h3>{promoCopy.title}</h3>
@@ -1064,12 +973,15 @@ export default function ClientLanding({
               </div>
             </aside>
 
-            <div className="lp-service-plan-grid" data-lp-reveal>
+            <div className="lp-service-plan-grid" data-lp-reveal={revealAttribute}>
               {servicePillars.map((pillar) => (
                 <article key={pillar.title} className="lp-service-plan-card">
                   <div className="lp-service-plan-media">
-                    <img
-                      src={pillar.image}
+                    <Image
+                      src={pillar.image.src}
+                      width={pillar.image.width}
+                      height={pillar.image.height}
+                      sizes={SERVICE_CARD_IMAGE_SIZES}
                       alt={
                         language === "es"
                           ? `Vista previa del servicio ${pillar.title}`
@@ -1103,18 +1015,40 @@ export default function ClientLanding({
 
             <div
               className="lp-carousel lp-surface"
-              data-lp-reveal
-              onMouseEnter={() => setPauseCarousel(true)}
-              onMouseLeave={() => setPauseCarousel(false)}
+              data-lp-reveal={revealAttribute}
+              role="region"
+              aria-roledescription="carousel"
+              aria-label={copy.gallery.carouselLabel}
+              onMouseEnter={() => setHoverPaused(true)}
+              onMouseLeave={() => setHoverPaused(false)}
+              onFocus={() => setHoverPaused(true)}
+              onBlur={() => setHoverPaused(false)}
             >
-              {gallerySlides.map((slide, index) => (
-                <article key={slide.id} className="lp-slide" data-active={activeSlide === index}>
-                  <img src={slide.image} alt={slide.title} />
-                </article>
-              ))}
+              {gallerySlides.map((slide, index) => {
+                const isActive = activeSlide === index;
+                return (
+                  <article
+                    key={slide.id}
+                    className="lp-slide"
+                    data-active={isActive}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={copy.gallery.slideLabel(index + 1, gallerySlides.length)}
+                    aria-hidden={!isActive}
+                  >
+                    <Image
+                      src={slide.image.src}
+                      width={slide.image.width}
+                      height={slide.image.height}
+                      sizes={FULL_WIDTH_IMAGE_SIZES}
+                      alt={slide.title}
+                    />
+                  </article>
+                );
+              })}
 
               <div className="lp-slide-caption">{gallerySlides[activeSlide]?.title}</div>
-              <div className="lp-carousel-counter" aria-live="polite">
+              <div className="lp-carousel-counter" aria-live={autoplayActive ? "off" : "polite"}>
                 {activeSlide + 1} / {gallerySlides.length}
               </div>
 
@@ -1141,6 +1075,17 @@ export default function ClientLanding({
               >
                 <span>{">"}</span>
               </button>
+
+              <button
+                type="button"
+                className={CAROUSEL_TOGGLE_CLASS}
+                onClick={() => setUserPaused(!carouselPaused)}
+                aria-pressed={carouselPaused}
+                aria-label={copy.gallery.pauseLabel}
+                title={copy.gallery.pauseLabel}
+              >
+                {carouselPaused ? <PlayIcon /> : <PauseIcon />}
+              </button>
             </div>
 
             <div className="lp-slide-dots">
@@ -1150,6 +1095,7 @@ export default function ClientLanding({
                   type="button"
                   className="lp-dot"
                   data-active={activeSlide === index}
+                  aria-pressed={activeSlide === index}
                   onClick={() => setActiveSlide(index)}
                   aria-label={
                     language === "es"
@@ -1169,7 +1115,7 @@ export default function ClientLanding({
               <h2>{copy.visit.title}</h2>
             </div>
 
-            <div className="lp-video-layout" data-lp-reveal>
+            <div className="lp-video-layout" data-lp-reveal={revealAttribute}>
               <div className="lp-video-card lp-surface">
                 <iframe
                   src={youtubeSrc}
@@ -1224,7 +1170,11 @@ export default function ClientLanding({
                   .toUpperCase();
 
                 return (
-                  <article key={review.author} className="lp-review-card lp-surface" data-lp-reveal>
+                  <article
+                    key={review.author}
+                    className="lp-review-card lp-surface"
+                    data-lp-reveal={revealAttribute}
+                  >
                     <header className="lp-review-head">
                       <div className="lp-review-avatar" aria-hidden="true">
                         {initials}
@@ -1237,6 +1187,7 @@ export default function ClientLanding({
 
                     <div
                       className="lp-review-stars"
+                      role="img"
                       aria-label={
                         language === "es"
                           ? `${review.rating} de 5 estrellas`
@@ -1272,8 +1223,8 @@ export default function ClientLanding({
       <LandingFooter
         language={language}
         theme={theme}
-        onLanguageChange={(nextLocale) => setLanguage(nextLocale)}
-        onThemeChange={(nextTheme) => setTheme(nextTheme)}
+        onLanguageChange={setLanguage}
+        onThemeChange={setTheme}
         socialLinks={socialLinks}
       />
     </div>

@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { useI18n } from "@/i18n/client";
 import { getRecurringPlanLabelKey } from "@/lib/jobs/recurring-plan-templates";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
+import {
+  CustomerDetailModalTrigger,
+  type CustomerDetailModalId,
+} from "./forms/CustomerDetailModals";
 
 type PlanRow = {
   id: string;
@@ -26,7 +30,7 @@ type CustomerPlansTableProps = {
   rows: PlanRow[];
   onToggle: (formData: FormData) => Promise<void>;
   onDelete: (formData: FormData) => Promise<void>;
-  actionTargetId?: string;
+  actionTargetId?: CustomerDetailModalId;
 };
 
 const formatDate = (value: string, locale: string) =>
@@ -114,10 +118,6 @@ export default function CustomerPlansTable({
     t,
   ]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter, frequencyFilter, serviceFilter, techFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedRows = useMemo(() => {
@@ -141,12 +141,12 @@ export default function CustomerPlansTable({
             {t("admin.customers.plans.results", { count: filtered.length })}
           </span>
           {actionTargetId ? (
-            <label
-              htmlFor={actionTargetId}
+            <CustomerDetailModalTrigger
+              modal={actionTargetId}
               className="app-button-primary cursor-pointer px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]"
             >
               {t("admin.customers.plans.actions.new")}
-            </label>
+            </CustomerDetailModalTrigger>
           ) : null}
         </div>
       </div>
@@ -156,14 +156,20 @@ export default function CustomerPlansTable({
           <span className="ui-search-icon">{t("common.actions.search")}</span>
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder={t("admin.customers.plans.placeholders.search")}
             className="ui-search-input w-full"
           />
         </label>
         <select
           value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
+          onChange={(event) => {
+            setStatusFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.status")}</option>
@@ -172,7 +178,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={frequencyFilter}
-          onChange={(event) => setFrequencyFilter(event.target.value)}
+          onChange={(event) => {
+            setFrequencyFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.frequency")}</option>
@@ -182,7 +191,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={serviceFilter}
-          onChange={(event) => setServiceFilter(event.target.value)}
+          onChange={(event) => {
+            setServiceFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">{t("admin.customers.plans.filters.service")}</option>
@@ -194,7 +206,10 @@ export default function CustomerPlansTable({
         </select>
         <select
           value={techFilter}
-          onChange={(event) => setTechFilter(event.target.value)}
+          onChange={(event) => {
+            setTechFilter(event.target.value);
+            setPage(1);
+          }}
           className="ui-select w-full px-3 py-2 text-xs"
         >
           <option value="ALL">
@@ -213,14 +228,14 @@ export default function CustomerPlansTable({
           <table className="customers-table customer-plans-table min-w-[1120px] w-full text-left text-xs text-slate-600">
             <thead className="sticky top-0 z-10 border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
               <tr>
-                <th className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.plan")}</th>
-                <th className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.property")}</th>
-                <th className="w-[10%] px-3 py-3">{t("admin.customers.plans.table.frequency")}</th>
-                <th className="w-[16%] px-3 py-3">{t("admin.customers.plans.table.next")}</th>
-                <th className="w-[14%] px-3 py-3">{t("admin.customers.plans.table.technician")}</th>
-                <th className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.priority")}</th>
-                <th className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.status")}</th>
-                <th className="w-[24%] px-3 py-3 text-right">{t("admin.customers.plans.table.actions")}</th>
+                <th scope="col" className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.plan")}</th>
+                <th scope="col" className="w-[20%] px-3 py-3">{t("admin.customers.plans.table.property")}</th>
+                <th scope="col" className="w-[10%] px-3 py-3">{t("admin.customers.plans.table.frequency")}</th>
+                <th scope="col" className="w-[16%] px-3 py-3">{t("admin.customers.plans.table.next")}</th>
+                <th scope="col" className="w-[14%] px-3 py-3">{t("admin.customers.plans.table.technician")}</th>
+                <th scope="col" className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.priority")}</th>
+                <th scope="col" className="w-[8%] px-3 py-3">{t("admin.customers.plans.table.status")}</th>
+                <th scope="col" className="w-[24%] px-3 py-3 text-right">{t("admin.customers.plans.table.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

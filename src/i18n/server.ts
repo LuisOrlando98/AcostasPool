@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { LOCALE_COOKIE, defaultLocale, normalizeLocale } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
-import { getMessages, translate, type Messages } from "@/i18n/translate";
+import { createTranslator, type Translator } from "@/i18n/core";
+import { loadMessages } from "@/i18n/dictionaries";
 
 export async function getRequestLocale() {
   const store = await cookies();
@@ -9,9 +10,12 @@ export async function getRequestLocale() {
   return normalizeLocale(raw ?? defaultLocale);
 }
 
-export async function getTranslations(locale?: Locale) {
+/**
+ * Devuelve `t(key, values)` para el locale de la petición; el mismo `t` expone
+ * `t.plural(key, count, values)` para claves con formas `.one` / `.other`.
+ * Carga (y cachea) únicamente el diccionario de ese locale.
+ */
+export async function getTranslations(locale?: Locale): Promise<Translator> {
   const resolvedLocale = locale ?? (await getRequestLocale());
-  const messages: Messages = getMessages(resolvedLocale);
-  return (key: string, values?: Record<string, string | number>) =>
-    translate(messages, key, values);
+  return createTranslator(await loadMessages(resolvedLocale));
 }

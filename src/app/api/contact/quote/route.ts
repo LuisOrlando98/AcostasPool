@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { z } from "zod";
-import { prisma } from "@/lib/db";
 import { escapeHtml, renderEmailTemplate } from "@/lib/email-templates";
+import { getMailConfig, sendMailAndLog } from "@/lib/mail/transport";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { normalizeEmail } from "@/lib/auth/email";
@@ -60,14 +59,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
-  const to = process.env.CONTACT_INBOX_EMAIL || user;
+  const mailConfig = getMailConfig();
+  const inboxEmail = process.env.CONTACT_INBOX_EMAIL || mailConfig?.user;
 
-  if (!host || !user || !pass || !from || !to) {
+  if (!mailConfig || !inboxEmail) {
     return NextResponse.json({ error: "SMTP not configured" }, { status: 500 });
   }
 
@@ -99,54 +94,20 @@ export async function POST(request: Request) {
     notes_html: safeNotesHtml,
   });
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass },
-    });
+  const sent = await sendMailAndLog({
+    to: inboxEmail,
+    recipientName: "Quote inbox",
+    recipientRole: "ADMIN",
+    template: "QUOTE_REQUEST",
+    replyTo: email,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+  });
 
-    await transporter.sendMail({
-      from,
-      to,
-      replyTo: email,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
-    });
-
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail: to,
-        recipientName: "Quote inbox",
-        recipientRole: "ADMIN",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "SENT",
-        sentAt: new Date(),
-      },
-    });
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown send error";
-
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail: to,
-        recipientName: "Quote inbox",
-        recipientRole: "ADMIN",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "FAILED",
-        errorMessage: message,
-      },
-    });
-
-    console.error("Quote email send failed:", error);
+  if (!sent.ok) {
     return NextResponse.json({ error: "Could not send email" }, { status: 500 });
   }
+
+  return NextResponse.json({ ok: true });
 }

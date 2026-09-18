@@ -1,5 +1,12 @@
 # Backlog V1 (Epics)
 
+> **Estado a 18 sep 2026**: los 7 epics de abajo están implementados. Se sumó trabajo no listado
+> aquí: planes recurrentes con materialización automática (worker cron), asistente de rutas con
+> geocodificación persistida, digests de técnico y notificaciones en tiempo real (Pusher con
+> fallback SSE), PWA instalable, i18n EN/ES, portal de cliente ampliado (repositorio de
+> documentos, disponibilidad on-demand) y auditoría (`AuditLog`) de acciones administrativas. Ver
+> `docs/Architecture.md` y `docs/DataModel.md` para el detalle técnico actual.
+
 ## Epic 1: Autenticacion y roles
 - Login con usuario y contrasena
 - Roles: admin, tecnico, cliente

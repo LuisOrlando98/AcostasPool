@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import AppModal from "@/components/ui/AppModal";
 import StatCard from "@/components/ui/StatCard";
 import { useI18n } from "@/i18n/client";
 import { getJobStatusLabel } from "@/lib/constants";
@@ -89,6 +90,8 @@ export default function AdminDashboardClient({
   stats,
 }: AdminDashboardClientProps) {
   const { t } = useI18n();
+  const filtersTitleId = useId();
+  const searchInputId = useId();
   const [routeFilter, setRouteFilter] = useState<RouteFilter>("ALL");
   const [search, setSearch] = useState("");
   const [routeFiltersOpen, setRouteFiltersOpen] = useState(false);
@@ -169,6 +172,10 @@ export default function AdminDashboardClient({
     setRouteFiltersOpen(true);
   };
 
+  const closeRouteFilters = () => {
+    setRouteFiltersOpen(false);
+  };
+
   const resetRouteFilters = () => {
     setRouteFilter("ALL");
     setSearch("");
@@ -235,6 +242,7 @@ export default function AdminDashboardClient({
                   stroke="currentColor"
                   strokeWidth="2"
                   className="h-4 w-4"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M7 12h10M10 18h4" />
                 </svg>
@@ -452,103 +460,105 @@ export default function AdminDashboardClient({
         </div>
       </section>
 
-      {routeFiltersOpen ? (
-        <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-slate-900/55 p-3 sm:p-6">
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label={t("common.actions.close")}
-            onClick={() => setRouteFiltersOpen(false)}
-          />
-          <div className="relative z-10 w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {t("admin.dashboard.interactive.modalTitle")}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {t("admin.dashboard.interactive.modalSubtitle")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setRouteFiltersOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
-                  aria-label={t("common.actions.close")}
-                  title={t("common.actions.close")}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4 w-4"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
-                  </svg>
-                </button>
-              </div>
+      <AppModal
+        open={routeFiltersOpen}
+        onClose={closeRouteFilters}
+        titleId={filtersTitleId}
+        layerClassName="bg-slate-900/55 p-3 sm:p-6"
+        backdropClassName=""
+        cardClassName="max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      >
+        <div className="border-b border-slate-200 px-4 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 id={filtersTitleId} className="text-lg font-semibold text-slate-900">
+                {t("admin.dashboard.interactive.modalTitle")}
+              </h3>
+              <p className="text-xs text-slate-500">
+                {t("admin.dashboard.interactive.modalSubtitle")}
+              </p>
             </div>
-
-            <div className="max-h-[75vh] overflow-y-auto px-4 py-4 sm:px-6">
-              <div className="space-y-5">
-                <section>
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("common.actions.search")}
-                  </label>
-                  <input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    className="app-input mt-2 w-full px-4 py-3 text-sm"
-                    placeholder={t("admin.dashboard.interactive.searchPlaceholder")}
-                  />
-                </section>
-
-                <section>
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("admin.dashboard.interactive.filtersTitle")}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {routeFilterOptions.map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setRouteFilter(item.key)}
-                        className={`app-chip px-3 py-1.5 text-xs transition ${
-                          routeFilter === item.key
-                            ? "bg-slate-900 text-white"
-                            : ""
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <button
-                type="button"
-                onClick={resetRouteFilters}
-                className="app-button-ghost w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+            <button
+              type="button"
+              onClick={closeRouteFilters}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:border-slate-300 hover:text-slate-800"
+              aria-label={t("common.actions.close")}
+              title={t("common.actions.close")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+                aria-hidden="true"
               >
-                {t("admin.dashboard.interactive.reset")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRouteFiltersOpen(false)}
-                className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
-              >
-                {t("common.actions.close")}
-              </button>
-            </div>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6l-12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-      ) : null}
+
+        <div className="max-h-[75vh] overflow-y-auto px-4 py-4 sm:px-6">
+          <div className="space-y-5">
+            <section>
+              <label
+                htmlFor={searchInputId}
+                className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500"
+              >
+                {t("common.actions.search")}
+              </label>
+              <input
+                id={searchInputId}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="app-input mt-2 w-full px-4 py-3 text-sm"
+                placeholder={t("admin.dashboard.interactive.searchPlaceholder")}
+              />
+            </section>
+
+            <section>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("admin.dashboard.interactive.filtersTitle")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {routeFilterOptions.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setRouteFilter(item.key)}
+                    className={`app-chip px-3 py-1.5 text-xs transition ${
+                      routeFilter === item.key
+                        ? "bg-slate-900 text-white"
+                        : ""
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <button
+            type="button"
+            onClick={resetRouteFilters}
+            className="app-button-ghost w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+          >
+            {t("admin.dashboard.interactive.reset")}
+          </button>
+          <button
+            type="button"
+            onClick={closeRouteFilters}
+            className="app-button-primary w-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] sm:w-auto"
+          >
+            {t("common.actions.close")}
+          </button>
+        </div>
+      </AppModal>
     </div>
   );
 }

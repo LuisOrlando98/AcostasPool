@@ -18,7 +18,9 @@ type DigestItemInput = {
   jobId: string;
   routeDate: Date;
   changeType: string;
-  payload?: Prisma.JsonValue;
+  payload?: Prisma.InputJsonValue;
+  /** Transacción del llamante; si se omite se escribe con el cliente global. */
+  tx?: Prisma.TransactionClient;
 };
 
 export const queueTechDigestItem = async ({
@@ -27,8 +29,10 @@ export const queueTechDigestItem = async ({
   routeDate,
   changeType,
   payload,
+  tx,
 }: DigestItemInput) => {
-  return prisma.techDigestItem.create({
+  const client: Prisma.TransactionClient = tx ?? prisma;
+  return client.techDigestItem.create({
     data: {
       technicianId,
       jobId,

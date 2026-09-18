@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import FormSubmitButton from "@/components/ui/FormSubmitButton";
 import { useI18n } from "@/i18n/client";
@@ -69,7 +69,12 @@ export default function InvoiceCreateForm({
   const [invoiceType, setInvoiceType] = useState<InvoiceType>("STANDARD");
   const [taxExempt, setTaxExempt] = useState(false);
   const [lines, setLines] = useState<LineDraft[]>([createLine()]);
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [customerMissing, setCustomerMissing] = useState(false);
+  const fieldIdBase = useId();
+  const customerSelectId = `${fieldIdBase}-customer`;
+  const customerErrorId = `${fieldIdBase}-customer-error`;
+  const notesId = `${fieldIdBase}-notes`;
 
   const serviceCatalog = useMemo(
     () =>
@@ -96,16 +101,23 @@ export default function InvoiceCreateForm({
     return map;
   }, [jobs]);
 
-  const visibleJobs = jobsByCustomer.get(selectedCustomerId) ?? [];
+  const visibleJobs = useMemo(
+    () => jobsByCustomer.get(selectedCustomerId) ?? [],
+    [jobsByCustomer, selectedCustomerId]
+  );
 
-  const jobLabel = (job: JobOption) => {
-    const serviceLabel =
-      serviceCatalog.find((item) => item.value === job.serviceType)?.label ?? job.serviceType;
-    const dateLabel = formatInBusinessTimeZone(job.scheduledDate, locale, {
-      dateStyle: "short",
-    });
-    return `${serviceLabel} - ${dateLabel}`;
-  };
+  const jobLabel = useCallback(
+    (job: JobOption) => {
+      const serviceLabel =
+        serviceCatalog.find((item) => item.value === job.serviceType)?.label ??
+        job.serviceType;
+      const dateLabel = formatInBusinessTimeZone(job.scheduledDate, locale, {
+        dateStyle: "short",
+      });
+      return `${serviceLabel} - ${dateLabel}`;
+    },
+    [serviceCatalog, locale]
+  );
 
   const pickDefaultJob = (customerId: string) => {
     const options = jobsByCustomer.get(customerId) ?? [];
@@ -152,7 +164,7 @@ export default function InvoiceCreateForm({
     serviceCatalog.forEach((item) => options.add(item.label));
     visibleJobs.forEach((job) => options.add(jobLabel(job)));
     return [...options];
-  }, [serviceCatalog, visibleJobs, locale]);
+  }, [serviceCatalog, visibleJobs, jobLabel]);
 
   const normalizedLines = useMemo(() => {
     return lines
@@ -202,14 +214,20 @@ export default function InvoiceCreateForm({
   return (
     <form
       action={async (formData) => {
-        setError(null);
-        const result = await createInvoiceAction(formData);
-        if (result?.error) {
-          setError(result.error);
-          return;
+        setFormError(null);
+        try {
+          // The action reports validation problems (e.g. Stripe minimum) as a result,
+          // while unexpected failures surface as a thrown error.
+          const result = await createInvoiceAction(formData);
+          if (result?.error) {
+            setFormError(result.error);
+            return;
+          }
+          onCreated?.();
+          router.refresh();
+        } catch {
+          setFormError(t("admin.invoices.new.errors.create"));
         }
-        onCreated?.();
-        router.refresh();
       }}
       className="mt-5"
     >
@@ -217,16 +235,29 @@ export default function InvoiceCreateForm({
         <div className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              <label>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <div>
+                <label
+                  htmlFor={customerSelectId}
+                  className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
                   {t("admin.invoices.new.fields.customer")}
-                </span>
+                  <span aria-hidden="true" className="ml-0.5 text-rose-600">
+                    *
+                  </span>
+                </label>
                 <select
+                  id={customerSelectId}
                   name="customerId"
                   value={selectedCustomerId}
+                  required
+                  aria-required="true"
+                  aria-invalid={customerMissing || undefined}
+                  aria-describedby={customerMissing ? customerErrorId : undefined}
+                  onInvalid={() => setCustomerMissing(true)}
                   onChange={(event) => {
                     const nextCustomerId = event.target.value;
                     setSelectedCustomerId(nextCustomerId);
+                    setCustomerMissing(false);
                     if (!nextCustomerId) {
                       setSelectedJobId("");
                       setLines([createLine()]);
@@ -247,7 +278,6 @@ export default function InvoiceCreateForm({
                     }
                   }}
                   className="app-input mt-2 w-full bg-white px-4 py-3 text-sm"
-                  required
                 >
                   <option value="" disabled>
                     --
@@ -258,7 +288,12 @@ export default function InvoiceCreateForm({
                     </option>
                   ))}
                 </select>
-              </label>
+                {customerMissing ? (
+                  <p id={customerErrorId} className="mt-1 text-xs text-rose-600">
+                    {t("admin.invoices.new.errors.customerRequired")}
+                  </p>
+                ) : null}
+              </div>
 
               <label>
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -310,6 +345,9 @@ export default function InvoiceCreateForm({
                 </select>
               </label>
             </div>
+            <p className="mt-3 text-[11px] text-slate-500">
+              {t("admin.invoices.new.requiredLegend")}
+            </p>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
@@ -474,22 +512,31 @@ export default function InvoiceCreateForm({
           </div>
 
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <label
+              htmlFor={notesId}
+              className="text-xs font-semibold uppercase tracking-wider text-slate-500"
+            >
               {t("common.labels.notes")}
             </label>
             <textarea
+              id={notesId}
               name="notes"
               className="app-input mt-2 min-h-[90px] w-full px-4 py-3 text-sm"
             />
           </div>
 
-          {error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
-            </div>
+          {formError ? (
+            <p
+              role="alert"
+              className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+            >
+              {formError}
+            </p>
           ) : null}
 
           <FormSubmitButton
+            // Remount after a failed submit so the button does not flash its success label.
+            key={formError ? "submit-after-error" : "submit"}
             idleLabel={t("admin.invoices.new.actions.create")}
             pendingLabel={t("common.feedback.creating")}
             successLabel={t("common.feedback.created")}

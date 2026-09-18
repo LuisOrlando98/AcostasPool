@@ -1,9 +1,19 @@
 import type { GeoPoint } from "@/lib/routing/geo";
+import { getGoogleMapsServerApiKey } from "@/lib/routing/google-api-key";
 
-const DEFAULT_DRIVE_MINUTES = 15;
+export const DEFAULT_DRIVE_MINUTES = 15;
 const TRAVEL_CACHE_TTL_MS = 3 * 60 * 1000;
 const ESTIMATED_SPEED_MPH = 27;
 const TRAFFIC_FACTOR = 1.15;
+const MIN_ESTIMATED_DRIVE_MINUTES = 4;
+const SAME_ADDRESS_DISTANCE_THRESHOLD_MILES = 0.02;
+const EARTH_RADIUS_MILES = 3958.8;
+const METERS_PER_MILE = 1609.344;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const DEGREES_PER_HALF_TURN = 180;
+/** Peticiones simultáneas al Distance Matrix de Google. */
+const TRAVEL_CONCURRENCY = 6;
 
 export type TravelMetricSource =
   | "LIVE_TRAFFIC"
@@ -39,10 +49,10 @@ export const getAddressPairKey = (fromAddress: string, toAddress: string) =>
 const isSameAddress = (fromAddress: string, toAddress: string) =>
   normalizeAddress(fromAddress) === normalizeAddress(toAddress);
 
-const toRadians = (value: number) => (value * Math.PI) / 180;
+export const toRadians = (value: number) =>
+  (value * Math.PI) / DEGREES_PER_HALF_TURN;
 
-const haversineMiles = (from: GeoPoint, to: GeoPoint) => {
-  const earthRadiusMiles = 3958.8;
+export const haversineMiles = (from: GeoPoint, to: GeoPoint) => {
   const dLat = toRadians(to.lat - from.lat);
   const dLng = toRadians(to.lng - from.lng);
   const lat1 = toRadians(from.lat);
@@ -51,8 +61,55 @@ const haversineMiles = (from: GeoPoint, to: GeoPoint) => {
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadiusMiles * c;
+  return EARTH_RADIUS_MILES * c;
 };
+
+const estimateMinutesForMiles = (miles: number) =>
+  Math.max(
+    MIN_ESTIMATED_DRIVE_MINUTES,
+    Math.round((miles / ESTIMATED_SPEED_MPH) * MINUTES_PER_HOUR * TRAFFIC_FACTOR)
+  );
+
+/**
+ * Estimación local de conducción entre dos puntos (27 mph, factor de tráfico
+ * 1.15, mínimo 4 min). Sin coordenadas devuelve DEFAULT_DRIVE_MINUTES.
+ */
+export function estimateDriveMinutes(
+  from: GeoPoint | null,
+  to: GeoPoint | null
+) {
+  if (!from || !to) {
+    return DEFAULT_DRIVE_MINUTES;
+  }
+  return estimateMinutesForMiles(haversineMiles(from, to));
+}
+
+/**
+ * Ejecuta `task` sobre cada elemento con como máximo `concurrency` tareas en
+ * vuelo, conservando el orden de los resultados. Compartido por geo.ts y
+ * travel.ts para las llamadas a proveedores externos.
+ */
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  task: (item: T) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) {
+    return [];
+  }
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.max(1, Math.min(concurrency, items.length));
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await task(items[index]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 const roundMiles = (value: number | null) =>
   value == null ? null : Number(value.toFixed(2));
@@ -77,7 +134,10 @@ const estimateMetric = (pair: AddressPairInput): TravelMetric => {
   }
 
   const distanceMiles = haversineMiles(from, to);
-  if (!Number.isFinite(distanceMiles) || distanceMiles <= 0.02) {
+  if (
+    !Number.isFinite(distanceMiles) ||
+    distanceMiles <= SAME_ADDRESS_DISTANCE_THRESHOLD_MILES
+  ) {
     return {
       durationMinutes: 0,
       distanceMiles: 0,
@@ -85,26 +145,11 @@ const estimateMetric = (pair: AddressPairInput): TravelMetric => {
     };
   }
 
-  const estimatedMinutes = Math.max(
-    4,
-    Math.round((distanceMiles / ESTIMATED_SPEED_MPH) * 60 * TRAFFIC_FACTOR)
-  );
-
   return {
-    durationMinutes: estimatedMinutes,
+    durationMinutes: estimateMinutesForMiles(distanceMiles),
     distanceMiles: roundMiles(distanceMiles),
     source: "ESTIMATED",
   };
-};
-
-const getGoogleApiKey = () => {
-  if (process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_SERVER_API_KEY.trim();
-  }
-  if (process.env.GOOGLE_MAPS_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_API_KEY.trim();
-  }
-  return "";
 };
 
 async function getGooglePairMetric(
@@ -156,11 +201,14 @@ async function getGooglePairMetric(
 
   const distanceMeters = element.distance?.value;
   const distanceMiles = Number.isFinite(distanceMeters)
-    ? (distanceMeters as number) / 1609.344
+    ? (distanceMeters as number) / METERS_PER_MILE
     : null;
 
   return {
-    durationMinutes: Math.max(0, Math.round((durationSeconds as number) / 60)),
+    durationMinutes: Math.max(
+      0,
+      Math.round((durationSeconds as number) / SECONDS_PER_MINUTE)
+    ),
     distanceMiles: roundMiles(distanceMiles),
     source: "LIVE_TRAFFIC",
   };
@@ -200,7 +248,7 @@ async function resolveMetric(pair: AddressPairInput) {
     return { key, metric: fallback };
   }
 
-  const apiKey = getGoogleApiKey();
+  const apiKey = getGoogleMapsServerApiKey();
   if (!apiKey) {
     setCachedMetric(key, fallback);
     return { key, metric: fallback };
@@ -212,7 +260,7 @@ async function resolveMetric(pair: AddressPairInput) {
   return { key, metric: resolved };
 }
 
-export async function getTravelMetricsForPairs(pairs: AddressPairInput[]) {
+function uniquePairsByKey(pairs: AddressPairInput[]) {
   const uniqueByKey = new Map<string, AddressPairInput>();
   for (const pair of pairs) {
     if (!pair.fromAddress.trim() || !pair.toAddress.trim()) {
@@ -223,25 +271,14 @@ export async function getTravelMetricsForPairs(pairs: AddressPairInput[]) {
       uniqueByKey.set(key, pair);
     }
   }
+  return Array.from(uniqueByKey.values());
+}
 
-  const queue = Array.from(uniqueByKey.values());
-  const results = new Map<string, TravelMetric>();
-  if (queue.length === 0) {
-    return results;
-  }
-
-  const workerCount = Math.min(6, queue.length);
-  const workers = Array.from({ length: workerCount }, async () => {
-    while (queue.length > 0) {
-      const next = queue.shift();
-      if (!next) {
-        return;
-      }
-      const { key, metric } = await resolveMetric(next);
-      results.set(key, metric);
-    }
-  });
-
-  await Promise.all(workers);
-  return results;
+export async function getTravelMetricsForPairs(pairs: AddressPairInput[]) {
+  const resolved = await mapWithConcurrency(
+    uniquePairsByKey(pairs),
+    TRAVEL_CONCURRENCY,
+    resolveMetric
+  );
+  return new Map(resolved.map(({ key, metric }) => [key, metric]));
 }

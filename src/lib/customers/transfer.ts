@@ -8,7 +8,7 @@ import { normalizeUsPhone } from "@/lib/phones";
 import { normalizePropertyAddress } from "@/lib/routing/address";
 import { parseBusinessDateInput } from "@/lib/timezone";
 
-export const CUSTOMER_TRANSFER_FORMAT = "acostaspool.customers.v1";
+export const CUSTOMER_TRANSFER_FORMAT = "acostaspool.customers.v1" as const;
 
 const customerTransferPropertySchema = z.object({
   sourcePropertyId: z.unknown().optional(),

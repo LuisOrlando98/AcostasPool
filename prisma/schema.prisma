@@ -74,6 +74,7 @@ enum InvoiceTheme {
 
 enum NotificationStatus {
   QUEUED
+  PROCESSING
   SENT
   FAILED
 }
@@ -127,123 +128,128 @@ model User {
   isActive     Boolean  @default(true)
   isDeveloper  Boolean  @default(false)
   avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
-  technician Technician?
-  customer   Customer?
-  requestedJobs Job[] @relation("UserRequestedJobs")
-  auditLogs  AuditLog[]
-  passwordResetTokens PasswordResetToken[]
+  technician              Technician?
+  customer                Customer?
+  requestedJobs           Job[]                    @relation("UserRequestedJobs")
+  auditLogs               AuditLog[]
+  passwordResetTokens     PasswordResetToken[]
   notificationPreferences NotificationPreference[]
-  actedNotifications Notification[] @relation("NotificationActor")
-  customerDocuments CustomerDocument[] @relation("CustomerDocumentUploader")
+  actedNotifications      Notification[]           @relation("NotificationActor")
+  customerDocuments       CustomerDocument[]       @relation("CustomerDocumentUploader")
 
   @@index([isDeveloper])
 }
 
 model Technician {
-  id     String  @id @default(cuid())
-  userId String  @unique
-  phone  String?
-  notes  String?
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  phone    String?
+  notes    String?
   colorHex String?
 
-  user User @relation(fields: [userId], references: [id])
-  jobs Job[]
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs         Job[]
   servicePlans ServicePlan[]
-  digests TechDigest[]
-  digestItems TechDigestItem[]
-  emailLogs EmailLog[]
+  digests      TechDigest[]
+  digestItems  TechDigestItem[]
+  emailLogs    EmailLog[]
 }
 
 model Customer {
-  id            String        @id @default(cuid())
-  userId        String?       @unique
-  nombre        String
-  apellidos     String
-  email         String
-  telefono      String
-  telefonoSecundario String?
-  idiomaPreferencia Locale        @default(EN)
-  estadoCuenta  AccountStatus @default(ACTIVE)
-  tipoCliente   CustomerType @default(RESIDENTIAL)
-  allowWeekendBooking Boolean @default(false)
-  pauseServicesFrom DateTime?
-  direccionLinea1 String?
-  direccionLinea2 String?
-  ciudad        String?
-  estadoProvincia String?
-  codigoPostal  String?
-  notas         String?
+  id                      String        @id @default(cuid())
+  userId                  String?       @unique
+  nombre                  String
+  apellidos               String
+  email                   String
+  telefono                String
+  telefonoSecundario      String?
+  idiomaPreferencia       Locale        @default(EN)
+  estadoCuenta            AccountStatus @default(ACTIVE)
+  tipoCliente             CustomerType  @default(RESIDENTIAL)
+  allowWeekendBooking     Boolean       @default(false)
+  pauseServicesFrom       DateTime?     @db.Timestamptz(3)
+  direccionLinea1         String?
+  direccionLinea2         String?
+  ciudad                  String?
+  estadoProvincia         String?
+  codigoPostal            String?
+  notas                   String?
   contractedServiceTierId String?
-  paymentMethod String?
-  stripeCustomerId String? @unique
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  paymentMethod           String?
+  stripeCustomerId        String?       @unique
+  createdAt               DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime      @updatedAt @db.Timestamptz(3)
 
-  user          User?          @relation(fields: [userId], references: [id])
-  contractedServiceTier ServiceTier? @relation(fields: [contractedServiceTierId], references: [id])
-  properties    Property[]
-  jobs          Job[]
-  invoices      Invoice[]
-  documents     CustomerDocument[]
-  notifications Notification[]
-  servicePlans  ServicePlan[]
-  emailLogs     EmailLog[]
-  serviceContracts ServiceContract[]
-  payments      Payment[]
-  memberships   Membership[]
+  user                  User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contractedServiceTier ServiceTier?       @relation(fields: [contractedServiceTierId], references: [id], onDelete: SetNull)
+  properties            Property[]
+  jobs                  Job[]
+  invoices              Invoice[]
+  documents             CustomerDocument[]
+  notifications         Notification[]
+  servicePlans          ServicePlan[]
+  emailLogs             EmailLog[]
+  serviceContracts      ServiceContract[]
+  payments              Payment[]
+  memberships           Membership[]
+
+  @@index([email])
 }
 
 model Property {
-  id               String   @id @default(cuid())
-  customerId       String
-  name             String?
-  address          String
-  poolType         String?
-  poolVolumeGallons Int?
-  waterType        String?
-  surfaceType      String?
-  filterType       String?
-  pumpType         String?
-  heaterType       String?
-  hasSpa           Boolean  @default(false)
-  sanitizerType    String?
-  accessInfo       String?
-  locationNotes    String?
-  serviceStartDate DateTime?
-  paymentDay       Int?
-  servicePrice     Decimal? @db.Decimal(10, 2)
-  paymentType      String?
-  paymentNotes     String?
-  equipmentDetails String?
-  referencePhotos  Json?
-  filterBrand      String?
-  filterModel      String?
-  pumpBrand        String?
-  pumpHorsepower   String?
-  poolCondition    Json?
+  id                 String    @id @default(cuid())
+  customerId         String
+  name               String?
+  address            String
+  poolType           String?
+  poolVolumeGallons  Int?
+  waterType          String?
+  surfaceType        String?
+  filterType         String?
+  pumpType           String?
+  heaterType         String?
+  hasSpa             Boolean   @default(false)
+  sanitizerType      String?
+  accessInfo         String?
+  locationNotes      String?
+  serviceStartDate   DateTime? @db.Timestamptz(3)
+  paymentDay         Int?
+  servicePrice       Decimal?  @db.Decimal(10, 2)
+  paymentType        String?
+  paymentNotes       String?
+  equipmentDetails   String?
+  referencePhotos    Json?
+  filterBrand        String?
+  filterModel        String?
+  pumpBrand          String?
+  pumpHorsepower     String?
+  poolCondition      Json?
   poolConditionNotes String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  lat                Float?
+  lng                Float?
+  geocodedAt         DateTime? @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  jobs     Job[]
-  servicePlans ServicePlan[]
+  customer         Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobs             Job[]
+  servicePlans     ServicePlan[]
   serviceContracts ServiceContract[]
-  memberships Membership[]
+  memberships      Membership[]
 
   @@index([customerId])
 }
 
 model ServiceContract {
-  id            String   @id @default(cuid())
-  customerId    String
-  propertyId    String?
-  locale        String
-  status        String   @default("DRAFT")
-  periodMonth   DateTime
+  id          String   @id @default(cuid())
+  customerId  String
+  propertyId  String?
+  locale      String
+  status      String   @default("DRAFT")
+  periodMonth DateTime @db.Timestamptz(3)
 
   customerNameSnapshot    String
   customerEmailSnapshot   String?
@@ -262,152 +268,155 @@ model ServiceContract {
   pdfUrl              String?
   pdfError            String?
 
-  sentAt DateTime?
+  sentAt DateTime? @db.Timestamptz(3)
 
-  clientSignatureUrl     String?
-  clientSignedAt         DateTime?
-  clientSignedVia        String?
-  clientSignedByUserId   String?
-  clientSignedIp         String?
-  clientSignedUserAgent  String?
+  clientSignatureUrl    String?
+  clientSignedAt        DateTime? @db.Timestamptz(3)
+  clientSignedVia       String?
+  clientSignedByUserId  String?
+  clientSignedIp        String?
+  clientSignedUserAgent String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  customer Customer  @relation(fields: [customerId], references: [id])
-  property Property? @relation(fields: [propertyId], references: [id])
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   @@index([customerId, periodMonth])
   @@index([status])
 }
 
 model Job {
-    id            String    @id @default(cuid())
-    customerId    String
-    propertyId    String
-    technicianId  String?
-    serviceTierId String?
-    scheduledDate DateTime
-    status        JobStatus @default(SCHEDULED)
-    type          JobType   @default(ROUTINE)
-    priority      JobPriority @default(NORMAL)
-  serviceType   ServiceType @default(WEEKLY_CLEANING)
+  id                       String      @id @default(cuid())
+  customerId               String
+  propertyId               String
+  technicianId             String?
+  serviceTierId            String?
+  scheduledDate            DateTime    @db.Timestamptz(3)
+  status                   JobStatus   @default(SCHEDULED)
+  type                     JobType     @default(ROUTINE)
+  priority                 JobPriority @default(NORMAL)
+  serviceType              ServiceType @default(WEEKLY_CLEANING)
   estimatedDurationMinutes Int?
-  sortOrder     Int?
-  notes         String?
-  customerNotes String?
-  checklist     Json?
-  planId        String?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  requestedAt   DateTime?
-  requestedByUserId String?
-  requestCategory String?
-  requestIssue    String?
+  sortOrder                Int?
+  notes                    String?
+  customerNotes            String?
+  checklist                Json?
+  planId                   String?
+  startedAt                DateTime?   @db.Timestamptz(3)
+  completedAt              DateTime?   @db.Timestamptz(3)
+  requestedAt              DateTime?   @db.Timestamptz(3)
+  requestedByUserId        String?
+  requestCategory          String?
+  requestIssue             String?
   requestAvailableWeekdays Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt                DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime    @updatedAt @db.Timestamptz(3)
 
-    customer   Customer   @relation(fields: [customerId], references: [id])
-    property   Property   @relation(fields: [propertyId], references: [id])
-    technician Technician? @relation(fields: [technicianId], references: [id])
-    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
-    plan       ServicePlan? @relation(fields: [planId], references: [id])
-    requestedBy User? @relation("UserRequestedJobs", fields: [requestedByUserId], references: [id])
-  photos     JobPhoto[]
-  invoices   Invoice[]
+  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  property    Property         @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  technician  Technician?      @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  serviceTier ServiceTier?     @relation(fields: [serviceTierId], references: [id], onDelete: SetNull)
+  plan        ServicePlan?     @relation(fields: [planId], references: [id], onDelete: SetNull)
+  requestedBy User?            @relation("UserRequestedJobs", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  photos      JobPhoto[]
+  invoices    Invoice[]
   digestItems TechDigestItem[]
-  emailLogs EmailLog[]
+  emailLogs   EmailLog[]
 
   @@index([scheduledDate])
-    @@index([technicianId, scheduledDate])
-    @@index([customerId, scheduledDate])
-    @@index([status])
-    @@index([serviceTierId])
-    @@index([type, requestedAt])
-    @@index([planId])
-  }
+  @@index([technicianId, scheduledDate])
+  @@index([customerId, scheduledDate])
+  @@index([status])
+  @@index([serviceTierId])
+  @@index([type, requestedAt])
+  @@index([planId])
+}
 
-  model ServiceTier {
-    id        String   @id @default(cuid())
-    name      String
-    checklist Json?
-    isActive  Boolean  @default(true)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+model ServiceTier {
+  id        String   @id @default(cuid())
+  name      String
+  checklist Json?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-    jobs  Job[]
-    plans ServicePlan[]
-    contractedByCustomers Customer[]
+  jobs                  Job[]
+  plans                 ServicePlan[]
+  contractedByCustomers Customer[]
 
-    @@unique([name])
-  }
+  @@unique([name])
+}
 
-  model ServicePlan {
-    id            String       @id @default(cuid())
-    customerId    String
-    propertyId    String
-    technicianId  String?
-    serviceTierId String?
-    name          String
-    frequency     PlanFrequency
-    serviceType   ServiceType
-  priority      JobPriority  @default(NORMAL)
-  nextRunAt     DateTime
-  preferredTime String?
+model ServicePlan {
+  id                       String        @id @default(cuid())
+  customerId               String
+  propertyId               String
+  technicianId             String?
+  serviceTierId            String?
+  name                     String
+  frequency                PlanFrequency
+  serviceType              ServiceType
+  priority                 JobPriority   @default(NORMAL)
+  nextRunAt                DateTime      @db.Timestamptz(3)
+  preferredTime            String?
   estimatedDurationMinutes Int?
-  checklist     Json?
-  notes         String?
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  checklist                Json?
+  notes                    String?
+  isActive                 Boolean       @default(true)
+  createdAt                DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt                DateTime      @updatedAt @db.Timestamptz(3)
 
-    customer   Customer   @relation(fields: [customerId], references: [id])
-    property   Property   @relation(fields: [propertyId], references: [id])
-    technician Technician? @relation(fields: [technicianId], references: [id])
-    serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id])
-    jobs       Job[]
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  property    Property     @relation(fields: [propertyId], references: [id], onDelete: Restrict)
+  technician  Technician?  @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  serviceTier ServiceTier? @relation(fields: [serviceTierId], references: [id], onDelete: SetNull)
+  jobs        Job[]
 
-    @@index([isActive, nextRunAt])
-  }
+  @@index([isActive, nextRunAt])
+  @@index([customerId])
+  @@index([propertyId])
+  @@index([technicianId])
+}
 
 model JobPhoto {
   id                String   @id @default(cuid())
   jobId             String
-  takenAt           DateTime @default(now())
-  uploadedAt        DateTime @default(now())
+  takenAt           DateTime @default(now()) @db.Timestamptz(3)
+  uploadedAt        DateTime @default(now()) @db.Timestamptz(3)
   url               String
   visibleToCustomer Boolean  @default(true)
   uploadedByUserId  String?
 
-  job Job @relation(fields: [jobId], references: [id])
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
 }
 
 model Invoice {
-  id        String        @id @default(cuid())
-  customerId String
-  jobId     String?
-  number    String        @unique
-  status    InvoiceStatus @default(DRAFT)
-  theme     InvoiceTheme  @default(STANDARD)
-  lineItems Json?
-  notes     String?
-  subtotal  Decimal       @db.Decimal(10, 2)
-  tax       Decimal       @db.Decimal(10, 2) @default(0)
-  total     Decimal       @db.Decimal(10, 2)
-  pdfUrl    String?
-  sentAt    DateTime?
-  paidAt    DateTime?
+  id                      String        @id @default(cuid())
+  customerId              String
+  jobId                   String?
+  number                  String        @unique
+  status                  InvoiceStatus @default(DRAFT)
+  theme                   InvoiceTheme  @default(STANDARD)
+  lineItems               Json?
+  notes                   String?
+  subtotal                Decimal       @db.Decimal(10, 2)
+  tax                     Decimal       @default(0) @db.Decimal(10, 2)
+  total                   Decimal       @db.Decimal(10, 2)
+  pdfUrl                  String?
+  sentAt                  DateTime?     @db.Timestamptz(3)
+  paidAt                  DateTime?     @db.Timestamptz(3)
   stripeCheckoutSessionId String?
-  paymentToken String? @unique
-  paymentTokenExpiresAt DateTime?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  paymentToken            String?       @unique
+  paymentTokenExpiresAt   DateTime?     @db.Timestamptz(3)
+  createdAt               DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime      @updatedAt @db.Timestamptz(3)
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  job      Job?     @relation(fields: [jobId], references: [id])
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  job      Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
   payments Payment[]
 
   @@index([status])
@@ -429,12 +438,12 @@ model Payment {
   stripeInvoiceId       String?
   refundOfPaymentId     String?
   recordedByUserId      String?
-  paidAt                DateTime
-  createdAt             DateTime      @default(now())
+  paidAt                DateTime      @db.Timestamptz(3)
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
 
-  customer   Customer    @relation(fields: [customerId], references: [id])
-  invoice    Invoice?    @relation(fields: [invoiceId], references: [id])
-  membership Membership? @relation(fields: [membershipId], references: [id])
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  invoice    Invoice?    @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
 
   @@index([customerId, paidAt])
   @@index([paidAt])
@@ -454,20 +463,20 @@ model Membership {
   feeAmountCents       Int?
   interval             String           @default("MONTHLY")
   status               MembershipStatus @default(INCOMPLETE)
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
+  currentPeriodStart   DateTime?        @db.Timestamptz(3)
+  currentPeriodEnd     DateTime?        @db.Timestamptz(3)
   cancelAtPeriodEnd    Boolean          @default(false)
-  canceledAt           DateTime?
-  authorizedAt         DateTime?
+  canceledAt           DateTime?        @db.Timestamptz(3)
+  authorizedAt         DateTime?        @db.Timestamptz(3)
   authorizedVia        String?
   authorizedByUserId   String?
   authorizedIp         String?
   authorizedUserAgent  String?
-  createdAt            DateTime         @default(now())
-  updatedAt            DateTime         @updatedAt
+  createdAt            DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime         @updatedAt @db.Timestamptz(3)
 
-  customer Customer  @relation(fields: [customerId], references: [id])
-  property Property? @relation(fields: [propertyId], references: [id])
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   payments Payment[]
 
   @@index([customerId])
@@ -477,8 +486,8 @@ model Membership {
 model StripeWebhookEvent {
   stripeEventId String    @id
   type          String
-  receivedAt    DateTime  @default(now())
-  processedAt   DateTime?
+  receivedAt    DateTime  @default(now()) @db.Timestamptz(3)
+  processedAt   DateTime? @db.Timestamptz(3)
 }
 
 model CustomerDocument {
@@ -491,35 +500,39 @@ model CustomerDocument {
   fileUrl          String
   mimeType         String?
   sizeBytes        Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(3)
 
-  customer   Customer @relation(fields: [customerId], references: [id])
-  uploadedBy User?    @relation("CustomerDocumentUploader", fields: [uploadedByUserId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  uploadedBy User?    @relation("CustomerDocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
 
   @@index([customerId, createdAt])
   @@index([uploadedByUserId, createdAt])
 }
 
 model Notification {
-  id        String             @id @default(cuid())
-  customerId String
-  recipientRole Role            @default(CUSTOMER)
-  channel   NotificationChannel @default(EMAIL)
-  eventType String
-  severity  NotificationSeverity @default(INFO)
-  status    NotificationStatus @default(QUEUED)
-  payload   Json?
-  sentAt    DateTime?
-  readAt    DateTime?
-  createdAt DateTime           @default(now())
-  actorUserId String?
+  id              String               @id @default(cuid())
+  customerId      String?
+  recipientUserId String?
+  recipientRole   Role                 @default(CUSTOMER)
+  channel         NotificationChannel  @default(EMAIL)
+  eventType       String
+  severity        NotificationSeverity @default(INFO)
+  status          NotificationStatus   @default(QUEUED)
+  attempts        Int                  @default(0)
+  lastAttemptAt   DateTime?            @db.Timestamptz(3)
+  payload         Json?
+  sentAt          DateTime?            @db.Timestamptz(3)
+  readAt          DateTime?            @db.Timestamptz(3)
+  createdAt       DateTime             @default(now()) @db.Timestamptz(3)
+  actorUserId     String?
 
-  customer Customer @relation(fields: [customerId], references: [id])
-  actorUser User? @relation("NotificationActor", fields: [actorUserId], references: [id])
+  customer  Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  actorUser User?     @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
   @@index([recipientRole, createdAt])
   @@index([customerId, createdAt])
+  @@index([recipientUserId, createdAt])
   @@index([actorUserId])
 }
 
@@ -528,43 +541,46 @@ model NotificationPreference {
   userId    String
   eventType String
   enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventType])
 }
 
 model TechDigest {
-  id           String       @id @default(cuid())
+  id           String             @id @default(cuid())
   technicianId String
-  routeDate    DateTime
+  routeDate    DateTime           @db.Timestamptz(3)
   window       DigestWindow
-  scheduledFor DateTime
+  scheduledFor DateTime           @db.Timestamptz(3)
   status       NotificationStatus @default(QUEUED)
-  sentAt       DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  sentAt       DateTime?          @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime           @updatedAt @db.Timestamptz(3)
 
-  technician Technician @relation(fields: [technicianId], references: [id])
-  items       TechDigestItem[]
-  emailLogs   EmailLog[]
+  technician Technician       @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  items      TechDigestItem[]
+  emailLogs  EmailLog[]
+
+  @@unique([technicianId, routeDate, window])
+  @@index([technicianId, routeDate])
 }
 
 model TechDigestItem {
   id           String   @id @default(cuid())
   technicianId String
   jobId        String
-  routeDate    DateTime
+  routeDate    DateTime @db.Timestamptz(3)
   changeType   String
   payload      Json?
   digestId     String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
 
-  technician Technician @relation(fields: [technicianId], references: [id])
-  job        Job        @relation(fields: [jobId], references: [id])
-  digest     TechDigest? @relation(fields: [digestId], references: [id])
+  technician Technician  @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  job        Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  digest     TechDigest? @relation(fields: [digestId], references: [id], onDelete: SetNull)
 
   @@index([technicianId, routeDate])
   @@index([jobId])
@@ -579,48 +595,55 @@ model EmailLog {
   bodyText       String
   bodyHtml       String?
   status         NotificationStatus @default(QUEUED)
+  attempts       Int                @default(0)
   errorMessage   String?
-  sentAt         DateTime?
-  createdAt      DateTime           @default(now())
+  sentAt         DateTime?          @db.Timestamptz(3)
+  createdAt      DateTime           @default(now()) @db.Timestamptz(3)
   customerId     String?
   technicianId   String?
   jobId          String?
   digestId       String?
   metadata       Json?
 
-  customer   Customer?  @relation(fields: [customerId], references: [id])
-  technician Technician? @relation(fields: [technicianId], references: [id])
-  job        Job?       @relation(fields: [jobId], references: [id])
-  digest     TechDigest? @relation(fields: [digestId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  technician Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  job        Job?        @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  digest     TechDigest? @relation(fields: [digestId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+  @@index([customerId])
+  @@index([technicianId])
+  @@index([jobId])
 }
 
 model AuditLog {
-  id       String   @id @default(cuid())
-  userId   String
-  action   String
-  entity   String
-  entityId String?
-  metadata Json?
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  actorEmail String?
+  actorName  String?
+  action     String
+  entity     String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([userId, createdAt])
+  @@index([entity, entityId])
 }
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String            @unique
   purpose   ResetTokenPurpose @default(PASSWORD_RESET)
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime @default(now())
+  expiresAt DateTime          @db.Timestamptz(3)
+  usedAt    DateTime?         @db.Timestamptz(3)
+  createdAt DateTime          @default(now()) @db.Timestamptz(3)
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@index([purpose, userId, createdAt])
@@ -630,47 +653,47 @@ model PasswordResetToken {
 model RateLimitBucket {
   key       String   @id
   count     Int
-  resetAt   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  resetAt   DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamptz(3)
 
   @@index([resetAt])
 }
 
 model SiteSettings {
-  id               String   @id @default("default")
-  instagramUrl     String?
-  facebookUrl      String?
-  whatsappUrl      String?
-  xUrl             String?
-  youtubeUrl       String?
-  tiktokUrl        String?
-  landingYoutubeUrl String?
-  landingPromoCopy Json?
-  emailTemplates   Json?
-  invoiceTemplate  Json?
-  routeAssistantConfig Json?
-  complianceContent Json?
-  companySignatureUrl String?
+  id                    String   @id @default("default")
+  instagramUrl          String?
+  facebookUrl           String?
+  whatsappUrl           String?
+  xUrl                  String?
+  youtubeUrl            String?
+  tiktokUrl             String?
+  landingYoutubeUrl     String?
+  landingPromoCopy      Json?
+  emailTemplates        Json?
+  invoiceTemplate       Json?
+  routeAssistantConfig  Json?
+  complianceContent     Json?
+  companySignatureUrl   String?
   stripeReconcileStatus Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
 }
 
 model PublicIntegrationResponse {
-  id            String                    @id @default(cuid())
-  token         String
-  clientName    String
-  clientEmail   String
-  companyName   String?
-  decision      PublicIntegrationDecision
-  acceptTerms   Boolean                   @default(false)
-  comments      String?
-  signatureDataUrl String                 @db.Text
-  userAgent     String?
-  ipAddress     String?
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  id               String                    @id @default(cuid())
+  token            String
+  clientName       String
+  clientEmail      String
+  companyName      String?
+  decision         PublicIntegrationDecision
+  acceptTerms      Boolean                   @default(false)
+  comments         String?
+  signatureDataUrl String                    @db.Text
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime                  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime                  @updatedAt @db.Timestamptz(3)
 
   @@unique([token, clientEmail])
   @@index([token, createdAt])

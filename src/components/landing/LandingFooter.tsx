@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { LanguageSwitch, ThemeSwitch } from "@/components/landing/LandingPreferenceSwitches";
 import type { LandingLocale, LandingTheme } from "@/components/landing/preferences";
+import { LANDING_CONTACT } from "@/lib/landing-config";
 
 type SocialPlatform =
   | "instagram"
@@ -26,16 +28,13 @@ type SocialItem = {
   href: string;
 };
 
-const PHONE_DISPLAY = "+1 (786) 793-0081";
-const PHONE_E164 = "+17867930081";
-const SUPPORT_EMAIL = "contact@acostaspool.com";
-
 const FOOTER_COPY: Record<
   LandingLocale,
   {
     follow: string;
     headline: string;
     summary: string;
+    brandSummary: string;
     company: string;
     services: string;
     contact: string;
@@ -69,6 +68,7 @@ const FOOTER_COPY: Record<
     headline: "AcostasPool - U.S. Verified Business.",
     summary:
       "Growing, reliable and dedicated pool service with a mission to keep homeowners stress-free.",
+    brandSummary: "Professional maintenance for premium residential pools in South Florida.",
     company: "Company",
     services: "Services",
     contact: "Contact",
@@ -97,25 +97,26 @@ const FOOTER_COPY: Record<
     dark: "Dark",
   },
   es: {
-    follow: "Siguenos",
+    follow: "Síguenos",
     headline: "AcostasPool - Empresa verificada en EE. UU.",
     summary:
-      "Servicio confiable y dedicado, enfocado en mantener piscinas premium sin friccion para propietarios.",
-    company: "Compania",
+      "Servicio confiable y dedicado, enfocado en mantener piscinas premium sin fricción para propietarios.",
+    brandSummary: "Mantenimiento profesional para piscinas residenciales premium en el sur de Florida.",
+    company: "Compañía",
     services: "Servicios",
     contact: "Contacto",
     aboutUs: "Nosotros",
-    reviews: "Resenas",
-    gallery: "Galeria",
+    reviews: "Reseñas",
+    gallery: "Galería",
     weeklyCare: "Limpieza de piscina por un mes",
     repairRecovery: "Mantenimiento regular",
-    premiumStandard: "Reparacion de piscina",
-    contactPage: "Pagina de contacto",
+    premiumStandard: "Reparación de piscina",
+    contactPage: "Página de contacto",
     legal: "Legal",
     legalCenter: "Centro legal",
-    privacyPolicy: "Politica de privacidad",
-    termsOfService: "Terminos de servicio",
-    paymentCancellation: "Pago y cancelacion",
+    privacyPolicy: "Política de privacidad",
+    termsOfService: "Términos de servicio",
+    paymentCancellation: "Pago y cancelación",
     disclaimerLiability: "Descargo y responsabilidad",
     cookieNotice: "Aviso de cookies",
     rights: "Todos los derechos reservados.",
@@ -129,23 +130,6 @@ const FOOTER_COPY: Record<
     dark: "Oscuro",
   },
 };
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6M17.5 6.5l1.6-1.6" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M20.1 14.8A8.7 8.7 0 1 1 9.2 3.9a7 7 0 1 0 10.9 10.9Z" />
-    </svg>
-  );
-}
 
 function SocialIcon({ id }: { id: SocialPlatform }) {
   if (id === "instagram") {
@@ -214,18 +198,20 @@ export default function LandingFooter({
   socialLinks?: LandingSocialLinks;
 }) {
   const copy = FOOTER_COPY[language];
-  const socialItems: SocialItem[] = [
-    { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
-    { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
-    { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
-    { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
-    { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
-    { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
-  ].filter((item) => Boolean(item.href));
+  const socialItems = (
+    [
+      { id: "instagram", label: "Instagram", href: socialLinks?.instagramUrl ?? "" },
+      { id: "x", label: "X", href: socialLinks?.xUrl ?? "" },
+      { id: "youtube", label: "YouTube", href: socialLinks?.youtubeUrl ?? "" },
+      { id: "facebook", label: "Facebook", href: socialLinks?.facebookUrl ?? "" },
+      { id: "whatsapp", label: "WhatsApp", href: socialLinks?.whatsappUrl ?? "" },
+      { id: "tiktok", label: "TikTok", href: socialLinks?.tiktokUrl ?? "" },
+    ] satisfies SocialItem[]
+  ).filter((item) => Boolean(item.href));
 
   const contactItems = [
-    { label: PHONE_DISPLAY, href: `tel:${PHONE_E164}` },
-    { label: SUPPORT_EMAIL, href: `mailto:${SUPPORT_EMAIL}` },
+    { label: LANDING_CONTACT.phoneDisplay, href: `tel:${LANDING_CONTACT.phoneE164}` },
+    { label: LANDING_CONTACT.supportEmail, href: `mailto:${LANDING_CONTACT.supportEmail}` },
     { label: copy.contactPage, href: "/contact" },
   ];
   const legalItems = [
@@ -279,7 +265,7 @@ export default function LandingFooter({
                 <span>Pool</span>
               </span>
             </Link>
-            <p>Professional maintenance for premium residential pools in South Florida.</p>
+            <p>{copy.brandSummary}</p>
           </div>
 
           <div className="lp-footer-col lp-footer-col-contact">
@@ -314,7 +300,7 @@ export default function LandingFooter({
 
         <div className="lp-footer-meta">
           <p>
-            (c) {new Date().getFullYear()} AcostasPool. {copy.rights}
+            © {new Date().getFullYear()} AcostasPool. {copy.rights}
           </p>
           <div className="lp-footer-meta-links">
             <Link href="/about">{copy.about}</Link>
@@ -324,51 +310,17 @@ export default function LandingFooter({
           </div>
 
           <div className="lp-footer-meta-preferences">
-            <div className="lp-lang-switch" role="group" aria-label={copy.languageLabel}>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "en"}
-                onClick={() => onLanguageChange?.("en")}
-                aria-label={language === "es" ? "Ingles" : "English"}
-                title={language === "es" ? "Ingles" : "English"}
-              >
-                EN
-              </button>
-              <button
-                type="button"
-                className="lp-lang-btn"
-                data-active={language === "es"}
-                onClick={() => onLanguageChange?.("es")}
-                aria-label={language === "es" ? "Espanol" : "Spanish"}
-                title={language === "es" ? "Espanol" : "Spanish"}
-              >
-                ES
-              </button>
-            </div>
-
-            <div className="lp-theme-switch" role="group" aria-label={copy.themeLabel}>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "ocean"}
-                onClick={() => onThemeChange?.("ocean")}
-                aria-label={copy.light}
-                title={copy.light}
-              >
-                <SunIcon />
-              </button>
-              <button
-                type="button"
-                className="lp-theme-btn"
-                data-active={theme === "night"}
-                onClick={() => onThemeChange?.("night")}
-                aria-label={copy.dark}
-                title={copy.dark}
-              >
-                <MoonIcon />
-              </button>
-            </div>
+            <LanguageSwitch
+              language={language}
+              onChange={onLanguageChange}
+              groupLabel={copy.languageLabel}
+            />
+            <ThemeSwitch
+              theme={theme}
+              language={language}
+              onChange={onThemeChange}
+              labels={{ group: copy.themeLabel, light: copy.light, dark: copy.dark }}
+            />
           </div>
         </div>
       </div>

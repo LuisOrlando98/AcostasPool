@@ -6,8 +6,11 @@ export const SLOT_START_HOUR = 8;
 export const MIN_BOOKING_LEAD_DAYS = 2;
 export { BUSINESS_TIMEZONE };
 
-const MINUTES_PER_DAY = 24 * 60;
-const SLOT_START_MINUTES = SLOT_START_HOUR * 60;
+const MINUTES_PER_HOUR = 60;
+const MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR;
+const SLOT_START_MINUTES = SLOT_START_HOUR * MINUTES_PER_HOUR;
+/** Clave devuelta por toDateKey para una Date inválida: nunca coincide con un día real. */
+const INVALID_DATE_KEY = "";
 
 const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: BUSINESS_TIMEZONE,
@@ -75,6 +78,9 @@ function getTimeParts(value: Date) {
 }
 
 export function toDateKey(value: Date) {
+  if (Number.isNaN(value.getTime())) {
+    return INVALID_DATE_KEY;
+  }
   const parts = dateKeyFormatter.formatToParts(value);
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
@@ -100,7 +106,13 @@ export function parseDateOnly(value: string) {
   if (!parts) {
     return null;
   }
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
+  const parsed = new Date(Date.UTC(parts.year, parts.month - 1, parts.day, 12, 0, 0, 0));
+  // Date.UTC desborda los días inexistentes (2026-02-30 -> 2 de marzo): se exige ida y vuelta exacta.
+  const isCalendarDate =
+    parsed.getUTCFullYear() === parts.year &&
+    parsed.getUTCMonth() === parts.month - 1 &&
+    parsed.getUTCDate() === parts.day;
+  return isCalendarDate ? parsed : null;
 }
 
 export function getStartOfDay(value: Date) {
@@ -158,7 +170,10 @@ export function timeValueToMinutes(value: string) {
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
     return null;
   }
-  const total = hours * 60 + minutes;
+  if (minutes < 0 || minutes >= MINUTES_PER_HOUR) {
+    return null;
+  }
+  const total = hours * MINUTES_PER_HOUR + minutes;
   if (total < 0 || total >= MINUTES_PER_DAY) {
     return null;
   }
@@ -193,6 +208,9 @@ export function buildAvailabilityDays({
   const usedByDay = new Map<string, { total: number; slotUsage: number[]; unslotted: number }>();
   for (const scheduledDate of scheduledDates) {
     const key = toDateKey(scheduledDate);
+    if (key === INVALID_DATE_KEY) {
+      continue;
+    }
     const current = usedByDay.get(key) ?? {
       total: 0,
       slotUsage: Array.from({ length: slots.length }, () => 0),
@@ -212,6 +230,9 @@ export function buildAvailabilityDays({
 
   const start = getStartOfDay(startDate);
   const availability: AvailabilityDay[] = [];
+  if (Number.isNaN(start.getTime())) {
+    return availability;
+  }
 
   for (let offset = 0; offset < safeDays; offset += 1) {
     const date = new Date(start);

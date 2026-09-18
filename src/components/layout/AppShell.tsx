@@ -2,16 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import SidebarAccount from "@/components/layout/SidebarAccount";
 import NotificationsBell from "@/components/layout/NotificationsBell";
+import {
+  clearSessionCaches,
+  readCachedShellUser,
+  writeCachedShellUser,
+  type ShellUser,
+} from "@/components/layout/session-caches";
+import DeveloperViewBanner from "@/components/layout/DeveloperViewBanner";
+import { DeveloperViewSwitcherPanel } from "@/components/layout/DeveloperViewSwitcher";
 import InstallAppAction from "@/components/pwa/InstallAppAction";
+import { applyInertOutside } from "@/components/ui/AppModal";
 import ModalPresenceManager from "@/components/ui/ModalPresenceManager";
 import { useI18n } from "@/i18n/client";
 import type { UserRole } from "@/lib/auth/config";
 import { getAssetUrl } from "@/lib/assets";
 import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { useEscapeKey } from "@/lib/ui/use-escape-key";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
 export type NavItem = {
   label: string;
@@ -20,14 +31,32 @@ export type NavItem = {
   matchPaths?: string[];
 };
 
-type MobileUser = {
-  name?: string;
-  email?: string;
-  avatarUrl?: string | null;
-};
+type MobileUser = ShellUser;
 
-const MOBILE_USER_CACHE_KEY = "ap:me-cache:v1";
-const MOBILE_USER_CACHE_TTL_MS = 5 * 60 * 1000;
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "ap:sidebar-collapsed";
+/**
+ * El checkbox oculto sigue existiendo solo porque `globals.css` y las
+ * variantes `peer-checked:` dependen de `#sidebar-toggle:checked`; el control
+ * real (teclado y ratón) es el botón `aria-expanded` del aside.
+ */
+const SIDEBAR_TOGGLE_ID = "sidebar-toggle";
+const DESKTOP_SIDEBAR_ID = "app-sidebar";
+/** Destino del enlace "saltar al contenido" que renderiza `app/layout.tsx`. */
+const MAIN_CONTENT_ID = "main-content";
+/** Breakpoint `lg` de Tailwind: a partir de él el drawer móvil deja de existir. */
+const DESKTOP_MEDIA_QUERY = "(min-width: 64rem)";
+const DOCUMENT_TITLE_SUFFIX = "AcostasPool";
+const ROOT_NAV_HREFS: ReadonlySet<string> = new Set(["/admin", "/client", "/tech"]);
+
+function isNavItemActive(
+  item: Pick<NavItem, "href" | "matchPaths">,
+  pathname: string
+): boolean {
+  if (ROOT_NAV_HREFS.has(item.href)) {
+    return pathname === item.href;
+  }
+  return (item.matchPaths ?? [item.href]).some((path) => pathname.startsWith(path));
+}
 
 const iconClassName = "h-5 w-5";
 
@@ -473,105 +502,128 @@ export default function AppShell({
     : "lg:peer-checked:[&_.app-content]:max-w-[112rem]";
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileNavPathname, setMobileNavPathname] = useState(pathname);
   const [mobileUser, setMobileUser] = useState<MobileUser | null>(null);
   const canAccessHelpCenter = role === "ADMIN";
   const canAccessServiceAgreement = role === "ADMIN";
   const isClientApp = role === "CUSTOMER";
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") {
       return false;
     }
-    return window.localStorage.getItem("ap:sidebar-collapsed") === "true";
+    return window.localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true";
   });
+  const mobileNavId = useId();
+  const mobileNavTitleId = useId();
+  const mobileNavLayerRef = useRef<HTMLDivElement>(null);
+  const mobileNavPanelRef = useRef<HTMLDivElement>(null);
+  const mobileNavTriggerRef = useRef<HTMLButtonElement>(null);
+  const sidebarToggleLabel = collapsed
+    ? t("layout.sidebar.expand")
+    : t("layout.sidebar.collapse");
+  const primaryNavLabel = t("layout.navigation.primary");
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
     window.localStorage.setItem(
-      "ap:sidebar-collapsed",
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
       collapsed ? "true" : "false"
     );
   }, [collapsed]);
 
+  // Título de la pestaña sincronizado con el título de la página; la metadata
+  // de servidor (layout.tsx) no cambia.
   useEffect(() => {
-    setMobileNavOpen(false);
-  }, [pathname]);
+    if (!title) {
+      return;
+    }
+    document.title = `${title} · ${DOCUMENT_TITLE_SUFFIX}`;
+  }, [title]);
 
+  if (mobileNavPathname !== pathname) {
+    setMobileNavPathname(pathname);
+    setMobileNavOpen(false);
+  }
+
+  // Si el viewport cruza a escritorio con el drawer abierto (giro de tablet),
+  // se cierra: en `lg` el drawer es `hidden` y dejaría el foco atrapado y la
+  // página inerte sin ningún control visible para salir.
+  useEffect(() => {
+    if (!mobileNavOpen || typeof window === "undefined") {
+      return;
+    }
+    const desktopQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const closeOnDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) {
+        setMobileNavOpen(false);
+      }
+    };
+    desktopQuery.addEventListener("change", closeOnDesktop);
+    return () => {
+      desktopQuery.removeEventListener("change", closeOnDesktop);
+    };
+  }, [mobileNavOpen]);
+
+  // Declarado antes de la trampa de foco a propósito (mismo orden que AppModal):
+  // el foco solo puede volver a la hamburguesa cuando el header ya no es `inert`.
   useEffect(() => {
     if (!mobileNavOpen || typeof window === "undefined") {
       return;
     }
     const unlock = lockBodyScroll();
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setMobileNavOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
+    const layer = mobileNavLayerRef.current;
+    const releaseInert = layer ? applyInertOutside<Element>(layer) : () => undefined;
 
     return () => {
+      releaseInert();
       unlock();
-      window.removeEventListener("keydown", onKeyDown);
     };
   }, [mobileNavOpen]);
+
+  useEscapeKey(() => setMobileNavOpen(false), mobileNavOpen);
+
+  useFocusTrap(mobileNavPanelRef, {
+    active: mobileNavOpen,
+    returnFocusTo: mobileNavTriggerRef,
+  });
 
   useEffect(() => {
     let cancelled = false;
 
     const loadUser = async () => {
-      if (typeof window !== "undefined") {
-        try {
-          const cached = window.sessionStorage.getItem(MOBILE_USER_CACHE_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached) as {
-              ts?: number;
-              user?: MobileUser | null;
-            };
-            if (
-              parsed?.ts &&
-              Date.now() - parsed.ts < MOBILE_USER_CACHE_TTL_MS &&
-              parsed.user
-            ) {
-              setMobileUser(parsed.user);
-              // Fresh enough - skip the refetch instead of hitting
-              // /api/auth/me (and its DB round trip) on every navigation.
-              return;
-            }
-          }
-        } catch {
-          // Ignore cache parsing failures.
-        }
-      }
-
-      const response = await fetch("/api/auth/me", { cache: "no-store" });
-      const data = await response.json().catch(() => ({ user: null }));
-      if (cancelled) {
+      const cachedUser = readCachedShellUser();
+      if (cachedUser) {
+        // Caché vigente: se evita repetir /api/auth/me (y su viaje a base de
+        // datos) en cada navegación; caduca sola y se limpia al cambiar de sesión.
+        setMobileUser(cachedUser);
         return;
       }
-      if (data?.user) {
-        const nextUser = {
+
+      try {
+        const response = await fetch("/api/auth/me", { cache: "no-store" });
+        const data = await response.json().catch(() => ({ user: null }));
+        if (cancelled || !data?.user) {
+          return;
+        }
+        const nextUser: MobileUser = {
           name: data.user.name,
           email: data.user.email,
           avatarUrl: data.user.avatarUrl ?? null,
         };
         setMobileUser(nextUser);
-        if (typeof window !== "undefined") {
-          try {
-            window.sessionStorage.setItem(
-              MOBILE_USER_CACHE_KEY,
-              JSON.stringify({ ts: Date.now(), user: nextUser })
-            );
-          } catch {
-            // Ignore cache write failures.
-          }
-        }
+        writeCachedShellUser(nextUser);
+      } catch {
+        // Sin red o respuesta inválida: el drawer conserva la caché o el
+        // fallback (iniciales "AP" y nombre de la app). Solo se evita el
+        // rechazo no manejado.
       }
     };
 
-    loadUser();
+    void loadUser();
 
     return () => {
       cancelled = true;
@@ -583,8 +635,21 @@ export default function AppShell({
       return;
     }
     setLoggingOut(true);
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    setLogoutError(null);
+    try {
+      const response = await fetch("/api/auth/logout", { method: "POST" });
+      if (!response.ok) {
+        throw new Error(`Logout failed with status ${response.status}`);
+      }
+      // sessionStorage sobrevive a la recarga: la siguiente cuenta de esta
+      // pestaña no debe heredar el usuario ni las notificaciones cacheadas.
+      clearSessionCaches();
+      window.location.href = "/login";
+    } catch {
+      // Only the failure path re-enables the button: on success we navigate away.
+      setLogoutError(t("layout.logout.error"));
+      setLoggingOut(false);
+    }
   };
 
   const renderClientNavExtras = (variant: "desktop" | "mobile") => {
@@ -686,16 +751,21 @@ export default function AppShell({
       <ModalPresenceManager />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_10%,_rgba(14,165,233,0.05),_transparent_42%)]" />
       <input
-        id="sidebar-toggle"
+        id={SIDEBAR_TOGGLE_ID}
         type="checkbox"
         className="peer hidden"
         checked={collapsed}
-        onChange={(event) => setCollapsed(event.target.checked)}
+        readOnly
+        aria-hidden="true"
+        tabIndex={-1}
       />
       <div
         className={`relative min-h-screen lg:grid lg:min-h-screen lg:grid-cols-[18rem_minmax(0,1fr)] lg:grid-rows-[auto_minmax(0,1fr)] lg:transition-[grid-template-columns] lg:duration-300 lg:ease-in-out lg:peer-checked:[grid-template-columns:5rem_minmax(0,1fr)] lg:peer-checked:[&_.sidebar-shell-desktop]:w-20 lg:peer-checked:[&_.brand-text]:max-w-0 lg:peer-checked:[&_.brand-text]:opacity-0 lg:peer-checked:[&_.brand-text]:-translate-x-2 lg:peer-checked:[&_.brand-text]:pointer-events-none lg:peer-checked:[&_.nav-label]:max-w-0 lg:peer-checked:[&_.nav-label]:opacity-0 lg:peer-checked:[&_.nav-label]:-translate-x-2 lg:peer-checked:[&_.nav-label]:pointer-events-none lg:peer-checked:[&_.nav-item]:justify-center lg:peer-checked:[&_.nav-item]:gap-0 lg:peer-checked:[&_.nav-item]:px-2 lg:peer-checked:[&_.nav-icon]:h-10 lg:peer-checked:[&_.nav-icon]:w-10 lg:peer-checked:[&_.brand-wrap]:justify-center lg:peer-checked:[&_.brand-wrap]:px-3 lg:peer-checked:[&_.brand-wrap]:gap-0 lg:peer-checked:[&_.nav-list]:px-2 lg:peer-checked:[&_.sidebar-toggle-icon]:rotate-180 ${peerMaxWidth}`}
       >
-        <aside className="sidebar-shell sidebar-shell-desktop group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:h-[100dvh] lg:w-[18rem] lg:min-h-0 lg:transition-[width] lg:duration-300 lg:ease-in-out">
+        <aside
+          id={DESKTOP_SIDEBAR_ID}
+          className="sidebar-shell sidebar-shell-desktop group relative hidden w-full flex-col overflow-visible border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:h-[100dvh] lg:w-[18rem] lg:min-h-0 lg:transition-[width] lg:duration-300 lg:ease-in-out"
+        >
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -right-28 -top-36 h-80 w-80 rounded-full bg-cyan-300/12 blur-3xl" />
             <div className="absolute left-[-6rem] top-24 h-72 w-72 rounded-full bg-sky-500/12 blur-3xl" />
@@ -719,15 +789,21 @@ export default function AppShell({
               </p>
             </div>
           </div>
-          <label
-            htmlFor="sidebar-toggle"
-            className="absolute -right-3.5 top-1/2 z-[80] hidden h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 opacity-0 transition pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:border-slate-300 hover:text-slate-900 lg:flex"
+          <button
+            type="button"
+            onClick={() => setCollapsed((value) => !value)}
+            aria-expanded={!collapsed}
+            aria-controls={DESKTOP_SIDEBAR_ID}
+            aria-label={sidebarToggleLabel}
+            title={sidebarToggleLabel}
+            className="absolute -right-3.5 top-1/2 z-[80] hidden h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 opacity-0 transition pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto hover:border-slate-300 hover:text-slate-900 lg:flex"
           >
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
+              aria-hidden="true"
               className="sidebar-toggle-icon h-3 w-3 transition"
             >
               <path
@@ -737,18 +813,13 @@ export default function AppShell({
               />
             </svg>
             <span className="pointer-events-none absolute inset-0 rounded-full border border-white/10" />
-          </label>
-          <nav className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-5 text-sm">
+          </button>
+          <nav
+            aria-label={primaryNavLabel}
+            className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-5 text-sm"
+          >
             {items.map((item) => {
-              const isRoot =
-                item.href === "/admin" ||
-                item.href === "/client" ||
-                item.href === "/tech";
-              const isActive = isRoot
-                ? pathname === item.href
-                : (item.matchPaths ?? [item.href]).some((path) =>
-                    pathname.startsWith(path)
-                  );
+              const isActive = isNavItemActive(item, pathname);
               return (
                 <Link
                   key={item.href}
@@ -756,6 +827,7 @@ export default function AppShell({
                   title={item.label}
                   className="nav-item sidebar-item group relative flex items-center gap-3 px-4 py-2.5"
                   data-active={isActive}
+                  aria-current={isActive ? "page" : undefined}
                 >
                   <span
                     className="nav-icon sidebar-icon flex h-10 w-10 shrink-0 items-center justify-center transition"
@@ -833,9 +905,13 @@ export default function AppShell({
           >
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <button
+                ref={mobileNavTriggerRef}
                 type="button"
                 onClick={() => setMobileNavOpen(true)}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 lg:hidden"
+                aria-expanded={mobileNavOpen}
+                aria-controls={mobileNavId}
+                aria-haspopup="dialog"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition hover:border-slate-300 lg:hidden"
                 aria-label={t("common.navigation.menu")}
               >
                 <svg
@@ -843,6 +919,7 @@ export default function AppShell({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
+                  aria-hidden="true"
                   className="h-4 w-4"
                 >
                   <path
@@ -874,14 +951,24 @@ export default function AppShell({
         </header>
 
         {mobileNavOpen ? (
-          <div className="fixed inset-0 z-[1000] lg:hidden">
-            <button
-              type="button"
-              aria-label={t("common.actions.close")}
+          <div ref={mobileNavLayerRef} className="fixed inset-0 z-[1000] lg:hidden">
+            <div
+              aria-hidden="true"
               className="absolute inset-0 bg-slate-900/55"
               onClick={() => setMobileNavOpen(false)}
             />
-            <div className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)]">
+            <div
+              ref={mobileNavPanelRef}
+              id={mobileNavId}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={mobileNavTitleId}
+              tabIndex={-1}
+              className="sidebar-shell absolute left-0 top-0 flex h-[100dvh] w-[min(86vw,22rem)] flex-col overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--sidebar-ink)] outline-none"
+            >
+              <h2 id={mobileNavTitleId} className="sr-only">
+                {t("common.navigation.menu")}
+              </h2>
               <div className="sidebar-brand relative z-10 px-4 pb-5 pt-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
@@ -889,7 +976,7 @@ export default function AppShell({
                       {mobileUser?.avatarUrl ? (
                         <img
                           src={getAssetUrl(mobileUser.avatarUrl)}
-                          alt="Avatar"
+                          alt={t("account.avatar.alt")}
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -921,6 +1008,7 @@ export default function AppShell({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.8"
+                      aria-hidden="true"
                       className="h-4 w-4"
                     >
                       <path
@@ -933,23 +1021,19 @@ export default function AppShell({
                 </div>
               </div>
 
-              <nav className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm">
+              <nav
+                aria-label={primaryNavLabel}
+                className="nav-list relative z-10 min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3 text-sm"
+              >
                 {items.map((item) => {
-                  const isRoot =
-                    item.href === "/admin" ||
-                    item.href === "/client" ||
-                    item.href === "/tech";
-                  const isActive = isRoot
-                    ? pathname === item.href
-                    : (item.matchPaths ?? [item.href]).some((path) =>
-                        pathname.startsWith(path)
-                      );
+                  const isActive = isNavItemActive(item, pathname);
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => setMobileNavOpen(false)}
                       data-active={isActive}
+                      aria-current={isActive ? "page" : undefined}
                       className="nav-item sidebar-item group relative flex items-center gap-3 px-3 py-2.5"
                     >
                       <span className="nav-icon sidebar-icon flex h-9 w-9 shrink-0 items-center justify-center transition">
@@ -1021,6 +1105,9 @@ export default function AppShell({
                 <div className="mt-1 [&>button]:w-full [&>button]:justify-start">
                   <InstallAppAction variant="sidebar" />
                 </div>
+                <div className="mt-2">
+                  <DeveloperViewSwitcherPanel />
+                </div>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1051,6 +1138,11 @@ export default function AppShell({
                     {loggingOut ? t("userMenu.signingOut") : t("userMenu.signOut")}
                   </span>
                 </button>
+                {logoutError ? (
+                  <p role="alert" className="mt-2 px-3 text-xs text-rose-300">
+                    {logoutError}
+                  </p>
+                ) : null}
               </div>
 
               <div className="relative z-10 mt-auto border-t border-[var(--sidebar-border)] px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sidebar-muted)]">
@@ -1104,8 +1196,11 @@ export default function AppShell({
         ) : null}
 
         <main
-          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
+          id={MAIN_CONTENT_ID}
+          tabIndex={-1}
+          className={`app-content mx-auto flex w-full ${contentMaxWidth} flex-col gap-5 px-4 py-6 animate-fade focus:outline-none sm:gap-7 sm:px-6 sm:py-8 lg:col-start-2 lg:row-start-2 lg:gap-8 lg:py-10`}
         >
+          <DeveloperViewBanner />
           {children}
         </main>
       </div>

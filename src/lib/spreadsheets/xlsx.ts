@@ -5,6 +5,45 @@ type WorksheetMatrix = {
   rows: string[][];
 };
 
+const BYTES_PER_MEGABYTE = 1024 * 1024;
+/**
+ * Total budget for everything a single upload may decompress to. A ZIP entry
+ * declares its own sizes, so without a cap a few kilobytes of crafted deflate
+ * stream ("zip bomb") expand to gigabytes and take the process down. Real
+ * workbooks of the size this importer accepts stay far below this.
+ */
+export const MAX_XLSX_INFLATED_BYTES = 50 * BYTES_PER_MEGABYTE;
+const BUFFER_TOO_LARGE_CODE = "ERR_BUFFER_TOO_LARGE";
+const XLSX_TOO_LARGE_ERROR =
+  "El archivo XLSX se descomprime por encima del limite permitido.";
+const STORED_COMPRESSION_METHOD = 0;
+const DEFLATE_COMPRESSION_METHOD = 8;
+
+/** zlib reports an exceeded `maxOutputLength` with this Node error code. */
+function isOutputLimitError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === BUFFER_TOO_LARGE_CODE
+  );
+}
+
+/** Inflates one entry, refusing to produce more than `maxOutputBytes`. */
+function inflateEntry(compressedData: Buffer, maxOutputBytes: number) {
+  if (maxOutputBytes <= 0) {
+    throw new Error(XLSX_TOO_LARGE_ERROR);
+  }
+  try {
+    return inflateRawSync(compressedData, { maxOutputLength: maxOutputBytes });
+  } catch (error) {
+    if (isOutputLimitError(error)) {
+      throw new Error(XLSX_TOO_LARGE_ERROR);
+    }
+    throw error;
+  }
+}
+
 const CRC32_TABLE = (() => {
   const table = new Uint32Array(256);
   for (let index = 0; index < 256; index += 1) {
@@ -292,6 +331,7 @@ function unzipEntries(buffer: Buffer) {
   const centralDirectoryOffset = buffer.readUInt32LE(endOfCentralDirectoryOffset + 16);
   const files = new Map<string, Buffer>();
   let offset = centralDirectoryOffset;
+  let remainingOutputBytes = MAX_XLSX_INFLATED_BYTES;
 
   for (let index = 0; index < entryCount; index += 1) {
     if (buffer.readUInt32LE(offset) !== 0x02014b50) {
@@ -317,10 +357,16 @@ function unzipEntries(buffer: Buffer) {
     const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
     const compressedData = buffer.subarray(dataStart, dataStart + compressedSize);
 
-    if (compressionMethod === 0) {
+    if (compressionMethod === STORED_COMPRESSION_METHOD) {
+      if (compressedData.length > remainingOutputBytes) {
+        throw new Error(XLSX_TOO_LARGE_ERROR);
+      }
       files.set(fileName, Buffer.from(compressedData));
-    } else if (compressionMethod === 8) {
-      files.set(fileName, inflateRawSync(compressedData));
+      remainingOutputBytes -= compressedData.length;
+    } else if (compressionMethod === DEFLATE_COMPRESSION_METHOD) {
+      const inflated = inflateEntry(compressedData, remainingOutputBytes);
+      files.set(fileName, inflated);
+      remainingOutputBytes -= inflated.length;
     } else {
       throw new Error("El XLSX usa un metodo de compresion no soportado.");
     }
@@ -358,6 +404,13 @@ function extractWorkbookSheetPath(files: Map<string, Buffer>) {
   const target = relationshipMatch[1].replace(/^\/+/, "");
   return target.startsWith("xl/") ? target : `xl/${target}`;
 }
+
+/**
+ * `<c ...>cuerpo</c>` o `<c .../>`. Excel serializa las celdas vacías con estilo como
+ * etiqueta autocerrada (<c r="A2" s="1"/>): no tienen cuerpo (grupo 2 indefinido) y no
+ * hay que buscar `</c>`, que sería el cierre de la celda siguiente.
+ */
+const CELL_PATTERN = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
 
 function parseSharedStrings(xml: string) {
   const items = Array.from(xml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g));
@@ -420,7 +473,7 @@ export function parseWorkbookXlsx(buffer: Buffer): WorksheetMatrix {
     const rowNumber = Number(rowMatch[1]);
     const rowCells = rowMatch[2];
     const values = rowsByNumber.get(rowNumber) ?? [];
-    const cellMatches = rowCells.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g);
+    const cellMatches = rowCells.matchAll(CELL_PATTERN);
 
     for (const cellMatch of cellMatches) {
       const attributes = cellMatch[1];
@@ -430,7 +483,7 @@ export function parseWorkbookXlsx(buffer: Buffer): WorksheetMatrix {
       }
 
       const columnIndex = columnIndexFromName(referenceMatch[1]);
-      values[columnIndex] = parseCellValue(attributes, cellMatch[2], sharedStrings);
+      values[columnIndex] = parseCellValue(attributes, cellMatch[2] ?? "", sharedStrings);
     }
 
     rowsByNumber.set(rowNumber, values);

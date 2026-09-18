@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import nodemailer from "nodemailer";
 import { prisma } from "@/lib/db";
 import {
   escapeHtml,
@@ -8,6 +7,7 @@ import {
 } from "@/lib/email-templates";
 import { getEmailTemplatesConfig } from "@/lib/site-settings";
 import { hashPasswordResetToken } from "@/lib/auth/reset-token";
+import { getMailConfig, sendMailAndLog } from "@/lib/mail/transport";
 
 const PASSWORD_RESET_HOURS = 2;
 
@@ -26,14 +26,16 @@ async function issuePasswordResetToken(userId: string) {
   const tokenHash = hashPasswordResetToken(token);
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * PASSWORD_RESET_HOURS);
 
-  await prisma.passwordResetToken.updateMany({
-    where: { userId, purpose: "PASSWORD_RESET", usedAt: null },
-    data: { usedAt: new Date() },
-  });
-
-  await prisma.passwordResetToken.create({
-    data: { userId, token: tokenHash, purpose: "PASSWORD_RESET", expiresAt },
-  });
+  // Invalidating previous tokens and issuing the new one is one atomic step.
+  await prisma.$transaction([
+    prisma.passwordResetToken.updateMany({
+      where: { userId, purpose: "PASSWORD_RESET", usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+    prisma.passwordResetToken.create({
+      data: { userId, token: tokenHash, purpose: "PASSWORD_RESET", expiresAt },
+    }),
+  ]);
 
   return { token, expiresAt };
 }
@@ -45,30 +47,21 @@ export async function sendPasswordResetEmail({
   baseUrl,
   locale,
 }: SendPasswordResetEmailInput): Promise<SendPasswordResetEmailResult> {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
+  const mailBase = {
+    to: recipientEmail,
+    recipientName,
+    recipientRole: "USER",
+    template: "PASSWORD_RESET",
+    metadata: { category: "PASSWORD_RESET", userId },
+  } as const;
 
-  if (!host || !user || !pass || !from) {
-    await prisma.emailLog
-      .create({
-        data: {
-          recipientEmail,
-          recipientName,
-          recipientRole: "USER",
-          subject: "Password reset (not sent)",
-          bodyText: "SMTP not configured",
-          status: "FAILED",
-          errorMessage: "SMTP not configured",
-          metadata: {
-            category: "PASSWORD_RESET",
-            userId,
-          },
-        },
-      })
-      .catch(() => null);
+  if (!getMailConfig()) {
+    // No reset token is issued when SMTP is missing; the transport still records the attempt.
+    await sendMailAndLog({
+      ...mailBase,
+      subject: "Password reset (not sent)",
+      text: "SMTP not configured",
+    });
     return { ok: false, error: "SMTP not configured" };
   }
 
@@ -85,59 +78,22 @@ export async function sendPasswordResetEmail({
     reset_hours: String(PASSWORD_RESET_HOURS),
   });
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
+  const sent = await sendMailAndLog({
+    ...mailBase,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
   });
 
-  try {
-    await transporter.sendMail({
-      from,
-      to: recipientEmail,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
-    });
-
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail,
-        recipientName,
-        recipientRole: "USER",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "SENT",
-        sentAt: new Date(),
-        metadata: {
-          category: "PASSWORD_RESET",
-          userId,
-        },
-      },
-    });
-
-    return { ok: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown send error";
-    await prisma.emailLog.create({
-      data: {
-        recipientEmail,
-        recipientName,
-        recipientRole: "USER",
-        subject: rendered.subject,
-        bodyText: rendered.text,
-        bodyHtml: rendered.html,
-        status: "FAILED",
-        errorMessage: message,
-        metadata: {
-          category: "PASSWORD_RESET",
-          userId,
-        },
-      },
-    });
-    console.error("Password reset email failed:", error);
-    return { ok: false, error: "Could not send reset email" };
+  if (!sent.ok) {
+    return {
+      ok: false,
+      error:
+        sent.reason === "not_configured"
+          ? "SMTP not configured"
+          : "Could not send reset email",
+    };
   }
+
+  return { ok: true };
 }

@@ -35,6 +35,50 @@ const startOfDay = (date: Date) => startOfBusinessDay(date) ?? date;
 
 const endOfDay = (date: Date) => endOfBusinessDay(date) ?? date;
 
+const DEFAULT_RANGE_DAYS = 30;
+
+type DateWindow = { from: Date; to: Date };
+
+/** Ventana de `days` días (ambos inclusive) que termina en `end`. */
+const windowEndingAt = (end: Date, days: number): DateWindow => ({
+  from: addBusinessDays(end, -(days - 1)) ?? end,
+  to: end,
+});
+
+/**
+ * Con un solo extremo explícito se respeta la fecha dada y el otro se completa de
+ * forma coherente con la ventana por defecto: solo `from` llega hasta hoy y solo `to`
+ * abre una ventana de DEFAULT_RANGE_DAYS días que termina en esa fecha.
+ */
+const resolveDateWindow = (input: {
+  now: Date;
+  rawFrom: Date | null;
+  rawTo: Date | null;
+  isTodayRange: boolean;
+  presetDays: number | null;
+}): DateWindow => {
+  const { now, rawFrom, rawTo, isTodayRange, presetDays } = input;
+  if (isTodayRange) {
+    return { from: now, to: now };
+  }
+  if (presetDays !== null) {
+    return windowEndingAt(now, presetDays);
+  }
+  if (rawFrom && rawTo) {
+    return { from: rawFrom, to: rawTo };
+  }
+  if (rawFrom) {
+    return { from: rawFrom, to: now };
+  }
+  if (rawTo) {
+    return windowEndingAt(rawTo, DEFAULT_RANGE_DAYS);
+  }
+  return windowEndingAt(now, DEFAULT_RANGE_DAYS);
+};
+
+const orderWindow = (window: DateWindow): DateWindow =>
+  window.from > window.to ? { from: window.to, to: window.from } : window;
+
 export const getReportFilters = (
   searchParams?: Record<string, string | string[] | undefined>
 ): ReportFilters => {
@@ -52,21 +96,15 @@ export const getReportFilters = (
   const isDayPreset = !Number.isNaN(days) && days > 0;
   const now = new Date();
 
-  let from = rawFrom;
-  let to = rawTo;
-
-  if (isTodayRange) {
-    from = now;
-    to = now;
-  } else if (isDayPreset) {
-    const start = addBusinessDays(now, -(days - 1)) ?? now;
-    from = start;
-    to = now;
-  } else if (!from || !to) {
-    const start = addBusinessDays(now, -29) ?? now;
-    from = start;
-    to = now;
-  }
+  const window = orderWindow(
+    resolveDateWindow({
+      now,
+      rawFrom,
+      rawTo,
+      isTodayRange,
+      presetDays: isDayPreset ? days : null,
+    })
+  );
 
   const range =
     isTodayRange
@@ -75,21 +113,15 @@ export const getReportFilters = (
       ? String(days)
       : rawFrom || rawTo
         ? "custom"
-        : "30";
-
-  if ((from ?? now) > (to ?? now)) {
-    const swap = from;
-    from = to;
-    to = swap;
-  }
+        : String(DEFAULT_RANGE_DAYS);
 
   const technicianId = param("technicianId") || undefined;
   const serviceType = param("serviceType") || undefined;
   const priority = param("priority") || undefined;
 
   return {
-    from: startOfDay(from ?? now),
-    to: endOfDay(to ?? now),
+    from: startOfDay(window.from),
+    to: endOfDay(window.to),
     range,
     technicianId,
     serviceType,

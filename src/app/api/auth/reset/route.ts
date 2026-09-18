@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const tokenHash = hashPasswordResetToken(token);
   const resetToken = await prisma.passwordResetToken.findFirst({
     where: {
-      OR: [{ token: tokenHash }, { token }],
+      token: tokenHash,
     },
     include: { user: { include: { customer: true } } },
   });

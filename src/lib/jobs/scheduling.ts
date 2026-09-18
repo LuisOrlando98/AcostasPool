@@ -1,9 +1,19 @@
 import { DateTime } from "luxon";
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const TIME_VALUE_PATTERN = /^(\d{1,2}):(\d{2})$/;
+
 export function combineDateAndTime(dateValue: string, timeValue: string) {
-  const normalizedTime = /^(\d{1,2}):(\d{2})$/.exec(timeValue);
+  const normalizedTime = TIME_VALUE_PATTERN.exec(timeValue);
   if (!normalizedTime) {
+    return new Date(Number.NaN);
+  }
+  // Luxon aceptaría "24:00" como medianoche del día siguiente: se valida el rango aquí.
+  const hourValue = Number(normalizedTime[1]);
+  const minuteValue = Number(normalizedTime[2]);
+  if (hourValue >= HOURS_PER_DAY || minuteValue >= MINUTES_PER_HOUR) {
     return new Date(Number.NaN);
   }
   const hours = normalizedTime[1].padStart(2, "0");

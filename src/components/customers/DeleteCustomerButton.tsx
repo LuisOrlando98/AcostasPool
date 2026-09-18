@@ -1,16 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useId, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
-import { lockBodyScroll } from "@/lib/ui/body-scroll-lock";
+import { DELETE_CONFIRMATION_KEYWORDS } from "./forms/delete-confirmation";
 
 type Props = {
   customerId: string;
   deleteCustomerAction: (formData: FormData) => Promise<void>;
   className: string;
 };
+
+const MODAL_Z_INDEX_CLASS = "z-[2600]";
+const MODAL_LAYER_CLASS = "overflow-y-auto p-3 sm:p-6";
+const MODAL_CARD_CLASS =
+  "max-w-xl overflow-hidden rounded-3xl border border-rose-200 bg-white shadow-2xl";
+const CANCEL_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300";
+const SUBMIT_BUTTON_BASE_CLASS =
+  "inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition";
+const SUBMIT_BUTTON_READY_CLASS =
+  "border border-rose-200 bg-rose-600 text-white hover:bg-rose-700";
+const SUBMIT_BUTTON_LOCKED_CLASS = "border border-slate-200 bg-slate-100 text-slate-400";
 
 function SubmitDeleteButton({
   idleLabel,
@@ -40,157 +52,26 @@ export default function DeleteCustomerButton({
   const { locale, t } = useI18n();
   const [open, setOpen] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
-  const keyword = locale === "es" ? "eliminar" : "delete";
-  const pendingLabel = locale === "es" ? "Eliminando..." : "Deleting...";
-  const modalKicker = locale === "es" ? "Accion permanente" : "Permanent action";
-  const modalTitle =
-    locale === "es" ? "Eliminar este cliente?" : "Delete this customer?";
-  const modalDescription =
-    locale === "es"
-      ? "Escribe la palabra eliminar para confirmar que eliminaras este cliente, su portal de usuario, propiedades, trabajos, facturas, planes, documentos y cualquier registro historico relacionado."
-      : "Type the word delete to confirm that you will delete this customer, their portal user, properties, jobs, invoices, plans, documents, and any related historical records.";
-  const inputLabel =
-    locale === "es"
-      ? 'Escribe "eliminar" para continuar'
-      : 'Type "delete" to continue';
-  const cancelLabel = locale === "es" ? "Cancelar" : "Cancel";
-  const helperLabel =
-    locale === "es"
-      ? "Esta accion no se puede deshacer."
-      : "This action cannot be undone.";
-  const matchesKeyword = useMemo(
-    () => confirmationText.trim().toLowerCase() === keyword,
-    [confirmationText, keyword]
-  );
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const unlock = lockBodyScroll();
-    return () => unlock();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        setConfirmationText("");
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open]);
+  const titleId = useId();
+  const descriptionId = useId();
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const keyword = DELETE_CONFIRMATION_KEYWORDS[locale];
+  const normalizedConfirmation = confirmationText.trim().toLowerCase();
+  const matchesKeyword = normalizedConfirmation === keyword;
+  const closeLabel = t("common.actions.close");
 
   const closeModal = () => {
     setOpen(false);
     setConfirmationText("");
   };
 
-  const modal =
-    typeof document !== "undefined" && open
-      ? createPortal(
-          <div className="app-modal-layer fixed inset-0 z-[2600] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-            <button
-              type="button"
-              className="app-modal-backdrop absolute inset-0 bg-slate-900/60"
-              aria-label={t("common.actions.close")}
-              onClick={closeModal}
-            />
-            <div className="app-modal-card relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-rose-200 bg-white shadow-2xl">
-              <div className="app-modal-scroll modal-scroll max-h-[90vh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
-                <div className="app-modal-header flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">
-                      {modalKicker}
-                    </p>
-                    <h2 className="mt-2 text-lg font-semibold text-slate-900">
-                      {modalTitle}
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      {modalDescription}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="app-modal-close"
-                    aria-label={t("common.actions.close")}
-                    title={t("common.actions.close")}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-4 w-4"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6 6l12 12M18 6l-12 12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                <form action={deleteCustomerAction} className="mt-5 space-y-4">
-                  <input type="hidden" name="customerId" value={customerId} />
-                  <input type="hidden" name="confirmDelete" value="yes" />
-                  <input
-                    type="hidden"
-                    name="typedConfirmation"
-                    value={confirmationText.trim().toLowerCase()}
-                  />
-
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-                    <label className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700">
-                      {inputLabel}
-                    </label>
-                    <input
-                      value={confirmationText}
-                      onChange={(event) => setConfirmationText(event.target.value)}
-                      className="app-input mt-2 w-full border-rose-200 px-4 py-3 text-sm"
-                      autoFocus
-                    />
-                    <p className="mt-2 text-xs text-rose-700">{helperLabel}</p>
-                  </div>
-
-                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
-                    >
-                      {cancelLabel}
-                    </button>
-                    <SubmitDeleteButton
-                      idleLabel={t("admin.customers.detail.actions.deleteCustomer")}
-                      pendingLabel={pendingLabel}
-                      className={`inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        matchesKeyword
-                          ? "border border-rose-200 bg-rose-600 text-white hover:bg-rose-700"
-                          : "border border-slate-200 bg-slate-100 text-slate-400"
-                      }`}
-                      disabled={!matchesKeyword}
-                    />
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      : null;
-
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
         className={className}
       >
         <svg
@@ -208,7 +89,94 @@ export default function DeleteCustomerButton({
         </svg>
         <span>{t("admin.customers.detail.actions.deleteCustomer")}</span>
       </button>
-      {modal}
+      <AppModal
+        open={open}
+        onClose={closeModal}
+        titleId={titleId}
+        describedBy={descriptionId}
+        zIndexClass={MODAL_Z_INDEX_CLASS}
+        layerClassName={MODAL_LAYER_CLASS}
+        cardClassName={MODAL_CARD_CLASS}
+        initialFocusRef={inputRef}
+      >
+        <div className="app-modal-scroll modal-scroll max-h-[90dvh] overflow-y-auto p-5 pr-4 sm:p-6 sm:pr-5">
+          <div className="app-modal-header flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">
+                {t("admin.customers.detail.delete.kicker")}
+              </p>
+              <h2 id={titleId} className="mt-2 text-lg font-semibold text-slate-900">
+                {t("admin.customers.detail.delete.title")}
+              </h2>
+              <p id={descriptionId} className="mt-2 text-sm leading-6 text-slate-600">
+                {t("admin.customers.detail.delete.description", { keyword })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeModal}
+              className="app-modal-close"
+              aria-label={closeLabel}
+              title={closeLabel}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 6l12 12M18 6l-12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <form action={deleteCustomerAction} className="mt-5 space-y-4">
+            <input type="hidden" name="customerId" value={customerId} />
+            <input type="hidden" name="confirmDelete" value="yes" />
+            <input type="hidden" name="typedConfirmation" value={normalizedConfirmation} />
+
+            <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+              <label
+                htmlFor={inputId}
+                className="text-xs font-semibold uppercase tracking-[0.16em] text-rose-700"
+              >
+                {t("admin.customers.detail.delete.inputLabel", { keyword })}
+              </label>
+              <input
+                id={inputId}
+                ref={inputRef}
+                value={confirmationText}
+                onChange={(event) => setConfirmationText(event.target.value)}
+                autoComplete="off"
+                className="app-input mt-2 w-full border-rose-200 px-4 py-3 text-sm"
+              />
+              <p className="mt-2 text-xs text-rose-700">
+                {t("admin.customers.detail.delete.irreversible")}
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button type="button" onClick={closeModal} className={CANCEL_BUTTON_CLASS}>
+                {t("common.actions.cancel")}
+              </button>
+              <SubmitDeleteButton
+                idleLabel={t("admin.customers.detail.actions.deleteCustomer")}
+                pendingLabel={t("admin.customers.detail.delete.pending")}
+                className={`${SUBMIT_BUTTON_BASE_CLASS} ${
+                  matchesKeyword ? SUBMIT_BUTTON_READY_CLASS : SUBMIT_BUTTON_LOCKED_CLASS
+                }`}
+                disabled={!matchesKeyword}
+              />
+            </div>
+          </form>
+        </div>
+      </AppModal>
     </>
   );
 }

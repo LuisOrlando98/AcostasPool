@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-import { storePublicAsset } from "@/lib/storage/object-store";
+import {
+  PRIVATE_ASSET_CACHE_CONTROL,
+  storePublicAsset,
+} from "@/lib/storage/object-store";
+import {
+  UPLOAD_SIGNATURE_SAMPLE_BYTES,
+  validateUploadFile,
+} from "@/lib/storage/upload-validation";
 import { buildCustomerDocumentAssetPath } from "@/lib/storage/paths";
 
 export const runtime = "nodejs";
@@ -11,6 +18,11 @@ type RouteContext = {
 };
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+
+type ValidatedUpload = {
+  file: File;
+  contentType: string;
+};
 const ALLOWED_CATEGORIES = new Set([
   "GENERAL",
   "CONTRACT",
@@ -72,7 +84,9 @@ export async function POST(request: Request, context: RouteContext) {
     typeof categoryRaw === "string" ? categoryRaw : "GENERAL"
   );
 
-  const createdDocuments = [];
+  // Todo el lote se valida (tamano y tipo) antes de escribir nada, para no
+  // dejar documentos a medias cuando uno de ellos se rechaza.
+  const validatedFiles: ValidatedUpload[] = [];
   for (const file of fileEntries) {
     if (file.size > MAX_FILE_SIZE_BYTES) {
       return NextResponse.json(
@@ -81,13 +95,29 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    const head = Buffer.from(
+      await file.slice(0, UPLOAD_SIGNATURE_SAMPLE_BYTES).arrayBuffer()
+    );
+    const validation = validateUploadFile({
+      fileName: file.name,
+      declaredType: file.type,
+      bytes: head,
+    });
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: validation.status });
+    }
+    validatedFiles.push({ file, contentType: validation.contentType });
+  }
+
+  const createdDocuments = [];
+  for (const { file, contentType } of validatedFiles) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileUrl = await storePublicAsset({
       relativePath: buildCustomerDocumentAssetPath(customerId, file.name),
       buffer,
-      contentType: file.type || undefined,
-      cacheControl: "public, max-age=31536000, immutable",
+      contentType,
+      cacheControl: PRIVATE_ASSET_CACHE_CONTROL,
     });
 
     const document = await prisma.customerDocument.create({
@@ -98,7 +128,7 @@ export async function POST(request: Request, context: RouteContext) {
         description,
         category,
         fileUrl,
-        mimeType: file.type || null,
+        mimeType: contentType,
         sizeBytes: file.size || null,
       },
       select: {

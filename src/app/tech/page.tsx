@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { formatCustomerName } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
-import { geocodeAddresses } from "@/lib/routing/geo";
+import { geocodeProperties } from "@/lib/routing/geo";
 import { BUSINESS_TIMEZONE, toDateKey } from "@/lib/jobs/capacity";
 import {
   getAddressPairKey,
@@ -85,7 +85,9 @@ export default async function TechPage() {
       priority: true,
       serviceType: true,
       customer: { select: { nombre: true, apellidos: true, telefono: true } },
-      property: { select: { address: true } },
+      property: {
+        select: { id: true, address: true, lat: true, lng: true, geocodedAt: true },
+      },
       photos: { select: { id: true } },
     },
   });
@@ -129,8 +131,8 @@ export default async function TechPage() {
   const toMinutes = (from: Date, to: Date) =>
     Math.max(1, Math.round((to.getTime() - from.getTime()) / 60000));
 
-  const geocodedByAddress = await geocodeAddresses(
-    routeJobs.map((job) => job.property.address)
+  const coordinatesByPropertyId = await geocodeProperties(
+    routeJobs.map((job) => job.property)
   );
   const routePairMetrics = await getTravelMetricsForPairs(
     routeJobs.slice(1).map((job, index) => {
@@ -138,8 +140,8 @@ export default async function TechPage() {
       return {
         fromAddress: previous.property.address,
         toAddress: job.property.address,
-        fromCoordinates: geocodedByAddress.get(previous.property.address) ?? null,
-        toCoordinates: geocodedByAddress.get(job.property.address) ?? null,
+        fromCoordinates: coordinatesByPropertyId.get(previous.property.id) ?? null,
+        toCoordinates: coordinatesByPropertyId.get(job.property.id) ?? null,
       };
     })
   );
@@ -214,7 +216,7 @@ export default async function TechPage() {
                     )}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                    className="app-button-secondary inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                   >
                     <MapPinIcon />
                     {t("tech.home.route.openMap")}
@@ -222,7 +224,7 @@ export default async function TechPage() {
                   {nextJob.customer.telefono ? (
                     <a
                       href={`tel:${nextJob.customer.telefono.replace(/\s+/g, "")}`}
-                      className="app-button-secondary inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                      className="app-button-secondary inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                     >
                       <PhoneIcon />
                       {t("tech.home.route.call")}
@@ -231,7 +233,7 @@ export default async function TechPage() {
                 </div>
                 <Link
                   href={`/tech/jobs/${nextJob.id}`}
-                  className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
+                  className="app-button-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
                 >
                   {t("tech.home.next.complete")}
                 </Link>
@@ -417,7 +419,7 @@ export default async function TechPage() {
                             )}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                            className="app-button-ghost inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                           >
                             <MapPinIcon />
                             {t("tech.home.route.openMap")}
@@ -425,7 +427,7 @@ export default async function TechPage() {
                           {job.customer.telefono ? (
                             <a
                               href={`tel:${job.customer.telefono.replace(/\s+/g, "")}`}
-                              className="app-button-ghost inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
+                              className="app-button-ghost inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em]"
                             >
                               <PhoneIcon />
                               {t("tech.home.route.call")}
@@ -434,7 +436,7 @@ export default async function TechPage() {
                         </div>
                         <Link
                           href={`/tech/jobs/${job.id}`}
-                          className="app-button-primary inline-flex w-full items-center justify-center px-4 py-2 text-xs font-semibold"
+                          className="app-button-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2 text-xs font-semibold"
                         >
                           {t("tech.home.list.upload")}
                         </Link>

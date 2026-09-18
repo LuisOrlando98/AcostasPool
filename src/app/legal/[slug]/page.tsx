@@ -7,6 +7,7 @@ import {
   COMPLIANCE_DOC_IDS,
   getComplianceDocBySlug,
 } from "@/lib/compliance-config";
+import { buildLandingMetadata } from "@/lib/landing-config";
 import { getComplianceContentConfig, getSiteSocialLinks } from "@/lib/site-settings";
 
 type LegalDocPageProps = {
@@ -21,6 +22,7 @@ export async function generateMetadata({
   if (!docId) {
     return {
       title: "Policy Not Found | AcostasPool",
+      robots: { index: false, follow: false },
     };
   }
 
@@ -28,10 +30,11 @@ export async function generateMetadata({
   const compliance = await getComplianceContentConfig();
   const content = compliance[docId][locale];
 
-  return {
+  return buildLandingMetadata({
+    path: `/legal/${COMPLIANCE_DOC_DEFINITIONS[docId].slug}`,
     title: `${content.title} | AcostasPool`,
     description: content.summary,
-  };
+  });
 }
 
 export default async function LegalDocPage({ params }: LegalDocPageProps) {
@@ -61,4 +64,3 @@ export default async function LegalDocPage({ params }: LegalDocPageProps) {
     <LegalDocPageClient docs={docs} currentDocId={docId} socialLinks={socialLinks} />
   );
 }
-

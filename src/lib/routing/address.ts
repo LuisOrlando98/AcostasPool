@@ -1,14 +1,6 @@
-const normalizeInput = (value: string) => value.trim().replace(/\s+/g, " ");
+import { getGoogleMapsServerApiKey } from "@/lib/routing/google-api-key";
 
-function getGoogleApiKey() {
-  if (process.env.GOOGLE_MAPS_SERVER_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_SERVER_API_KEY.trim();
-  }
-  if (process.env.GOOGLE_MAPS_API_KEY?.trim()) {
-    return process.env.GOOGLE_MAPS_API_KEY.trim();
-  }
-  return "";
-}
+const normalizeInput = (value: string) => value.trim().replace(/\s+/g, " ");
 
 type GoogleGeocodeResult = {
   formatted_address?: string;
@@ -50,7 +42,7 @@ export async function normalizePropertyAddress(address: string) {
     return "";
   }
 
-  const apiKey = getGoogleApiKey();
+  const apiKey = getGoogleMapsServerApiKey();
   if (!apiKey) {
     return normalized;
   }

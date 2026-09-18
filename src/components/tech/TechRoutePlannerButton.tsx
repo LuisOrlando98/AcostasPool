@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
+import AppModal from "@/components/ui/AppModal";
 import { useI18n } from "@/i18n/client";
 
 type RouteStopPreview = {
@@ -14,6 +15,11 @@ type TechRoutePlannerButtonProps = {
 };
 
 type MapProvider = "GOOGLE" | "APPLE";
+
+const MODAL_LAYER_CLASS = "overflow-y-auto p-3 sm:p-6";
+const MODAL_BACKDROP_CLASS = "app-modal-backdrop bg-slate-900/55";
+const MODAL_CARD_CLASS =
+  "max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl";
 
 const isAppleDevice = () => {
   if (typeof navigator === "undefined") {
@@ -68,9 +74,13 @@ export default function TechRoutePlannerButton({
   stops,
 }: TechRoutePlannerButtonProps) {
   const { t } = useI18n();
+  const titleId = useId();
+  const descriptionId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [preferredProvider, setPreferredProvider] =
-    useState<MapProvider>("GOOGLE");
+  const [preferredProvider] = useState<MapProvider>(() =>
+    isAppleDevice() ? "APPLE" : "GOOGLE"
+  );
 
   const addresses = useMemo(
     () =>
@@ -80,10 +90,6 @@ export default function TechRoutePlannerButton({
     [stops]
   );
 
-  useEffect(() => {
-    setPreferredProvider(isAppleDevice() ? "APPLE" : "GOOGLE");
-  }, []);
-
   const links = useMemo(
     () => ({
       google: buildGoogleRouteUrl(addresses),
@@ -92,107 +98,109 @@ export default function TechRoutePlannerButton({
     [addresses]
   );
 
+  const closeModal = () => setIsOpen(false);
+
   const openProvider = (provider: MapProvider) => {
     const url = provider === "APPLE" ? links.apple : links.google;
     if (!url) {
       return;
     }
     window.open(url, "_blank", "noopener,noreferrer");
-    setIsOpen(false);
+    closeModal();
   };
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(true)}
-        className="app-button-secondary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold"
+        className="app-button-secondary inline-flex min-h-11 items-center gap-2 px-3 py-2 text-xs font-semibold"
       >
         <RouteIcon />
         {t("tech.home.route.quickPlan")}
       </button>
 
-      {isOpen ? (
-        <div className="app-modal-layer fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto p-3 sm:p-6">
-          <div
-            className="app-modal-backdrop absolute inset-0 bg-slate-900/55"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="app-modal-card relative z-[1] w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="border-b border-slate-200 px-5 py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                {t("tech.home.route.quickPlanKicker")}
-              </p>
-              <h3 className="mt-1 text-lg font-semibold text-slate-900">
-                {t("tech.home.route.quickPlanTitle")}
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                {t("tech.home.route.quickPlanQuestion")}
-              </p>
-            </div>
-
-            <div className="app-modal-scroll modal-scroll max-h-[56vh] overflow-y-auto px-5 py-4">
-              {stops.length === 0 ? (
-                <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                  {t("tech.home.route.empty")}
-                </p>
-              ) : (
-                <ol className="space-y-2">
-                  {stops.map((stop, index) => (
-                    <li
-                      key={stop.id}
-                      className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2"
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                        {t("tech.home.route.stop", { count: index + 1 })}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-800">
-                        {stop.customerName}
-                      </p>
-                      <p className="text-xs text-slate-600">{stop.address}</p>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-
-            <div className="border-t border-slate-200 px-5 py-4">
-              <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-800">
-                {preferredProvider === "APPLE"
-                  ? t("tech.home.route.recommendedApple")
-                  : t("tech.home.route.recommendedGoogle")}
-              </div>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => openProvider("GOOGLE")}
-                  disabled={!links.google}
-                  className="app-button-primary inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold disabled:opacity-60"
-                >
-                  {t("tech.home.route.openInGoogle")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => openProvider("APPLE")}
-                  disabled={!links.apple}
-                  className="app-button-secondary inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold disabled:opacity-60"
-                >
-                  {t("tech.home.route.openInApple")}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="mt-2 w-full rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-              >
-                {t("common.actions.close")}
-              </button>
-            </div>
-          </div>
+      <AppModal
+        open={isOpen}
+        onClose={closeModal}
+        titleId={titleId}
+        describedBy={descriptionId}
+        layerClassName={MODAL_LAYER_CLASS}
+        backdropClassName={MODAL_BACKDROP_CLASS}
+        cardClassName={MODAL_CARD_CLASS}
+        returnFocusRef={triggerRef}
+      >
+        <div className="border-b border-slate-200 px-5 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            {t("tech.home.route.quickPlanKicker")}
+          </p>
+          <h3 id={titleId} className="mt-1 text-lg font-semibold text-slate-900">
+            {t("tech.home.route.quickPlanTitle")}
+          </h3>
+          <p id={descriptionId} className="mt-1 text-sm text-slate-600">
+            {t("tech.home.route.quickPlanQuestion")}
+          </p>
         </div>
-      ) : null}
+
+        <div className="app-modal-scroll modal-scroll max-h-[56vh] overflow-y-auto px-5 py-4">
+          {stops.length === 0 ? (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              {t("tech.home.route.empty")}
+            </p>
+          ) : (
+            <ol className="space-y-2">
+              {stops.map((stop, index) => (
+                <li
+                  key={stop.id}
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    {t("tech.home.route.stop", { count: index + 1 })}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    {stop.customerName}
+                  </p>
+                  <p className="text-xs text-slate-600">{stop.address}</p>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+
+        <div className="border-t border-slate-200 px-5 py-4">
+          <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-800">
+            {preferredProvider === "APPLE"
+              ? t("tech.home.route.recommendedApple")
+              : t("tech.home.route.recommendedGoogle")}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => openProvider("GOOGLE")}
+              disabled={!links.google}
+              className="app-button-primary inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold disabled:opacity-60"
+            >
+              {t("tech.home.route.openInGoogle")}
+            </button>
+            <button
+              type="button"
+              onClick={() => openProvider("APPLE")}
+              disabled={!links.apple}
+              className="app-button-secondary inline-flex min-h-11 items-center justify-center rounded-full px-4 py-2.5 text-xs font-semibold disabled:opacity-60"
+            >
+              {t("tech.home.route.openInApple")}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={closeModal}
+            className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+          >
+            {t("common.actions.close")}
+          </button>
+        </div>
+      </AppModal>
     </>
   );
 }
-
-

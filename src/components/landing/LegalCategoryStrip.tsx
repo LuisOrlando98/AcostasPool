@@ -16,7 +16,7 @@ const STRIP_COPY = {
     hub: "Legal",
   },
   es: {
-    aria: "Categorias legales",
+    aria: "Categorías legales",
     hub: "Legal",
   },
 } as const;

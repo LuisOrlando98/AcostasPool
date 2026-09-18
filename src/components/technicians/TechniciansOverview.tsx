@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { useI18n } from "@/i18n/client";
-import { useConfirm } from "@/lib/ui/use-confirm";
+import { NEW_TECHNICIAN_TOGGLE_ID } from "@/components/technicians/NewTechnicianModal";
 import TransferTechnicianWorkModal from "@/components/technicians/TransferTechnicianWorkModal";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useI18n } from "@/i18n/client";
 import { formatUsPhone } from "@/lib/phones";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -33,19 +34,20 @@ type Props = {
   ) => Promise<{ error?: string; jobsMoved?: number; plansMoved?: number }>;
 };
 
+type DeleteTechnicianButtonProps = {
+  idleLabel: string;
+  pendingLabel: string;
+  pending: boolean;
+  onClick: () => void;
+};
+
 function DeleteTechnicianButton({
   idleLabel,
   pendingLabel,
   pending,
   onClick,
   className,
-}: {
-  idleLabel: string;
-  pendingLabel: string;
-  pending: boolean;
-  onClick: () => void;
-  className: string;
-}) {
+}: DeleteTechnicianButtonProps & { className: string }) {
   return (
     <button type="button" disabled={pending} onClick={onClick} className={className}>
       {pending ? pendingLabel : idleLabel}
@@ -58,12 +60,7 @@ function DeleteTechnicianIconButton({
   pendingLabel,
   pending,
   onClick,
-}: {
-  idleLabel: string;
-  pendingLabel: string;
-  pending: boolean;
-  onClick: () => void;
-}) {
+}: DeleteTechnicianButtonProps) {
   return (
     <button
       type="button"
@@ -82,6 +79,7 @@ function DeleteTechnicianIconButton({
           stroke="currentColor"
           strokeWidth="1.8"
           className="h-4 w-4"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -120,35 +118,54 @@ export default function TechniciansOverview({
 }: Props) {
   const { t, locale } = useI18n();
   const router = useRouter();
-  const { confirm, ConfirmDialog } = useConfirm();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
   const [sortKey, setSortKey] = useState<"pending" | "completed" | "name">("pending");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
-  const clearFiltersLabel = locale === "es" ? "Limpiar filtros" : "Clear filters";
-  const deletingLabel = locale === "es" ? "Eliminando..." : "Deleting...";
-  const confirmDeleteMessage =
-    locale === "es"
-      ? "Se eliminara la cuenta del tecnico y se desasignaran sus trabajos. Deseas continuar?"
-      : "This will delete the technician account and unassign their jobs. Do you want to continue?";
+  const [deleteTarget, setDeleteTarget] = useState<TechnicianRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeleting, startDelete] = useTransition();
 
-  const handleDeleteTechnician = async (technicianId: string) => {
-    const confirmed = await confirm(confirmDeleteMessage, {
-      tone: "danger",
-      confirmLabel: t("common.actions.delete"),
-    });
-    if (!confirmed) {
+  const clearFiltersLabel = t("common.actions.clearFilters");
+  const deleteLabel = t("common.actions.delete");
+  const deletingLabel = t("common.feedback.deleting");
+
+  const isDeletingRow = (row: TechnicianRow) =>
+    isDeleting && deleteTarget?.id === row.id;
+
+  // El modal de alta vive en NewTechnicianModal y se abre con su checkbox
+  // controlado: `.click()` dispara su onChange de React.
+  const openNewTechnicianModal = () => {
+    document.getElementById(NEW_TECHNICIAN_TOGGLE_ID)?.click();
+  };
+
+  const requestDelete = (row: TechnicianRow) => {
+    setDeleteError(null);
+    setDeleteTarget(row);
+  };
+
+  const cancelDelete = () => {
+    if (isDeleting) {
       return;
     }
-    setDeletingId(technicianId);
+    setDeleteTarget(null);
+  };
+
+  const confirmDelete = () => {
+    if (!deleteTarget) {
+      return;
+    }
     const formData = new FormData();
-    formData.set("technicianId", technicianId);
-    startTransition(async () => {
-      await deleteTechnicianAction(formData);
-      setDeletingId(null);
-      router.refresh();
+    formData.set("technicianId", deleteTarget.id);
+    setDeleteError(null);
+    startDelete(async () => {
+      try {
+        await deleteTechnicianAction(formData);
+        setDeleteTarget(null);
+        router.refresh();
+      } catch {
+        setDeleteError(t("admin.technicians.overview.delete.error"));
+      }
     });
   };
 
@@ -226,6 +243,7 @@ export default function TechniciansOverview({
               stroke="currentColor"
               strokeWidth="1.6"
               className="ui-search-icon h-4 w-4"
+              aria-hidden="true"
             >
               <circle cx="11" cy="11" r="7" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M20 20l-3-3" />
@@ -234,6 +252,7 @@ export default function TechniciansOverview({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={t("admin.technicians.overview.placeholders.search")}
+              aria-label={t("admin.technicians.overview.placeholders.search")}
               className="ui-search-input w-full"
             />
           </div>
@@ -278,6 +297,7 @@ export default function TechniciansOverview({
             <select
               value={sortKey}
               onChange={(event) => setSortKey(event.target.value as "pending" | "completed" | "name")}
+              aria-label={t("admin.technicians.overview.sort.pending")}
               className="ui-select w-full px-3 py-2 text-xs md:w-auto"
             >
               <option value="pending">{t("admin.technicians.overview.sort.pending")}</option>
@@ -300,12 +320,14 @@ export default function TechniciansOverview({
                 </button>
               ) : null}
               <TransferTechnicianWorkModal technicians={rows} transferAction={transferWorkAction} />
-              <label
-                htmlFor="new-tech"
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={openNewTechnicianModal}
                 className="app-button-primary cursor-pointer px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.2em]"
               >
                 {t("admin.technicians.overview.actions.new")}
-              </label>
+              </button>
             </div>
           </div>
         </div>
@@ -366,6 +388,7 @@ export default function TechniciansOverview({
                           stroke="currentColor"
                           strokeWidth="1.8"
                           className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                          aria-hidden="true"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M3 6.75h18v10.5H3z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M4 7.5l8 6 8-6" />
@@ -383,6 +406,7 @@ export default function TechniciansOverview({
                             stroke="currentColor"
                             strokeWidth="1.8"
                             className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                            aria-hidden="true"
                           >
                             <path
                               strokeLinecap="round"
@@ -434,10 +458,10 @@ export default function TechniciansOverview({
                         {t("admin.technicians.overview.actions.viewProfile")}
                       </Link>
                       <DeleteTechnicianButton
-                        idleLabel={t("common.actions.delete")}
+                        idleLabel={deleteLabel}
                         pendingLabel={deletingLabel}
-                        pending={deletingId === row.id}
-                        onClick={() => handleDeleteTechnician(row.id)}
+                        pending={isDeletingRow(row)}
+                        onClick={() => requestDelete(row)}
                         className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
                       />
                     </div>
@@ -450,13 +474,13 @@ export default function TechniciansOverview({
                   <table className="customers-table w-full min-w-[980px] text-left text-xs text-slate-600">
                     <thead className="border-b border-slate-800/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-[11px] uppercase tracking-[0.2em] text-slate-100/85">
                       <tr>
-                        <th className="w-[30%] px-4 py-3">{t("admin.technicians.overview.table.technician")}</th>
-                        <th className="w-[11%] px-4 py-3">{t("admin.technicians.overview.table.status")}</th>
-                        <th className="w-[13%] px-4 py-3">{t("admin.technicians.overview.table.todayRoute")}</th>
-                        <th className="w-[8%] px-4 py-3">{t("admin.technicians.overview.table.pending")}</th>
-                        <th className="w-[9%] px-4 py-3">{t("admin.technicians.overview.table.completed")}</th>
-                        <th className="w-[17%] px-4 py-3">{t("admin.technicians.overview.table.lastActivity")}</th>
-                        <th className="w-[12%] px-4 py-3 text-right">{t("admin.technicians.overview.table.actions")}</th>
+                        <th scope="col" className="w-[30%] px-4 py-3">{t("admin.technicians.overview.table.technician")}</th>
+                        <th scope="col" className="w-[11%] px-4 py-3">{t("admin.technicians.overview.table.status")}</th>
+                        <th scope="col" className="w-[13%] px-4 py-3">{t("admin.technicians.overview.table.todayRoute")}</th>
+                        <th scope="col" className="w-[8%] px-4 py-3">{t("admin.technicians.overview.table.pending")}</th>
+                        <th scope="col" className="w-[9%] px-4 py-3">{t("admin.technicians.overview.table.completed")}</th>
+                        <th scope="col" className="w-[17%] px-4 py-3">{t("admin.technicians.overview.table.lastActivity")}</th>
+                        <th scope="col" className="w-[12%] px-4 py-3 text-right">{t("admin.technicians.overview.table.actions")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -464,15 +488,7 @@ export default function TechniciansOverview({
                         <tr
                           key={row.id}
                           onClick={() => router.push(`/admin/technicians/${row.id}`)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              router.push(`/admin/technicians/${row.id}`);
-                            }
-                          }}
-                          className="group cursor-pointer bg-white hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-1"
-                          role="link"
-                          tabIndex={0}
+                          className="group cursor-pointer bg-white hover:bg-slate-50"
                         >
                           <td className="px-4 py-3">
                             <div className="flex min-w-[15rem] items-center gap-3">
@@ -486,9 +502,14 @@ export default function TechniciansOverview({
                                 <span className="text-xs font-semibold">{getInitials(row.name)}</span>
                               </span>
                               <div className="min-w-0">
-                                <p className="max-w-[15rem] truncate font-semibold text-slate-900" title={row.name}>
+                                <Link
+                                  href={`/admin/technicians/${row.id}`}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="block max-w-[15rem] truncate rounded-sm font-semibold text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 focus-visible:ring-offset-1"
+                                  title={row.name}
+                                >
                                   {row.name}
-                                </p>
+                                </Link>
                                 <p className="max-w-[15rem] truncate text-[11px] text-slate-500" title={row.email}>
                                   {row.email}
                                 </p>
@@ -550,7 +571,6 @@ export default function TechniciansOverview({
                           <td
                             className="px-4 py-3 text-right"
                             onClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) => event.stopPropagation()}
                           >
                             <div className="flex items-center justify-end gap-1">
                               <Link
@@ -565,6 +585,7 @@ export default function TechniciansOverview({
                                   stroke="currentColor"
                                   strokeWidth="1.8"
                                   className="h-4 w-4"
+                                  aria-hidden="true"
                                 >
                                   <path
                                     strokeLinecap="round"
@@ -589,6 +610,7 @@ export default function TechniciansOverview({
                                   stroke="currentColor"
                                   strokeWidth="1.8"
                                   className="h-4 w-4"
+                                  aria-hidden="true"
                                 >
                                   <circle cx="12" cy="8" r="3.5" />
                                   <path
@@ -602,10 +624,10 @@ export default function TechniciansOverview({
                                 </span>
                               </Link>
                               <DeleteTechnicianIconButton
-                                idleLabel={t("common.actions.delete")}
+                                idleLabel={deleteLabel}
                                 pendingLabel={deletingLabel}
-                                pending={deletingId === row.id}
-                                onClick={() => handleDeleteTechnician(row.id)}
+                                pending={isDeletingRow(row)}
+                                onClick={() => requestDelete(row)}
                               />
                             </div>
                           </td>
@@ -619,7 +641,24 @@ export default function TechniciansOverview({
           )}
         </div>
       </div>
-      {ConfirmDialog}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t("admin.technicians.overview.delete.confirmTitle")}
+        description={
+          deleteTarget
+            ? t("admin.technicians.overview.delete.confirmMessage", {
+                name: deleteTarget.name,
+              })
+            : undefined
+        }
+        confirmLabel={deleteLabel}
+        tone="danger"
+        busy={isDeleting}
+        error={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

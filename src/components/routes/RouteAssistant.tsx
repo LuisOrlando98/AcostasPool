@@ -411,12 +411,19 @@ export default function RouteAssistant({
         </div>
 
         {errorMessage ? (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div
+            role="alert"
+            className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          >
             {errorMessage}
           </div>
         ) : null}
         {successMessage ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          <div
+            role="status"
+            aria-live="polite"
+            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          >
             {successMessage}
           </div>
         ) : null}
@@ -630,7 +637,7 @@ export default function RouteAssistant({
                                       {stop.planName ?? t("admin.routes.assistant.table.noPlan")}
                                     </p>
                                     {stop.routeGroupLabel ? (
-                                      <p className="text-[10px] text-cyan-700">
+                                      <p className="text-[11px] text-cyan-700">
                                         {stop.routeGroupLabel}
                                       </p>
                                     ) : null}
@@ -652,7 +659,7 @@ export default function RouteAssistant({
                                         }`}
                                     {stop.order > 1 ? (
                                       <span
-                                        className={`ml-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                                        className={`ml-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
                                           stop.driveSource === "LIVE_TRAFFIC"
                                             ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                             : stop.driveSource === "SAME_ADDRESS"
@@ -671,7 +678,7 @@ export default function RouteAssistant({
                                   <td className="px-3 py-2 text-slate-600">
                                     {stop.estimatedArrivalTime}
                                     {stop.delayMinutes != null ? (
-                                      <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
+                                      <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-700">
                                         +{stop.delayMinutes}m
                                       </span>
                                     ) : null}

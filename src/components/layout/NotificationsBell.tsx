@@ -3,35 +3,66 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   type PointerEvent,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import type { Channel, default as PusherClient } from "pusher-js";
+import NotificationSoundToggle from "@/components/notifications/NotificationSoundToggle";
+import { useLiveAnnouncement } from "@/components/notifications/use-live-announcement";
 import { useI18n } from "@/i18n/client";
 import {
   getNotificationDetail,
   getNotificationSource,
   getNotificationTitle,
 } from "@/lib/notifications/view";
-import { emitNotificationSignal } from "@/lib/notifications/client-alert";
+import {
+  emitNotificationSignal,
+  shouldAnnounceNewUnread,
+  type UnreadValueSource,
+} from "@/lib/notifications/client-alert";
+import {
+  clearRecentCache,
+  readRecentCache,
+  writeRecentCache,
+  type RecentNotification,
+} from "@/lib/notifications/client-cache";
+import { subscribeNotificationsChanged } from "@/lib/notifications/client-events";
+import {
+  getCachedSessionUserId,
+  setCachedSessionUserId,
+} from "@/components/layout/session-caches";
 import {
   addBusinessDays,
   formatInBusinessTimeZone,
   startOfBusinessDay,
 } from "@/lib/timezone";
+import { useEscapeKey } from "@/lib/ui/use-escape-key";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
-type NotificationItem = {
-  id: string;
-  eventType: string;
-  status: string;
-  createdAt: string;
-  readAt?: string | null;
-  severity?: "INFO" | "WARNING" | "CRITICAL";
-  payload?: Record<string, unknown> | null;
-  customerName?: string | null;
-  link?: string | null;
+type NotificationItem = RecentNotification;
+
+/** Novedad pendiente de anunciar: la decide `load()`, la renderiza un efecto con el idioma actual. */
+type NewUnreadAlert = {
+  readonly id: string;
+  /** Notificación sin leer más reciente, o `null` si la lista no trae ninguna. */
+  readonly item: NotificationItem | null;
+  /** Cuántas entraron desde el último valor contabilizado. */
+  readonly count: number;
+};
+
+type LoadOptions = {
+  /** `true` para recargas provocadas por el propio usuario: nunca suenan. */
+  readonly silent?: boolean;
+  /**
+   * `true` solo en la carga del montaje: si la caché de sesión está vigente se
+   * usa sin consultar la red, para no repetir las peticiones en cada navegación.
+   */
+  readonly preferCache?: boolean;
 };
 
 type LiveAlert = {
@@ -53,14 +84,17 @@ const ALERT_SWIPE_CLOSE_THRESHOLD = -60;
 const ROW_SWIPE_OPEN_THRESHOLD = -36;
 const ROW_SWIPE_DELETE_THRESHOLD = -56;
 const ROW_SWIPE_MAX = -92;
-const NOTIFICATIONS_CACHE_KEY = "ap:notifications:recent:v1";
-const NOTIFICATIONS_CACHE_TTL_MS = 30 * 1000;
+const NOTIFICATIONS_POLL_INTERVAL_MS = 20 * 1000;
+const INTERNAL_LINK_PREFIX = "/";
+const PROTOCOL_RELATIVE_PREFIX = "//";
 
-// Module-scope, not component state: survives client-side navigations (the
-// module isn't re-evaluated on soft nav) for the lifetime of the tab, so a
-// logged-in user's id only ever needs to be looked up once instead of on
-// every remount of this component.
-let cachedUserId: string | null = null;
+/** Enlace servido por la propia aplicación: "//host" apunta fuera del dominio. */
+function isInternalLink(link: string): boolean {
+  return (
+    link.startsWith(INTERNAL_LINK_PREFIX) &&
+    !link.startsWith(PROTOCOL_RELATIVE_PREFIX)
+  );
+}
 
 function byCreatedDesc(a: NotificationItem, b: NotificationItem) {
   const aTime = new Date(a.createdAt).getTime();
@@ -119,8 +153,8 @@ export default function NotificationsBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [userId, setUserId] = useState<string | null>(cachedUserId);
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -129,12 +163,29 @@ export default function NotificationsBell() {
   const [alertDragOffset, setAlertDragOffset] = useState(0);
   const [panelPlacement, setPanelPlacement] = useState<PanelPlacement | null>(null);
   const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
+  const [newUnreadAlert, setNewUnreadAlert] = useState<NewUnreadAlert | null>(null);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const portalPanelRef = useRef<HTMLDivElement | null>(null);
   const bellButtonRef = useRef<HTMLButtonElement | null>(null);
+  /** Último valor de "sin leer" ya contabilizado (red, caché o baja optimista local). */
   const previousUnreadRef = useRef(0);
-  const initializedRef = useRef(false);
+  /**
+   * `true` en cuanto este montaje tiene una referencia fiable de "sin leer": la
+   * primera respuesta del servidor o la caché de sesión vigente aplicada al montar.
+   */
+  const hasServerValueRef = useRef(false);
+  const announcedAlertIdRef = useRef<string | null>(null);
+  /** Descarta respuestas desordenadas: solo la última carga lanzada escribe estado. */
+  const loadSequenceRef = useRef(0);
+  /**
+   * Cambia con cada acción local (marcar leída, borrar, limpiar). Una carga que
+   * la cruce trae un contador anterior a la acción: se aplica, pero no suena.
+   */
+  const localMutationRef = useRef(0);
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const userIdRef = useRef<string | null>(getCachedSessionUserId());
+  const userIdRequestRef = useRef<Promise<string | null> | null>(null);
   const alertAutoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertSwipeStartYRef = useRef<number | null>(null);
@@ -146,12 +197,27 @@ export default function NotificationsBell() {
     pointerId: number;
   } | null>(null);
   const rowSwipeConsumedIdRef = useRef<string | null>(null);
+  const panelId = useId();
+  const panelTitleId = useId();
+  const router = useRouter();
+  const { message: liveAnnouncement, announce } = useLiveAnnouncement();
 
   const usePusher =
     Boolean(process.env.NEXT_PUBLIC_PUSHER_KEY) &&
     Boolean(process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
   const canUseDom =
     typeof window !== "undefined" && typeof document !== "undefined";
+  const panelRendered = open && canUseDom && panelPlacement !== null;
+  const closePanel = useCallback(() => setOpen(false), []);
+
+  // Popover anclado a la campana (no una capa centrada): diálogo no modal con
+  // Escape, foco inicial en el propio panel y retorno del foco a la campana.
+  useEscapeKey(closePanel, panelRendered);
+  useFocusTrap(portalPanelRef, {
+    active: panelRendered,
+    initialFocus: portalPanelRef,
+    returnFocusTo: bellButtonRef,
+  });
 
   const resetLiveAlertTimers = () => {
     if (alertAutoTimerRef.current) {
@@ -193,83 +259,173 @@ export default function NotificationsBell() {
   useEffect(
     () => () => {
       resetLiveAlertTimers();
+      loadAbortRef.current?.abort();
     },
     []
   );
 
-  const load = useCallback(async (options?: { force?: boolean }) => {
+  /**
+   * Identidad de la sesión, resuelta una sola vez por pestaña (la guarda
+   * `session-caches`, que sobrevive a las navegaciones) y leída desde un ref:
+   * si viviera en estado, `load` y el efecto de tiempo real cambiarían de
+   * identidad al resolverse y duplicarían peticiones y suscripciones.
+   */
+  const resolveUserId = useCallback(async (): Promise<string | null> => {
+    if (userIdRef.current) {
+      return userIdRef.current;
+    }
+    if (!userIdRequestRef.current) {
+      userIdRequestRef.current = (async () => {
+        try {
+          const response = await fetch("/api/auth/me", { cache: "no-store" });
+          const data = (await response.json()) as { user?: { id?: unknown } };
+          const id = typeof data.user?.id === "string" ? data.user.id : null;
+          userIdRef.current = id;
+          setCachedSessionUserId(id);
+          return id;
+        } catch {
+          // Reintentable: una caída de red no debe dejar la sesión sin resolver.
+          userIdRequestRef.current = null;
+          return null;
+        }
+      })();
+    }
+    return userIdRequestRef.current;
+  }, []);
+
+  /**
+   * Contabiliza un valor de "sin leer" y devuelve cuántas entraron desde el
+   * último ya contabilizado, o 0 cuando el valor no es una novedad anunciable
+   * (la regla vive entera en `shouldAnnounceNewUnread`).
+   */
+  const countNewUnread = useCallback(
+    (value: number, source: UnreadValueSource): number => {
+      const previous = previousUnreadRef.current;
+      const isNews = shouldAnnounceNewUnread({
+        previous,
+        next: value,
+        source,
+        hasServerValue: hasServerValueRef.current,
+      });
+      previousUnreadRef.current = value;
+      return isNews ? value - previous : 0;
+    },
+    []
+  );
+
+  /**
+   * Marca que el usuario acaba de cambiar el estado en el servidor: invalida la
+   * caché —que ya está obsoleta— antes de que salga la petición y deja constancia
+   * para que una carga en vuelo no confunda el contador anterior con una novedad.
+   */
+  const markLocalMutation = useCallback(() => {
+    localMutationRef.current += 1;
+    clearRecentCache();
+  }, []);
+
+  /**
+   * Carga el contador y las últimas notificaciones.
+   *
+   * - La caché de sesión solo se aplica mientras no haya llegado ninguna
+   *   respuesta del servidor en este montaje: después es siempre más vieja que
+   *   el estado en memoria y resucitaría filas ya borradas.
+   * - Cada llamada aborta la anterior y lleva número de secuencia, de modo que
+   *   una respuesta desordenada nunca escribe estado ni sube el contador. Lo
+   *   mismo vale para una respuesta anterior a una acción del usuario.
+   * - `silent` marca las recargas provocadas por el propio usuario, que nunca
+   *   suenan aunque el contador suba.
+   * - `preferCache` (solo al montar) evita la red si la caché está vigente; la
+   *   caché pasa entonces a ser la referencia del montaje, así que la siguiente
+   *   respuesta de red (sondeo o tiempo real) sí anuncia lo que haya entrado.
+   */
+  const load = useCallback(async ({ silent = false, preferCache = false }: LoadOptions = {}) => {
+    const sequence = loadSequenceRef.current + 1;
+    loadSequenceRef.current = sequence;
+    const mutationAtStart = localMutationRef.current;
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+    const isCurrent = () => loadSequenceRef.current === sequence;
+
     setLoading(true);
     try {
-      if (typeof window !== "undefined" && !options?.force) {
-        try {
-          const cached = window.sessionStorage.getItem(NOTIFICATIONS_CACHE_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached) as {
-              ts?: number;
-              unread?: number;
-              notifications?: NotificationItem[];
-            };
-            if (
-              parsed?.ts &&
-              Date.now() - parsed.ts < NOTIFICATIONS_CACHE_TTL_MS &&
-              Array.isArray(parsed.notifications)
-            ) {
-              setUnreadCount(typeof parsed.unread === "number" ? parsed.unread : 0);
-              setNotifications([...parsed.notifications].sort(byCreatedDesc));
-              // Fresh enough - skip the network round trip entirely instead
-              // of re-fetching on every remount (e.g. every navigation).
-              return;
-            }
+      if (!hasServerValueRef.current) {
+        const cached = readRecentCache();
+        if (cached) {
+          // Siembra la referencia sin anunciar: la regla descarta la caché.
+          countNewUnread(cached.unread, "cache");
+          setUnreadCount(cached.unread);
+          setNotifications([...cached.notifications].sort(byCreatedDesc));
+          if (preferCache) {
+            // Caché vigente al montar: sin viaje a la red. Queda como referencia
+            // del montaje para que la siguiente respuesta sí anuncie novedades.
+            hasServerValueRef.current = true;
+            setLoadFailed(false);
+            return;
           }
-        } catch {
-          // Ignore cache read failures.
         }
       }
 
       const cacheBust = Date.now().toString();
       const [unreadRes, notificationsRes] = await Promise.all([
-        fetch(`/api/notifications/unread?cb=${cacheBust}`, { cache: "no-store" }),
-        fetch(`/api/notifications/recent?cb=${cacheBust}`, { cache: "no-store" }),
+        fetch(`/api/notifications/unread?cb=${cacheBust}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        }),
+        fetch(`/api/notifications/recent?cb=${cacheBust}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        }),
       ]);
-      const unreadData = await unreadRes.json().catch(() => ({ unread: 0 }));
-      const notificationsData = await notificationsRes
-        .json()
-        .catch(() => ({ notifications: [] }));
+      if (!unreadRes.ok || !notificationsRes.ok) {
+        throw new Error(
+          `Notifications requests failed with status ${unreadRes.status}/${notificationsRes.status}`
+        );
+      }
+      const unreadData = (await unreadRes.json()) as { unread?: unknown };
+      const notificationsData = (await notificationsRes.json()) as {
+        notifications?: unknown;
+      };
+      if (!isCurrent() || localMutationRef.current !== mutationAtStart) {
+        // Respuesta anterior a una acción del usuario (marcar leída, borrar,
+        // limpiar): su contador y su lista ya no describen el servidor, así que
+        // no se aplican ni se guardan en caché. Manda el estado optimista.
+        return;
+      }
 
-      setUnreadCount(
-        typeof unreadData.unread === "number" ? unreadData.unread : 0
-      );
+      const unread =
+        typeof unreadData.unread === "number" ? unreadData.unread : 0;
       const resolved = Array.isArray(notificationsData.notifications)
         ? (notificationsData.notifications as NotificationItem[])
         : [];
-      setNotifications([...resolved].sort(byCreatedDesc));
-      if (typeof window !== "undefined") {
-        try {
-          window.sessionStorage.setItem(
-            NOTIFICATIONS_CACHE_KEY,
-            JSON.stringify({
-              ts: Date.now(),
-              unread: typeof unreadData.unread === "number" ? unreadData.unread : 0,
-              notifications: resolved,
-            })
-          );
-        } catch {
-          // Ignore cache write failures.
-        }
-      }
+      const sorted = [...resolved].sort(byCreatedDesc);
+      const newUnread = countNewUnread(unread, "network");
 
-      if (!userId) {
-        const meRes = await fetch("/api/auth/me", { cache: "no-store" });
-        const meData = await meRes.json().catch(() => ({ user: null }));
-        if (meData?.user?.id) {
-          cachedUserId = meData.user.id;
-          setUserId(meData.user.id);
-        }
+      hasServerValueRef.current = true;
+      setUnreadCount(unread);
+      setNotifications(sorted);
+      setLoadFailed(false);
+      writeRecentCache({ unread, notifications: resolved });
+
+      if (newUnread > 0 && !silent) {
+        setNewUnreadAlert({
+          id: `${Date.now()}-${sequence}`,
+          item: sorted.find((item) => !item.readAt) ?? null,
+          count: newUnread,
+        });
       }
+    } catch {
+      if (controller.signal.aborted || !isCurrent()) {
+        return;
+      }
+      // Keep whatever is already shown (cache or previous load) and surface the failure.
+      setLoadFailed(true);
     } finally {
-      setLoading(false);
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
-  }, [userId]);
+  }, [countNewUnread]);
 
   const updatePanelPlacement = useCallback(() => {
     if (!canUseDom || !bellButtonRef.current) {
@@ -303,9 +459,19 @@ export default function NotificationsBell() {
     });
   }, [canUseDom]);
 
+  // Carga del montaje: con caché vigente no se vuelve a consultar la red.
   useEffect(() => {
-    void load();
+    void load({ preferCache: true });
   }, [load]);
+
+  // Acciones del centro de notificaciones (misma página): recarga sin sonido.
+  useEffect(
+    () =>
+      subscribeNotificationsChanged(() => {
+        void load({ silent: true });
+      }),
+    [load]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -350,13 +516,19 @@ export default function NotificationsBell() {
     return () => window.removeEventListener("resize", resetDesktopRows);
   }, [canUseDom, open]);
 
+  // Solo se monta y desmonta con el componente: la identidad de la sesión se
+  // resuelve dentro, así que resolverla no reabre el canal ni duplica el sondeo.
   useEffect(() => {
-    if (usePusher && userId) {
-      let channel: any;
-      let pusher: any;
+    if (usePusher) {
+      let channel: Channel | null = null;
+      let pusher: PusherClient | null = null;
       let cancelled = false;
 
       const setup = async () => {
+        const id = await resolveUserId();
+        if (cancelled || !id) {
+          return;
+        }
         const { default: Pusher } = await import("pusher-js");
         if (cancelled) {
           return;
@@ -365,9 +537,9 @@ export default function NotificationsBell() {
           cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string,
           authEndpoint: "/api/notifications/pusher-auth",
         });
-        channel = pusher.subscribe(`private-user-${userId}`);
+        channel = pusher.subscribe(`private-user-${id}`);
         channel.bind("notification", () => {
-          void load({ force: true });
+          void load();
         });
       };
 
@@ -384,34 +556,30 @@ export default function NotificationsBell() {
       };
     }
 
-    if (!usePusher) {
-      let stream: EventSource | null = null;
-      if (typeof window !== "undefined" && "EventSource" in window) {
-        stream = new EventSource("/api/notifications/stream");
-        stream.addEventListener("notification", () => {
-          void load({ force: true });
-        });
-      }
-      const intervalId = window.setInterval(() => {
-        void load({ force: true });
-      }, 20000);
-      const onVisibilityChange = () => {
-        if (!document.hidden) {
-          void load({ force: true });
-        }
-      };
-      document.addEventListener("visibilitychange", onVisibilityChange);
-      return () => {
-        if (stream) {
-          stream.close();
-        }
-        window.clearInterval(intervalId);
-        document.removeEventListener("visibilitychange", onVisibilityChange);
-      };
+    let stream: EventSource | null = null;
+    if (typeof window !== "undefined" && "EventSource" in window) {
+      stream = new EventSource("/api/notifications/stream");
+      stream.addEventListener("notification", () => {
+        void load();
+      });
     }
-
-    return undefined;
-  }, [load, usePusher, userId]);
+    const intervalId = window.setInterval(() => {
+      void load();
+    }, NOTIFICATIONS_POLL_INTERVAL_MS);
+    const onVisibilityChange = () => {
+      if (!document.hidden) {
+        void load();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      if (stream) {
+        stream.close();
+      }
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [load, resolveUserId, usePusher]);
 
   const grouped = useMemo(() => {
     const groups = {
@@ -442,61 +610,89 @@ export default function NotificationsBell() {
     return groups;
   }, [notifications]);
 
+  // Una baja local (marcar leída, borrar, limpiar) rebaja la referencia para que
+  // la siguiente subida real vuelva a contar como novedad.
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
+    if (unreadCount < previousUnreadRef.current) {
       previousUnreadRef.current = unreadCount;
+    }
+  }, [unreadCount]);
+
+  // `load()` decide si hay novedad; aquí solo se anuncia, con el idioma vigente.
+  // El ref evita repetir el aviso si cambia el diccionario o el idioma.
+  useEffect(() => {
+    if (!newUnreadAlert || announcedAlertIdRef.current === newUnreadAlert.id) {
       return;
     }
-
-    if (unreadCount > previousUnreadRef.current) {
-      const latestUnread = notifications.find((item) => !item.readAt);
-      const title = latestUnread
-        ? getNotificationTitle(latestUnread.eventType, t)
-        : t("userMenu.notifications");
-      const body = latestUnread
-        ? getNotificationDetail(latestUnread, locale, t)
-        : t("userMenu.recent");
-      emitNotificationSignal({ title, body });
-      showLiveAlert(title, body);
-    }
-
-    previousUnreadRef.current = unreadCount;
-  }, [locale, notifications, showLiveAlert, t, unreadCount]);
-
-  const markAsRead = useCallback(async (item: NotificationItem) => {
-    if (item.readAt) {
-      return;
-    }
-    const response = await fetch(`/api/notifications/${item.id}/read`, {
-      method: "POST",
-    });
-    if (!response.ok) {
-      return;
-    }
-    setNotifications((current) =>
-      current.map((entry) =>
-        entry.id === item.id
-          ? {
-              ...entry,
-              readAt: new Date().toISOString(),
-            }
-          : entry
-      )
+    announcedAlertIdRef.current = newUnreadAlert.id;
+    const { item, count } = newUnreadAlert;
+    const title = item
+      ? getNotificationTitle(item.eventType, t)
+      : t("userMenu.notifications");
+    const body = item
+      ? getNotificationDetail(item, locale, t)
+      : t("userMenu.recent");
+    emitNotificationSignal({ title, body });
+    showLiveAlert(title, body);
+    announce(
+      count === 1
+        ? t("layout.notifications.announceNewOne")
+        : t("layout.notifications.announceNewMany", { count })
     );
-    setUnreadCount((current) => (current > 0 ? current - 1 : 0));
-  }, []);
+  }, [announce, locale, newUnreadAlert, showLiveAlert, t]);
+
+  const markAsRead = useCallback(
+    async (item: NotificationItem) => {
+      if (item.readAt) {
+        return true;
+      }
+      try {
+        markLocalMutation();
+        const response = await fetch(`/api/notifications/${item.id}/read`, {
+          method: "POST",
+        });
+        if (!response.ok) {
+          throw new Error(`Mark as read failed with status ${response.status}`);
+        }
+        setNotifications((current) =>
+          current.map((entry) =>
+            entry.id === item.id
+              ? {
+                  ...entry,
+                  readAt: new Date().toISOString(),
+                }
+              : entry
+          )
+        );
+        setUnreadCount((current) => (current > 0 ? current - 1 : 0));
+        return true;
+      } catch {
+        setActionError(t("layout.notifications.actionError"));
+        return false;
+      }
+    },
+    [markLocalMutation, t]
+  );
 
   const openNotification = useCallback(
     async (item: NotificationItem) => {
       setActionError(null);
-      await markAsRead(item);
-      setOpen(false);
-      if (item.link) {
-        window.location.href = item.link;
+      const marked = await markAsRead(item);
+      if (!marked && !item.link) {
+        // Keep the panel open so the error stays visible.
+        return;
       }
+      setOpen(false);
+      if (!item.link) {
+        return;
+      }
+      if (isInternalLink(item.link)) {
+        router.push(item.link);
+        return;
+      }
+      window.location.href = item.link;
     },
-    [markAsRead]
+    [markAsRead, router]
   );
 
   const handleDeleteNotification = useCallback(
@@ -506,35 +702,45 @@ export default function NotificationsBell() {
       }
       setActionError(null);
       setDeletingId(item.id);
-      const previousNotifications = notifications;
-      const previousUnreadCount = unreadCount;
+      markLocalMutation();
 
       setNotifications((current) => current.filter((entry) => entry.id !== item.id));
       if (!item.readAt) {
         setUnreadCount((current) => (current > 0 ? current - 1 : 0));
       }
 
-      const response = await fetch(`/api/notifications/${item.id}`, {
-        method: "DELETE",
-      }).catch(() => null);
-
-      if (!response?.ok) {
-        setNotifications(previousNotifications);
-        setUnreadCount(previousUnreadCount);
-        setActionError(t("notifications.preferences.saveError"));
-      }
-
-      setDeletingId(null);
-      setSwipeOffsets((current) => {
-        if (!(item.id in current)) {
-          return current;
+      try {
+        const response = await fetch(`/api/notifications/${item.id}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          throw new Error(`Delete failed with status ${response.status}`);
         }
-        const next = { ...current };
-        delete next[item.id];
-        return next;
-      });
+      } catch {
+        // Reposición sobre el estado vigente: un sondeo pudo traer filas nuevas
+        // mientras la petición estaba en vuelo.
+        setNotifications((current) =>
+          current.some((entry) => entry.id === item.id)
+            ? current
+            : [...current, item].sort(byCreatedDesc)
+        );
+        if (!item.readAt) {
+          setUnreadCount((current) => current + 1);
+        }
+        setActionError(t("layout.notifications.actionError"));
+      } finally {
+        setDeletingId(null);
+        setSwipeOffsets((current) => {
+          if (!(item.id in current)) {
+            return current;
+          }
+          const next = { ...current };
+          delete next[item.id];
+          return next;
+        });
+      }
     },
-    [deletingId, notifications, t, unreadCount]
+    [deletingId, markLocalMutation, t]
   );
 
   const handleClearAll = useCallback(async () => {
@@ -546,25 +752,37 @@ export default function NotificationsBell() {
 
     const previousNotifications = notifications;
     const previousUnreadCount = unreadCount;
+    // Antes del await: la recarga posterior no debe encontrar la caché vieja.
+    markLocalMutation();
     setNotifications([]);
     setUnreadCount(0);
     setSwipeOffsets({});
 
-    const response = await fetch("/api/notifications/clear", {
-      method: "POST",
-    }).catch(() => null);
-
-    if (!response?.ok) {
-      setNotifications(previousNotifications);
-      setUnreadCount(previousUnreadCount);
-      setActionError(t("notifications.preferences.saveError"));
+    try {
+      const response = await fetch("/api/notifications/clear", {
+        method: "POST",
+      });
+      if (!response.ok) {
+        throw new Error(`Clear failed with status ${response.status}`);
+      }
+      await load({ silent: true });
+    } catch {
+      // Reposición sobre el estado vigente, sin pisar lo que llegara entretanto.
+      setNotifications((current) => {
+        const currentIds = new Set(current.map((entry) => entry.id));
+        const restored = previousNotifications.filter(
+          (entry) => !currentIds.has(entry.id)
+        );
+        return restored.length === 0
+          ? current
+          : [...current, ...restored].sort(byCreatedDesc);
+      });
+      setUnreadCount((current) => Math.max(current, previousUnreadCount));
+      setActionError(t("layout.notifications.actionError"));
+    } finally {
       setClearing(false);
-      return;
     }
-
-    await load({ force: true });
-    setClearing(false);
-  }, [clearing, load, notifications, t, unreadCount]);
+  }, [clearing, load, markLocalMutation, notifications, t, unreadCount]);
 
   const handleRowPointerDown = (
     itemId: string,
@@ -652,6 +870,10 @@ export default function NotificationsBell() {
 
   const alertTranslateY = (liveAlertVisible ? 0 : -22) + alertDragOffset;
   const alertOpacity = liveAlertVisible ? 1 : 0;
+  const bellLabel =
+    unreadCount > 0
+      ? t("layout.notifications.bellLabel", { count: unreadCount })
+      : t("layout.notifications.bellLabelEmpty");
 
   return (
     <div className="relative" ref={panelRef}>
@@ -668,13 +890,22 @@ export default function NotificationsBell() {
           }
         }}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border)] bg-white text-slate-600 transition hover:border-[var(--border-strong)]"
-        aria-label={t("userMenu.notifications")}
+        aria-label={bellLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls={panelRendered ? panelId : undefined}
       >
         <BellIcon />
         {unreadCount > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-sky-500" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-sky-500"
+          />
         ) : null}
       </button>
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {liveAnnouncement}
+      </div>
 
       {open && canUseDom && panelPlacement
         ? createPortal(
@@ -683,11 +914,16 @@ export default function NotificationsBell() {
                 type="button"
                 aria-label={t("common.actions.close")}
                 className="fixed inset-0 z-[1090] bg-slate-950/45 backdrop-blur-[1px]"
-                onClick={() => setOpen(false)}
+                onClick={closePanel}
               />
               <div
                 ref={portalPanelRef}
-                className="fixed z-[1100] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast"
+                id={panelId}
+                role="dialog"
+                aria-modal="false"
+                aria-labelledby={panelTitleId}
+                tabIndex={-1}
+                className="fixed z-[1100] overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-contrast outline-none"
                 style={{
                   top: panelPlacement.top,
                   left: panelPlacement.left,
@@ -698,30 +934,54 @@ export default function NotificationsBell() {
                 <div className="border-b border-slate-100 bg-slate-50/75 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
+                      <h2 id={panelTitleId} className="text-sm font-semibold text-slate-900">
                         {t("userMenu.notifications")}
-                      </p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {unreadCount > 0
-                          ? `${unreadCount} ${t("notifications.unread").toLowerCase()}`
-                          : t("userMenu.empty")}
-                      </p>
+                      </h2>
+                      {loadFailed ? (
+                        <p role="alert" className="mt-0.5 text-xs text-rose-600">
+                          {t("layout.notifications.loadError")}
+                        </p>
+                      ) : (
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {unreadCount > 0
+                            ? `${unreadCount} ${t("notifications.unread").toLowerCase()}`
+                            : t("userMenu.empty")}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void handleClearAll()}
-                      disabled={clearing || notifications.length === 0}
-                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
-                    >
-                      {clearing ? t("common.feedback.saving") : t("notifications.clear")}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <NotificationSoundToggle />
+                      {loadFailed ? (
+                        <button
+                          type="button"
+                          onClick={() => void load()}
+                          disabled={loading}
+                          className="rounded-full border border-rose-200 bg-white px-3 py-1 text-xs font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:opacity-60"
+                        >
+                          {t("layout.notifications.retry")}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => void handleClearAll()}
+                        disabled={
+                          clearing ||
+                          (unreadCount === 0 && notifications.length === 0)
+                        }
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:opacity-60"
+                      >
+                        {clearing ? t("common.feedback.saving") : t("notifications.clear")}
+                      </button>
+                    </div>
                   </div>
                   {actionError ? (
-                    <p className="mt-2 text-xs text-rose-600">{actionError}</p>
+                    <p role="alert" className="mt-2 text-xs text-rose-600">
+                      {actionError}
+                    </p>
                   ) : null}
                 </div>
 
-                {notifications.length === 0 && !loading ? (
+                {notifications.length === 0 && !loading && !loadFailed ? (
                   <div className="px-4 py-4 text-sm text-slate-600">
                     {t("userMenu.empty")}
                   </div>
@@ -749,6 +1009,10 @@ export default function NotificationsBell() {
                                 const timeLabel = formatRelativeDate(item.createdAt, locale);
                                 const railOpen = offset <= ROW_SWIPE_OPEN_THRESHOLD;
                                 const railArmed = offset <= ROW_SWIPE_DELETE_THRESHOLD;
+                                const source = getNotificationSource(item, t);
+                                const deleteLabel = t("layout.notifications.deleteItem", {
+                                  source,
+                                });
 
                                 return (
                                   <div
@@ -756,6 +1020,7 @@ export default function NotificationsBell() {
                                     className="relative overflow-hidden rounded-xl border border-slate-200 bg-white"
                                   >
                                     <div
+                                      aria-hidden={!railOpen}
                                       className={`absolute inset-y-0 right-0 flex w-[92px] items-center justify-center border-l border-rose-200 bg-rose-50 px-2 transition-opacity duration-150 md:hidden ${
                                         railOpen
                                           ? "opacity-100 pointer-events-auto"
@@ -764,6 +1029,8 @@ export default function NotificationsBell() {
                                     >
                                       <button
                                         type="button"
+                                        tabIndex={railOpen ? 0 : -1}
+                                        aria-label={deleteLabel}
                                         onClick={(event) => {
                                           event.stopPropagation();
                                           void handleDeleteNotification(item);
@@ -833,7 +1100,7 @@ export default function NotificationsBell() {
                                         <div className="flex items-start gap-3 pr-8 sm:justify-between">
                                           <div className="min-w-0 flex-1">
                                             <p className="break-words text-sm font-semibold text-slate-900 sm:truncate">
-                                              {getNotificationSource(item, t)}
+                                              {source}
                                             </p>
                                             <p className="mt-0.5 break-words text-xs text-slate-500 sm:truncate">
                                               {detail}
@@ -864,8 +1131,8 @@ export default function NotificationsBell() {
                                           void handleDeleteNotification(item);
                                         }}
                                         disabled={deletingId === item.id}
-                                        className="absolute right-2 top-2 hidden h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 md:inline-flex"
-                                        aria-label={t("common.actions.delete")}
+                                        className="absolute right-2 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 transition hover:border-rose-200 hover:text-rose-600 disabled:opacity-60 max-md:pointer-events-none max-md:opacity-0 max-md:focus-visible:pointer-events-auto max-md:focus-visible:opacity-100"
+                                        aria-label={deleteLabel}
                                         title={t("common.actions.delete")}
                                       >
                                         <CloseIcon />
@@ -890,6 +1157,7 @@ export default function NotificationsBell() {
         ? createPortal(
             <div className="pointer-events-none fixed inset-x-0 top-[calc(env(safe-area-inset-top)+0.5rem)] z-[1200] px-2 sm:left-1/2 sm:right-auto sm:top-[calc(env(safe-area-inset-top)+0.75rem)] sm:w-[min(94vw,34rem)] sm:-translate-x-1/2 sm:px-0">
               <div
+                role="status"
                 className="pointer-events-auto rounded-xl border border-sky-200 bg-white/95 px-3 py-2.5 shadow-contrast backdrop-blur sm:rounded-2xl sm:px-4 sm:py-3"
                 onTouchStart={(event) => {
                   const touch = event.touches[0];

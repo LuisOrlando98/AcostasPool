@@ -26,25 +26,29 @@ export default function AccountSecurityPanel({
     setError(null);
     setNotice(null);
 
-    const response = await fetch("/api/account/security", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email2faEnabled: nextValue }),
-    }).catch(() => null);
+    try {
+      const response = await fetch("/api/account/security", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email2faEnabled: nextValue }),
+      });
 
-    if (!response?.ok) {
-      setSaving(false);
+      if (!response.ok) {
+        setError(t("client.profile.security.twoFaError"));
+        return;
+      }
+
+      setEmail2faEnabled(nextValue);
+      setNotice(
+        nextValue
+          ? t("client.profile.security.twoFaEnabled")
+          : t("client.profile.security.twoFaDisabled")
+      );
+    } catch {
       setError(t("client.profile.security.twoFaError"));
-      return;
+    } finally {
+      setSaving(false);
     }
-
-    setEmail2faEnabled(nextValue);
-    setSaving(false);
-    setNotice(
-      nextValue
-        ? t("client.profile.security.twoFaEnabled")
-        : t("client.profile.security.twoFaDisabled")
-    );
   };
 
   return (
@@ -73,8 +77,9 @@ export default function AccountSecurityPanel({
             className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
               email2faEnabled ? "bg-emerald-500" : "bg-slate-300"
             } ${saving ? "opacity-70" : ""}`}
+            role="switch"
+            aria-checked={email2faEnabled}
             aria-label={t("client.profile.security.twoFaTitle")}
-            aria-pressed={email2faEnabled}
           >
             <span
               className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
@@ -86,12 +91,19 @@ export default function AccountSecurityPanel({
       </div>
 
       {notice ? (
-        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+        >
           {notice}
         </div>
       ) : null}
       {error ? (
-        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+        <div
+          role="alert"
+          className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+        >
           {error}
         </div>
       ) : null}

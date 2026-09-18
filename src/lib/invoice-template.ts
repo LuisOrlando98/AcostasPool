@@ -9,6 +9,10 @@ export type InvoiceTemplateThemeConfig = {
   watermarkText?: string;
 };
 
+export type NormalizedInvoiceTemplateThemeConfig = InvoiceTemplateThemeConfig & {
+  watermarkText: string;
+};
+
 export type InvoiceTemplateConfig = {
   companyName: string;
   companyPhone: string;
@@ -32,6 +36,10 @@ export type InvoiceTemplateConfig = {
   legalClauses: string[];
   showEstimateWatermark: boolean;
   themes: Record<InvoiceTemplateTheme, InvoiceTemplateThemeConfig>;
+};
+
+export type NormalizedInvoiceTemplateConfig = Omit<InvoiceTemplateConfig, "themes"> & {
+  themes: Record<InvoiceTemplateTheme, NormalizedInvoiceTemplateThemeConfig>;
 };
 
 type InvoiceTemplateLocaleCopy = {
@@ -159,7 +167,7 @@ const INVOICE_TEMPLATE_LOCALE_COPY: Record<InvoiceTemplateLocale, InvoiceTemplat
 
 const HEX_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
-export const DEFAULT_INVOICE_TEMPLATE: InvoiceTemplateConfig = {
+export const DEFAULT_INVOICE_TEMPLATE: NormalizedInvoiceTemplateConfig = {
   companyName: "ACOSTASPOOL",
   companyPhone: "+1 (305) 555-0199",
   companyEmail: "contact@acostaspool.com",
@@ -221,9 +229,9 @@ export function getInvoiceTemplateLocaleCopy(
 }
 
 export function localizeInvoiceTemplate(
-  template: InvoiceTemplateConfig,
+  template: NormalizedInvoiceTemplateConfig,
   locale: InvoiceTemplateLocale
-): InvoiceTemplateConfig {
+): NormalizedInvoiceTemplateConfig {
   const copy = getInvoiceTemplateLocaleCopy(locale);
   return {
     ...template,
@@ -298,8 +306,8 @@ function normalizeHex(value: unknown, fallback: string) {
 
 function normalizeThemeConfig(
   value: unknown,
-  fallback: InvoiceTemplateThemeConfig
-): InvoiceTemplateThemeConfig {
+  fallback: NormalizedInvoiceTemplateThemeConfig
+): NormalizedInvoiceTemplateThemeConfig {
   if (!value || typeof value !== "object") {
     return fallback;
   }
@@ -312,11 +320,11 @@ function normalizeThemeConfig(
     watermarkText:
       typeof source.watermarkText === "string"
         ? source.watermarkText.trim()
-        : fallback.watermarkText ?? "",
+        : fallback.watermarkText,
   };
 }
 
-export function normalizeInvoiceTemplateConfig(value: unknown): InvoiceTemplateConfig {
+export function normalizeInvoiceTemplateConfig(value: unknown): NormalizedInvoiceTemplateConfig {
   if (!value || typeof value !== "object") {
     return DEFAULT_INVOICE_TEMPLATE;
   }
@@ -498,6 +506,21 @@ export function localizeInvoiceNotes(
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
+}
+
+const PERCENT_SCALE = 100;
+const TAX_RATE_MAX_DECIMALS = 1;
+
+/**
+ * Sufijo " (7%)" / " (8.5%)" calculado desde el impuesto y el subtotal reales, con un
+ * decimal como máximo y sin decimales si es entero. Vacío si no hay base o impuesto.
+ */
+export function formatTaxRateLabelSuffix(subtotal: number, tax: number) {
+  if (!Number.isFinite(subtotal) || !Number.isFinite(tax) || subtotal === 0 || tax === 0) {
+    return "";
+  }
+  const percent = Number(((tax / subtotal) * PERCENT_SCALE).toFixed(TAX_RATE_MAX_DECIMALS));
+  return ` (${percent}%)`;
 }
 
 export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
@@ -1065,9 +1088,10 @@ export function renderInvoiceTemplateHtml(input: InvoiceTemplateRenderInput) {
             <p class="totals-row"><span>${escapeHtml(template.subtotalLabel)}:</span><strong>${money(
               input.subtotal
             )}</strong></p>
-            <p class="totals-row"><span>${escapeHtml(template.taxLabel)} (7%):</span><strong>${money(
+            <p class="totals-row"><span>${escapeHtml(template.taxLabel)}${formatTaxRateLabelSuffix(
+              input.subtotal,
               input.tax
-            )}</strong></p>
+            )}:</span><strong>${money(input.tax)}</strong></p>
             <p class="totals-row totals-row-total"><span>${escapeHtml(
               template.totalLabel
             )}:</span><strong>${money(input.total)}</strong></p>

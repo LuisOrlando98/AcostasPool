@@ -1,6 +1,20 @@
 const SAFE_SEGMENT_PATTERN = /[^a-zA-Z0-9-_]/g;
 const SAFE_FILE_BASENAME_PATTERN = /[^a-zA-Z0-9-_.]/g;
 const SAFE_FILE_EXTENSION_PATTERN = /[^a-zA-Z0-9]/g;
+const DOT_SEGMENTS = new Set([".", ".."]);
+
+/** Segmento que sube o repite directorio: nunca es un nombre válido de archivo o carpeta. */
+export function isDotSegment(segment: string) {
+  return DOT_SEGMENTS.has(segment);
+}
+
+/**
+ * true si algún segmento de la ruta (separada por "/") es exactamente "." o "..".
+ * Un nombre que solo contiene puntos dobles ("my..photo.png") es válido.
+ */
+export function hasDotSegment(storagePath: string) {
+  return storagePath.split("/").some(isDotSegment);
+}
 
 function sanitizeSegment(value: string, fallback: string) {
   const normalized = value.trim().replace(SAFE_SEGMENT_PATTERN, "_");
