@@ -11,7 +11,11 @@ import { serviceTypeOptions } from "@/lib/jobs/templates";
 import { TECH_DAILY_CAPACITY, toDateKey } from "@/lib/jobs/capacity";
 import { getAssetUrl } from "@/lib/assets";
 import { formatUsPhone } from "@/lib/phones";
-import { formatJobTitle, formatPropertyLabel } from "@/lib/customers/format";
+import {
+  formatJobTitle,
+  formatPropertyLabel,
+  getPropertyIndicator,
+} from "@/lib/customers/format";
 import { useI18n } from "@/i18n/client";
 import { useIsHydrated } from "@/lib/ui/use-is-hydrated";
 import RoutesSectionTabs from "@/components/routes/RoutesSectionTabs";
@@ -428,6 +432,17 @@ export default function RoutesCalendar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const daysShort = useMemo(() => buildDaysShort(locale), [locale]);
+  // Clientes con más de una propiedad: solo para ellos se muestra el indicador
+  // de propiedad junto al nombre (nombre de la propiedad o, si falta, la calle).
+  const multiPropertyCustomerIds = useMemo(
+    () =>
+      new Set(
+        customers
+          .filter((customer) => customer.properties.length > 1)
+          .map((customer) => customer.id)
+      ),
+    [customers]
+  );
   const techniciansById = useMemo(
     () =>
       new Map(
@@ -2006,10 +2021,13 @@ export default function RoutesCalendar({
                         ? { backgroundColor: techColor }
                         : { backgroundColor: "#fb7185" };
                     const techName = job.technician?.name ?? t("jobs.detail.noTech");
-                    // Clientes con varias propiedades: el nombre de la propiedad va en su
-                    // propia línea, porque en la tarjeta compacta el título se trunca.
-                    const propertyDisplayName = job.property.name?.trim() || null;
-                    const cardTitle = formatJobTitle(job.customer.name, job.property);
+                    // Clientes con varias propiedades: el indicador va en su propia
+                    // línea, porque en la tarjeta compacta el título se trunca.
+                    const propertyDisplayName = getPropertyIndicator(
+                      job.property,
+                      multiPropertyCustomerIds.has(job.customer.id)
+                    );
+                    const cardTitle = formatJobTitle(job.customer.name, propertyDisplayName);
                     const cardLabel = [cardTitle, timeLabel, techName]
                       .filter(Boolean)
                       .join(", ");
@@ -3151,7 +3169,13 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {formatJobTitle(job.customer.name, job.property)}
+                                  {formatJobTitle(
+                                    job.customer.name,
+                                    getPropertyIndicator(
+                                      job.property,
+                                      multiPropertyCustomerIds.has(job.customer.id)
+                                    )
+                                  )}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}
@@ -3229,7 +3253,13 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {formatJobTitle(job.customer.name, job.property)}
+                                  {formatJobTitle(
+                                    job.customer.name,
+                                    getPropertyIndicator(
+                                      job.property,
+                                      multiPropertyCustomerIds.has(job.customer.id)
+                                    )
+                                  )}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}
@@ -3270,7 +3300,13 @@ export default function RoutesCalendar({
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-semibold text-slate-900">
-                                  {formatJobTitle(job.customer.name, job.property)}
+                                  {formatJobTitle(
+                                    job.customer.name,
+                                    getPropertyIndicator(
+                                      job.property,
+                                      multiPropertyCustomerIds.has(job.customer.id)
+                                    )
+                                  )}
                                 </p>
                                 <p className="mt-0.5 truncate text-xs text-slate-500">
                                   {job.property.address}

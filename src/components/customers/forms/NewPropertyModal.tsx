@@ -31,7 +31,10 @@ export default function NewPropertyModal({
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              {t("admin.customers.detail.properties.fields.name")}
+              {t("admin.customers.detail.properties.fields.name")}{" "}
+              <span className="font-normal normal-case tracking-normal text-slate-400">
+                {t("admin.customers.detail.properties.fields.nameIndicator")}
+              </span>
             </label>
             <input
               name="name"

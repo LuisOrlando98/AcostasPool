@@ -4,7 +4,11 @@ import StatCard from "@/components/ui/StatCard";
 import TechRoutePlannerButton from "@/components/tech/TechRoutePlannerButton";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName, formatJobTitle } from "@/lib/customers/format";
+import {
+  formatCustomerName,
+  formatJobTitle,
+  getPropertyIndicator,
+} from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { geocodeProperties } from "@/lib/routing/geo";
 import { BUSINESS_TIMEZONE, toDateKey } from "@/lib/jobs/capacity";
@@ -84,13 +88,28 @@ export default async function TechPage() {
       type: true,
       priority: true,
       serviceType: true,
-      customer: { select: { nombre: true, apellidos: true, telefono: true } },
+      customer: {
+        select: {
+          nombre: true,
+          apellidos: true,
+          telefono: true,
+          // Con más de una propiedad, la ruta muestra cuál es (indicador).
+          _count: { select: { properties: true } },
+        },
+      },
       property: {
         select: { id: true, name: true, address: true, lat: true, lng: true, geocodedAt: true },
       },
       photos: { select: { id: true } },
     },
   });
+
+  // "Cliente · Propiedad" solo cuando el cliente tiene más de una propiedad.
+  const jobTitle = (job: (typeof upcomingJobs)[number]) =>
+    formatJobTitle(
+      formatCustomerName(job.customer),
+      getPropertyIndicator(job.property, job.customer._count.properties > 1)
+    );
 
   const todayKey = toDateKey(now);
   const jobsByDay = new Map<string, typeof upcomingJobs>();
@@ -147,7 +166,7 @@ export default async function TechPage() {
   );
   const routePreviewStops = routeJobs.map((job) => ({
     id: job.id,
-    customerName: formatJobTitle(formatCustomerName(job.customer), job.property),
+    customerName: jobTitle(job),
     address: job.property.address,
   }));
 
@@ -179,7 +198,7 @@ export default async function TechPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-base font-semibold text-slate-900">
-                    {formatJobTitle(formatCustomerName(nextJob.customer), nextJob.property)}
+                    {jobTitle(nextJob)}
                   </p>
                   <p className="text-sm text-slate-500">
                     {nextJob.property.address}
@@ -383,7 +402,7 @@ export default async function TechPage() {
                           {t("tech.home.route.stop", { count: index + 1 })}
                         </p>
                         <p className="text-sm text-slate-700">
-                          {formatJobTitle(formatCustomerName(job.customer), job.property)}
+                          {jobTitle(job)}
                         </p>
                         <p className="text-xs text-slate-500">{job.property.address}</p>
 

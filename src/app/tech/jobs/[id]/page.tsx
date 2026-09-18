@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
 import { resolveParams } from "@/lib/utils/params";
 import { serviceTypeOptions } from "@/lib/jobs/templates";
-import { formatCustomerName } from "@/lib/customers/format";
+import { formatCustomerName, getPropertyIndicator } from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { formatInBusinessTimeZone } from "@/lib/timezone";
 
@@ -37,7 +37,7 @@ export default async function TechJobUploadPage({
   const job = await prisma.job.findUnique({
     where: { id: jobId },
     include: {
-      customer: true,
+      customer: { include: { _count: { select: { properties: true } } } },
       property: true,
       technician: { include: { user: true } },
       serviceTier: true,
@@ -105,7 +105,7 @@ export default async function TechJobUploadPage({
           technicianName: job.technician?.user.fullName ?? session.name ?? "Tech",
           existingPhotosCount: job.photos.length,
           customerPhone: job.customer.telefono ?? null,
-          propertyName: job.property.name ?? null,
+          propertyName: getPropertyIndicator(job.property, job.customer._count.properties > 1),
           propertyAddress: job.property.address,
           scheduledTime: formatInBusinessTimeZone(job.scheduledDate, locale, {
             hour: "2-digit",

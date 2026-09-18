@@ -1364,6 +1364,7 @@
           "modalSubtitle": "Registra direccion, sistema y accesos.",
           "fields": {
             "name": "Nombre de la propiedad",
+            "nameIndicator": "(indicador para rutas con más de una propiedad)",
             "sanitizerType": "Sistema (sal/cloro)",
             "spa": "Spa",
             "accessInfo": "Accesos / mascotas",

@@ -2,7 +2,11 @@ import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/guards";
-import { formatCustomerName, formatJobTitle } from "@/lib/customers/format";
+import {
+  formatCustomerName,
+  formatJobTitle,
+  getPropertyIndicator,
+} from "@/lib/customers/format";
 import { getRequestLocale, getTranslations } from "@/i18n/server";
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 import {
@@ -165,7 +169,9 @@ export default async function TechCalendarPage({
         priority: true,
         sortOrder: true,
         planId: true,
-        customer: { select: { nombre: true, apellidos: true } },
+        customer: {
+          select: { nombre: true, apellidos: true, _count: { select: { properties: true } } },
+        },
         property: { select: { name: true, address: true } },
       },
     }),
@@ -182,7 +188,9 @@ export default async function TechCalendarPage({
         frequency: true,
         serviceType: true,
         priority: true,
-        customer: { select: { nombre: true, apellidos: true } },
+        customer: {
+          select: { nombre: true, apellidos: true, _count: { select: { properties: true } } },
+        },
         property: { select: { name: true, address: true } },
       },
     }),
@@ -201,7 +209,10 @@ export default async function TechCalendarPage({
       href: `/tech/jobs/${job.id}`,
       dateKey: toBusinessDateKey(job.scheduledDate),
       scheduledDate: job.scheduledDate,
-      customerName: formatJobTitle(formatCustomerName(job.customer), job.property),
+      customerName: formatJobTitle(
+        formatCustomerName(job.customer),
+        getPropertyIndicator(job.property, job.customer._count.properties > 1)
+      ),
       address: job.property.address,
       serviceType: job.serviceType,
       status: job.status,
@@ -215,7 +226,10 @@ export default async function TechCalendarPage({
       scheduledDate: occurrence.scheduledDate,
       customerName: formatJobTitle(
         formatCustomerName(occurrence.plan.customer),
-        occurrence.plan.property
+        getPropertyIndicator(
+          occurrence.plan.property,
+          occurrence.plan.customer._count.properties > 1
+        )
       ),
       address: occurrence.plan.property.address,
       serviceType: occurrence.plan.serviceType,

@@ -54,7 +54,7 @@ type TechJobUploadData = {
   technicianName: string;
   existingPhotosCount: number;
   customerPhone?: string | null;
-  /** Nombre de la propiedad (clientes con varias); `null` si no tiene. */
+  /** Indicador de propiedad (solo clientes con varias propiedades); `null` si no aplica. */
   propertyName?: string | null;
   propertyAddress: string;
   scheduledTime: string;
@@ -310,7 +310,7 @@ export default function TechJobUploadForm({ job }: { job: TechJobUploadData }) {
 
         <div className="mt-4 space-y-2 text-sm text-slate-600">
           <p className="text-base font-semibold text-slate-900">
-            {formatJobTitle(job.customerName, { name: job.propertyName })}
+            {formatJobTitle(job.customerName, job.propertyName ?? null)}
           </p>
           <p className="text-sm text-slate-500">{job.propertyAddress}</p>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">

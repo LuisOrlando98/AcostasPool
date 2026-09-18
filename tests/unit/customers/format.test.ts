@@ -3,6 +3,7 @@ import {
   formatCustomerName,
   formatJobTitle,
   formatPropertyLabel,
+  getPropertyIndicator,
 } from "@/lib/customers/format";
 
 describe("formatCustomerName", () => {
@@ -31,14 +32,28 @@ describe("formatPropertyLabel", () => {
   });
 });
 
-describe("formatJobTitle", () => {
-  it("adds the property name when the customer has named properties", () => {
-    expect(formatJobTitle("Parplace", { name: "Parplace 2" })).toBe("Parplace · Parplace 2");
+describe("getPropertyIndicator", () => {
+  const named = { name: "Parplace 2", address: "200 Ocean Drive, Miami, FL" };
+  const unnamed = { name: null, address: "200 Ocean Drive, Miami, FL" };
+
+  it("only exists for customers with more than one property", () => {
+    expect(getPropertyIndicator(named, false)).toBeNull();
+    expect(getPropertyIndicator(unnamed, false)).toBeNull();
   });
 
-  it("keeps only the customer when the property has no name", () => {
-    expect(formatJobTitle("Cliente Demo", { name: null })).toBe("Cliente Demo");
-    expect(formatJobTitle("Cliente Demo", { name: "  " })).toBe("Cliente Demo");
-    expect(formatJobTitle("Cliente Demo", {})).toBe("Cliente Demo");
+  it("uses the property name and falls back to the street when it has none", () => {
+    expect(getPropertyIndicator(named, true)).toBe("Parplace 2");
+    expect(getPropertyIndicator(unnamed, true)).toBe("200 Ocean Drive");
+    expect(getPropertyIndicator({ name: "", address: "" }, true)).toBeNull();
+  });
+});
+
+describe("formatJobTitle", () => {
+  it("adds the indicator when there is one", () => {
+    expect(formatJobTitle("Parplace", "Parplace 2")).toBe("Parplace · Parplace 2");
+  });
+
+  it("keeps only the customer without indicator", () => {
+    expect(formatJobTitle("Cliente Demo", null)).toBe("Cliente Demo");
   });
 });

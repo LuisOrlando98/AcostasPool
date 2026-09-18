@@ -44,17 +44,28 @@ export function formatPropertyLabel(property: PropertyLabelParts, fallback = "")
 }
 
 /**
- * Título de un trabajo en tarjetas y listas: "Cliente · Propiedad" cuando la
- * propiedad tiene nombre (clientes con varias propiedades, p. ej.
- * "Parplace · Parplace 2"); solo el cliente cuando no lo tiene, porque la
- * dirección ya se muestra debajo.
+ * Indicador de propiedad para rutas y calendarios. Solo existe cuando el
+ * cliente tiene más de una propiedad (con una sola no aporta nada): el nombre
+ * que puso el administrador y, si aún no lo tiene, la calle de la dirección,
+ * para que el técnico siempre sepa a cuál ir.
  */
-export function formatJobTitle(
-  customerName: string,
-  property: Pick<PropertyLabelParts, "name">
-): string {
-  const name = property.name?.trim();
-  return name ? `${customerName} · ${name}` : customerName;
+export function getPropertyIndicator(
+  property: PropertyLabelParts,
+  hasMultipleProperties: boolean
+): string | null {
+  if (!hasMultipleProperties) {
+    return null;
+  }
+  return formatPropertyLabel(property) || null;
+}
+
+/**
+ * Título de un trabajo en tarjetas y listas: "Cliente · Indicador" cuando hay
+ * indicador de propiedad (p. ej. "Parplace · Parplace 2"); solo el cliente en
+ * caso contrario, porque la dirección ya se muestra debajo.
+ */
+export function formatJobTitle(customerName: string, indicator: string | null): string {
+  return indicator ? `${customerName} · ${indicator}` : customerName;
 }
 
 export function formatCustomerAddress(customer: CustomerAddressParts) {

@@ -1364,6 +1364,7 @@
           "modalSubtitle": "Capture address, system, and access notes.",
           "fields": {
             "name": "Property name",
+            "nameIndicator": "(route indicator for customers with more than one property)",
             "sanitizerType": "System (salt/chlorine)",
             "spa": "Spa",
             "accessInfo": "Access / pets",

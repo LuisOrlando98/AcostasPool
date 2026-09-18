@@ -430,7 +430,10 @@ export default function AdminCustomerProperties({
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="app-modal-field-label">
-                      {t("admin.customers.detail.properties.fields.name")}
+                      {t("admin.customers.detail.properties.fields.name")}{" "}
+                      <span className="font-normal normal-case tracking-normal text-slate-400">
+                        {t("admin.customers.detail.properties.fields.nameIndicator")}
+                      </span>
                     </label>
                     <input
                       name="name"
