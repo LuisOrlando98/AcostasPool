@@ -701,7 +701,11 @@
         "automation": {
           "title": "Automatic review",
           "subtitle": "When enabled, every day at 7:00 AM the system reviews and reorders the route for that day's plan while keeping assignments in place.",
-          "checkmark": "Enable daily automatic review at 7:00 AM"
+          "checkmark": "Enable daily automatic review at 7:00 AM",
+          "link": "Daily automatic review...",
+          "description": "When enabled, every day at 5:30 AM the route for that day is reviewed and reordered while keeping assignments.",
+          "toggleLabel": "Enable the daily automatic review (5:30 AM)",
+          "originHint": "Address routes start from and return to."
         },
         "rules": {
           "title": "Scheduling rules respected",
@@ -715,19 +719,37 @@
           "apply": "Apply selected proposal",
           "applying": "Applying...",
           "savePreferences": "Save automation",
-          "savingPreferences": "Saving..."
+          "savingPreferences": "Saving...",
+          "move": "Move",
+          "remove": "Remove",
+          "restore": "Restore",
+          "recalculate": "Recalculate",
+          "recalculating": "Recalculating...",
+          "undo": "Undo",
+          "undoWhat": "Undo {{label}}",
+          "reset": "Reset",
+          "viewChanges": "View changes",
+          "applyCount": "Apply ({{count}})",
+          "retryFailed": "Retry failed"
         },
         "messages": {
           "failed": "Unable to generate route proposals.",
           "applyFailed": "Unable to apply selected proposal.",
           "empty": "No route proposals were generated for the selected filters.",
           "preferencesSaved": "Route Assistant automation was updated.",
-          "preferencesFailed": "Unable to save Route Assistant automation."
+          "preferencesFailed": "Unable to save Route Assistant automation.",
+          "recalculateFailed": "Unable to recalculate the times of the proposal."
         },
         "metrics": {
           "jobs": "Jobs in scope",
           "technicians": "Technicians",
-          "unresolved": "Addresses without geocode"
+          "unresolved": "Addresses without geocode",
+          "stops": "Stops in the proposal",
+          "excluded": "{{count}} excluded",
+          "drive": "Total drive",
+          "service": "Total service",
+          "conflicts": "Conflicts",
+          "unresolvedHelper": "{{count}} without geocode"
         },
         "strategies": {
           "BALANCED": {
@@ -741,6 +763,10 @@
           "KEEP_ASSIGNMENTS": {
             "name": "Keep assignments",
             "hint": "Preserves current technician ownership where possible."
+          },
+          "MANUAL": {
+            "name": "Manual",
+            "hint": "Order set by hand, with times recalculated on it."
           }
         },
         "summary": {
@@ -766,6 +792,119 @@
           "liveTraffic": "Live",
           "estimated": "Estimated",
           "sameAddress": "Same address"
+        },
+        "steps": {
+          "filters": "Step 1 · Filters",
+          "filtersHint": "Choose the scope of the proposal. Plan and technicians are optional: leave them empty to include every one.",
+          "proposal": "Step 2 · Proposal"
+        },
+        "filters": {
+          "allPlans": "All plans",
+          "allTechnicians": "All technicians",
+          "planDateHint": "Picking a plan moves the date to the next day of that plan.",
+          "querySummary": "Text: {{query}}"
+        },
+        "strategyPicker": {
+          "legend": "Strategy",
+          "metrics": "Drive {{drive}} · {{stops}} stops · {{conflicts}} conflicts"
+        },
+        "eta": {
+          "pending": "Pending recalculation",
+          "recalculating": "Recalculating times..."
+        },
+        "route": {
+          "empty": "No stops assigned.",
+          "return": "Back at base {{value}}",
+          "overflowsDay": "Ends the next day"
+        },
+        "stop": {
+          "position": "Stop {{position}} of {{total}}",
+          "noCoordinates": "No geocode",
+          "serviceStart": "Service {{value}}",
+          "arrival": "Arrival {{value}}"
+        },
+        "a11y": {
+          "moveUp": "Move {{name}} up, currently at position {{position}}",
+          "moveDown": "Move {{name}} down, currently at position {{position}}",
+          "move": "Move {{name}} (position {{position}}) to another technician",
+          "remove": "Remove {{name}} (position {{position}}) from the proposal",
+          "restore": "Restore {{name}} into the proposal"
+        },
+        "undo": {
+          "move": "the order change",
+          "reassign": "the technician change",
+          "remove": "the exclusion",
+          "restore": "the restore"
+        },
+        "excluded": {
+          "title": "Unassigned / excluded ({{count}})",
+          "hint": "These stops stay exactly as they are on the schedule until you restore them.",
+          "empty": "No excluded stops."
+        },
+        "changes": {
+          "title": "Changes to apply",
+          "summary": "{{total}} changes: {{reordered}} reordered · {{reassigned}} reassigned · {{removed}} excluded",
+          "none": "No changes compared with the current schedule.",
+          "unassigned": "No technician",
+          "inProposal": "In the proposal",
+          "columns": {
+            "kind": "Change",
+            "from": "Before",
+            "to": "After"
+          },
+          "kind": {
+            "order": "Order",
+            "technician": "Technician",
+            "removed": "Excluded"
+          }
+        },
+        "apply": {
+          "confirmTitle": "Apply {{count}} changes",
+          "confirmDescription": "Technician and order are updated for these jobs. Booked date and time window stay untouched.",
+          "warningActive": "{{count}} jobs are already on the way or in progress: they keep their status.",
+          "warningNotifications": "The usual notifications will be sent to the technicians and customers involved."
+        },
+        "result": {
+          "title": "Result",
+          "applied": "Applied",
+          "skipped": "Skipped",
+          "failed": "Failed",
+          "failureLine": "{{jobId}}: {{error}}",
+          "calendarLink": "Open the calendar"
+        },
+        "empty": {
+          "title": "No jobs in the selected scope",
+          "excluded": "{{count}} jobs of that day fell outside the filters.",
+          "plan": "Plan: {{plan}}",
+          "technicians": "Technicians: {{technicians}}",
+          "hint": "Try \"All plans\", add technicians, or clear the text filter."
+        },
+        "move": {
+          "title": "Move stop",
+          "description": "Choose the technician who will serve {{name}}.",
+          "load": "{{count}} stops · drive {{drive}}",
+          "onlyOne": "There is only one technician in this proposal, so there is no other route to move the stop to. Add technicians in the filters or use \"Remove\".",
+          "exclude": "Unassign / exclude"
+        },
+        "stale": {
+          "message": "Filters changed: generate the proposal again before applying it."
+        },
+        "announce": {
+          "generated": "Proposal generated with {{stops}} stops. {{excluded}} jobs stayed out of scope.",
+          "moved": "{{name}} is now stop {{position}} of {{technician}}.",
+          "reassigned": "{{name}} moves to {{technician}}, at position {{position}}.",
+          "removed": "{{name}} is excluded from the proposal.",
+          "restored": "{{name}} is back with {{technician}}, at position {{position}}.",
+          "undone": "Last change undone.",
+          "reset": "Proposal reset.",
+          "recalculated": "Times recalculated.",
+          "applied": "{{applied}} changes applied, {{failed}} failed."
+        },
+        "errors": {
+          "tooManyJobs": "Too many jobs in the selected scope (limit {{limit}}). Narrow the plan, the technicians, or the text filter.",
+          "rateLimited": "Too many proposals were requested in a row. Wait a few minutes and try again.",
+          "jobNotFound": "One of the jobs in the proposal no longer exists. Generate it again.",
+          "withDetail": "{{message}} ({{detail}})"
         }
       },
       "errors": {

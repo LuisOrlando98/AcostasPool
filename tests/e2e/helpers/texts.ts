@@ -13,6 +13,12 @@ export const HEADINGS = {
   adminCustomerDetail: /^(Customer|Cliente): Cliente Demo$/,
   adminRoutes: /Routes & calendar|Rutas y calendario/,
   adminRouteAssistant: /Route assistant/,
+  /** Encabezados propios del asistente de rutas (routes-assistant.spec.ts). */
+  routeAssistant: {
+    proposal: /^(Step 2 · Proposal|Paso 2 · Propuesta)$/,
+    result: /^(Result|Resultado)$/,
+    changes: /^(Changes to apply|Cambios a aplicar)$/,
+  },
   adminInvoices: /^Billing$/,
   adminTechnicians: /^(Technicians|Tecnicos)$/,
   adminReports: /^(Reports|Reportes)$/,

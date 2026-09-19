@@ -701,7 +701,11 @@
         "automation": {
           "title": "Revision automatica",
           "subtitle": "Si lo activas, todos los dias a las 7:00 AM se revisa y reordena la ruta del plan correspondiente al dia manteniendo las asignaciones.",
-          "checkmark": "Activar revision automatica diaria a las 7:00 AM"
+          "checkmark": "Activar revision automatica diaria a las 7:00 AM",
+          "link": "Revisión automática diaria...",
+          "description": "Si la activas, cada día a las 5:30 AM se revisa y reordena la ruta del día manteniendo las asignaciones.",
+          "toggleLabel": "Activar la revisión automática diaria (5:30 AM)",
+          "originHint": "Dirección desde la que salen y a la que regresan las rutas."
         },
         "rules": {
           "title": "Reglas de agenda respetadas",
@@ -715,19 +719,37 @@
           "apply": "Aplicar propuesta seleccionada",
           "applying": "Aplicando...",
           "savePreferences": "Guardar automatizacion",
-          "savingPreferences": "Guardando..."
+          "savingPreferences": "Guardando...",
+          "move": "Mover",
+          "remove": "Quitar",
+          "restore": "Restaurar",
+          "recalculate": "Recalcular",
+          "recalculating": "Recalculando...",
+          "undo": "Deshacer",
+          "undoWhat": "Deshacer {{label}}",
+          "reset": "Restablecer",
+          "viewChanges": "Ver cambios",
+          "applyCount": "Aplicar ({{count}})",
+          "retryFailed": "Reintentar fallidos"
         },
         "messages": {
           "failed": "No se pudieron generar propuestas de ruta.",
           "applyFailed": "No se pudo aplicar la propuesta seleccionada.",
           "empty": "No se generaron propuestas con los filtros seleccionados.",
           "preferencesSaved": "La automatizacion del Route Assistant fue actualizada.",
-          "preferencesFailed": "No se pudo guardar la automatizacion del Route Assistant."
+          "preferencesFailed": "No se pudo guardar la automatizacion del Route Assistant.",
+          "recalculateFailed": "No se pudieron recalcular los tiempos de la propuesta."
         },
         "metrics": {
           "jobs": "Trabajos en alcance",
           "technicians": "Tecnicos",
-          "unresolved": "Direcciones sin geocodificacion"
+          "unresolved": "Direcciones sin geocodificacion",
+          "stops": "Paradas en la propuesta",
+          "excluded": "{{count}} excluidas",
+          "drive": "Traslado total",
+          "service": "Servicio total",
+          "conflicts": "Conflictos",
+          "unresolvedHelper": "{{count}} sin geocodificar"
         },
         "strategies": {
           "BALANCED": {
@@ -741,6 +763,10 @@
           "KEEP_ASSIGNMENTS": {
             "name": "Mantener asignaciones",
             "hint": "Conserva tecnico actual cuando sea posible."
+          },
+          "MANUAL": {
+            "name": "Manual",
+            "hint": "Orden fijado a mano y tiempos recalculados sobre él."
           }
         },
         "summary": {
@@ -766,6 +792,119 @@
           "liveTraffic": "En vivo",
           "estimated": "Estimado",
           "sameAddress": "Misma direccion"
+        },
+        "steps": {
+          "filters": "Paso 1 · Filtros",
+          "filtersHint": "Elige el alcance de la propuesta. El plan y los técnicos son opcionales: sin elegir nada entran todos.",
+          "proposal": "Paso 2 · Propuesta"
+        },
+        "filters": {
+          "allPlans": "Todos los planes",
+          "allTechnicians": "Todos los técnicos",
+          "planDateHint": "Al elegir un plan, la fecha salta al próximo día de ese plan.",
+          "querySummary": "Texto: {{query}}"
+        },
+        "strategyPicker": {
+          "legend": "Estrategia",
+          "metrics": "Traslado {{drive}} · {{stops}} paradas · {{conflicts}} conflictos"
+        },
+        "eta": {
+          "pending": "Pendiente de recalcular",
+          "recalculating": "Recalculando tiempos..."
+        },
+        "route": {
+          "empty": "Sin paradas asignadas.",
+          "return": "Regreso a base {{value}}",
+          "overflowsDay": "Termina al día siguiente"
+        },
+        "stop": {
+          "position": "Parada {{position}} de {{total}}",
+          "noCoordinates": "Sin geocodificar",
+          "serviceStart": "Servicio {{value}}",
+          "arrival": "Llegada {{value}}"
+        },
+        "a11y": {
+          "moveUp": "Subir a {{name}}, ahora en la posición {{position}}",
+          "moveDown": "Bajar a {{name}}, ahora en la posición {{position}}",
+          "move": "Mover a {{name}} (posición {{position}}) a otro técnico",
+          "remove": "Quitar a {{name}} (posición {{position}}) de la propuesta",
+          "restore": "Restaurar a {{name}} en la propuesta"
+        },
+        "undo": {
+          "move": "el cambio de orden",
+          "reassign": "el cambio de técnico",
+          "remove": "la exclusión",
+          "restore": "la restauración"
+        },
+        "excluded": {
+          "title": "Sin asignar / excluidos ({{count}})",
+          "hint": "Estas paradas se quedan como están en la agenda hasta que las restaures.",
+          "empty": "No hay paradas excluidas."
+        },
+        "changes": {
+          "title": "Cambios a aplicar",
+          "summary": "{{total}} cambios: {{reordered}} reordenados · {{reassigned}} reasignados · {{removed}} excluidos",
+          "none": "Sin cambios respecto a la agenda actual.",
+          "unassigned": "Sin técnico",
+          "inProposal": "En la propuesta",
+          "columns": {
+            "kind": "Cambio",
+            "from": "Antes",
+            "to": "Después"
+          },
+          "kind": {
+            "order": "Orden",
+            "technician": "Técnico",
+            "removed": "Excluido"
+          }
+        },
+        "apply": {
+          "confirmTitle": "Aplicar {{count}} cambios",
+          "confirmDescription": "Se actualizan el técnico y el orden de los trabajos. La fecha y la ventana horaria reservadas no cambian.",
+          "warningActive": "{{count}} trabajos ya están en camino o en progreso: conservan su estado.",
+          "warningNotifications": "Se enviarán las notificaciones habituales a los técnicos y clientes afectados."
+        },
+        "result": {
+          "title": "Resultado",
+          "applied": "Aplicados",
+          "skipped": "Omitidos",
+          "failed": "Fallidos",
+          "failureLine": "{{jobId}}: {{error}}",
+          "calendarLink": "Ver en el calendario"
+        },
+        "empty": {
+          "title": "Ningún trabajo en el alcance elegido",
+          "excluded": "{{count}} trabajos del día quedaron fuera por los filtros.",
+          "plan": "Plan: {{plan}}",
+          "technicians": "Técnicos: {{technicians}}",
+          "hint": "Prueba con «Todos los planes», añade técnicos o vacía el filtro de texto."
+        },
+        "move": {
+          "title": "Mover parada",
+          "description": "Elige el técnico que atenderá a {{name}}.",
+          "load": "{{count}} paradas · traslado {{drive}}",
+          "onlyOne": "Solo hay un técnico en esta propuesta, así que no hay otra ruta a la que mover la parada. Añade técnicos en los filtros o usa «Quitar».",
+          "exclude": "Sin asignar / excluir"
+        },
+        "stale": {
+          "message": "Los filtros cambiaron: vuelve a generar la propuesta antes de aplicarla."
+        },
+        "announce": {
+          "generated": "Propuesta generada con {{stops}} paradas. {{excluded}} trabajos quedaron fuera del alcance.",
+          "moved": "{{name}} ahora es la parada {{position}} de {{technician}}.",
+          "reassigned": "{{name}} pasa a {{technician}}, en la posición {{position}}.",
+          "removed": "{{name}} queda excluida de la propuesta.",
+          "restored": "{{name}} vuelve a {{technician}}, en la posición {{position}}.",
+          "undone": "Último cambio deshecho.",
+          "reset": "Propuesta restablecida.",
+          "recalculated": "Tiempos recalculados.",
+          "applied": "{{applied}} cambios aplicados, {{failed}} fallidos."
+        },
+        "errors": {
+          "tooManyJobs": "Hay demasiados trabajos en el alcance elegido (máximo {{limit}}). Acota el plan, los técnicos o el filtro de texto.",
+          "rateLimited": "Se han pedido demasiadas propuestas seguidas. Espera unos minutos y vuelve a intentarlo.",
+          "jobNotFound": "Alguno de los trabajos de la propuesta ya no existe. Vuelve a generarla.",
+          "withDetail": "{{message}} ({{detail}})"
         }
       },
       "errors": {
