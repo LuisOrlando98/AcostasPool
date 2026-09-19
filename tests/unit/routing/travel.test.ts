@@ -24,6 +24,19 @@ const DEFAULT_DRIVE_MINUTES = 15;
 const MIN_ESTIMATED_MINUTES = 4;
 const METERS_PER_MILE = 1609.344;
 const SECONDS_PER_MINUTE = 60;
+const DESTINATION_SEPARATOR = "|";
+const MAX_DESTINATIONS_PER_REQUEST = 25;
+const MAX_ELEMENTS_PER_REQUEST = 100;
+const FIVE_MILES_METERS = 5 * METERS_PER_MILE;
+const FIVE_MILES = 5;
+const LIVE_DURATION_MINUTES = 21;
+const BASE_DURATION_MINUTES = 12;
+const liveElement = {
+  status: "OK",
+  distance: { value: FIVE_MILES_METERS },
+  duration: { value: BASE_DURATION_MINUTES * SECONDS_PER_MINUTE },
+  duration_in_traffic: { value: LIVE_DURATION_MINUTES * SECONDS_PER_MINUTE },
+};
 
 // Puntos sobre el mismo meridiano: la distancia haversine es proporcional a Δlat
 // (1° de latitud ≈ 69.09 millas con radio terrestre 3958.8 mi).
@@ -36,6 +49,9 @@ const SHORT_HOP_MILES = 0.69;
 const NEGLIGIBLE_HOP: GeoPoint = { lat: 0.0002, lng: 0 };
 
 const fetchMock = vi.fn<typeof fetch>();
+const consoleErrorSpy = vi
+  .spyOn(console, "error")
+  .mockImplementation(() => undefined);
 
 function jsonResponse(body: unknown, status = HTTP_OK): Response {
   return new Response(JSON.stringify(body), {
@@ -46,6 +62,39 @@ function jsonResponse(body: unknown, status = HTTP_OK): Response {
 
 function distanceMatrixResponse(element: Record<string, unknown>, status = HTTP_OK): Response {
   return jsonResponse({ status: "OK", rows: [{ elements: [element] }] }, status);
+}
+
+function matrixRowResponse(elements: Record<string, unknown>[]): Response {
+  return jsonResponse({ status: "OK", rows: [{ elements }] });
+}
+
+function originsOf(url: URL): string[] {
+  return (url.searchParams.get("origins") ?? "").split(DESTINATION_SEPARATOR);
+}
+
+function destinationsOf(url: URL): string[] {
+  return (url.searchParams.get("destinations") ?? "").split(DESTINATION_SEPARATOR);
+}
+
+/** Responde a cada petición con un elemento OK por destino solicitado. */
+function respondPerDestination(element: Record<string, unknown>): void {
+  fetchMock.mockImplementation(async (input) =>
+    matrixRowResponse(
+      destinationsOf(new URL(String(input))).map(() => element)
+    )
+  );
+}
+
+function createDeferredResponse() {
+  let settle: (value: Response) => void = () => undefined;
+  const promise = new Promise<Response>((resolve) => {
+    settle = resolve;
+  });
+  return { promise, resolve: (value: Response) => settle(value) };
+}
+
+function requestedUrls(): URL[] {
+  return fetchMock.mock.calls.map((call) => new URL(String(call[0])));
 }
 
 function requestedUrl(callIndex = 0): URL {
@@ -73,6 +122,7 @@ let travel: TravelModule;
 
 beforeEach(async () => {
   fetchMock.mockReset();
+  consoleErrorSpy.mockClear();
   vi.stubGlobal("fetch", fetchMock);
   vi.stubEnv("GOOGLE_MAPS_SERVER_API_KEY", "");
   vi.stubEnv("GOOGLE_MAPS_API_KEY", "");
@@ -203,16 +253,6 @@ describe("getTravelMetricsForPairs sin API key (estimación local)", () => {
 });
 
 describe("getTravelMetricsForPairs con API key (Google Distance Matrix)", () => {
-  const FIVE_MILES_METERS = 5 * METERS_PER_MILE;
-  const LIVE_DURATION_MINUTES = 21;
-  const BASE_DURATION_MINUTES = 12;
-  const liveElement = {
-    status: "OK",
-    distance: { value: FIVE_MILES_METERS },
-    duration: { value: BASE_DURATION_MINUTES * SECONDS_PER_MINUTE },
-    duration_in_traffic: { value: LIVE_DURATION_MINUTES * SECONDS_PER_MINUTE },
-  };
-
   beforeEach(() => {
     vi.stubEnv("GOOGLE_MAPS_API_KEY", API_KEY);
   });
@@ -330,8 +370,8 @@ describe("getTravelMetricsForPairs con API key (Google Distance Matrix)", () => 
     ]);
   });
 
-  it("resuelve todos los pares distintos con una petición por par", async () => {
-    fetchMock.mockResolvedValue(distanceMatrixResponse(liveElement));
+  it("resuelve todos los destinos de un mismo origen en una sola petición", async () => {
+    respondPerDestination(liveElement);
     const pairCount = 8;
     const pairs = Array.from({ length: pairCount }, (_, index) =>
       pair({ toAddress: `Destino ${index}` })
@@ -339,7 +379,8 @@ describe("getTravelMetricsForPairs con API key (Google Distance Matrix)", () => 
 
     const result = await travel.getTravelMetricsForPairs(pairs);
 
-    expect(fetchMock).toHaveBeenCalledTimes(pairCount);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(destinationsOf(requestedUrl())).toHaveLength(pairCount);
     expect(result.size).toBe(pairCount);
   });
 });
@@ -392,6 +433,298 @@ describe("getTravelMetricsForPairs: caché con TTL", () => {
     await travel.getTravelMetricsForPairs([pair()]);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getTravelMetricsForPairs: agrupación por origen", () => {
+  beforeEach(() => {
+    vi.stubEnv("GOOGLE_MAPS_API_KEY", API_KEY);
+    respondPerDestination(liveElement);
+  });
+
+  it("emite una petición por origen distinto con un único origen cada una", async () => {
+    const origins = ["Origen A", "Origen B", "Origen C"];
+    const destinationsPerOrigin = 4;
+    const pairs = origins.flatMap((fromAddress) =>
+      Array.from({ length: destinationsPerOrigin }, (_, index) =>
+        pair({ fromAddress, toAddress: `Destino ${index}` })
+      )
+    );
+
+    const result = await travel.getTravelMetricsForPairs(pairs);
+
+    expect(fetchMock).toHaveBeenCalledTimes(origins.length);
+    expect(result.size).toBe(origins.length * destinationsPerOrigin);
+    const requestedOrigins = requestedUrls().map((url) => originsOf(url));
+    expect(requestedOrigins.map((list) => list.length)).toEqual([1, 1, 1]);
+    expect(requestedOrigins.flat().sort()).toEqual([...origins].sort());
+    expect(
+      requestedUrls().map((url) => destinationsOf(url).length)
+    ).toEqual([destinationsPerOrigin, destinationsPerOrigin, destinationsPerOrigin]);
+  });
+
+  it("agrupa el mismo origen aunque difieran espacios y mayúsculas", async () => {
+    await travel.getTravelMetricsForPairs([
+      pair({ fromAddress: ORIGIN_ADDRESS, toAddress: "Destino 1" }),
+      pair({ fromAddress: `  ${ORIGIN_ADDRESS.toUpperCase()} `, toAddress: "Destino 2" }),
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(destinationsOf(requestedUrl())).toEqual(["Destino 1", "Destino 2"]);
+  });
+
+  it("trocea a 25 destinos por petición y nunca supera los 100 elementos", async () => {
+    const destinationCount = 57;
+    const pairs = Array.from({ length: destinationCount }, (_, index) =>
+      pair({ toAddress: `Destino ${index}` })
+    );
+
+    const result = await travel.getTravelMetricsForPairs(pairs);
+
+    const sizes = requestedUrls().map((url) => destinationsOf(url).length);
+    expect(sizes).toEqual([
+      MAX_DESTINATIONS_PER_REQUEST,
+      MAX_DESTINATIONS_PER_REQUEST,
+      destinationCount - 2 * MAX_DESTINATIONS_PER_REQUEST,
+    ]);
+    for (const url of requestedUrls()) {
+      expect(destinationsOf(url).length).toBeLessThanOrEqual(MAX_DESTINATIONS_PER_REQUEST);
+      expect(originsOf(url).length * destinationsOf(url).length).toBeLessThanOrEqual(
+        MAX_ELEMENTS_PER_REQUEST
+      );
+    }
+    expect(result.size).toBe(destinationCount);
+  });
+
+  it("mantiene departure_time=now y el resto de parámetros en el lote agrupado", async () => {
+    await travel.getTravelMetricsForPairs([
+      pair({ toAddress: "Destino 1" }),
+      pair({ toAddress: "Destino 2" }),
+    ]);
+
+    const url = requestedUrl();
+    expect(`${url.origin}${url.pathname}`).toBe(DISTANCE_MATRIX_ENDPOINT);
+    expect(url.searchParams.get("departure_time")).toBe("now");
+    expect(url.searchParams.get("traffic_model")).toBe("best_guess");
+    expect(url.searchParams.get("units")).toBe("imperial");
+    expect(url.searchParams.get("region")).toBe("us");
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ cache: "no-store" });
+  });
+
+  it("estima solo los pares sin datos ante elementos ZERO_RESULTS o NOT_FOUND", async () => {
+    fetchMock.mockResolvedValue(
+      matrixRowResponse([
+        liveElement,
+        { status: "ZERO_RESULTS" },
+        { status: "NOT_FOUND" },
+      ])
+    );
+    const pairs = [
+      pair({
+        toAddress: "Destino vivo",
+        fromCoordinates: EQUATOR,
+        toCoordinates: ONE_DEGREE_NORTH,
+      }),
+      pair({
+        toAddress: "Destino sin ruta",
+        fromCoordinates: EQUATOR,
+        toCoordinates: ONE_DEGREE_NORTH,
+      }),
+      pair({
+        toAddress: "Destino inexistente",
+        fromCoordinates: EQUATOR,
+        toCoordinates: SHORT_HOP,
+      }),
+    ];
+
+    const result = await travel.getTravelMetricsForPairs(pairs);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino vivo"))).toEqual({
+      durationMinutes: LIVE_DURATION_MINUTES,
+      distanceMiles: FIVE_MILES,
+      source: "LIVE_TRAFFIC",
+    });
+    expect(result.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino sin ruta"))).toEqual({
+      durationMinutes: ONE_DEGREE_MINUTES,
+      distanceMiles: ONE_DEGREE_MILES,
+      source: "ESTIMATED",
+    });
+    expect(result.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino inexistente"))).toEqual({
+      durationMinutes: MIN_ESTIMATED_MINUTES,
+      distanceMiles: SHORT_HOP_MILES,
+      source: "ESTIMATED",
+    });
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
+  it("estima los pares sin elemento cuando la fila viene incompleta", async () => {
+    fetchMock.mockResolvedValue(matrixRowResponse([liveElement]));
+
+    const result = await travel.getTravelMetricsForPairs([
+      pair({ toAddress: "Destino vivo" }),
+      pair({
+        toAddress: "Destino ausente",
+        fromCoordinates: EQUATOR,
+        toCoordinates: ONE_DEGREE_NORTH,
+      }),
+    ]);
+
+    expect(result.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino vivo"))).toMatchObject({
+      source: "LIVE_TRAFFIC",
+    });
+    expect(result.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino ausente"))).toEqual({
+      durationMinutes: ONE_DEGREE_MINUTES,
+      distanceMiles: ONE_DEGREE_MILES,
+      source: "ESTIMATED",
+    });
+  });
+});
+
+describe("getTravelMetricsForPairs: registro de fallos por lote", () => {
+  const BATCH_PAIRS = 3;
+
+  beforeEach(() => {
+    vi.stubEnv("GOOGLE_MAPS_API_KEY", API_KEY);
+  });
+
+  function batchPairs(fromAddress: string): AddressPairInput[] {
+    return Array.from({ length: BATCH_PAIRS }, (_, index) =>
+      pair({ fromAddress, toAddress: `Destino ${index}` })
+    );
+  }
+
+  it("registra un único console.error por lote fallido, no uno por par", async () => {
+    fetchMock.mockRejectedValue(new Error("network down"));
+
+    const result = await travel.getTravelMetricsForPairs(batchPairs(ORIGIN_ADDRESS));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(result.size).toBe(BATCH_PAIRS);
+    expect(Array.from(result.values()).every((metric) => metric.source === "ESTIMATED")).toBe(true);
+  });
+
+  it("no incluye la API key ni las direcciones en el mensaje", async () => {
+    fetchMock.mockResolvedValue(distanceMatrixResponse(liveElement, HTTP_SERVER_ERROR));
+
+    await travel.getTravelMetricsForPairs([pair()]);
+
+    const message = String(consoleErrorSpy.mock.calls[0]?.[0] ?? "");
+    expect(message).toContain("[routing/travel]");
+    expect(message).toContain(String(HTTP_SERVER_ERROR));
+    expect(message).not.toContain(API_KEY);
+    expect(message).not.toContain(ORIGIN_ADDRESS);
+    expect(message).not.toContain(DESTINATION_ADDRESS);
+  });
+
+  it("registra un aviso por cada lote fallido cuando hay varios orígenes", async () => {
+    fetchMock.mockRejectedValue(new Error("network down"));
+
+    await travel.getTravelMetricsForPairs([
+      ...batchPairs("Origen A"),
+      ...batchPairs("Origen B"),
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("getTravelMetricsForPairs: coalescing de peticiones en vuelo", () => {
+  beforeEach(() => {
+    vi.stubEnv("GOOGLE_MAPS_API_KEY", API_KEY);
+  });
+
+  it("dos llamadas concurrentes al mismo par comparten una única petición", async () => {
+    const deferred = createDeferredResponse();
+    fetchMock.mockReturnValue(deferred.promise);
+
+    const first = travel.getTravelMetricsForPairs([pair()]);
+    const second = travel.getTravelMetricsForPairs([pair()]);
+    deferred.resolve(distanceMatrixResponse(liveElement));
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(Array.from(firstResult.values())[0]).toEqual({
+      durationMinutes: LIVE_DURATION_MINUTES,
+      distanceMiles: FIVE_MILES,
+      source: "LIVE_TRAFFIC",
+    });
+    expect(Array.from(secondResult.values())[0]).toEqual(
+      Array.from(firstResult.values())[0]
+    );
+  });
+
+  it("solo consulta los pares que todavía no están en vuelo", async () => {
+    const deferred = createDeferredResponse();
+    fetchMock.mockReturnValueOnce(deferred.promise);
+    respondPerDestination(liveElement);
+
+    const first = travel.getTravelMetricsForPairs([
+      pair({ toAddress: "Destino 1" }),
+      pair({ toAddress: "Destino 2" }),
+    ]);
+    const second = travel.getTravelMetricsForPairs([
+      pair({ toAddress: "Destino 2" }),
+      pair({ toAddress: "Destino 3" }),
+    ]);
+    deferred.resolve(matrixRowResponse([liveElement, liveElement]));
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(destinationsOf(requestedUrl(1))).toEqual(["Destino 3"]);
+    expect(firstResult.size).toBe(2);
+    expect(secondResult.get(travel.getAddressPairKey(ORIGIN_ADDRESS, "Destino 2"))).toMatchObject({
+      source: "LIVE_TRAFFIC",
+    });
+  });
+
+  it("libera la petición en vuelo al terminar y luego sirve desde la caché", async () => {
+    respondPerDestination(liveElement);
+
+    await travel.getTravelMetricsForPairs([pair()]);
+    await travel.getTravelMetricsForPairs([pair()]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("getTravelMetricsForPairs: cota de la caché en memoria", () => {
+  beforeEach(() => {
+    vi.stubEnv("GOOGLE_MAPS_API_KEY", API_KEY);
+    fetchMock.mockResolvedValue(distanceMatrixResponse(liveElement));
+  });
+
+  /** Pares con origen y destino iguales: se cachean sin consultar a Google. */
+  function fillerPairs(count: number): AddressPairInput[] {
+    return Array.from({ length: count }, (_, index) => ({
+      fromAddress: `Relleno ${index}`,
+      toAddress: `Relleno ${index}`,
+    }));
+  }
+
+  it("conserva las entradas mientras no se alcanza el tope", async () => {
+    await travel.getTravelMetricsForPairs([pair()]);
+    await travel.getTravelMetricsForPairs(
+      fillerPairs(travel.TRAVEL_CACHE_MAX_ENTRIES - 2)
+    );
+    await travel.getTravelMetricsForPairs([pair()]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("expulsa las entradas más antiguas en lugar de crecer sin límite", async () => {
+    await travel.getTravelMetricsForPairs([pair()]);
+    const fillers = await travel.getTravelMetricsForPairs(
+      fillerPairs(travel.TRAVEL_CACHE_MAX_ENTRIES)
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fillers.size).toBe(travel.TRAVEL_CACHE_MAX_ENTRIES);
+
+    await travel.getTravelMetricsForPairs([pair()]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
