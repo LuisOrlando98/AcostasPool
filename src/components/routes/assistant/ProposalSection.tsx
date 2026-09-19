@@ -4,19 +4,35 @@
  * Paso 2: la propuesta editable. Recibe el foco tras generar (el encabezado es
  * `tabIndex={-1}`) y agrupa estrategia, métricas, barra de edición, una ruta
  * por técnico y los excluidos.
+ *
+ * Aquí vive el arrastre: el contenedor de las zonas (`useStopDrag`) envuelve
+ * las tarjetas de técnico y el panel de excluidos, y cada soltar se traduce a
+ * la operación del borrador que corresponde (reordenar, reasignar, restaurar o
+ * excluir).
  */
 
-import type { RefObject } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
 import { useI18n } from "@/i18n/client";
-import type { AssistantPlan, AssistantStrategy } from "@/lib/routing/assistant-types";
+import type {
+  AssistantPlan,
+  AssistantStop,
+  AssistantStrategy,
+} from "@/lib/routing/assistant-types";
 import { canUndo, isDirty, lastUndoLabel, type Draft } from "@/lib/routing/draft";
 import DraftToolbar from "./DraftToolbar";
 import ExcludedPanel from "./ExcludedPanel";
+import LocationFixModal from "./LocationFixModal";
 import ProposalSummary from "./ProposalSummary";
 import RouteCard from "./RouteCard";
 import StrategyPicker from "./StrategyPicker";
-import { resolveRestoreTarget, summarizeRoutes } from "./draft-view";
+import {
+  collectLateTechnicianIds,
+  findStopLocation,
+  resolveRestoreTarget,
+  summarizeRoutes,
+} from "./draft-view";
 import type { AssistantDraftController } from "./use-assistant-draft";
+import { EXCLUDED_ZONE_ID, useStopDrag } from "./use-stop-drag";
 
 type ProposalSectionProps = {
   readonly headingRef: RefObject<HTMLHeadingElement | null>;
@@ -28,6 +44,7 @@ type ProposalSectionProps = {
   readonly stale: boolean;
   readonly busy: boolean;
   readonly onMoveRequest: (jobId: string) => void;
+  readonly onAnnounce: (message: string) => void;
 };
 
 export default function ProposalSection({
@@ -40,14 +57,60 @@ export default function ProposalSection({
   stale,
   busy,
   onMoveRequest,
+  onAnnounce,
 }: ProposalSectionProps) {
   const { t } = useI18n();
-  const summary = summarizeRoutes(draft.routes);
-  const disabled = busy || stale;
-
+  const [fixJobId, setFixJobId] = useState<string | null>(null);
   const routeMeta = new Map(
     (controller.plan?.routes ?? []).map((route) => [route.technicianId, route])
   );
+  const summary = summarizeRoutes(
+    draft.routes,
+    collectLateTechnicianIds(controller.plan?.routes ?? [])
+  );
+  const disabled = busy || stale;
+
+  const isExcluded = useCallback(
+    (jobId: string) => draft.removed.some((stop) => stop.jobId === jobId),
+    [draft.removed]
+  );
+
+  /** Soltar sobre una ruta: restaurar si venía de los excluidos, mover si no. */
+  const handleDrop = useCallback(
+    (jobId: string, technicianId: string, index: number) => {
+      if (isExcluded(jobId)) {
+        controller.restore(jobId, technicianId, index);
+        return;
+      }
+      controller.moveToRoute(jobId, technicianId, index);
+    },
+    [controller, isExcluded]
+  );
+
+  const handleExclude = useCallback(
+    (jobId: string) => {
+      if (!isExcluded(jobId)) {
+        controller.remove(jobId);
+      }
+    },
+    [controller, isExcluded]
+  );
+
+  const handleDragCancel = useCallback(
+    () => onAnnounce(t("admin.routes.assistant.drag.cancelled")),
+    [onAnnounce, t]
+  );
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const drag = useStopDrag({
+    containerRef,
+    disabled,
+    onDrop: handleDrop,
+    onExclude: handleExclude,
+    onCancel: handleDragCancel,
+  });
+  const draggingJobId = drag.state?.jobId ?? null;
+  const activeZone = drag.state?.zoneId ?? null;
 
   const handleRestore = (jobId: string) => {
     const stop = draft.removed.find((candidate) => candidate.jobId === jobId);
@@ -55,6 +118,26 @@ export default function ProposalSection({
       return;
     }
     controller.restore(jobId, resolveRestoreTarget(draft.routes, stop));
+  };
+
+  /**
+   * Tras corregir la ubicación se fuerza el recálculo: recarga los trabajos
+   * por id, recoge las coordenadas nuevas y la parada pierde el chip.
+   */
+  const handleLocationFixed = (fixed: AssistantStop) => {
+    setFixJobId(null);
+    onAnnounce(
+      t("admin.routes.assistant.announce.locationFixed", { name: fixed.customerName })
+    );
+    controller.recalculateNow();
+  };
+
+  const handleKeyboardMove = (jobId: string, delta: -1 | 1) => {
+    if (delta === -1) {
+      controller.moveUp(jobId);
+      return;
+    }
+    controller.moveDown(jobId);
   };
 
   return (
@@ -112,7 +195,11 @@ export default function ProposalSection({
         pending={controller.etasPending}
       />
 
-      <div className="space-y-3">
+      <p className="text-xs text-slate-500">
+        {t("admin.routes.assistant.drag.hint")}
+      </p>
+
+      <div ref={containerRef} className="space-y-3">
         {draft.routes.map((route) => (
           <RouteCard
             key={route.technicianId}
@@ -121,18 +208,33 @@ export default function ProposalSection({
             pending={controller.etasPending}
             busy={controller.recalculating}
             disabled={disabled}
-            onMoveUp={controller.moveUp}
-            onMoveDown={controller.moveDown}
+            draggingJobId={draggingJobId}
+            dropIndex={
+              activeZone === route.technicianId ? (drag.state?.index ?? 0) : null
+            }
+            handleProps={drag.handleProps}
+            onKeyboardMove={handleKeyboardMove}
             onMove={onMoveRequest}
             onRemove={controller.remove}
+            onFixLocation={setFixJobId}
           />
         ))}
+
+        <ExcludedPanel
+          stops={draft.removed}
+          disabled={disabled}
+          active={activeZone === EXCLUDED_ZONE_ID}
+          draggingJobId={draggingJobId}
+          handleProps={drag.handleProps}
+          onRestore={handleRestore}
+        />
       </div>
 
-      <ExcludedPanel
-        stops={draft.removed}
-        disabled={disabled}
-        onRestore={handleRestore}
+      <LocationFixModal
+        open={fixJobId !== null}
+        stop={findStopLocation(draft.routes, fixJobId ?? "")?.stop ?? null}
+        onClose={() => setFixJobId(null)}
+        onFixed={handleLocationFixed}
       />
     </section>
   );

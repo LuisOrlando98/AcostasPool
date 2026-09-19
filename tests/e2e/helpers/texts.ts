@@ -18,6 +18,7 @@ export const HEADINGS = {
     proposal: /^(Step 2 · Proposal|Paso 2 · Propuesta)$/,
     result: /^(Result|Resultado)$/,
     changes: /^(Changes to apply|Cambios a aplicar)$/,
+    fixLocation: /^(Fix location|Corregir ubicación)$/,
   },
   adminInvoices: /^Billing$/,
   adminTechnicians: /^(Technicians|Tecnicos)$/,

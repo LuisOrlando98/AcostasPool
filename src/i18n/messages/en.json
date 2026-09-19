@@ -682,9 +682,6 @@
       "assistant": {
         "pageTitle": "Route assistant",
         "pageSubtitle": "AI-assisted route proposals with travel-time estimates.",
-        "kicker": "Route assistant",
-        "title": "Build technician routes by area and travel time",
-        "subtitle": "Generate route proposals, compare them, apply one, and continue editing in calendar.",
         "fields": {
           "date": "Route date",
           "plan": "Weekly plan",
@@ -694,14 +691,10 @@
           "origin": "Route origin"
         },
         "placeholders": {
-          "addressFilter": "Filter by city, ZIP, street, or customer...",
-          "plan": "Select a plan",
-          "technician": "Select a technician"
+          "addressFilter": "Filter by city, ZIP, street, or customer..."
         },
         "automation": {
           "title": "Automatic review",
-          "subtitle": "When enabled, every day at 7:00 AM the system reviews and reorders the route for that day's plan while keeping assignments in place.",
-          "checkmark": "Enable daily automatic review at 7:00 AM",
           "link": "Daily automatic review...",
           "description": "When enabled, every day at 5:30 AM the route for that day is reviewed and reordered while keeping assignments.",
           "toggleLabel": "Enable the daily automatic review (5:30 AM)",
@@ -730,20 +723,17 @@
           "reset": "Reset",
           "viewChanges": "View changes",
           "applyCount": "Apply ({{count}})",
-          "retryFailed": "Retry failed"
+          "retryFailed": "Retry failed",
+          "fixLocation": "Fix location"
         },
         "messages": {
           "failed": "Unable to generate route proposals.",
           "applyFailed": "Unable to apply selected proposal.",
-          "empty": "No route proposals were generated for the selected filters.",
           "preferencesSaved": "Route Assistant automation was updated.",
           "preferencesFailed": "Unable to save Route Assistant automation.",
           "recalculateFailed": "Unable to recalculate the times of the proposal."
         },
         "metrics": {
-          "jobs": "Jobs in scope",
-          "technicians": "Technicians",
-          "unresolved": "Addresses without geocode",
           "stops": "Stops in the proposal",
           "excluded": {
             "one": "{{count}} excluded",
@@ -751,8 +741,8 @@
           },
           "drive": "Total drive",
           "service": "Total service",
-          "conflicts": "Conflicts",
-          "unresolvedHelper": "{{count}} without geocode"
+          "warnings": "Warnings",
+          "warningsHelper": "{{missing}} without a location · {{late}} routes ending late"
         },
         "strategies": {
           "BALANCED": {
@@ -778,23 +768,10 @@
             "other": "{{count}} stops"
           },
           "drive": "Drive: {{value}}",
-          "return": "Return: {{value}}",
-          "service": "Service: {{value}}",
-          "conflicts": "Conflicts: {{count}}",
-          "livePairs": "Live traffic pairs: {{count}}",
-          "estimatedPairs": "Estimated pairs: {{count}}",
-          "sameAddressPairs": "Same address pairs: {{count}}",
-          "routeFlow": "Start from {{origin}} and return to base around {{eta}} with {{drive}}."
+          "service": "Service: {{value}}"
         },
         "table": {
           "customer": "Customer",
-          "plan": "Plan",
-          "address": "Address",
-          "drive": "Drive from prev.",
-          "eta": "ETA",
-          "scheduled": "Scheduled",
-          "noPlan": "No plan",
-          "fromBase": "Base: {{value}}",
           "liveTraffic": "Live",
           "estimated": "Estimated",
           "sameAddress": "Same address"
@@ -812,11 +789,11 @@
         },
         "strategyPicker": {
           "legend": "Strategy",
-          "conflicts": {
-            "one": "{{count}} conflict",
-            "other": "{{count}} conflicts"
-          },
-          "drive": "Drive {{drive}}"
+          "drive": "Drive {{drive}}",
+          "warnings": {
+            "one": "{{count}} warning",
+            "other": "{{count}} warnings"
+          }
         },
         "eta": {
           "pending": "Pending recalculation",
@@ -829,16 +806,16 @@
         },
         "stop": {
           "position": "Stop {{position}} of {{total}}",
-          "noCoordinates": "No geocode",
-          "serviceStart": "Service {{value}}",
-          "arrival": "Arrival {{value}}"
+          "arrival": "Arrival {{value}}",
+          "noLocation": "No location"
         },
         "a11y": {
-          "moveUp": "Move {{name}} up, currently at position {{position}}",
-          "moveDown": "Move {{name}} down, currently at position {{position}}",
           "move": "Move {{name}} (position {{position}}) to another technician",
           "remove": "Remove {{name}} (position {{position}}) from the proposal",
-          "restore": "Restore {{name}} into the proposal"
+          "restore": "Restore {{name}} into the proposal",
+          "dragHandle": "Drag {{name}}, stop {{position}} of {{total}}; hold Alt and press the up or down arrow to change its position",
+          "dragExcluded": "Drag {{name}} onto a technician route to put it back in the proposal",
+          "fixLocation": "Fix the location of {{name}}"
         },
         "undo": {
           "move": "the order change",
@@ -888,12 +865,12 @@
             "one": "Apply {{count}} change",
             "other": "Apply {{count}} changes"
           },
-          "confirmDescription": "Technician and order are updated for these jobs. Booked date and time window stay untouched.",
           "warningActive": {
             "one": "{{count}} job is already on the way or in progress: it keeps its status.",
             "other": "{{count}} jobs are already on the way or in progress: they keep their status."
           },
-          "warningNotifications": "The usual notifications will be sent to the technicians and customers involved."
+          "warningNotifications": "The usual notifications will be sent to the technicians and customers involved.",
+          "dayDescription": "The technician and the order of the day's jobs are updated. The service date does not change."
         },
         "result": {
           "title": "Result",
@@ -921,7 +898,10 @@
             "other": "{{count}} stops · drive {{drive}}"
           },
           "onlyOne": "There is only one technician in this proposal, so there is no other route to move the stop to. Add technicians in the filters or use \"Remove\".",
-          "exclude": "Unassign / exclude"
+          "exclude": "Unassign / exclude",
+          "position": "Position in the route",
+          "positionLast": "{{position}} (last)",
+          "positionHint": "The stop goes into that position of the chosen technician's route."
         },
         "stale": {
           "message": "Filters changed: generate the proposal again before applying it."
@@ -935,13 +915,36 @@
           "undone": "Last change undone.",
           "reset": "Proposal reset.",
           "recalculated": "Times recalculated.",
-          "applied": "{{applied}} changes applied, {{failed}} failed."
+          "applied": "{{applied}} changes applied, {{failed}} failed.",
+          "locationFixed": "Location of {{name}} updated. Recalculating the times."
         },
         "errors": {
           "tooManyJobs": "Too many jobs in the selected scope (limit {{limit}}). Narrow the plan, the technicians, or the text filter.",
           "rateLimited": "Too many proposals were requested in a row. Wait a few minutes and try again.",
           "jobNotFound": "One of the jobs in the proposal no longer exists. Generate it again.",
-          "withDetail": "{{message}} ({{detail}})"
+          "withDetail": "{{message}} ({{detail}})",
+          "propertyNotFound": "The property of this stop no longer exists. Generate the proposal again."
+        },
+        "drag": {
+          "hint": "Drag a stop by its handle to reorder it or move it to another technician, or drop it on \"Unassigned / excluded\". With the keyboard: Alt and the up or down arrow.",
+          "dropHere": "Drop the stop here",
+          "cancelled": "Drag cancelled: the stop stays where it was."
+        },
+        "location": {
+          "title": "Fix location",
+          "description": "Check the address of {{name}}: without a location on the map its times are only an estimate.",
+          "addressLabel": "Address",
+          "save": "Save and geocode",
+          "saving": "Saving...",
+          "saveCoordinates": "Save coordinates",
+          "notGeocoded": "The address was saved, but it could not be placed on the map. Enter the coordinates by hand.",
+          "latLabel": "Latitude",
+          "lngLabel": "Longitude",
+          "mapsLink": "Search on Google Maps",
+          "mapsHint": "Open Google Maps, right-click the exact spot and paste here the coordinates it shows (latitude, longitude).",
+          "invalidAddress": "Enter an address between 5 and 200 characters.",
+          "invalidCoordinates": "Latitude goes from -90 to 90 and longitude from -180 to 180.",
+          "failed": "The location of the stop could not be saved."
         }
       },
       "errors": {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { AssistantStop } from "@/lib/routing/assistant-types";
 import {
+  collectLateTechnicianIds,
   collectStops,
+  countLateRoutes,
   countStopsWithoutCoordinates,
   findStopLocation,
   resolveRestoreTarget,
@@ -15,6 +17,7 @@ function makeStop(overrides: Partial<AssistantStop> = {}): AssistantStop {
     jobId: "job-1",
     customerName: "Cliente Demo",
     address: "1 Main St",
+    propertyId: "property-1",
     propertyName: null,
     planName: null,
     routeGroupId: null,
@@ -89,14 +92,24 @@ describe("summarizeRoute", () => {
 });
 
 describe("summarizeRoutes", () => {
-  it("counts a conflict only above the delay threshold", () => {
+  it("counts one warning per stop without a location and ignores the delay", () => {
+    // "b" arrastra delayMinutes: 40 a propósito. Los servicios de piscina se
+    // programan por día, no por hora: el retraso ya no es un aviso.
     expect(summarizeRoutes(routes)).toEqual({
       stops: 3,
       driveMinutes: 40,
       serviceMinutes: 90,
-      conflicts: 1,
       withoutCoordinates: 1,
+      lateRoutes: 0,
+      warnings: 1,
     });
+  });
+
+  it("adds one warning per route that ends after midnight", () => {
+    const summary = summarizeRoutes(routes, new Set(["tech-1"]));
+
+    expect(summary.lateRoutes).toBe(1);
+    expect(summary.warnings).toBe(2);
   });
 
   it("returns zeros for an empty proposal", () => {
@@ -104,9 +117,37 @@ describe("summarizeRoutes", () => {
       stops: 0,
       driveMinutes: 0,
       serviceMinutes: 0,
-      conflicts: 0,
       withoutCoordinates: 0,
+      lateRoutes: 0,
+      warnings: 0,
     });
+  });
+});
+
+describe("countLateRoutes", () => {
+  it("only counts the routes that still have stops", () => {
+    const emptied: readonly RouteLike[] = [
+      { technicianId: "tech-1", technicianName: "Ana", stops: [] },
+      routes[1],
+    ];
+
+    expect(countLateRoutes(emptied, new Set(["tech-1", "tech-2"]))).toBe(1);
+  });
+
+  it("returns zero without late routes", () => {
+    expect(countLateRoutes(routes, new Set())).toBe(0);
+  });
+});
+
+describe("collectLateTechnicianIds", () => {
+  it("keeps the technicians whose route ends after midnight", () => {
+    const ids = collectLateTechnicianIds([
+      { technicianId: "tech-1", overflowsDay: true },
+      { technicianId: "tech-2", overflowsDay: false },
+      { technicianId: "tech-3" },
+    ]);
+
+    expect([...ids]).toEqual(["tech-1"]);
   });
 });
 

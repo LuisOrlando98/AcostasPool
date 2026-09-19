@@ -26,6 +26,9 @@ describe("assistantErrorCodeKey", () => {
     expect(assistantErrorCodeKey("JOB_NOT_FOUND")).toBe(
       "admin.routes.assistant.errors.jobNotFound"
     );
+    expect(assistantErrorCodeKey("PROPERTY_NOT_FOUND")).toBe(
+      "admin.routes.assistant.errors.propertyNotFound"
+    );
   });
 });
 

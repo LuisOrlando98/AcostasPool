@@ -21,12 +21,17 @@ export const RECALCULATE_ENDPOINT = "/api/admin/routes/assistant/recalculate";
 export const SETTINGS_ENDPOINT = "/api/admin/routes/assistant/settings";
 export const BULK_RESCHEDULE_ENDPOINT = "/api/routes/bulk-reschedule";
 
+/** Ubicación de la propiedad de una parada (corregir dirección o coordenadas). */
+export const propertyLocationEndpoint = (propertyId: string): string =>
+  `/api/admin/properties/${encodeURIComponent(propertyId)}/location`;
+
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 
 const ERROR_CODES: readonly AssistantErrorCode[] = [
   "TOO_MANY_JOBS",
   "RATE_LIMITED",
   "JOB_NOT_FOUND",
+  "PROPERTY_NOT_FOUND",
 ];
 
 /**
@@ -84,10 +89,12 @@ function toRequestError(payload: unknown, fallback: string): AssistantRequestErr
 }
 
 /**
- * POST con cuerpo JSON. `isValid` decide si la respuesta 200 tiene la forma
- * esperada; si no, se lanza `fallbackError` en lugar de propagar datos rotos.
+ * Petición con cuerpo JSON. `isValid` decide si la respuesta 200 tiene la
+ * forma esperada; si no, se lanza `fallbackError` en lugar de propagar datos
+ * rotos.
  */
-async function postJson<T>(
+async function sendJson<T>(
+  method: "POST" | "PATCH",
   url: string,
   body: unknown,
   fallbackError: string,
@@ -95,7 +102,7 @@ async function postJson<T>(
   signal?: AbortSignal
 ): Promise<T> {
   const response = await fetch(url, {
-    method: "POST",
+    method,
     headers: JSON_HEADERS,
     body: JSON.stringify(body),
     signal,
@@ -109,6 +116,14 @@ async function postJson<T>(
   }
   return payload;
 }
+
+const postJson = <T,>(
+  url: string,
+  body: unknown,
+  fallbackError: string,
+  isValid: (payload: unknown) => payload is T,
+  signal?: AbortSignal
+): Promise<T> => sendJson("POST", url, body, fallbackError, isValid, signal);
 
 const isPlanResponse = (payload: unknown): payload is AssistantPlanResponse =>
   isRecord(payload) && Array.isArray(payload.plans) && typeof payload.date === "string";
@@ -177,4 +192,49 @@ export function requestSettingsUpdate(
   fallbackError: string
 ): Promise<{ readonly ok: boolean; readonly config: RouteAssistantSettings }> {
   return postJson(SETTINGS_ENDPOINT, body, fallbackError, isSettingsResponse);
+}
+
+export type PropertyLocationRequest = {
+  readonly address?: string;
+  readonly lat?: number;
+  readonly lng?: number;
+};
+
+export type PropertyLocationResponse = {
+  readonly ok: boolean;
+  /** `false`: la dirección se guardó pero no se pudo situar en el mapa. */
+  readonly geocoded: boolean;
+  readonly property: {
+    readonly id: string;
+    readonly address: string;
+    readonly lat: number | null;
+    readonly lng: number | null;
+    readonly geocodedAt: string | null;
+  };
+};
+
+const isPropertyLocationResponse = (
+  payload: unknown
+): payload is PropertyLocationResponse =>
+  isRecord(payload) &&
+  typeof payload.geocoded === "boolean" &&
+  isRecord(payload.property);
+
+/**
+ * Corrige la ubicación de la propiedad de una parada: con `address` el
+ * servidor intenta geocodificarla, con `lat`/`lng` guarda las coordenadas tal
+ * cual.
+ */
+export function requestPropertyLocation(
+  propertyId: string,
+  body: PropertyLocationRequest,
+  fallbackError: string
+): Promise<PropertyLocationResponse> {
+  return sendJson(
+    "PATCH",
+    propertyLocationEndpoint(propertyId),
+    body,
+    fallbackError,
+    isPropertyLocationResponse
+  );
 }

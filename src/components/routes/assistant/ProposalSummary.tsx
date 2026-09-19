@@ -2,8 +2,8 @@
 
 /**
  * Métricas de la propuesta en curso, calculadas sobre el borrador (no sobre el
- * resumen del servidor) para que sigan siendo ciertas después de editar.
- * Conflictos y direcciones sin geocodificar usan el tono de aviso.
+ * resumen del servidor) para que sigan siendo ciertas después de editar. Los
+ * avisos (paradas sin ubicación y rutas que terminan tarde) usan su tono.
  */
 
 import { useI18n } from "@/i18n/client";
@@ -46,14 +46,13 @@ export default function ProposalSummary({
         helper={pendingHelper}
       />
       <StatCard
-        label={t("admin.routes.assistant.metrics.conflicts")}
-        value={String(summary.conflicts)}
-        helper={t("admin.routes.assistant.metrics.unresolvedHelper", {
-          count: summary.withoutCoordinates,
+        label={t("admin.routes.assistant.metrics.warnings")}
+        value={String(summary.warnings)}
+        helper={t("admin.routes.assistant.metrics.warningsHelper", {
+          missing: summary.withoutCoordinates,
+          late: summary.lateRoutes,
         })}
-        tone={
-          summary.conflicts > 0 || summary.withoutCoordinates > 0 ? "warning" : "success"
-        }
+        tone={summary.warnings > 0 ? "warning" : "success"}
       />
     </div>
   );

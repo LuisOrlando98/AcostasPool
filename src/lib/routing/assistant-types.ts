@@ -19,6 +19,8 @@ export type AssistantStop = {
   readonly jobId: string;
   readonly customerName: string;
   readonly address: string;
+  /** Propiedad del trabajo: permite corregir su ubicación desde la propuesta. */
+  readonly propertyId: string;
   readonly propertyName: string | null;
   readonly planName: string | null;
   readonly routeGroupId: string | null;
@@ -28,7 +30,10 @@ export type AssistantStop = {
   readonly technicianName: string;
   /** Posición 1-based dentro de la ruta propuesta. */
   readonly order: number;
-  /** "HH:mm" en la zona horaria del negocio. */
+  /**
+   * "HH:mm" en la zona horaria del negocio. Nominal: los servicios se programan
+   * por día, no por hora, así que la interfaz no lo muestra.
+   */
   readonly scheduledTime: string;
   /** Llegada estimada real ("HH:mm"). */
   readonly estimatedArrivalTime: string;
@@ -37,6 +42,10 @@ export type AssistantStop = {
   readonly estimatedDriveMinutesFromPrevious: number;
   readonly estimatedServiceMinutes: number;
   readonly distanceMilesFromPrevious: number | null;
+  /**
+   * Minutos de retraso frente a `scheduledTime`. Se sigue calculando por
+   * compatibilidad, pero no cuenta como aviso ni se muestra.
+   */
   readonly delayMinutes: number | null;
   readonly driveSource?: AssistantDriveSource;
   readonly status: AssistantJobStatus;
@@ -63,6 +72,10 @@ export type AssistantRoute = {
   readonly estimatedReturnTime: string | null;
   /** La ruta termina después de medianoche (`estimatedReturnTime` es del día siguiente). */
   readonly overflowsDay?: boolean;
+  /**
+   * Avisos de la ruta: paradas sin coordenadas + 1 si `overflowsDay`. El
+   * retraso frente a la hora citada NO cuenta.
+   */
   readonly conflicts: number;
 };
 
@@ -71,6 +84,7 @@ export type AssistantPlanSummary = {
   readonly totalDriveMinutes: number;
   readonly totalServiceMinutes: number;
   readonly totalRouteMinutes: number;
+  /** Suma de los avisos de las rutas del plan. */
   readonly conflicts: number;
   readonly loadSpread: number;
 };
@@ -114,7 +128,11 @@ export type AssistantRecalculateResponse = {
   readonly plan: AssistantPlan;
 };
 
-export type AssistantErrorCode = "TOO_MANY_JOBS" | "RATE_LIMITED" | "JOB_NOT_FOUND";
+export type AssistantErrorCode =
+  | "TOO_MANY_JOBS"
+  | "RATE_LIMITED"
+  | "JOB_NOT_FOUND"
+  | "PROPERTY_NOT_FOUND";
 
 export type AssistantErrorResponse = {
   readonly error: string;

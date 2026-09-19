@@ -3,7 +3,9 @@
 /**
  * Selector de estrategia como grupo de radios nativo: el estado seleccionado
  * lo expone el propio control (no solo el color) y las flechas del teclado
- * recorren las opciones sin código extra.
+ * recorren las opciones sin código extra. `summary.conflicts` del plan cuenta
+ * avisos (paradas sin ubicación y rutas que terminan tarde), no conflictos de
+ * horario: los servicios se programan por día.
  */
 
 import { useId } from "react";
@@ -80,7 +82,7 @@ export default function StrategyPicker({
                     }),
                     t.plural("admin.routes.assistant.summary.stops", plan.summary.totalStops),
                     t.plural(
-                      "admin.routes.assistant.strategyPicker.conflicts",
+                      "admin.routes.assistant.strategyPicker.warnings",
                       plan.summary.conflicts
                     ),
                   ].join(" · ")}

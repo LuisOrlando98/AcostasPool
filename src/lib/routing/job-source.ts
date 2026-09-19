@@ -157,6 +157,7 @@ function toRouteAssistantJob(
     id: record.id,
     customerName: formatCustomerName(record.customer),
     address: record.property.address,
+    propertyId: record.property.id,
     propertyName: record.property.name,
     status: toAssistantJobStatus(record.status),
     technicianId: record.technicianId,

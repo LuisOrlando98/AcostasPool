@@ -25,7 +25,6 @@ const HOURS_PER_DAY = 24;
 const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
 const ROUTE_START_MINUTES = 8 * MINUTES_PER_HOUR;
 const PRE_ARRIVAL_BUFFER_MINUTES = 20;
-const CONFLICT_DELAY_THRESHOLD_MINUTES = 25;
 const UNKNOWN_DISTANCE_MILES = 4;
 /** Pesos de la asignación de técnicos (distancia al centroide vs. carga). */
 const SHORT_DRIVE_DISTANCE_WEIGHT = 10;
@@ -58,6 +57,8 @@ export type RouteAssistantJob = {
   id: string;
   customerName: string;
   address: string;
+  /** Propiedad del trabajo: la parada la lleva para corregir su ubicación. */
+  propertyId: string;
   propertyName: string | null;
   status: AssistantJobStatus;
   technicianId: string | null;
@@ -462,7 +463,6 @@ type Itinerary = {
   stops: RouteAssistantStopPlan[];
   totalDriveMinutes: number;
   totalServiceMinutes: number;
-  conflicts: number;
 };
 
 function buildStop(
@@ -477,6 +477,7 @@ function buildStop(
     jobId: job.id,
     customerName: job.customerName,
     address: job.address,
+    propertyId: job.propertyId,
     propertyName: job.propertyName,
     planName: job.planName,
     routeGroupId: job.routeGroupId,
@@ -535,23 +536,32 @@ function buildItinerary(
     stops: [],
     totalDriveMinutes: 0,
     totalServiceMinutes: 0,
-    conflicts: 0,
   };
   return orderedStops.reduce((acc, current, index) => {
     const previous = index > 0 ? orderedStops[index - 1] : origin;
     const leg = resolveLeg(pairMetrics, previous, current);
     const timing = simulateStop(acc.cursorMinutes, leg.driveMinutes, current);
     const stop = buildStop(current, technician, index + 1, leg, timing);
-    const delay = stop.delayMinutes ?? 0;
     return {
       cursorMinutes: timing.endMinutes,
       stops: [...acc.stops, stop],
       totalDriveMinutes: acc.totalDriveMinutes + leg.driveMinutes,
       totalServiceMinutes: acc.totalServiceMinutes + timing.serviceMinutes,
-      conflicts:
-        acc.conflicts + (delay > CONFLICT_DELAY_THRESHOLD_MINUTES ? 1 : 0),
     };
   }, initial);
+}
+
+/**
+ * Avisos de una ruta: una parada sin coordenadas (su llegada es una estimación
+ * ciega) y una ruta que termina después de medianoche. El retraso frente a la
+ * hora citada NO cuenta: los servicios se programan por día, no por hora.
+ */
+function countRouteWarnings(
+  stops: readonly RouteAssistantStopPlan[],
+  overflowsDay: boolean
+) {
+  const withoutCoordinates = stops.filter((stop) => !stop.hasCoordinates).length;
+  return withoutCoordinates + (overflowsDay ? 1 : 0);
 }
 
 function uniqueStrings(values: Array<string | null>) {
@@ -574,6 +584,7 @@ export function buildTechnicianPlanFromOrder(
   const returnDistanceMiles = returnLeg?.distanceMiles ?? null;
   const totalDriveMinutes = itinerary.totalDriveMinutes + returnDriveMinutes;
   const returnMinutes = itinerary.cursorMinutes + returnDriveMinutes;
+  const overflowsDay = Boolean(returnLeg) && isNextDay(returnMinutes);
 
   return {
     technicianId: technician.id,
@@ -592,8 +603,8 @@ export function buildTechnicianPlanFromOrder(
       returnDistanceMiles == null ? null : Number(returnDistanceMiles.toFixed(2)),
     returnDriveSource: returnLeg?.source,
     estimatedReturnTime: returnLeg ? minutesToTimeValue(returnMinutes) : null,
-    ...(returnLeg && isNextDay(returnMinutes) ? { overflowsDay: true } : {}),
-    conflicts: itinerary.conflicts,
+    ...(overflowsDay ? { overflowsDay: true } : {}),
+    conflicts: countRouteWarnings(itinerary.stops, overflowsDay),
   };
 }
 
@@ -609,7 +620,7 @@ async function buildTechnicianPlan(
   return buildTechnicianPlanFromOrder(technician, orderedStops, origin, pairMetrics);
 }
 
-/** Agrega los totales de las rutas con paradas del plan. */
+/** Agrega los totales de las rutas con paradas del plan (avisos incluidos). */
 export function summarizePlan(
   routes: readonly RouteAssistantTechnicianPlan[],
   loadSpread: number

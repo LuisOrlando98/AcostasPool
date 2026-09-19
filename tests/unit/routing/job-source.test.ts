@@ -292,6 +292,7 @@ describe("loadRouteAssistantJobs: mapeo a RouteAssistantJob", () => {
         id: "r1",
         customerName: "Ana García",
         address: loaded.property.address,
+        propertyId: loaded.property.id,
         propertyName: null,
         status: "SCHEDULED",
         technicianId: TECH_A.id,
@@ -371,7 +372,7 @@ describe("loadRouteAssistantJobs: mapeo a RouteAssistantJob", () => {
 });
 
 describe("loadRouteAssistantJobs: campos nuevos y tope de filas", () => {
-  it("propaga el nombre de la propiedad, el estado y el estado actual en base de datos", async () => {
+  it("propaga el id y el nombre de la propiedad, el estado y el estado actual en base de datos", async () => {
     dbMock.jobFindMany.mockResolvedValue([
       record({
         id: "r1",
@@ -393,6 +394,7 @@ describe("loadRouteAssistantJobs: campos nuevos y tope de filas", () => {
     const { jobs } = await loadRouteAssistantJobs({ where: {}, technicians: [TECH_A] });
 
     expect(jobs[0]).toMatchObject({
+      propertyId: "property-r1",
       propertyName: "Casa del lago",
       status: "ON_THE_WAY",
       currentTechnicianId: TECH_A.id,

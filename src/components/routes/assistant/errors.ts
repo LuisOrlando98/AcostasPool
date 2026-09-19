@@ -13,6 +13,7 @@ const ERROR_CODE_KEYS: Readonly<Record<AssistantErrorCode, string>> = {
   TOO_MANY_JOBS: `${ASSISTANT_I18N_PREFIX}.errors.tooManyJobs`,
   RATE_LIMITED: `${ASSISTANT_I18N_PREFIX}.errors.rateLimited`,
   JOB_NOT_FOUND: `${ASSISTANT_I18N_PREFIX}.errors.jobNotFound`,
+  PROPERTY_NOT_FOUND: `${ASSISTANT_I18N_PREFIX}.errors.propertyNotFound`,
 };
 
 export function assistantErrorCodeKey(code: AssistantErrorCode): string {

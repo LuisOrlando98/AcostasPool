@@ -2,8 +2,11 @@
 
 /**
  * Mover una parada a otro técnico (o excluirla) eligiendo entre radios que
- * muestran la carga actual de cada ruta. Si no hay otro técnico en la
- * propuesta el modal lo dice en lugar de ofrecer una lista vacía.
+ * muestran la carga actual de cada ruta, y en qué posición entra. Ese selector
+ * de posición es la alternativa sin arrastre (WCAG 2.5.7) para saltar a una
+ * posición cualquiera de otra ruta; dentro de la misma ruta basta con Alt +
+ * flechas sobre el asa. Si no hay otro técnico en la propuesta el modal lo
+ * dice en lugar de ofrecer una lista vacía.
  */
 
 import { useId, useRef, useState } from "react";
@@ -20,7 +23,8 @@ type MoveStopModalProps = {
   readonly currentTechnicianId: string | null;
   readonly routes: readonly RouteLike[];
   readonly onClose: () => void;
-  readonly onConfirm: (technicianId: string | null) => void;
+  /** `technicianId` nulo = excluir; `index` es 0-based dentro de la ruta destino. */
+  readonly onConfirm: (technicianId: string | null, index: number | null) => void;
 };
 
 /** Valor del radio que excluye la parada de la propuesta. */
@@ -30,6 +34,20 @@ const CARD_CLASS =
   "max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl";
 const OPTION_CLASS =
   "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700";
+const FIELD_LABEL_CLASS =
+  "block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500";
+const FIELD_CLASS = "app-input mt-2 w-full px-3 py-2.5 text-sm";
+
+/**
+ * La selección se guarda junto al trabajo al que pertenece: al abrir el modal
+ * con otra parada vuelve sola al primer técnico disponible, sin efectos ni
+ * sincronización manual. `position` nula = al final de la ruta elegida.
+ */
+type MoveChoice = {
+  readonly jobId: string;
+  readonly target: string;
+  readonly position: number | null;
+};
 
 export default function MoveStopModal({
   open,
@@ -43,20 +61,22 @@ export default function MoveStopModal({
   const baseId = useId();
   const titleId = `${baseId}-title`;
   const descriptionId = `${baseId}-description`;
+  const positionId = `${baseId}-position`;
+  const positionHintId = `${baseId}-position-hint`;
   const closeRef = useRef<HTMLButtonElement>(null);
   const targets = routes.filter((route) => route.technicianId !== currentTechnicianId);
-  /**
-   * La selección se guarda junto al trabajo al que pertenece: al abrir el
-   * modal con otra parada vuelve sola al primer técnico disponible, sin
-   * efectos ni sincronización manual.
-   */
-  const [choice, setChoice] = useState<{ jobId: string; value: string } | null>(null);
-  const defaultValue = targets[0]?.technicianId ?? EXCLUDE_VALUE;
-  const selected =
-    choice && choice.jobId === stop?.jobId ? choice.value : defaultValue;
-  const select = (value: string) => {
+  const [choice, setChoice] = useState<MoveChoice | null>(null);
+
+  const active = choice && choice.jobId === stop?.jobId ? choice : null;
+  const selected = active?.target ?? targets[0]?.technicianId ?? EXCLUDE_VALUE;
+  const targetRoute = targets.find((route) => route.technicianId === selected) ?? null;
+  const lastPosition = (targetRoute?.stops.length ?? 0) + 1;
+  const position = Math.min(active?.position ?? lastPosition, lastPosition);
+  const excluding = selected === EXCLUDE_VALUE;
+
+  const select = (target: string, nextPosition: number | null = null) => {
     if (stop) {
-      setChoice({ jobId: stop.jobId, value });
+      setChoice({ jobId: stop.jobId, target, position: nextPosition });
     }
   };
 
@@ -127,7 +147,7 @@ export default function MoveStopModal({
                 name={`${baseId}-target`}
                 className="h-5 w-5"
                 value={EXCLUDE_VALUE}
-                checked={selected === EXCLUDE_VALUE}
+                checked={excluding}
                 onChange={() => select(EXCLUDE_VALUE)}
               />
               <span className="font-medium text-slate-900">
@@ -136,6 +156,34 @@ export default function MoveStopModal({
             </label>
           </div>
         )}
+
+        {targets.length > 0 && !excluding ? (
+          <div className="mt-4">
+            <label htmlFor={positionId} className={FIELD_LABEL_CLASS}>
+              {t("admin.routes.assistant.move.position")}
+            </label>
+            <select
+              id={positionId}
+              value={position}
+              aria-describedby={positionHintId}
+              onChange={(event) => select(selected, Number(event.target.value))}
+              className={FIELD_CLASS}
+            >
+              {Array.from({ length: lastPosition }, (_, index) => index + 1).map(
+                (value) => (
+                  <option key={value} value={value}>
+                    {value === lastPosition && lastPosition > 1
+                      ? t("admin.routes.assistant.move.positionLast", { position: value })
+                      : String(value)}
+                  </option>
+                )
+              )}
+            </select>
+            <p id={positionHintId} className="mt-1.5 text-xs text-slate-500">
+              {t("admin.routes.assistant.move.positionHint")}
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button
@@ -150,7 +198,7 @@ export default function MoveStopModal({
             type="button"
             disabled={targets.length === 0}
             onClick={() =>
-              onConfirm(selected === EXCLUDE_VALUE ? null : selected)
+              excluding ? onConfirm(null, null) : onConfirm(selected, position - 1)
             }
             className="app-button-primary min-h-11 px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em]"
           >

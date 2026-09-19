@@ -7,14 +7,19 @@
 type IconProps = { readonly className?: string };
 
 const DEFAULT_CLASS = "h-4 w-4";
+const DEFAULT_STROKE_WIDTH = 1.8;
 
-function Icon({ className = DEFAULT_CLASS, d }: IconProps & { readonly d: string }) {
+function Icon({
+  className = DEFAULT_CLASS,
+  d,
+  strokeWidth = DEFAULT_STROKE_WIDTH,
+}: IconProps & { readonly d: string; readonly strokeWidth?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -26,12 +31,25 @@ function Icon({ className = DEFAULT_CLASS, d }: IconProps & { readonly d: string
   );
 }
 
-export function ArrowUpIcon(props: IconProps) {
-  return <Icon {...props} d="M12 19V5M6 11l6-6 6 6" />;
+/** Asa de arrastre: los seis puntos del ⠿, con trazo redondo. */
+export function DragHandleIcon(props: IconProps) {
+  return (
+    <Icon
+      {...props}
+      strokeWidth={2.6}
+      d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01"
+    />
+  );
 }
 
-export function ArrowDownIcon(props: IconProps) {
-  return <Icon {...props} d="M12 5v14M6 13l6 6 6-6" />;
+/** Chincheta de mapa para "Corregir ubicación". */
+export function LocationIcon(props: IconProps) {
+  return (
+    <Icon
+      {...props}
+      d="M12 21c4.5-4.6 7-8 7-11a7 7 0 10-14 0c0 3 2.5 6.4 7 11zM12 10.5h.01"
+    />
+  );
 }
 
 export function MoveIcon(props: IconProps) {

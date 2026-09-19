@@ -43,6 +43,7 @@ function makeStop(jobId: string, overrides: Partial<AssistantStop> = {}): DraftS
     jobId,
     customerName: `Cliente ${jobId}`,
     address: `${jobId} SW 100th St, Miami, FL`,
+    propertyId: `property-${jobId}`,
     propertyName: null,
     planName: "Plan semanal",
     routeGroupId: null,

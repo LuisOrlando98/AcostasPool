@@ -48,9 +48,9 @@ export type AssistantDraftController = {
   readonly clear: () => void;
   readonly moveUp: (jobId: string) => void;
   readonly moveDown: (jobId: string) => void;
-  readonly moveToRoute: (jobId: string, technicianId: string) => void;
+  readonly moveToRoute: (jobId: string, technicianId: string, index?: number) => void;
   readonly remove: (jobId: string) => void;
-  readonly restore: (jobId: string, technicianId: string) => void;
+  readonly restore: (jobId: string, technicianId: string, index?: number) => void;
   readonly undoLast: () => void;
   readonly reset: () => void;
   readonly recalculateNow: () => void;
@@ -232,12 +232,28 @@ export function useAssistantDraft({
     [describeStop, edit]
   );
 
+  /**
+   * Soltar dentro de la misma ruta también pasa por aquí (con índice), así que
+   * el anuncio distingue el cambio de posición del cambio de técnico.
+   */
   const moveToRoute = useCallback(
-    (jobId: string, technicianId: string) =>
+    (jobId: string, technicianId: string, index?: number) => {
+      const before = draftRef.current
+        ? findStopLocation(draftRef.current.routes, jobId)
+        : null;
+      const sameRoute = before?.route.technicianId === technicianId;
       edit(
-        (current) => moveStopToRoute(current, jobId, technicianId),
-        (next) => describeStop(next, jobId, "admin.routes.assistant.announce.reassigned")
-      ),
+        (current) => moveStopToRoute(current, jobId, technicianId, index),
+        (next) =>
+          describeStop(
+            next,
+            jobId,
+            sameRoute
+              ? "admin.routes.assistant.announce.moved"
+              : "admin.routes.assistant.announce.reassigned"
+          )
+      );
+    },
     [describeStop, edit]
   );
 
@@ -251,9 +267,9 @@ export function useAssistantDraft({
   );
 
   const restore = useCallback(
-    (jobId: string, technicianId: string) =>
+    (jobId: string, technicianId: string, index?: number) =>
       edit(
-        (current) => restoreStop(current, jobId, technicianId),
+        (current) => restoreStop(current, jobId, technicianId, index),
         (next) => describeStop(next, jobId, "admin.routes.assistant.announce.restored")
       ),
     [describeStop, edit]
@@ -269,8 +285,15 @@ export function useAssistantDraft({
     [edit, t]
   );
 
+  /**
+   * Recálculo explícito (botón "Recalcular" o tras corregir una ubicación): se
+   * olvida la última petición para que vuelva a pedirse aunque el orden no
+   * haya cambiado, que es justo el caso al arreglar las coordenadas de una
+   * parada.
+   */
   const recalculateNow = useCallback(() => {
     immediateRef.current = true;
+    lastRequestRef.current = null;
     setEtasPending(true);
     setRevision((value) => value + 1);
   }, []);

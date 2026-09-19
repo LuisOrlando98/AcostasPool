@@ -76,28 +76,66 @@ export function resolveRestoreTarget(
 }
 
 /**
- * Mismo umbral que `CONFLICT_DELAY_THRESHOLD_MINUTES` en
- * `src/lib/routing/planner.ts`: el borrador no guarda el resumen del servidor,
- * así que los conflictos se recuentan sobre las paradas del momento.
+ * Rutas que terminan después de medianoche en el último plan del servidor: el
+ * borrador no guarda `overflowsDay`, así que la vista lo recoge del plan y lo
+ * cruza con las rutas que siguen teniendo paradas.
  */
-export const CONFLICT_DELAY_THRESHOLD_MINUTES = 25;
+export function collectLateTechnicianIds(
+  routes: readonly {
+    readonly technicianId: string;
+    readonly overflowsDay?: boolean;
+  }[]
+): ReadonlySet<string> {
+  return new Set(
+    routes.filter((route) => route.overflowsDay).map((route) => route.technicianId)
+  );
+}
 
+const NO_LATE_ROUTES: ReadonlySet<string> = new Set<string>();
+
+/** Una ruta que se ha quedado sin paradas ya no puede terminar tarde. */
+export function countLateRoutes(
+  routes: readonly RouteLike[],
+  lateTechnicianIds: ReadonlySet<string>
+): number {
+  return routes.filter(
+    (route) => route.stops.length > 0 && lateTechnicianIds.has(route.technicianId)
+  ).length;
+}
+
+/**
+ * Avisos de la propuesta: una parada sin ubicación es un aviso (sus tiempos
+ * son una estimación grosera) y una ruta que termina después de medianoche,
+ * otro. El retraso frente a la hora citada no cuenta: los servicios de piscina
+ * se programan por día, no por hora.
+ */
 export type DraftSummary = RouteLoad & {
-  readonly conflicts: number;
   readonly withoutCoordinates: number;
+  readonly lateRoutes: number;
+  readonly warnings: number;
 };
 
-export function summarizeRoutes(routes: readonly RouteLike[]): DraftSummary {
-  return collectStops(routes).reduce<DraftSummary>(
-    (summary, stop) => ({
-      stops: summary.stops + 1,
-      driveMinutes: summary.driveMinutes + stop.estimatedDriveMinutesFromPrevious,
-      serviceMinutes: summary.serviceMinutes + stop.estimatedServiceMinutes,
-      conflicts:
-        summary.conflicts +
-        ((stop.delayMinutes ?? 0) > CONFLICT_DELAY_THRESHOLD_MINUTES ? 1 : 0),
-      withoutCoordinates: summary.withoutCoordinates + (stop.hasCoordinates ? 0 : 1),
-    }),
-    { stops: 0, driveMinutes: 0, serviceMinutes: 0, conflicts: 0, withoutCoordinates: 0 }
+export function summarizeRoutes(
+  routes: readonly RouteLike[],
+  lateTechnicianIds: ReadonlySet<string> = NO_LATE_ROUTES
+): DraftSummary {
+  const load = routes.reduce<RouteLoad>(
+    (total, route) => {
+      const routeLoad = summarizeRoute(route);
+      return {
+        stops: total.stops + routeLoad.stops,
+        driveMinutes: total.driveMinutes + routeLoad.driveMinutes,
+        serviceMinutes: total.serviceMinutes + routeLoad.serviceMinutes,
+      };
+    },
+    { stops: 0, driveMinutes: 0, serviceMinutes: 0 }
   );
+  const withoutCoordinates = countStopsWithoutCoordinates(routes);
+  const lateRoutes = countLateRoutes(routes, lateTechnicianIds);
+  return {
+    ...load,
+    withoutCoordinates,
+    lateRoutes,
+    warnings: withoutCoordinates + lateRoutes,
+  };
 }

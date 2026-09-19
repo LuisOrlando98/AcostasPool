@@ -4,6 +4,10 @@
  * Ruta propuesta de un técnico: encabezado de nivel 3 (la sección de
  * resultados tiene su propio h2) con la carga de la ruta y la lista de
  * paradas. `aria-busy` mientras se recalculan los tiempos.
+ *
+ * La tarjeta entera es zona donde soltar (`data-drop-zone` con el id del
+ * técnico): el asa de una parada de otra ruta puede soltarse aquí y la barra
+ * azul marca en qué posición caería.
  */
 
 import { useI18n } from "@/i18n/client";
@@ -11,7 +15,8 @@ import type { AssistantRoute } from "@/lib/routing/assistant-types";
 import type { RouteLike } from "./draft-view";
 import { summarizeRoute } from "./draft-view";
 import { formatMinutes } from "./format";
-import StopRow from "./StopRow";
+import StopRow, { type DropIndicator } from "./StopRow";
+import type { StopDragHandleProps } from "./use-stop-drag";
 
 type RouteCardProps = {
   readonly route: RouteLike;
@@ -20,11 +25,21 @@ type RouteCardProps = {
   readonly pending: boolean;
   readonly busy: boolean;
   readonly disabled: boolean;
-  readonly onMoveUp: (jobId: string) => void;
-  readonly onMoveDown: (jobId: string) => void;
+  readonly draggingJobId: string | null;
+  /** Posición de inserción si el puntero está sobre esta ruta; si no, `null`. */
+  readonly dropIndex: number | null;
+  readonly handleProps: (jobId: string) => StopDragHandleProps;
+  readonly onKeyboardMove: (jobId: string, delta: -1 | 1) => void;
   readonly onMove: (jobId: string) => void;
   readonly onRemove: (jobId: string) => void;
+  readonly onFixLocation: (jobId: string) => void;
 };
+
+const CARD_CLASS = "rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4";
+const ACTIVE_CARD_CLASS = "ring-2 ring-sky-400";
+const EMPTY_CLASS =
+  "mt-3 rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500";
+const ACTIVE_EMPTY_CLASS = "border-sky-400 bg-sky-50 text-sky-700";
 
 export default function RouteCard({
   route,
@@ -32,10 +47,13 @@ export default function RouteCard({
   pending,
   busy,
   disabled,
-  onMoveUp,
-  onMoveDown,
+  draggingJobId,
+  dropIndex,
+  handleProps,
+  onKeyboardMove,
   onMove,
   onRemove,
+  onFixLocation,
 }: RouteCardProps) {
   const { t } = useI18n();
   const load = summarizeRoute(route);
@@ -44,11 +62,24 @@ export default function RouteCard({
     pending || route.stops.length === 0
       ? null
       : (meta?.estimatedReturnTime ?? null);
+  const active = dropIndex !== null;
+
+  /** La barra azul va sobre la fila de destino, o bajo la última si se suelta al final. */
+  const indicatorFor = (index: number): DropIndicator => {
+    if (dropIndex === null) {
+      return null;
+    }
+    if (dropIndex === index) {
+      return "before";
+    }
+    return index === route.stops.length - 1 && dropIndex > index ? "after" : null;
+  };
 
   return (
     <section
       aria-busy={busy || undefined}
-      className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4"
+      data-drop-zone={route.technicianId}
+      className={`${CARD_CLASS} ${active ? ACTIVE_CARD_CLASS : ""}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">
@@ -81,8 +112,10 @@ export default function RouteCard({
       ) : null}
 
       {route.stops.length === 0 ? (
-        <p className="mt-3 rounded-xl border border-dashed border-slate-300 px-3 py-4 text-center text-xs text-slate-500">
-          {t("admin.routes.assistant.route.empty")}
+        <p className={`${EMPTY_CLASS} ${active ? ACTIVE_EMPTY_CLASS : ""}`}>
+          {active
+            ? t("admin.routes.assistant.drag.dropHere")
+            : t("admin.routes.assistant.route.empty")}
         </p>
       ) : (
         <ul className="mt-3 space-y-2">
@@ -94,10 +127,13 @@ export default function RouteCard({
               total={route.stops.length}
               pending={pending}
               disabled={disabled}
-              onMoveUp={() => onMoveUp(stop.jobId)}
-              onMoveDown={() => onMoveDown(stop.jobId)}
+              dragging={draggingJobId === stop.jobId}
+              indicator={indicatorFor(index)}
+              handleProps={handleProps(stop.jobId)}
+              onKeyboardMove={(delta) => onKeyboardMove(stop.jobId, delta)}
               onMove={() => onMove(stop.jobId)}
               onRemove={() => onRemove(stop.jobId)}
+              onFixLocation={() => onFixLocation(stop.jobId)}
             />
           ))}
         </ul>

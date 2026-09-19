@@ -79,6 +79,7 @@ function makeJob(overrides: Partial<RouteAssistantJob> & { id: string }): RouteA
   return {
     customerName: `Cliente ${overrides.id}`,
     address: `Address ${overrides.id}`,
+    propertyId: `property-${overrides.id}`,
     propertyName: null,
     status: "SCHEDULED",
     technicianId: null,
@@ -226,6 +227,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
         jobId: "j1",
         customerName: "Cliente j1",
         address: "Address j1",
+        propertyId: "property-j1",
         propertyName: null,
         planName: null,
         routeGroupId: null,
@@ -259,14 +261,15 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
       returnDistanceMiles: null,
       returnDriveSource: "ESTIMATED",
       estimatedReturnTime: "10:15",
-      conflicts: 0,
+      // Un aviso: la única parada no tiene coordenadas.
+      conflicts: 1,
     });
     expect(plan.summary).toEqual({
       totalStops: 1,
       totalDriveMinutes: 30,
       totalServiceMinutes: 60,
       totalRouteMinutes: 90,
-      conflicts: 0,
+      conflicts: 1,
       loadSpread: 0,
     });
     expect(plan.updates).toEqual([
@@ -305,7 +308,6 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     expect(stop.estimatedArrivalTime).toBe("08:15");
     expect(stop.serviceStartTime).toBe("08:15");
     expect(stop.delayMinutes).toBe(75);
-    expect(plan.summary.conflicts).toBe(1);
   });
 
   it("arranca 20 minutos antes de la primera cita y espera hasta la hora citada", async () => {
@@ -348,26 +350,73 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
   });
 });
 
-describe("buildRouteAssistantPlans: retrasos y conflictos", () => {
-  it("cuenta un conflicto cuando el retraso supera los 25 minutos", async () => {
+// Los servicios de piscina se programan por día, no por hora: la hora citada
+// es nominal, así que `conflicts` cuenta AVISOS (paradas sin coordenadas + 1 si
+// la ruta cruza medianoche) y el retraso ya no cuenta.
+describe("buildRouteAssistantPlans: retrasos y avisos", () => {
+  it("sigue calculando el retraso pero no lo cuenta como aviso", async () => {
     const [plan] = await buildRouteAssistantPlans({
       jobs: [
-        makeJob({ id: "first", scheduledDate: atBusinessTime(8) }),
-        makeJob({ id: "second", scheduledDate: atBusinessTime(8) }),
+        placeJob("first", NEAR, { scheduledDate: atBusinessTime(8) }),
+        placeJob("second", MID, { scheduledDate: atBusinessTime(8) }),
+      ],
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(stopJobIds(route)).toEqual(["first", "second"]);
+    expect(route.stops.map((stop) => stop.delayMinutes)).toEqual([4, 71]);
+    expect(route.conflicts).toBe(0);
+    expect(plan.summary.conflicts).toBe(0);
+  });
+
+  it("cuenta un aviso por cada parada sin coordenadas", async () => {
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [makeJob({ id: "blind-1" }), makeJob({ id: "blind-2" })],
+      technicians: [TECH_A],
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(route.stops.map((stop) => stop.hasCoordinates)).toEqual([false, false]);
+    expect(route.overflowsDay).toBeUndefined();
+    expect(route.conflicts).toBe(2);
+    expect(plan.summary.conflicts).toBe(2);
+  });
+
+  it("suma un aviso cuando la ruta termina después de medianoche", async () => {
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [placeJob("night", NEAR, { scheduledDate: atBusinessTime(23, 30) })],
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(route.stops[0].hasCoordinates).toBe(true);
+    expect(route.overflowsDay).toBe(true);
+    expect(route.conflicts).toBe(1);
+    expect(plan.summary.conflicts).toBe(1);
+  });
+
+  it("acumula los avisos de las paradas sin coordenadas y el del cruce de medianoche", async () => {
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [
+        makeJob({ id: "blind-1", scheduledDate: atBusinessTime(23, 30) }),
+        makeJob({ id: "blind-2", scheduledDate: atBusinessTime(23, 30) }),
       ],
       technicians: [TECH_A],
       strategies: ["BALANCED"],
     });
     const route = routeFor(plan, TECH_A.id);
 
-    expect(stopJobIds(route)).toEqual(["first", "second"]);
-    expect(route.stops.map((stop) => [stop.estimatedArrivalTime, stop.delayMinutes])).toEqual([
-      ["08:15", 15],
-      ["09:30", 90],
-    ]);
-    expect(route.conflicts).toBe(1);
-    expect(route.estimatedReturnTime).toBe("10:45");
-    expect(plan.summary.conflicts).toBe(1);
+    expect(route.overflowsDay).toBe(true);
+    expect(route.conflicts).toBe(3);
+    expect(plan.summary.conflicts).toBe(3);
   });
 });
 
@@ -522,9 +571,10 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
       totalDriveMinutes: 55,
       totalServiceMinutes: 180,
       totalRouteMinutes: 235,
-      conflicts: 2,
+      // Las tres paradas tienen coordenadas y la ruta acaba a las 12:51.
+      conflicts: 0,
     });
-    expect(plan.summary).toMatchObject({ totalStops: 3, conflicts: 2, loadSpread: 0 });
+    expect(plan.summary).toMatchObject({ totalStops: 3, conflicts: 0, loadSpread: 0 });
   });
 
   it("deduplica routeGroupIds y routeGroupLabels y descarta los nulos", async () => {

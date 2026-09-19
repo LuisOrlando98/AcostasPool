@@ -14,6 +14,7 @@ function makeStop(overrides: Partial<AssistantStop> = {}): AssistantStop {
     jobId: "job-1",
     customerName: "Cliente Demo",
     address: "1 Main St",
+    propertyId: "property-1",
     propertyName: null,
     planName: null,
     routeGroupId: null,

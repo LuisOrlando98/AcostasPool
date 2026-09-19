@@ -38,7 +38,7 @@ export default function ApplyConfirmDialog({
       busy={applying}
       error={error}
       title={t.plural("admin.routes.assistant.apply.confirmTitle", diff.total)}
-      description={t("admin.routes.assistant.apply.confirmDescription")}
+      description={t("admin.routes.assistant.apply.dayDescription")}
       confirmLabel={t("admin.routes.assistant.actions.applyCount", {
         count: diff.total,
       })}

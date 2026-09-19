@@ -25,7 +25,71 @@ const TEXTS = {
   oneExcluded: /1 (excluido|excluded)/,
   noChanges: /Sin cambios respecto|No changes compared/,
   onlyOneTechnician: /Solo hay un t[eé]cnico|only one technician/,
+  addressLabel: /^(Direcci[oó]n|Address)$/,
+  cancel: /^(Cancelar|Cancel)$/,
 } as const;
+
+const PLAN_ENDPOINT = "**/api/admin/routes/assistant/plan";
+
+type JsonRecord = Record<string, unknown>;
+type PlanPayload = JsonRecord & {
+  readonly plans: readonly (JsonRecord & {
+    readonly routes: readonly (JsonRecord & { readonly stops: readonly JsonRecord[] })[];
+    readonly unassigned: readonly JsonRecord[];
+  })[];
+};
+
+const withoutLocation = (stop: JsonRecord): JsonRecord => ({
+  ...stop,
+  hasCoordinates: false,
+});
+
+/**
+ * Fuerza el caso "sin ubicación" reescribiendo la respuesta real del plan: si
+ * Google resuelve la dirección de la semilla, el botón "Corregir ubicación" no
+ * aparece y el caso no sería determinista.
+ */
+async function markEveryStopWithoutLocation(page: Page): Promise<void> {
+  await page.route(PLAN_ENDPOINT, async (route) => {
+    const response = await route.fetch();
+    const payload = (await response.json()) as PlanPayload;
+    await route.fulfill({
+      response,
+      json: {
+        ...payload,
+        plans: payload.plans.map((plan) => ({
+          ...plan,
+          routes: plan.routes.map((item) => ({
+            ...item,
+            stops: item.stops.map(withoutLocation),
+          })),
+          unassigned: plan.unassigned.map(withoutLocation),
+        })),
+      },
+    });
+  });
+}
+
+/**
+ * Centro del elemento en coordenadas de ventana, para `page.mouse`. Si cae
+ * fuera de la ventana el ratón no lo alcanzaría y el arrastre no empezaría:
+ * mejor fallar con un motivo que dar por bueno un gesto que nunca ocurrió.
+ */
+async function centerOf(
+  page: Page,
+  locator: Locator
+): Promise<{ x: number; y: number }> {
+  const box = await locator.boundingBox();
+  const viewport = page.viewportSize();
+  if (!box || !viewport) {
+    throw new Error("the element has no box: it is not visible");
+  }
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  if (point.y < 0 || point.y > viewport.height) {
+    throw new Error("the element is outside the viewport: the mouse cannot reach it");
+  }
+  return point;
+}
 
 const stopRow = (page: Page, jobId: string): Locator =>
   page.locator(`[data-testid="assistant-stop"][data-job-id="${jobId}"]`);
@@ -35,6 +99,9 @@ const excludedRow = (page: Page, jobId: string): Locator =>
 
 const applyBar = (page: Page): Locator =>
   page.getByTestId("route-assistant-apply-bar");
+
+const stopHandle = (page: Page, jobId: string): Locator =>
+  page.locator(`[data-testid="assistant-stop-handle"][data-job-id="${jobId}"]`);
 
 /**
  * Genera una propuesta con "Todos los planes" y todos los técnicos para la
@@ -156,5 +223,61 @@ test.describe("route assistant", () => {
     ).toBeVisible();
     await expect(changes.locator("table caption")).toHaveCount(1);
     expect(await changes.locator('th[scope="col"]').count()).toBeGreaterThan(0);
+  });
+
+  test("dragging the seed stop onto the excluded panel excludes it", async ({
+    page,
+    seedJobId,
+  }) => {
+    // Alto de sobra para que el asa y el panel de excluidos quepan a la vez:
+    // el arrastre es un gesto continuo, sin desplazamiento automático.
+    await page.setViewportSize({ width: 1280, height: 1600 });
+    await generateProposal(page);
+
+    const handle = stopHandle(page, seedJobId).first();
+    await expect(handle).toBeVisible();
+    const zone = page.getByTestId("assistant-excluded-zone");
+    await expect(zone).toBeVisible();
+    // El panel de excluidos es lo último de la propuesta: se acerca primero
+    // para medir las dos posiciones con la página ya en su sitio.
+    await zone.scrollIntoViewIfNeeded();
+
+    const source = await centerOf(page, handle);
+    const target = await centerOf(page, zone);
+    await page.mouse.move(source.x, source.y);
+    await page.mouse.down();
+    await page.mouse.move(target.x, target.y, { steps: 12 });
+    await page.mouse.up();
+
+    await expect(excludedRow(page, seedJobId)).toBeVisible();
+    await expect(stopRow(page, seedJobId)).toHaveCount(0);
+    await expect(applyBar(page)).toContainText(TEXTS.oneExcluded);
+  });
+
+  test("fix location opens the modal with the address and can be cancelled", async ({
+    page,
+    seedJobId,
+  }) => {
+    await markEveryStopWithoutLocation(page);
+    await generateProposal(page);
+
+    const row = stopRow(page, seedJobId);
+    await expect(row).toBeVisible();
+    const address = (await row.locator("p").nth(1).innerText()).trim();
+
+    // El nombre accesible del botón incluye el cliente ("Corregir la ubicación de …"),
+    // así que se localiza por su test id.
+    await row.getByTestId("assistant-fix-location").click();
+    const dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByRole("heading", { name: HEADINGS.routeAssistant.fixLocation })
+    ).toBeVisible();
+    await expect(dialog.getByLabel(TEXTS.addressLabel)).toHaveValue(address);
+
+    await dialog.getByRole("button", { name: TEXTS.cancel }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // Cancelar no toca la propuesta: la parada sigue donde estaba.
+    await expect(row).toBeVisible();
+    await expect(applyBar(page)).toContainText(TEXTS.noChanges);
   });
 });

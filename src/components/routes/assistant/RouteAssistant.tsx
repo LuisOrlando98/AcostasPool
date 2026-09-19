@@ -137,12 +137,12 @@ export default function RouteAssistant({
   const isEmptyProposal = Boolean(plan.response) && stops.length === 0;
 
   const handleMoveConfirm = useCallback(
-    (technicianId: string | null) => {
+    (technicianId: string | null, index: number | null) => {
       if (!moveJobId) {
         return;
       }
       if (technicianId) {
-        draft.moveToRoute(moveJobId, technicianId);
+        draft.moveToRoute(moveJobId, technicianId, index ?? undefined);
       } else {
         draft.remove(moveJobId);
       }
@@ -231,6 +231,7 @@ export default function RouteAssistant({
             stale={stale}
             busy={apply.applying}
             onMoveRequest={setMoveJobId}
+            onAnnounce={setAnnouncement}
           />
           <ApplyBar
             diff={diff}
