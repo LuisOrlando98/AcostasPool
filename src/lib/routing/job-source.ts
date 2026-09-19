@@ -7,6 +7,7 @@ import {
   isGlobalRecurringPlanName,
 } from "@/lib/jobs/recurring-plan-templates";
 import { geocodeProperties, type GeoPoint } from "@/lib/routing/geo";
+import type { AssistantJobStatus } from "@/lib/routing/assistant-types";
 import type {
   RouteAssistantJob,
   RouteAssistantTechnician,
@@ -25,6 +26,8 @@ export const routeAssistantJobSelect = {
   scheduledDate: true,
   technicianId: true,
   estimatedDurationMinutes: true,
+  sortOrder: true,
+  status: true,
   customer: {
     select: {
       nombre: true,
@@ -34,10 +37,17 @@ export const routeAssistantJobSelect = {
   property: {
     select: {
       id: true,
+      name: true,
       address: true,
       lat: true,
       lng: true,
       geocodedAt: true,
+    },
+  },
+  technician: {
+    select: {
+      id: true,
+      user: { select: { fullName: true } },
     },
   },
   plan: {
@@ -60,6 +70,8 @@ export type RouteAssistantJobRecord = Prisma.JobGetPayload<{
 
 export type LoadRouteAssistantJobsParams = {
   where: Prisma.JobWhereInput;
+  /** Tope de filas leídas de la base de datos (sin límite si se omite). */
+  take?: number;
   /**
    * Técnicos para las etiquetas de grupo y la planificación. Si se omite se
    * resuelven los técnicos activos referenciados por los propios trabajos.
@@ -121,6 +133,16 @@ export async function findRouteAssistantTechnicians(
   }));
 }
 
+/** Estado del trabajo acotado a los que el asistente sabe reordenar. */
+export function toAssistantJobStatus(status: JobStatus): AssistantJobStatus {
+  for (const candidate of ROUTE_ASSISTANT_JOB_STATUSES) {
+    if (candidate === status) {
+      return candidate;
+    }
+  }
+  return "SCHEDULED";
+}
+
 function toRouteAssistantJob(
   record: RouteAssistantJobRecord,
   technicianNamesById: Map<string, string>,
@@ -135,7 +157,12 @@ function toRouteAssistantJob(
     id: record.id,
     customerName: formatCustomerName(record.customer),
     address: record.property.address,
+    propertyName: record.property.name,
+    status: toAssistantJobStatus(record.status),
     technicianId: record.technicianId,
+    currentTechnicianId: record.technicianId,
+    currentTechnicianName: record.technician?.user.fullName ?? null,
+    currentSortOrder: record.sortOrder,
     planName,
     routeGroupId: planName
       ? buildRecurringRouteGroupId({ planName, technicianId: planTechnicianId })
@@ -167,6 +194,7 @@ export async function loadRouteAssistantJobs(
     where: params.where,
     orderBy: routeAssistantJobOrderBy,
     select: routeAssistantJobSelect,
+    ...(params.take === undefined ? {} : { take: params.take }),
   });
   const records = params.filter ? loaded.filter(params.filter) : loaded;
   const technicians =
@@ -190,4 +218,23 @@ export async function loadRouteAssistantJobs(
     )
   );
   return { records, technicians, jobs };
+}
+
+/**
+ * Carga los trabajos indicados por id, sin reaplicar los filtros de plan,
+ * técnico o texto: es la entrada del recálculo manual, donde el orden y el
+ * alcance los decide quien edita la propuesta.
+ */
+export async function loadRouteAssistantJobsByIds(
+  ids: readonly string[],
+  technicians: RouteAssistantTechnician[]
+): Promise<RouteAssistantJobSource> {
+  if (ids.length === 0) {
+    return { records: [], technicians, jobs: [] };
+  }
+  return loadRouteAssistantJobs({
+    where: { id: { in: [...ids] } },
+    take: ids.length,
+    technicians,
+  });
 }

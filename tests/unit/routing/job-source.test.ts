@@ -40,8 +40,10 @@ import {
   getEffectiveTechnicianId,
   getRouteAssistantTechnicianIds,
   loadRouteAssistantJobs,
+  loadRouteAssistantJobsByIds,
   ROUTE_ASSISTANT_JOB_STATUSES,
   routeAssistantJobSelect,
+  toAssistantJobStatus,
   type RouteAssistantJobRecord,
 } from "@/lib/routing/job-source";
 
@@ -63,14 +65,18 @@ function record(
     scheduledDate: SCHEDULED_DATE,
     technicianId: null,
     estimatedDurationMinutes: null,
+    sortOrder: null,
+    status: "SCHEDULED",
     customer: { nombre: "Ana", apellidos: "García" },
     property: {
       id: `property-${overrides.id}`,
+      name: null,
       address: `Address ${overrides.id}`,
       lat: null,
       lng: null,
       geocodedAt: null,
     },
+    technician: null,
     plan: null,
     ...overrides,
   };
@@ -99,14 +105,30 @@ describe("constantes y helpers puros", () => {
     ]);
   });
 
-  it("el select de la propiedad incluye las coordenadas persistidas", () => {
+  it("el select de la propiedad incluye el nombre y las coordenadas persistidas", () => {
     expect(routeAssistantJobSelect.property.select).toEqual({
       id: true,
+      name: true,
       address: true,
       lat: true,
       lng: true,
       geocodedAt: true,
     });
+  });
+
+  it("el select incluye el estado, el orden actual y el nombre del técnico asignado", () => {
+    expect(routeAssistantJobSelect.status).toBe(true);
+    expect(routeAssistantJobSelect.sortOrder).toBe(true);
+    expect(routeAssistantJobSelect.technician.select).toEqual({
+      id: true,
+      user: { select: { fullName: true } },
+    });
+  });
+
+  it("toAssistantJobStatus conserva los estados del asistente y degrada el resto", () => {
+    expect(toAssistantJobStatus("ON_THE_WAY")).toBe("ON_THE_WAY");
+    expect(toAssistantJobStatus("IN_PROGRESS")).toBe("IN_PROGRESS");
+    expect(toAssistantJobStatus("COMPLETED")).toBe("SCHEDULED");
   });
 
   it("getEffectiveTechnicianId prefiere el técnico del plan sobre el asignado", () => {
@@ -270,7 +292,12 @@ describe("loadRouteAssistantJobs: mapeo a RouteAssistantJob", () => {
         id: "r1",
         customerName: "Ana García",
         address: loaded.property.address,
+        propertyName: null,
+        status: "SCHEDULED",
         technicianId: TECH_A.id,
+        currentTechnicianId: TECH_A.id,
+        currentTechnicianName: null,
+        currentSortOrder: null,
         planName: GLOBAL_PLAN_NAME,
         routeGroupId: buildRecurringRouteGroupId({
           planName: GLOBAL_PLAN_NAME,
@@ -340,5 +367,68 @@ describe("loadRouteAssistantJobs: mapeo a RouteAssistantJob", () => {
       buildRecurringRouteGroupLabel({ planName: GLOBAL_PLAN_NAME, technicianName: null })
     );
     expect(jobs[0].lockedTechnicianId).toBe(TECH_B.id);
+  });
+});
+
+describe("loadRouteAssistantJobs: campos nuevos y tope de filas", () => {
+  it("propaga el nombre de la propiedad, el estado y el estado actual en base de datos", async () => {
+    dbMock.jobFindMany.mockResolvedValue([
+      record({
+        id: "r1",
+        status: "ON_THE_WAY",
+        sortOrder: 545,
+        technicianId: TECH_A.id,
+        technician: { id: TECH_A.id, user: { fullName: TECH_A.name } },
+        property: {
+          id: "property-r1",
+          name: "Casa del lago",
+          address: "Address r1",
+          lat: null,
+          lng: null,
+          geocodedAt: null,
+        },
+      }),
+    ]);
+
+    const { jobs } = await loadRouteAssistantJobs({ where: {}, technicians: [TECH_A] });
+
+    expect(jobs[0]).toMatchObject({
+      propertyName: "Casa del lago",
+      status: "ON_THE_WAY",
+      currentTechnicianId: TECH_A.id,
+      currentTechnicianName: TECH_A.name,
+      currentSortOrder: 545,
+    });
+  });
+
+  it("pasa el tope de filas a la consulta solo cuando se indica", async () => {
+    await loadRouteAssistantJobs({ where: {}, technicians: [TECH_A], take: 25 });
+
+    expect(dbMock.jobFindMany).toHaveBeenCalledWith(expect.objectContaining({ take: 25 }));
+
+    dbMock.jobFindMany.mockClear();
+    await loadRouteAssistantJobs({ where: {}, technicians: [TECH_A] });
+
+    expect(dbMock.jobFindMany.mock.calls[0][0]).not.toHaveProperty("take");
+  });
+});
+
+describe("loadRouteAssistantJobsByIds", () => {
+  it("consulta solo los ids indicados, con el tope justo y sin filtros extra", async () => {
+    dbMock.jobFindMany.mockResolvedValue([record({ id: "r1", technicianId: TECH_A.id })]);
+
+    const { jobs } = await loadRouteAssistantJobsByIds(["r1", "r2"], [TECH_A]);
+
+    expect(dbMock.jobFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: { in: ["r1", "r2"] } }, take: 2 })
+    );
+    expect(jobs.map((job) => job.id)).toEqual(["r1"]);
+  });
+
+  it("sin ids no consulta nada", async () => {
+    const result = await loadRouteAssistantJobsByIds([], [TECH_A]);
+
+    expect(dbMock.jobFindMany).not.toHaveBeenCalled();
+    expect(result).toEqual({ records: [], technicians: [TECH_A], jobs: [] });
   });
 });

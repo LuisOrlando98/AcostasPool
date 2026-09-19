@@ -61,6 +61,8 @@ export type AssistantRoute = {
   readonly returnDistanceMiles: number | null;
   readonly returnDriveSource?: AssistantDriveSource;
   readonly estimatedReturnTime: string | null;
+  /** La ruta termina después de medianoche (`estimatedReturnTime` es del día siguiente). */
+  readonly overflowsDay?: boolean;
   readonly conflicts: number;
 };
 

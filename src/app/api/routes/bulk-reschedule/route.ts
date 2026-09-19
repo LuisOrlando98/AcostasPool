@@ -9,6 +9,7 @@ import {
   type JobLifecycleSnapshot,
   type UpdatedLifecycleJob,
 } from "@/lib/jobs/lifecycle";
+import { resolveRescheduledStatus } from "@/lib/jobs/reschedule-status";
 import { endOfBusinessDay, getBusinessTimeParts } from "@/lib/timezone";
 
 /**
@@ -104,12 +105,12 @@ function buildUpdateData(
   const parsedScheduledDate =
     update.scheduledDate !== undefined ? new Date(update.scheduledDate) : null;
   const nextScheduledDate = parsedScheduledDate ?? existing.scheduledDate;
-  const status =
-    existing.status === "COMPLETED"
-      ? "COMPLETED"
-      : nextScheduledDate > endOfToday
-        ? "SCHEDULED"
-        : "PENDING";
+  const status = resolveRescheduledStatus({
+    currentStatus: existing.status,
+    currentScheduledDate: existing.scheduledDate,
+    nextScheduledDate,
+    endOfToday,
+  });
   return {
     scheduledDate: nextScheduledDate,
     sortOrder: resolveSortOrder(update, parsedScheduledDate),

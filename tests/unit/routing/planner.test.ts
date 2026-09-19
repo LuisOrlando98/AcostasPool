@@ -17,7 +17,9 @@ import { DateTime } from "luxon";
 import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 import type { GeoPoint } from "@/lib/routing/geo";
 import {
+  buildFixedOrderPlan,
   buildRouteAssistantPlans,
+  buildSequentialTravelPairs,
   DEFAULT_ROUTE_ASSISTANT_STRATEGIES,
   DEFAULT_ROUTE_ORIGIN_ADDRESS,
   type RouteAssistantJob,
@@ -48,7 +50,8 @@ const PLAN_DAY = { year: 2026, month: 9, day: 21 };
 const DEFAULT_DRIVE_MINUTES = 15;
 const DEFAULT_SERVICE_MINUTES = 60;
 const MIN_SERVICE_MINUTES = 30;
-const SORT_ORDER_STEP = 10;
+/** `sortOrder` = minuto del día en que empieza el servicio. */
+const NINE_AM_MINUTES = 9 * 60;
 
 type Place = { address: string; point: GeoPoint };
 
@@ -76,7 +79,12 @@ function makeJob(overrides: Partial<RouteAssistantJob> & { id: string }): RouteA
   return {
     customerName: `Cliente ${overrides.id}`,
     address: `Address ${overrides.id}`,
+    propertyName: null,
+    status: "SCHEDULED",
     technicianId: null,
+    currentTechnicianId: null,
+    currentTechnicianName: null,
+    currentSortOrder: null,
     planName: null,
     routeGroupId: null,
     routeGroupLabel: null,
@@ -218,6 +226,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
         jobId: "j1",
         customerName: "Cliente j1",
         address: "Address j1",
+        propertyName: null,
         planName: null,
         routeGroupId: null,
         routeGroupLabel: null,
@@ -225,12 +234,19 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
         technicianName: TECH_A.name,
         order: 1,
         scheduledTime: "09:00",
-        estimatedArrivalTime: "09:00",
+        // Llega 5 min antes de la hora citada y espera para empezar a las 09:00.
+        estimatedArrivalTime: "08:55",
+        serviceStartTime: "09:00",
         estimatedDriveMinutesFromPrevious: DEFAULT_DRIVE_MINUTES,
         estimatedServiceMinutes: DEFAULT_SERVICE_MINUTES,
         distanceMilesFromPrevious: null,
         delayMinutes: null,
         driveSource: "ESTIMATED",
+        status: "SCHEDULED",
+        currentTechnicianId: null,
+        currentTechnicianName: null,
+        currentSortOrder: null,
+        hasCoordinates: false,
       },
     ]);
     expect(route).toMatchObject({
@@ -253,7 +269,10 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
       conflicts: 0,
       loadSpread: 0,
     });
-    expect(plan.updates).toEqual([{ jobId: "j1", technicianId: TECH_A.id, sortOrder: SORT_ORDER_STEP }]);
+    expect(plan.updates).toEqual([
+      { jobId: "j1", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
+    ]);
+    expect(plan.unassigned).toEqual([]);
   });
 
   it("aplica un mínimo de 30 minutos de servicio y respeta duraciones mayores", async () => {
@@ -284,6 +303,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
 
     expect(stop.scheduledTime).toBe("07:00");
     expect(stop.estimatedArrivalTime).toBe("08:15");
+    expect(stop.serviceStartTime).toBe("08:15");
     expect(stop.delayMinutes).toBe(75);
     expect(plan.summary.conflicts).toBe(1);
   });
@@ -296,11 +316,14 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     });
     const [stop] = routeFor(plan, TECH_A.id).stops;
 
-    expect(stop.estimatedArrivalTime).toBe("10:00");
+    expect(stop.estimatedArrivalTime).toBe("09:55");
+    expect(stop.serviceStartTime).toBe("10:00");
     expect(stop.delayMinutes).toBeNull();
   });
 
-  it("limita las horas formateadas a 23:59", async () => {
+  // Bug corregido: antes cualquier hora posterior a medianoche se recortaba a
+  // 23:59; ahora se devuelve la hora real y la ruta se marca con overflowsDay.
+  it("devuelve la hora real del día siguiente y marca overflowsDay", async () => {
     const [plan] = await buildRouteAssistantPlans({
       jobs: [makeJob({ id: "night", scheduledDate: atBusinessTime(23, 30) })],
       technicians: [TECH_A],
@@ -309,8 +332,19 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     const route = routeFor(plan, TECH_A.id);
 
     expect(route.stops[0].scheduledTime).toBe("23:30");
-    expect(route.stops[0].estimatedArrivalTime).toBe("23:30");
-    expect(route.estimatedReturnTime).toBe("23:59");
+    expect(route.stops[0].serviceStartTime).toBe("23:30");
+    expect(route.estimatedReturnTime).toBe("00:45");
+    expect(route.overflowsDay).toBe(true);
+  });
+
+  it("no marca overflowsDay en una ruta que termina antes de medianoche", async () => {
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [makeJob({ id: "day", scheduledDate: atBusinessTime(9) })],
+      technicians: [TECH_A],
+      strategies: ["BALANCED"],
+    });
+
+    expect(routeFor(plan, TECH_A.id).overflowsDay).toBeUndefined();
   });
 });
 
@@ -398,7 +432,9 @@ describe("buildRouteAssistantPlans: asignación de técnicos", () => {
     expect(shortDrive.routes).toHaveLength(1);
     expect(stopJobIds(routeFor(shortDrive, TECH_A.id))).toContain("candidate");
     expect(stopJobIds(routeFor(balanced, TECH_B.id))).toEqual(["candidate"]);
-    expect(stopJobIds(routeFor(keep, TECH_B.id))).toEqual(["candidate"]);
+    // KEEP_ASSIGNMENTS no auto-asigna: el trabajo sin técnico queda fuera.
+    expect(keep.unassigned.map((stop) => stop.jobId)).toEqual(["candidate"]);
+    expect(keep.routes.map((route) => route.technicianId)).toEqual([TECH_A.id]);
   });
 
   it("excluye de routes y updates a los técnicos sin paradas", async () => {
@@ -409,7 +445,9 @@ describe("buildRouteAssistantPlans: asignación de técnicos", () => {
     });
 
     expect(plan.routes.map((route) => route.technicianId)).toEqual([TECH_A.id]);
-    expect(plan.updates).toEqual([{ jobId: "solo", technicianId: TECH_A.id, sortOrder: SORT_ORDER_STEP }]);
+    expect(plan.updates).toEqual([
+      { jobId: "solo", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
+    ]);
   });
 
   // Bug corregido: loadSpread se calcula sobre todos los técnicos antes de
@@ -445,10 +483,11 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
 
     expect(stopJobIds(route)).toEqual(["near", "mid", "far"]);
     expect(route.stops.map((stop) => stop.order)).toEqual([1, 2, 3]);
+    // sortOrder = minuto del día del inicio de servicio (09:00, 10:07, 11:25).
     expect(plan.updates).toEqual([
-      { jobId: "near", technicianId: TECH_A.id, sortOrder: SORT_ORDER_STEP },
-      { jobId: "mid", technicianId: TECH_A.id, sortOrder: 2 * SORT_ORDER_STEP },
-      { jobId: "far", technicianId: TECH_A.id, sortOrder: 3 * SORT_ORDER_STEP },
+      { jobId: "near", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
+      { jobId: "mid", technicianId: TECH_A.id, sortOrder: 10 * 60 + 7 },
+      { jobId: "far", technicianId: TECH_A.id, sortOrder: 11 * 60 + 25 },
     ]);
   });
 
@@ -472,7 +511,7 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
         delay: stop.delayMinutes,
       }))
     ).toEqual([
-      { drive: 4, miles: 0.69, arrival: "09:00", delay: null },
+      { drive: 4, miles: 0.69, arrival: "08:44", delay: null },
       { drive: 7, miles: 2.76, arrival: "10:07", delay: 67 },
       { drive: 18, miles: 6.91, arrival: "11:25", delay: 145 },
     ]);
@@ -667,5 +706,199 @@ describe("buildRouteAssistantPlans: integración con métricas de travel", () =>
       returnDistanceMiles: null,
       returnDriveSource: "ESTIMATED",
     });
+  });
+});
+
+describe("buildRouteAssistantPlans: campos nuevos de cada parada", () => {
+  it("propaga propertyName, status y el estado actual en base de datos", async () => {
+    const job = makeJob({
+      id: "j1",
+      propertyName: "Casa del lago",
+      status: "IN_PROGRESS",
+      technicianId: TECH_A.id,
+      currentTechnicianId: TECH_A.id,
+      currentTechnicianName: TECH_A.name,
+      currentSortOrder: 540,
+      coordinates: NEAR.point,
+    });
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [job],
+      technicians: [TECH_A],
+      strategies: ["KEEP_ASSIGNMENTS"],
+    });
+
+    expect(routeFor(plan, TECH_A.id).stops[0]).toMatchObject({
+      propertyName: "Casa del lago",
+      status: "IN_PROGRESS",
+      currentTechnicianId: TECH_A.id,
+      currentTechnicianName: TECH_A.name,
+      currentSortOrder: 540,
+      hasCoordinates: true,
+    });
+  });
+});
+
+describe("buildRouteAssistantPlans: trabajos sin asignar", () => {
+  it("KEEP_ASSIGNMENTS deja sin asignar los trabajos sin técnico", async () => {
+    const jobs = [
+      makeJob({ id: "assigned", technicianId: TECH_A.id }),
+      makeJob({ id: "orphan", scheduledDate: atBusinessTime(11) }),
+    ];
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs,
+      technicians: [TECH_A],
+      strategies: ["KEEP_ASSIGNMENTS"],
+    });
+
+    expect(stopJobIds(routeFor(plan, TECH_A.id))).toEqual(["assigned"]);
+    expect(plan.unassigned).toHaveLength(1);
+    expect(plan.unassigned[0]).toMatchObject({
+      jobId: "orphan",
+      technicianId: "",
+      technicianName: "",
+      order: 1,
+      scheduledTime: "11:00",
+      serviceStartTime: "11:00",
+      estimatedDriveMinutesFromPrevious: 0,
+      distanceMilesFromPrevious: null,
+      delayMinutes: null,
+    });
+    expect(plan.unassigned[0].driveSource).toBeUndefined();
+    expect(plan.updates.map((update) => update.jobId)).toEqual(["assigned"]);
+    expect(plan.summary.totalStops).toBe(1);
+  });
+
+  it("KEEP_ASSIGNMENTS deja sin asignar a los trabajos de un técnico fuera de alcance", async () => {
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [makeJob({ id: "other", technicianId: "tech-fuera" })],
+      technicians: [TECH_A],
+      strategies: ["KEEP_ASSIGNMENTS"],
+    });
+
+    expect(plan.routes).toEqual([]);
+    expect(plan.unassigned.map((stop) => stop.jobId)).toEqual(["other"]);
+  });
+
+  it("las estrategias automáticas reparten todos los trabajos", async () => {
+    const plans = await buildRouteAssistantPlans({
+      jobs: [makeJob({ id: "orphan" })],
+      technicians: [TECH_A],
+      strategies: ["BALANCED", "SHORT_DRIVE"],
+    });
+
+    for (const plan of plans) {
+      expect(plan.unassigned).toEqual([]);
+    }
+  });
+});
+
+describe("buildSequentialTravelPairs", () => {
+  const origin = { address: ORIGIN.address, coordinates: ORIGIN.point };
+
+  it("no pide ningún tramo sin paradas", () => {
+    expect(buildSequentialTravelPairs([], origin)).toEqual([]);
+  });
+
+  it("pide solo origen -> 1 -> 2 -> origen", () => {
+    const stops = [placeJob("a", NEAR), placeJob("b", MID)];
+
+    expect(
+      buildSequentialTravelPairs(stops, origin).map((pair) => [
+        pair.fromAddress,
+        pair.toAddress,
+      ])
+    ).toEqual([
+      [ORIGIN.address, NEAR.address],
+      [NEAR.address, MID.address],
+      [MID.address, ORIGIN.address],
+    ]);
+  });
+});
+
+describe("buildFixedOrderPlan", () => {
+  const originInput = {
+    originAddress: ORIGIN.address,
+    originCoordinates: ORIGIN.point,
+  };
+
+  it("respeta el orden recibido aunque no sea el óptimo y marca la estrategia MANUAL", async () => {
+    const jobs = [placeJob("near", NEAR), placeJob("mid", MID), placeJob("far", FAR)];
+
+    const plan = await buildFixedOrderPlan({
+      ...originInput,
+      jobs,
+      routes: [{ technician: TECH_A, jobIds: ["far", "near", "mid"] }],
+    });
+
+    expect(plan.strategy).toBe("MANUAL");
+    expect(stopJobIds(routeFor(plan, TECH_A.id))).toEqual(["far", "near", "mid"]);
+    expect(routeFor(plan, TECH_A.id).stops.map((stop) => stop.order)).toEqual([1, 2, 3]);
+    expect(plan.updates.map((update) => update.jobId)).toEqual(["far", "near", "mid"]);
+    expect(plan.updates.every((update) => update.technicianId === TECH_A.id)).toBe(true);
+  });
+
+  it("solicita únicamente los tramos consecutivos", async () => {
+    const jobs = [placeJob("near", NEAR), placeJob("mid", MID)];
+
+    await buildFixedOrderPlan({
+      ...originInput,
+      jobs,
+      routes: [{ technician: TECH_A, jobIds: ["near", "mid"] }],
+    });
+
+    expect(travelMock.getTravelMetricsForPairs).toHaveBeenCalledTimes(1);
+    expect(requestedPairs()).toEqual([
+      { from: ORIGIN.address, to: NEAR.address },
+      { from: NEAR.address, to: MID.address },
+      { from: MID.address, to: ORIGIN.address },
+    ]);
+  });
+
+  it("reparte las paradas entre varias rutas y deja fuera los trabajos no incluidos", async () => {
+    const jobs = [
+      placeJob("near", NEAR),
+      placeJob("mid", MID),
+      placeJob("far", FAR),
+    ];
+
+    const plan = await buildFixedOrderPlan({
+      ...originInput,
+      jobs,
+      routes: [
+        { technician: TECH_A, jobIds: ["near"] },
+        { technician: TECH_B, jobIds: ["mid"] },
+      ],
+    });
+
+    expect(stopJobIds(routeFor(plan, TECH_A.id))).toEqual(["near"]);
+    expect(stopJobIds(routeFor(plan, TECH_B.id))).toEqual(["mid"]);
+    expect(plan.unassigned.map((stop) => stop.jobId)).toEqual(["far"]);
+    expect(plan.summary.totalStops).toBe(2);
+    expect(plan.summary.loadSpread).toBe(0);
+  });
+
+  it("ignora los ids que no corresponden a ningún trabajo cargado", async () => {
+    const plan = await buildFixedOrderPlan({
+      ...originInput,
+      jobs: [placeJob("near", NEAR)],
+      routes: [{ technician: TECH_A, jobIds: ["near", "no-existe"] }],
+    });
+
+    expect(stopJobIds(routeFor(plan, TECH_A.id))).toEqual(["near"]);
+    expect(plan.unassigned).toEqual([]);
+  });
+
+  it("sin paradas devuelve un plan vacío sin rutas", async () => {
+    const plan = await buildFixedOrderPlan({
+      ...originInput,
+      jobs: [],
+      routes: [{ technician: TECH_A, jobIds: [] }],
+    });
+
+    expect(plan.routes).toEqual([]);
+    expect(plan.updates).toEqual([]);
+    expect(plan.summary.totalStops).toBe(0);
   });
 });

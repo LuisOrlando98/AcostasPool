@@ -28,6 +28,7 @@ import {
   type ComplianceDocContent,
   type ComplianceDocId,
 } from "@/lib/compliance-config";
+import { DEFAULT_ROUTE_ORIGIN_ADDRESS } from "@/lib/routing/planner";
 
 export type SiteSocialLinks = {
   instagramUrl: string | null;
@@ -46,6 +47,8 @@ export type SiteLandingConfig = {
 export type SiteInvoiceTemplateConfig = InvoiceTemplateConfig;
 export type RouteAssistantConfig = {
   dailyAutoOptimizeEnabled: boolean;
+  /** Dirección desde la que sale y a la que vuelve cada ruta. */
+  originAddress: string;
 };
 
 export type StripeReconcileStatus = {
@@ -63,8 +66,12 @@ const EMPTY_SOCIAL_LINKS: SiteSocialLinks = {
   tiktokUrl: null,
 };
 
+export const ROUTE_ORIGIN_ADDRESS_MIN_LENGTH = 5;
+export const ROUTE_ORIGIN_ADDRESS_MAX_LENGTH = 160;
+
 const DEFAULT_ROUTE_ASSISTANT_CONFIG: RouteAssistantConfig = {
   dailyAutoOptimizeEnabled: false,
+  originAddress: DEFAULT_ROUTE_ORIGIN_ADDRESS,
 };
 
 const DEFAULT_STRIPE_RECONCILE_STATUS: StripeReconcileStatus = {
@@ -106,11 +113,25 @@ function normalizeRouteAssistantConfig(
     return DEFAULT_ROUTE_ASSISTANT_CONFIG;
   }
 
-  const candidate = value as { dailyAutoOptimizeEnabled?: unknown };
-  return {
-    dailyAutoOptimizeEnabled:
-      candidate.dailyAutoOptimizeEnabled === true,
+  const candidate = value as {
+    dailyAutoOptimizeEnabled?: unknown;
+    originAddress?: unknown;
   };
+  return {
+    dailyAutoOptimizeEnabled: candidate.dailyAutoOptimizeEnabled === true,
+    originAddress: normalizeRouteOriginAddress(candidate.originAddress),
+  };
+}
+
+function normalizeRouteOriginAddress(value: unknown): string {
+  if (typeof value !== "string") {
+    return DEFAULT_ROUTE_ORIGIN_ADDRESS;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length < ROUTE_ORIGIN_ADDRESS_MIN_LENGTH) {
+    return DEFAULT_ROUTE_ORIGIN_ADDRESS;
+  }
+  return trimmed.slice(0, ROUTE_ORIGIN_ADDRESS_MAX_LENGTH);
 }
 
 function normalizeStripeReconcileStatus(

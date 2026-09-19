@@ -10,7 +10,8 @@ const MS_PER_HOUR = MS_PER_MINUTE * MINUTES_PER_HOUR;
 export const CRON_SCHEDULES = {
   customerNotifications: "*/2 * * * *",
   recurringPlans: "*/10 * * * *",
-  routeAssistantAutoOptimize: "0 7 * * *",
+  /** Antes del plan diario de las 06:30, para que el digest salga ya ordenado. */
+  routeAssistantAutoOptimize: "30 5 * * *",
   /** Mensual: el día 1 se genera el contrato del nuevo periodo. */
   contractRegeneration: "0 5 1 * *",
   stripeReconcile: "0 4 * * *",

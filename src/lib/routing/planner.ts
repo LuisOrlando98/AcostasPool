@@ -1,4 +1,12 @@
 import { BUSINESS_TIMEZONE } from "@/lib/jobs/capacity";
+import type {
+  AssistantJobStatus,
+  AssistantPlan,
+  AssistantPlanSummary,
+  AssistantRoute,
+  AssistantStop,
+  AssistantUpdate,
+} from "@/lib/routing/assistant-types";
 import type { GeoPoint } from "@/lib/routing/geo";
 import {
   estimateDriveMinutes,
@@ -13,11 +21,11 @@ import {
 const DEFAULT_SERVICE_MINUTES = 60;
 const MIN_SERVICE_MINUTES = 30;
 const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR;
 const ROUTE_START_MINUTES = 8 * MINUTES_PER_HOUR;
-const LAST_MINUTE_OF_DAY = 23 * MINUTES_PER_HOUR + 59;
 const PRE_ARRIVAL_BUFFER_MINUTES = 20;
 const CONFLICT_DELAY_THRESHOLD_MINUTES = 25;
-const SORT_ORDER_STEP = 10;
 const UNKNOWN_DISTANCE_MILES = 4;
 /** Pesos de la asignación de técnicos (distancia al centroide vs. carga). */
 const SHORT_DRIVE_DISTANCE_WEIGHT = 10;
@@ -50,11 +58,17 @@ export type RouteAssistantJob = {
   id: string;
   customerName: string;
   address: string;
+  propertyName: string | null;
+  status: AssistantJobStatus;
   technicianId: string | null;
   planName: string | null;
   routeGroupId: string | null;
   routeGroupLabel: string | null;
   lockedTechnicianId: string | null;
+  /** Estado actual en la base de datos, para mostrar qué cambia al aplicar. */
+  currentTechnicianId: string | null;
+  currentTechnicianName: string | null;
+  currentSortOrder: number | null;
   scheduledDate: Date;
   estimatedDurationMinutes: number | null;
   coordinates: GeoPoint | null;
@@ -65,58 +79,14 @@ export type RouteAssistantTechnician = {
   name: string;
 };
 
-export type RouteAssistantStopPlan = {
-  jobId: string;
-  customerName: string;
+/** Alias de los tipos del contrato: el planner es quien los produce. */
+export type RouteAssistantStopPlan = AssistantStop;
+export type RouteAssistantTechnicianPlan = AssistantRoute;
+export type RouteAssistantPlan = AssistantPlan;
+
+export type RouteWaypoint = {
   address: string;
-  planName: string | null;
-  routeGroupId: string | null;
-  routeGroupLabel: string | null;
-  technicianId: string;
-  technicianName: string;
-  order: number;
-  scheduledTime: string;
-  estimatedArrivalTime: string;
-  estimatedDriveMinutesFromPrevious: number;
-  estimatedServiceMinutes: number;
-  distanceMilesFromPrevious: number | null;
-  delayMinutes: number | null;
-  driveSource?: TravelMetricSource;
-};
-
-export type RouteAssistantTechnicianPlan = {
-  technicianId: string;
-  technicianName: string;
-  originAddress: string;
-  routeGroupIds: string[];
-  routeGroupLabels: string[];
-  stops: RouteAssistantStopPlan[];
-  totalDriveMinutes: number;
-  returnDriveMinutes: number;
-  totalServiceMinutes: number;
-  totalRouteMinutes: number;
-  returnDistanceMiles: number | null;
-  returnDriveSource?: TravelMetricSource;
-  estimatedReturnTime: string | null;
-  conflicts: number;
-};
-
-export type RouteAssistantPlan = {
-  strategy: RouteAssistantStrategy;
-  routes: RouteAssistantTechnicianPlan[];
-  summary: {
-    totalStops: number;
-    totalDriveMinutes: number;
-    totalServiceMinutes: number;
-    totalRouteMinutes: number;
-    conflicts: number;
-    loadSpread: number;
-  };
-  updates: Array<{
-    jobId: string;
-    technicianId: string;
-    sortOrder: number;
-  }>;
+  coordinates: GeoPoint | null;
 };
 
 export const DEFAULT_ROUTE_ASSISTANT_STRATEGIES: RouteAssistantStrategy[] = [
@@ -124,11 +94,6 @@ export const DEFAULT_ROUTE_ASSISTANT_STRATEGIES: RouteAssistantStrategy[] = [
   "SHORT_DRIVE",
   "KEEP_ASSIGNMENTS",
 ];
-
-type RouteWaypoint = {
-  address: string;
-  coordinates: GeoPoint | null;
-};
 
 type RouteLeg = {
   driveMinutes: number;
@@ -144,6 +109,12 @@ type StopTiming = {
   endMinutes: number;
 };
 
+type Assignment = {
+  buckets: Map<string, RouteAssistantJob[]>;
+  /** Trabajos que la estrategia deja sin técnico (nunca se auto-asignan). */
+  unassigned: RouteAssistantJob[];
+};
+
 function toMinutesInBusinessTimezone(date: Date) {
   const parts = timePartsFormatter.formatToParts(date);
   const hourPart = parts.find((part) => part.type === "hour")?.value ?? "00";
@@ -153,17 +124,25 @@ function toMinutesInBusinessTimezone(date: Date) {
   if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
     return ROUTE_START_MINUTES;
   }
-  return Math.max(
-    0,
-    Math.min(LAST_MINUTE_OF_DAY, hour * MINUTES_PER_HOUR + minute)
-  );
+  return Math.max(0, hour * MINUTES_PER_HOUR + minute);
 }
 
+/**
+ * "HH:mm" del minuto indicado. Los minutos que caen en el día siguiente NO se
+ * recortan a 23:59: se devuelve la hora real (00:45) y el llamante marca el
+ * salto de día con `overflowsDay`.
+ */
 function minutesToTimeValue(minutes: number) {
-  const safe = Math.max(0, Math.min(LAST_MINUTE_OF_DAY, Math.round(minutes)));
-  const hours = String(Math.floor(safe / MINUTES_PER_HOUR)).padStart(2, "0");
-  const mins = String(safe % MINUTES_PER_HOUR).padStart(2, "0");
+  const rounded = Math.round(minutes);
+  const normalized =
+    ((rounded % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const hours = String(Math.floor(normalized / MINUTES_PER_HOUR)).padStart(2, "0");
+  const mins = String(normalized % MINUTES_PER_HOUR).padStart(2, "0");
   return `${hours}:${mins}`;
+}
+
+function isNextDay(minutes: number) {
+  return Math.round(minutes) >= MINUTES_PER_DAY;
 }
 
 function estimateDistanceMiles(from: GeoPoint | null, to: GeoPoint | null) {
@@ -210,17 +189,16 @@ function getServiceMinutes(job: RouteAssistantJob) {
   );
 }
 
-function getRouteStartMinutes(jobs: RouteAssistantJob[]) {
+function getRouteStartMinutes(jobs: readonly RouteAssistantJob[]) {
   const scheduledMinutes = jobs.map((job) =>
     toMinutesInBusinessTimezone(job.scheduledDate)
   );
-  const earliestScheduled =
-    scheduledMinutes.length > 0
-      ? Math.min(...scheduledMinutes)
-      : DEFAULT_SERVICE_MINUTES;
+  if (scheduledMinutes.length === 0) {
+    return ROUTE_START_MINUTES;
+  }
   return Math.max(
     ROUTE_START_MINUTES,
-    earliestScheduled - PRE_ARRIVAL_BUFFER_MINUTES
+    Math.min(...scheduledMinutes) - PRE_ARRIVAL_BUFFER_MINUTES
   );
 }
 
@@ -263,64 +241,77 @@ function resolveLeg(
   };
 }
 
-function assignJobs(
-  jobs: RouteAssistantJob[],
+function pickTechnicianForJob(
+  job: RouteAssistantJob,
   technicians: RouteAssistantTechnician[],
+  buckets: Map<string, RouteAssistantJob[]>,
   strategy: RouteAssistantStrategy
 ) {
+  let selectedTechnician = technicians[0];
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const technician of technicians) {
+    const assigned = buckets.get(technician.id) ?? [];
+    const assignedPoints = assigned
+      .map((entry) => entry.coordinates)
+      .filter((entry): entry is GeoPoint => Boolean(entry));
+    const distanceMiles =
+      estimateDistanceMiles(centroid(assignedPoints), job.coordinates) ??
+      UNKNOWN_DISTANCE_MILES;
+    const load = assigned.length;
+    const score =
+      strategy === "SHORT_DRIVE"
+        ? distanceMiles * SHORT_DRIVE_DISTANCE_WEIGHT + load * SHORT_DRIVE_LOAD_WEIGHT
+        : distanceMiles * BALANCED_DISTANCE_WEIGHT + load * BALANCED_LOAD_WEIGHT;
+
+    if (score < bestScore) {
+      bestScore = score;
+      selectedTechnician = technician;
+    }
+  }
+
+  return selectedTechnician;
+}
+
+function assignJobs(
+  jobs: readonly RouteAssistantJob[],
+  technicians: RouteAssistantTechnician[],
+  strategy: RouteAssistantStrategy
+): Assignment {
   const buckets = new Map<string, RouteAssistantJob[]>();
   for (const technician of technicians) {
     buckets.set(technician.id, []);
   }
 
   const pool: RouteAssistantJob[] = [];
+  const unassigned: RouteAssistantJob[] = [];
   for (const job of [...jobs].sort(sortByScheduledTime)) {
     const lockedTechnicianId =
       job.lockedTechnicianId && buckets.has(job.lockedTechnicianId)
         ? job.lockedTechnicianId
         : null;
-
     if (lockedTechnicianId) {
       buckets.get(lockedTechnicianId)?.push(job);
       continue;
     }
-
-    if (strategy === "KEEP_ASSIGNMENTS" && job.technicianId && buckets.has(job.technicianId)) {
+    if (strategy !== "KEEP_ASSIGNMENTS") {
+      pool.push(job);
+      continue;
+    }
+    // KEEP_ASSIGNMENTS respeta la BD: un trabajo sin técnico no se auto-asigna.
+    if (job.technicianId && buckets.has(job.technicianId)) {
       buckets.get(job.technicianId)?.push(job);
     } else {
-      pool.push(job);
+      unassigned.push(job);
     }
   }
 
   for (const job of pool) {
-    let selectedTechnician = technicians[0];
-    let bestScore = Number.POSITIVE_INFINITY;
-
-    for (const technician of technicians) {
-      const assigned = buckets.get(technician.id) ?? [];
-      const assignedPoints = assigned
-        .map((entry) => entry.coordinates)
-        .filter((entry): entry is GeoPoint => Boolean(entry));
-      const center = centroid(assignedPoints);
-      const distanceMiles =
-        estimateDistanceMiles(center, job.coordinates) ?? UNKNOWN_DISTANCE_MILES;
-      const load = assigned.length;
-
-      const score =
-        strategy === "SHORT_DRIVE"
-          ? distanceMiles * SHORT_DRIVE_DISTANCE_WEIGHT + load * SHORT_DRIVE_LOAD_WEIGHT
-          : distanceMiles * BALANCED_DISTANCE_WEIGHT + load * BALANCED_LOAD_WEIGHT;
-
-      if (score < bestScore) {
-        bestScore = score;
-        selectedTechnician = technician;
-      }
-    }
-
-    buckets.get(selectedTechnician.id)?.push(job);
+    const technician = pickTechnicianForJob(job, technicians, buckets, strategy);
+    buckets.get(technician.id)?.push(job);
   }
 
-  return buckets;
+  return { buckets, unassigned };
 }
 
 /**
@@ -329,15 +320,9 @@ function assignJobs(
  * de modo que el regreso también puede usar tráfico real.
  */
 function buildTravelPairs(
-  stops: RouteAssistantJob[],
+  stops: readonly RouteAssistantJob[],
   origin: RouteWaypoint
 ): AddressPairInput[] {
-  const toPair = (from: RouteWaypoint, to: RouteWaypoint): AddressPairInput => ({
-    fromAddress: from.address,
-    toAddress: to.address,
-    fromCoordinates: from.coordinates,
-    toCoordinates: to.coordinates,
-  });
   return [
     ...stops.map((stop) => toPair(origin, stop)),
     ...stops.flatMap((fromStop) =>
@@ -346,6 +331,33 @@ function buildTravelPairs(
         .map((toStop) => toPair(fromStop, toStop))
     ),
     ...stops.map((stop) => toPair(stop, origin)),
+  ];
+}
+
+function toPair(from: RouteWaypoint, to: RouteWaypoint): AddressPairInput {
+  return {
+    fromAddress: from.address,
+    toAddress: to.address,
+    fromCoordinates: from.coordinates,
+    toCoordinates: to.coordinates,
+  };
+}
+
+/**
+ * Pares de un orden ya fijado: origen→1, 1→2, …, n→origen. Es lo que necesita
+ * un recálculo manual, que no tiene que evaluar alternativas.
+ */
+export function buildSequentialTravelPairs(
+  stops: readonly RouteAssistantJob[],
+  origin: RouteWaypoint
+): AddressPairInput[] {
+  if (stops.length === 0) {
+    return [];
+  }
+  return [
+    toPair(origin, stops[0]),
+    ...stops.slice(1).map((stop, index) => toPair(stops[index], stop)),
+    toPair(stops[stops.length - 1], origin),
   ];
 }
 
@@ -453,9 +465,68 @@ type Itinerary = {
   conflicts: number;
 };
 
+function buildStop(
+  job: RouteAssistantJob,
+  technician: RouteAssistantTechnician,
+  order: number,
+  leg: RouteLeg,
+  timing: StopTiming
+): RouteAssistantStopPlan {
+  const delay = Math.max(0, timing.serviceStartMinutes - timing.scheduledMinutes);
+  return {
+    jobId: job.id,
+    customerName: job.customerName,
+    address: job.address,
+    propertyName: job.propertyName,
+    planName: job.planName,
+    routeGroupId: job.routeGroupId,
+    routeGroupLabel: job.routeGroupLabel,
+    technicianId: technician.id,
+    technicianName: technician.name,
+    order,
+    scheduledTime: minutesToTimeValue(timing.scheduledMinutes),
+    estimatedArrivalTime: minutesToTimeValue(timing.arrivalMinutes),
+    serviceStartTime: minutesToTimeValue(timing.serviceStartMinutes),
+    estimatedDriveMinutesFromPrevious: leg.driveMinutes,
+    estimatedServiceMinutes: timing.serviceMinutes,
+    distanceMilesFromPrevious:
+      leg.distanceMiles == null ? null : Number(leg.distanceMiles.toFixed(2)),
+    delayMinutes: delay > 0 ? delay : null,
+    driveSource: leg.source,
+    status: job.status,
+    currentTechnicianId: job.currentTechnicianId,
+    currentTechnicianName: job.currentTechnicianName,
+    currentSortOrder: job.currentSortOrder,
+    hasCoordinates: Boolean(job.coordinates),
+  };
+}
+
+/** Parada fuera de la propuesta: sin técnico y con los tiempos de la cita. */
+function toUnassignedStop(
+  job: RouteAssistantJob,
+  index: number
+): RouteAssistantStopPlan {
+  const scheduledMinutes = toMinutesInBusinessTimezone(job.scheduledDate);
+  const timing: StopTiming = {
+    scheduledMinutes,
+    arrivalMinutes: scheduledMinutes,
+    serviceStartMinutes: scheduledMinutes,
+    serviceMinutes: getServiceMinutes(job),
+    endMinutes: scheduledMinutes + getServiceMinutes(job),
+  };
+  const stop = buildStop(
+    job,
+    { id: "", name: "" },
+    index + 1,
+    { driveMinutes: 0, distanceMiles: null, source: "ESTIMATED" },
+    timing
+  );
+  return { ...stop, driveSource: undefined };
+}
+
 function buildItinerary(
   technician: RouteAssistantTechnician,
-  orderedStops: RouteAssistantJob[],
+  orderedStops: readonly RouteAssistantJob[],
   origin: RouteWaypoint,
   pairMetrics: Map<string, TravelMetric>
 ): Itinerary {
@@ -470,26 +541,8 @@ function buildItinerary(
     const previous = index > 0 ? orderedStops[index - 1] : origin;
     const leg = resolveLeg(pairMetrics, previous, current);
     const timing = simulateStop(acc.cursorMinutes, leg.driveMinutes, current);
-    const delay = Math.max(0, timing.serviceStartMinutes - timing.scheduledMinutes);
-    const stop: RouteAssistantStopPlan = {
-      jobId: current.id,
-      customerName: current.customerName,
-      address: current.address,
-      planName: current.planName,
-      routeGroupId: current.routeGroupId,
-      routeGroupLabel: current.routeGroupLabel,
-      technicianId: technician.id,
-      technicianName: technician.name,
-      order: index + 1,
-      scheduledTime: minutesToTimeValue(timing.scheduledMinutes),
-      estimatedArrivalTime: minutesToTimeValue(timing.serviceStartMinutes),
-      estimatedDriveMinutesFromPrevious: leg.driveMinutes,
-      estimatedServiceMinutes: timing.serviceMinutes,
-      distanceMilesFromPrevious:
-        leg.distanceMiles == null ? null : Number(leg.distanceMiles.toFixed(2)),
-      delayMinutes: delay > 0 ? delay : null,
-      driveSource: leg.source,
-    };
+    const stop = buildStop(current, technician, index + 1, leg, timing);
+    const delay = stop.delayMinutes ?? 0;
     return {
       cursorMinutes: timing.endMinutes,
       stops: [...acc.stops, stop],
@@ -507,22 +560,20 @@ function uniqueStrings(values: Array<string | null>) {
   );
 }
 
-async function buildTechnicianPlan(
+/** Construye la ruta de un técnico a partir de un orden de paradas ya fijado. */
+export function buildTechnicianPlanFromOrder(
   technician: RouteAssistantTechnician,
-  assignedJobs: RouteAssistantJob[],
-  origin: RouteWaypoint
-): Promise<RouteAssistantTechnicianPlan> {
-  const { orderedStops, pairMetrics } = await orderByOptimizedRoute(
-    assignedJobs,
-    origin
-  );
+  orderedStops: readonly RouteAssistantJob[],
+  origin: RouteWaypoint,
+  pairMetrics: Map<string, TravelMetric>
+): RouteAssistantTechnicianPlan {
   const itinerary = buildItinerary(technician, orderedStops, origin, pairMetrics);
-
   const lastStop = orderedStops[orderedStops.length - 1] ?? null;
   const returnLeg = lastStop ? resolveLeg(pairMetrics, lastStop, origin) : null;
   const returnDriveMinutes = returnLeg?.driveMinutes ?? 0;
   const returnDistanceMiles = returnLeg?.distanceMiles ?? null;
   const totalDriveMinutes = itinerary.totalDriveMinutes + returnDriveMinutes;
+  const returnMinutes = itinerary.cursorMinutes + returnDriveMinutes;
 
   return {
     technicianId: technician.id,
@@ -540,34 +591,29 @@ async function buildTechnicianPlan(
     returnDistanceMiles:
       returnDistanceMiles == null ? null : Number(returnDistanceMiles.toFixed(2)),
     returnDriveSource: returnLeg?.source,
-    estimatedReturnTime:
-      returnLeg && returnDriveMinutes >= 0
-        ? minutesToTimeValue(itinerary.cursorMinutes + returnDriveMinutes)
-        : null,
+    estimatedReturnTime: returnLeg ? minutesToTimeValue(returnMinutes) : null,
+    ...(returnLeg && isNextDay(returnMinutes) ? { overflowsDay: true } : {}),
     conflicts: itinerary.conflicts,
   };
 }
 
-async function buildPlan(
-  jobs: RouteAssistantJob[],
-  technicians: RouteAssistantTechnician[],
-  strategy: RouteAssistantStrategy,
+async function buildTechnicianPlan(
+  technician: RouteAssistantTechnician,
+  assignedJobs: RouteAssistantJob[],
   origin: RouteWaypoint
-): Promise<RouteAssistantPlan> {
-  const assignments = assignJobs(jobs, technicians, strategy);
-
-  const technicianRoutes = await Promise.all(
-    technicians.map((technician) =>
-      buildTechnicianPlan(technician, assignments.get(technician.id) ?? [], origin)
-    )
+): Promise<RouteAssistantTechnicianPlan> {
+  const { orderedStops, pairMetrics } = await orderByOptimizedRoute(
+    assignedJobs,
+    origin
   );
-  // El desequilibrio de carga se mide sobre TODOS los técnicos, incluidos los
-  // que se quedan sin paradas; solo después se omiten las rutas vacías.
-  const loadSpread = getLoadSpread(
-    technicianRoutes.map((route) => route.stops.length)
-  );
-  const routes = technicianRoutes.filter((route) => route.stops.length > 0);
+  return buildTechnicianPlanFromOrder(technician, orderedStops, origin, pairMetrics);
+}
 
+/** Agrega los totales de las rutas con paradas del plan. */
+export function summarizePlan(
+  routes: readonly RouteAssistantTechnicianPlan[],
+  loadSpread: number
+): AssistantPlanSummary {
   const totals = routes.reduce(
     (acc, route) => ({
       totalStops: acc.totalStops + route.stops.length,
@@ -584,21 +630,75 @@ async function buildPlan(
       conflicts: 0,
     }
   );
+  return { ...totals, loadSpread };
+}
 
-  const updates = routes.flatMap((route) =>
-    route.stops.map((stop, index) => ({
-      jobId: stop.jobId,
-      technicianId: route.technicianId,
-      sortOrder: (index + 1) * SORT_ORDER_STEP,
-    }))
+function timeValueToDayMinutes(value: string) {
+  const [hoursPart, minutesPart] = value.split(":");
+  const hours = Number(hoursPart);
+  const minutes = Number(minutesPart);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return 0;
+  }
+  return hours * MINUTES_PER_HOUR + minutes;
+}
+
+/**
+ * `sortOrder` = minuto del día en que empieza el servicio; si dos paradas de la
+ * misma ruta coinciden, la segunda suma su índice para no empatar.
+ */
+function buildRouteUpdates(
+  route: RouteAssistantTechnicianPlan
+): AssistantUpdate[] {
+  const used = new Set<number>();
+  return route.stops.map((stop, index) => {
+    const base = timeValueToDayMinutes(stop.serviceStartTime);
+    const sortOrder = used.has(base) ? base + index : base;
+    used.add(sortOrder);
+    return { jobId: stop.jobId, technicianId: route.technicianId, sortOrder };
+  });
+}
+
+function buildPlanFromRoutes(
+  strategy: AssistantPlan["strategy"],
+  technicianRoutes: readonly RouteAssistantTechnicianPlan[],
+  unassignedJobs: readonly RouteAssistantJob[]
+): RouteAssistantPlan {
+  // El desequilibrio de carga se mide sobre TODOS los técnicos, incluidos los
+  // que se quedan sin paradas; solo después se omiten las rutas vacías.
+  const loadSpread = getLoadSpread(
+    technicianRoutes.map((route) => route.stops.length)
   );
-
+  const routes = technicianRoutes.filter((route) => route.stops.length > 0);
   return {
     strategy,
     routes,
-    summary: { ...totals, loadSpread },
-    updates,
+    unassigned: unassignedJobs.map(toUnassignedStop),
+    summary: summarizePlan(routes, loadSpread),
+    updates: routes.flatMap(buildRouteUpdates),
   };
+}
+
+async function buildPlan(
+  jobs: readonly RouteAssistantJob[],
+  technicians: RouteAssistantTechnician[],
+  strategy: RouteAssistantStrategy,
+  origin: RouteWaypoint
+): Promise<RouteAssistantPlan> {
+  const { buckets, unassigned } = assignJobs(jobs, technicians, strategy);
+  const technicianRoutes = await Promise.all(
+    technicians.map((technician) =>
+      buildTechnicianPlan(technician, buckets.get(technician.id) ?? [], origin)
+    )
+  );
+  return buildPlanFromRoutes(strategy, technicianRoutes, unassigned);
+}
+
+function toOrigin(address: string | undefined, coordinates: GeoPoint | null) {
+  return {
+    address: address ?? DEFAULT_ROUTE_ORIGIN_ADDRESS,
+    coordinates,
+  } satisfies RouteWaypoint;
 }
 
 export async function buildRouteAssistantPlans(input: {
@@ -611,7 +711,7 @@ export async function buildRouteAssistantPlans(input: {
   const {
     jobs,
     technicians,
-    originAddress = DEFAULT_ROUTE_ORIGIN_ADDRESS,
+    originAddress,
     originCoordinates = null,
     strategies = DEFAULT_ROUTE_ASSISTANT_STRATEGIES,
   } = input;
@@ -619,12 +719,49 @@ export async function buildRouteAssistantPlans(input: {
     return [] as RouteAssistantPlan[];
   }
 
-  const origin: RouteWaypoint = {
-    address: originAddress,
-    coordinates: originCoordinates,
-  };
-  const plans = await Promise.all(
+  const origin = toOrigin(originAddress, originCoordinates);
+  return Promise.all(
     strategies.map((strategy) => buildPlan(jobs, technicians, strategy, origin))
   );
-  return plans;
+}
+
+export type FixedOrderRouteInput = {
+  technician: RouteAssistantTechnician;
+  jobIds: readonly string[];
+};
+
+/**
+ * Plan `MANUAL`: respeta el orden recibido y solo pide a travel los tramos
+ * consecutivos (origen→1, 1→2, …, n→origen). Los trabajos que no aparecen en
+ * ninguna ruta quedan en `unassigned`.
+ */
+export async function buildFixedOrderPlan(input: {
+  routes: readonly FixedOrderRouteInput[];
+  jobs: readonly RouteAssistantJob[];
+  originAddress?: string;
+  originCoordinates?: GeoPoint | null;
+}): Promise<RouteAssistantPlan> {
+  const origin = toOrigin(input.originAddress, input.originCoordinates ?? null);
+  const jobsById = new Map(input.jobs.map((job) => [job.id, job]));
+  const orderedRoutes = input.routes.map((route) => ({
+    technician: route.technician,
+    stops: route.jobIds
+      .map((jobId) => jobsById.get(jobId))
+      .filter((job): job is RouteAssistantJob => Boolean(job)),
+  }));
+
+  const pairMetrics = await getTravelMetricsForPairs(
+    orderedRoutes.flatMap((route) =>
+      buildSequentialTravelPairs(route.stops, origin)
+    )
+  );
+  const technicianRoutes = orderedRoutes.map((route) =>
+    buildTechnicianPlanFromOrder(route.technician, route.stops, origin, pairMetrics)
+  );
+
+  const assignedIds = new Set(
+    orderedRoutes.flatMap((route) => route.stops.map((stop) => stop.id))
+  );
+  const unassigned = input.jobs.filter((job) => !assignedIds.has(job.id));
+  return buildPlanFromRoutes("MANUAL", technicianRoutes, unassigned);
 }

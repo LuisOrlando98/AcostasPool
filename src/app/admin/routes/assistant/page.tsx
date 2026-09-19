@@ -1,5 +1,5 @@
 import AppShell from "@/components/layout/AppShell";
-import RouteAssistant from "@/components/routes/RouteAssistant";
+import RouteAssistant from "@/components/routes/assistant/RouteAssistant";
 import { requireRole } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/jobs/capacity";
@@ -62,6 +62,7 @@ export default async function RouteAssistantPage({
           initialDate={resolvedDate}
           initialPlanTemplate={initialPlanTemplate}
           autoOptimizeEnabled={routeAssistantConfig.dailyAutoOptimizeEnabled}
+          originAddress={routeAssistantConfig.originAddress}
           planOptions={GLOBAL_RECURRING_PLAN_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey),
