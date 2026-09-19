@@ -3,14 +3,9 @@ import RouteAssistant from "@/components/routes/assistant/RouteAssistant";
 import { requireRole } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db";
 import { toDateKey } from "@/lib/jobs/capacity";
-import {
-  getGlobalRecurringPlanByWeekday,
-  GLOBAL_RECURRING_PLAN_OPTIONS,
-} from "@/lib/jobs/recurring-plan-templates";
+import { GLOBAL_RECURRING_PLAN_OPTIONS } from "@/lib/jobs/recurring-plan-templates";
 import { getRouteAssistantConfig } from "@/lib/site-settings";
 import { getTranslations } from "@/i18n/server";
-import { DateTime } from "luxon";
-import { BUSINESS_TIMEZONE } from "@/lib/timezone";
 
 type RouteAssistantPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -32,9 +27,6 @@ export default async function RouteAssistantPage({
   const dateRaw = resolvedSearchParams?.date;
   const dateParam = Array.isArray(dateRaw) ? dateRaw[0] : dateRaw;
   const resolvedDate = resolveDate(dateParam);
-  const routeDateWeekday = DateTime.fromISO(resolvedDate, {
-    zone: BUSINESS_TIMEZONE,
-  }).weekday;
 
   const [technicians, routeAssistantConfig] = await Promise.all([
     prisma.technician.findMany({
@@ -47,8 +39,10 @@ export default async function RouteAssistantPage({
     }),
     getRouteAssistantConfig(),
   ]);
-  const initialPlanTemplate =
-    getGlobalRecurringPlanByWeekday(routeDateWeekday)?.value ?? null;
+  // Sin plan preseleccionado: la propuesta cubre por defecto la jornada
+  // completa (planes recurrentes y trabajos bajo demanda). Elegir un plan
+  // sigue acotando el alcance y alineando la fecha con ese día.
+  const initialPlanTemplate = null;
 
   return (
     <AppShell

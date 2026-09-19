@@ -112,8 +112,7 @@ export default function MoveStopModal({
                       {route.technicianName}
                     </span>
                     <span className="block text-xs text-slate-500">
-                      {t("admin.routes.assistant.move.load", {
-                        count: load.stops,
+                      {t.plural("admin.routes.assistant.move.load", load.stops, {
                         drive: formatMinutes(load.driveMinutes),
                       })}
                     </span>

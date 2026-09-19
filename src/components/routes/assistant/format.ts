@@ -4,7 +4,22 @@
  */
 
 import { parseDateOnly, toDateKey } from "@/lib/jobs/capacity";
+import type { Translator } from "@/i18n/core";
 import type { AssistantStop } from "@/lib/routing/assistant-types";
+import type { DraftDiff } from "@/lib/routing/draft";
+
+/**
+ * "3 cambios: 1 reordenado · 1 reasignado · 1 excluido", con cada cifra en
+ * singular o plural según corresponda.
+ */
+export function formatChangesSummary(t: Translator, diff: DraftDiff): string {
+  const parts = [
+    t.plural("admin.routes.assistant.changes.reordered", diff.reordered),
+    t.plural("admin.routes.assistant.changes.reassigned", diff.reassigned),
+    t.plural("admin.routes.assistant.changes.removed", diff.removed),
+  ];
+  return `${t.plural("admin.routes.assistant.changes.total", diff.total)}: ${parts.join(" · ")}`;
+}
 
 const MINUTES_PER_HOUR = 60;
 const DAYS_PER_WEEK = 7;

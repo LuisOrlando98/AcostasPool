@@ -14,6 +14,7 @@ import type {
   AssistantTechnician,
 } from "@/lib/routing/assistant-types";
 import type { DraftChange, DraftDiff } from "@/lib/routing/draft";
+import { formatChangesSummary } from "./format";
 
 type ChangesModalProps = {
   readonly open: boolean;
@@ -78,12 +79,7 @@ export default function ChangesModal({
         <div className="mt-4 max-h-[60vh] overflow-y-auto rounded-2xl border border-slate-200">
           <table className="w-full text-xs text-slate-700">
             <caption className="px-3 py-2 text-left text-xs text-slate-500">
-              {t("admin.routes.assistant.changes.summary", {
-                total: diff.total,
-                reordered: diff.reordered,
-                reassigned: diff.reassigned,
-                removed: diff.removed,
-              })}
+              {formatChangesSummary(t, diff)}
             </caption>
             <thead className="bg-slate-50">
               <tr>

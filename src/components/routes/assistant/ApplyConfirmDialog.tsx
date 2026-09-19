@@ -9,6 +9,7 @@
 import { useI18n } from "@/i18n/client";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import type { DraftDiff } from "@/lib/routing/draft";
+import { formatChangesSummary } from "./format";
 
 type ApplyConfirmDialogProps = {
   readonly open: boolean;
@@ -36,7 +37,7 @@ export default function ApplyConfirmDialog({
       open={open}
       busy={applying}
       error={error}
-      title={t("admin.routes.assistant.apply.confirmTitle", { count: diff.total })}
+      title={t.plural("admin.routes.assistant.apply.confirmTitle", diff.total)}
       description={t("admin.routes.assistant.apply.confirmDescription")}
       confirmLabel={t("admin.routes.assistant.actions.applyCount", {
         count: diff.total,
@@ -45,19 +46,10 @@ export default function ApplyConfirmDialog({
       onCancel={onCancel}
     >
       <ul className="mt-4 space-y-1 text-sm text-slate-600">
-        <li>
-          {t("admin.routes.assistant.changes.summary", {
-            total: diff.total,
-            reordered: diff.reordered,
-            reassigned: diff.reassigned,
-            removed: diff.removed,
-          })}
-        </li>
+        <li>{formatChangesSummary(t, diff)}</li>
         {activeStopCount > 0 ? (
           <li className="font-medium text-amber-700">
-            {t("admin.routes.assistant.apply.warningActive", {
-              count: activeStopCount,
-            })}
+            {t.plural("admin.routes.assistant.apply.warningActive", activeStopCount)}
           </li>
         ) : null}
         <li>{t("admin.routes.assistant.apply.warningNotifications")}</li>

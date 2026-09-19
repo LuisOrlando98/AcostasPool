@@ -22,7 +22,7 @@ const TEXTS = {
   undo: /^(Deshacer|Undo)/,
   viewChanges: /Ver cambios|View changes/,
   apply: /^(Aplicar|Apply) \(\d+\)$/,
-  oneExcluded: /1 (excluidos|excluded)/,
+  oneExcluded: /1 (excluido|excluded)/,
   noChanges: /Sin cambios respecto|No changes compared/,
   onlyOneTechnician: /Solo hay un t[eé]cnico|only one technician/,
 } as const;

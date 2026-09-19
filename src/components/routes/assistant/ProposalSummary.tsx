@@ -32,9 +32,7 @@ export default function ProposalSummary({
       <StatCard
         label={t("admin.routes.assistant.metrics.stops")}
         value={String(summary.stops)}
-        helper={t("admin.routes.assistant.metrics.excluded", {
-          count: excludedCount,
-        })}
+        helper={t.plural("admin.routes.assistant.metrics.excluded", excludedCount)}
       />
       <StatCard
         label={t("admin.routes.assistant.metrics.drive")}

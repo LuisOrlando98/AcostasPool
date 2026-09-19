@@ -9,6 +9,7 @@
 
 import { useI18n } from "@/i18n/client";
 import type { DraftDiff } from "@/lib/routing/draft";
+import { formatChangesSummary } from "./format";
 import { ListIcon } from "./icons";
 
 type ApplyBarProps = {
@@ -37,12 +38,7 @@ export default function ApplyBar({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-slate-700">
           {hasChanges
-            ? t("admin.routes.assistant.changes.summary", {
-                total: diff.total,
-                reordered: diff.reordered,
-                reassigned: diff.reassigned,
-                removed: diff.removed,
-              })
+            ? formatChangesSummary(t, diff)
             : t("admin.routes.assistant.changes.none")}
         </p>
         <div className="flex flex-wrap items-center gap-2">

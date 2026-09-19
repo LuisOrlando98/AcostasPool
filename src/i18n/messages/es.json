@@ -745,7 +745,10 @@
           "technicians": "Tecnicos",
           "unresolved": "Direcciones sin geocodificacion",
           "stops": "Paradas en la propuesta",
-          "excluded": "{{count}} excluidas",
+          "excluded": {
+            "one": "{{count}} excluida",
+            "other": "{{count}} excluidas"
+          },
           "drive": "Traslado total",
           "service": "Servicio total",
           "conflicts": "Conflictos",
@@ -770,7 +773,10 @@
           }
         },
         "summary": {
-          "stops": "{{count}} paradas",
+          "stops": {
+            "one": "{{count}} parada",
+            "other": "{{count}} paradas"
+          },
           "drive": "Traslado: {{value}}",
           "return": "Regreso: {{value}}",
           "service": "Servicio: {{value}}",
@@ -806,7 +812,11 @@
         },
         "strategyPicker": {
           "legend": "Estrategia",
-          "metrics": "Traslado {{drive}} · {{stops}} paradas · {{conflicts}} conflictos"
+          "conflicts": {
+            "one": "{{count}} conflicto",
+            "other": "{{count}} conflictos"
+          },
+          "drive": "Traslado {{drive}}"
         },
         "eta": {
           "pending": "Pendiente de recalcular",
@@ -843,7 +853,6 @@
         },
         "changes": {
           "title": "Cambios a aplicar",
-          "summary": "{{total}} cambios: {{reordered}} reordenados · {{reassigned}} reasignados · {{removed}} excluidos",
           "none": "Sin cambios respecto a la agenda actual.",
           "unassigned": "Sin técnico",
           "inProposal": "En la propuesta",
@@ -856,12 +865,34 @@
             "order": "Orden",
             "technician": "Técnico",
             "removed": "Excluido"
+          },
+          "total": {
+            "one": "{{count}} cambio",
+            "other": "{{count}} cambios"
+          },
+          "reordered": {
+            "one": "{{count}} reordenado",
+            "other": "{{count}} reordenados"
+          },
+          "reassigned": {
+            "one": "{{count}} reasignado",
+            "other": "{{count}} reasignados"
+          },
+          "removed": {
+            "one": "{{count}} excluido",
+            "other": "{{count}} excluidos"
           }
         },
         "apply": {
-          "confirmTitle": "Aplicar {{count}} cambios",
+          "confirmTitle": {
+            "one": "Aplicar {{count}} cambio",
+            "other": "Aplicar {{count}} cambios"
+          },
           "confirmDescription": "Se actualizan el técnico y el orden de los trabajos. La fecha y la ventana horaria reservadas no cambian.",
-          "warningActive": "{{count}} trabajos ya están en camino o en progreso: conservan su estado.",
+          "warningActive": {
+            "one": "{{count}} trabajo ya está en camino o en progreso: conserva su estado.",
+            "other": "{{count}} trabajos ya están en camino o en progreso: conservan su estado."
+          },
           "warningNotifications": "Se enviarán las notificaciones habituales a los técnicos y clientes afectados."
         },
         "result": {
@@ -874,7 +905,10 @@
         },
         "empty": {
           "title": "Ningún trabajo en el alcance elegido",
-          "excluded": "{{count}} trabajos del día quedaron fuera por los filtros.",
+          "excluded": {
+            "one": "{{count}} trabajo del día quedó fuera por los filtros.",
+            "other": "{{count}} trabajos del día quedaron fuera por los filtros."
+          },
           "plan": "Plan: {{plan}}",
           "technicians": "Técnicos: {{technicians}}",
           "hint": "Prueba con «Todos los planes», añade técnicos o vacía el filtro de texto."
@@ -882,7 +916,10 @@
         "move": {
           "title": "Mover parada",
           "description": "Elige el técnico que atenderá a {{name}}.",
-          "load": "{{count}} paradas · traslado {{drive}}",
+          "load": {
+            "one": "{{count}} parada · traslado {{drive}}",
+            "other": "{{count}} paradas · traslado {{drive}}"
+          },
           "onlyOne": "Solo hay un técnico en esta propuesta, así que no hay otra ruta a la que mover la parada. Añade técnicos en los filtros o usa «Quitar».",
           "exclude": "Sin asignar / excluir"
         },

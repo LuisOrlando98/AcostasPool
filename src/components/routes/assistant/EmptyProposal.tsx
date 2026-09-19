@@ -45,7 +45,7 @@ export default function EmptyProposal({
           {t("admin.routes.assistant.empty.title")}
         </p>
         <ul className="mt-2 space-y-1 text-sm">
-          <li>{t("admin.routes.assistant.empty.excluded", { count: excludedCount })}</li>
+          <li>{t.plural("admin.routes.assistant.empty.excluded", excludedCount)}</li>
           <li>{t("admin.routes.assistant.empty.plan", { plan: planLabel })}</li>
           <li>
             {t("admin.routes.assistant.empty.technicians", {

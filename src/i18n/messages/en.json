@@ -745,7 +745,10 @@
           "technicians": "Technicians",
           "unresolved": "Addresses without geocode",
           "stops": "Stops in the proposal",
-          "excluded": "{{count}} excluded",
+          "excluded": {
+            "one": "{{count}} excluded",
+            "other": "{{count}} excluded"
+          },
           "drive": "Total drive",
           "service": "Total service",
           "conflicts": "Conflicts",
@@ -770,7 +773,10 @@
           }
         },
         "summary": {
-          "stops": "{{count}} stops",
+          "stops": {
+            "one": "{{count}} stop",
+            "other": "{{count}} stops"
+          },
           "drive": "Drive: {{value}}",
           "return": "Return: {{value}}",
           "service": "Service: {{value}}",
@@ -806,7 +812,11 @@
         },
         "strategyPicker": {
           "legend": "Strategy",
-          "metrics": "Drive {{drive}} · {{stops}} stops · {{conflicts}} conflicts"
+          "conflicts": {
+            "one": "{{count}} conflict",
+            "other": "{{count}} conflicts"
+          },
+          "drive": "Drive {{drive}}"
         },
         "eta": {
           "pending": "Pending recalculation",
@@ -843,7 +853,6 @@
         },
         "changes": {
           "title": "Changes to apply",
-          "summary": "{{total}} changes: {{reordered}} reordered · {{reassigned}} reassigned · {{removed}} excluded",
           "none": "No changes compared with the current schedule.",
           "unassigned": "No technician",
           "inProposal": "In the proposal",
@@ -856,12 +865,34 @@
             "order": "Order",
             "technician": "Technician",
             "removed": "Excluded"
+          },
+          "total": {
+            "one": "{{count}} change",
+            "other": "{{count}} changes"
+          },
+          "reordered": {
+            "one": "{{count}} reordered",
+            "other": "{{count}} reordered"
+          },
+          "reassigned": {
+            "one": "{{count}} reassigned",
+            "other": "{{count}} reassigned"
+          },
+          "removed": {
+            "one": "{{count}} excluded",
+            "other": "{{count}} excluded"
           }
         },
         "apply": {
-          "confirmTitle": "Apply {{count}} changes",
+          "confirmTitle": {
+            "one": "Apply {{count}} change",
+            "other": "Apply {{count}} changes"
+          },
           "confirmDescription": "Technician and order are updated for these jobs. Booked date and time window stay untouched.",
-          "warningActive": "{{count}} jobs are already on the way or in progress: they keep their status.",
+          "warningActive": {
+            "one": "{{count}} job is already on the way or in progress: it keeps its status.",
+            "other": "{{count}} jobs are already on the way or in progress: they keep their status."
+          },
           "warningNotifications": "The usual notifications will be sent to the technicians and customers involved."
         },
         "result": {
@@ -874,7 +905,10 @@
         },
         "empty": {
           "title": "No jobs in the selected scope",
-          "excluded": "{{count}} jobs of that day fell outside the filters.",
+          "excluded": {
+            "one": "{{count}} job of that day fell outside the filters.",
+            "other": "{{count}} jobs of that day fell outside the filters."
+          },
           "plan": "Plan: {{plan}}",
           "technicians": "Technicians: {{technicians}}",
           "hint": "Try \"All plans\", add technicians, or clear the text filter."
@@ -882,7 +916,10 @@
         "move": {
           "title": "Move stop",
           "description": "Choose the technician who will serve {{name}}.",
-          "load": "{{count}} stops · drive {{drive}}",
+          "load": {
+            "one": "{{count}} stop · drive {{drive}}",
+            "other": "{{count}} stops · drive {{drive}}"
+          },
           "onlyOne": "There is only one technician in this proposal, so there is no other route to move the stop to. Add technicians in the filters or use \"Remove\".",
           "exclude": "Unassign / exclude"
         },

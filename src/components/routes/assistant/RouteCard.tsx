@@ -55,7 +55,7 @@ export default function RouteCard({
           {route.technicianName}
         </h3>
         <p className="text-xs text-slate-600">
-          {t("admin.routes.assistant.summary.stops", { count: load.stops })}
+          {t.plural("admin.routes.assistant.summary.stops", load.stops)}
           <span aria-hidden="true"> · </span>
           {t("admin.routes.assistant.summary.drive", {
             value: formatMinutes(load.driveMinutes),

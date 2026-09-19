@@ -74,11 +74,16 @@ export default function StrategyPicker({
                   {t(`admin.routes.assistant.strategies.${plan.strategy}.hint`)}
                 </span>
                 <span className="mt-2 block text-xs font-medium text-slate-700">
-                  {t("admin.routes.assistant.strategyPicker.metrics", {
-                    drive: formatMinutes(plan.summary.totalDriveMinutes),
-                    stops: plan.summary.totalStops,
-                    conflicts: plan.summary.conflicts,
-                  })}
+                  {[
+                    t("admin.routes.assistant.strategyPicker.drive", {
+                      drive: formatMinutes(plan.summary.totalDriveMinutes),
+                    }),
+                    t.plural("admin.routes.assistant.summary.stops", plan.summary.totalStops),
+                    t.plural(
+                      "admin.routes.assistant.strategyPicker.conflicts",
+                      plan.summary.conflicts
+                    ),
+                  ].join(" · ")}
                 </span>
               </span>
             </label>
