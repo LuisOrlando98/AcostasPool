@@ -779,7 +779,8 @@
         "steps": {
           "filters": "Paso 1 · Filtros",
           "filtersHint": "Elige el alcance de la propuesta. El plan y los técnicos son opcionales: sin elegir nada entran todos.",
-          "proposal": "Paso 2 · Propuesta"
+          "proposal": "Paso 2 · Propuesta",
+          "proposalHint": "Cada ruta sale del punto de partida, visita las paradas en el orden que menos tiempo de carretera suma y vuelve al punto de partida. La hora citada no cuenta: el servicio es por día."
         },
         "filters": {
           "allPlans": "Todos los planes",

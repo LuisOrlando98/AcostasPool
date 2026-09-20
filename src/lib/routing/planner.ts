@@ -17,6 +17,7 @@ import {
   type TravelMetric,
   type TravelMetricSource,
 } from "@/lib/routing/travel";
+import { optimizeTourOrder } from "@/lib/routing/tour";
 
 const DEFAULT_SERVICE_MINUTES = 60;
 const MIN_SERVICE_MINUTES = 30;
@@ -31,16 +32,6 @@ const SHORT_DRIVE_DISTANCE_WEIGHT = 10;
 const SHORT_DRIVE_LOAD_WEIGHT = 2;
 const BALANCED_DISTANCE_WEIGHT = 4;
 const BALANCED_LOAD_WEIGHT = 12;
-/** Pesos del vecino más cercano al ordenar las paradas de una ruta. */
-const DRIVE_PENALTY_WEIGHT = 1.15;
-const LATENESS_PENALTY_WEIGHT = 2;
-const WAIT_PENALTY_WEIGHT = 0.1;
-const SERVICE_PENALTY_WEIGHT = 0.02;
-const RETURN_PENALTY_WEIGHT_FEW_REMAINING = 0.8;
-const RETURN_PENALTY_WEIGHT_SOME_REMAINING = 0.45;
-const RETURN_PENALTY_WEIGHT_MANY_REMAINING = 0.2;
-const FEW_REMAINING_STOPS = 2;
-const SOME_REMAINING_STOPS = 4;
 export const DEFAULT_ROUTE_ORIGIN_ADDRESS =
   "10731 SW 147th Ct, Miami, FL 33196";
 
@@ -203,6 +194,11 @@ function getRouteStartMinutes(jobs: readonly RouteAssistantJob[]) {
   );
 }
 
+/**
+ * El servicio empieza al llegar: no se espera a la hora citada, porque los
+ * servicios se programan por día y no por hora. La hora citada solo se conserva
+ * como referencia (`scheduledTime`, `delayMinutes`).
+ */
 function simulateStop(
   cursorMinutes: number,
   driveMinutes: number,
@@ -210,7 +206,7 @@ function simulateStop(
 ): StopTiming {
   const scheduledMinutes = toMinutesInBusinessTimezone(job.scheduledDate);
   const arrivalMinutes = cursorMinutes + driveMinutes;
-  const serviceStartMinutes = Math.max(arrivalMinutes, scheduledMinutes);
+  const serviceStartMinutes = arrivalMinutes;
   const serviceMinutes = getServiceMinutes(job);
   return {
     scheduledMinutes,
@@ -362,65 +358,43 @@ export function buildSequentialTravelPairs(
   ];
 }
 
-function getReturnPenaltyWeight(remainingCount: number) {
-  if (remainingCount <= FEW_REMAINING_STOPS) {
-    return RETURN_PENALTY_WEIGHT_FEW_REMAINING;
+/**
+ * Una parada es localizable si tiene coordenadas o si travel resolvió con
+ * tráfico real su tramo desde la base. El resto solo tiene el tiempo por
+ * defecto: meterlas en la optimización falsearía el circuito.
+ */
+function isLocatable(
+  pairMetrics: Map<string, TravelMetric>,
+  origin: RouteWaypoint,
+  stop: RouteAssistantJob
+) {
+  if (stop.coordinates) {
+    return true;
   }
-  if (remainingCount <= SOME_REMAINING_STOPS) {
-    return RETURN_PENALTY_WEIGHT_SOME_REMAINING;
-  }
-  return RETURN_PENALTY_WEIGHT_MANY_REMAINING;
+  const metric = pairMetrics.get(getAddressPairKey(origin.address, stop.address));
+  return metric?.source === "LIVE_TRAFFIC";
 }
 
-function scoreCandidate(
+/** Minutos de conducción entre todos los puntos: la base en 0 y las paradas en 1..n. */
+function buildDriveMatrix(
   pairMetrics: Map<string, TravelMetric>,
-  from: RouteWaypoint,
   origin: RouteWaypoint,
-  candidate: RouteAssistantJob,
-  cursorMinutes: number,
-  remainingCount: number
-) {
-  const leg = resolveLeg(pairMetrics, from, candidate);
-  const timing = simulateStop(cursorMinutes, leg.driveMinutes, candidate);
-  const returnLeg = resolveLeg(pairMetrics, candidate, origin);
-  const latenessPenalty =
-    Math.max(0, timing.serviceStartMinutes - timing.scheduledMinutes) *
-    LATENESS_PENALTY_WEIGHT;
-  const waitPenalty =
-    Math.max(0, timing.scheduledMinutes - timing.arrivalMinutes) *
-    WAIT_PENALTY_WEIGHT;
-  return (
-    leg.driveMinutes * DRIVE_PENALTY_WEIGHT +
-    returnLeg.driveMinutes * getReturnPenaltyWeight(remainingCount) +
-    latenessPenalty +
-    waitPenalty +
-    timing.serviceMinutes * SERVICE_PENALTY_WEIGHT
+  stops: readonly RouteAssistantJob[]
+): number[][] {
+  const nodes: readonly RouteWaypoint[] = [origin, ...stops];
+  return nodes.map((from, fromIndex) =>
+    nodes.map((to, toIndex) =>
+      fromIndex === toIndex ? 0 : resolveLeg(pairMetrics, from, to).driveMinutes
+    )
   );
 }
 
-function pickNextStopIndex(
-  pairMetrics: Map<string, TravelMetric>,
-  from: RouteWaypoint,
-  origin: RouteWaypoint,
-  remaining: RouteAssistantJob[],
-  cursorMinutes: number
-) {
-  return remaining.reduce(
-    (best, candidate, index) => {
-      const score = scoreCandidate(
-        pairMetrics,
-        from,
-        origin,
-        candidate,
-        cursorMinutes,
-        remaining.length
-      );
-      return score < best.score ? { index, score } : best;
-    },
-    { index: 0, score: Number.POSITIVE_INFINITY }
-  ).index;
-}
-
+/**
+ * Ordena las paradas para minimizar la conducción del circuito completo:
+ * base → todas las paradas → base (ver tour.ts). La hora citada no interviene:
+ * los servicios se programan por día, no por hora. Las paradas sin ubicación
+ * van al final, en su orden de agenda, con su aviso correspondiente.
+ */
 async function orderByOptimizedRoute(
   stops: RouteAssistantJob[],
   origin: RouteWaypoint
@@ -428,34 +402,20 @@ async function orderByOptimizedRoute(
   const pairMetrics = await getTravelMetricsForPairs(
     buildTravelPairs(stops, origin)
   );
-  if (stops.length <= 1) {
-    return {
-      orderedStops: [...stops].sort(sortByScheduledTime),
-      pairMetrics,
-    };
-  }
+  const byAgenda = [...stops].sort(sortByScheduledTime);
+  const locatable = byAgenda.filter((stop) => isLocatable(pairMetrics, origin, stop));
+  const unlocatable = byAgenda.filter(
+    (stop) => !isLocatable(pairMetrics, origin, stop)
+  );
+  const tourOrder = optimizeTourOrder(
+    buildDriveMatrix(pairMetrics, origin, locatable),
+    locatable.length
+  );
 
-  let remaining = [...stops];
-  let ordered: RouteAssistantJob[] = [];
-  let cursorMinutes = getRouteStartMinutes(remaining);
-
-  while (remaining.length > 0) {
-    const previous = ordered[ordered.length - 1] ?? origin;
-    const nextIndex = pickNextStopIndex(
-      pairMetrics,
-      previous,
-      origin,
-      remaining,
-      cursorMinutes
-    );
-    const next = remaining[nextIndex];
-    const leg = resolveLeg(pairMetrics, previous, next);
-    cursorMinutes = simulateStop(cursorMinutes, leg.driveMinutes, next).endMinutes;
-    ordered = [...ordered, next];
-    remaining = remaining.filter((_, index) => index !== nextIndex);
-  }
-
-  return { orderedStops: ordered, pairMetrics };
+  return {
+    orderedStops: [...tourOrder.map((node) => locatable[node - 1]), ...unlocatable],
+    pairMetrics,
+  };
 }
 
 type Itinerary = {

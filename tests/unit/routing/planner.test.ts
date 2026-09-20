@@ -50,8 +50,11 @@ const PLAN_DAY = { year: 2026, month: 9, day: 21 };
 const DEFAULT_DRIVE_MINUTES = 15;
 const DEFAULT_SERVICE_MINUTES = 60;
 const MIN_SERVICE_MINUTES = 30;
-/** `sortOrder` = minuto del día en que empieza el servicio. */
-const NINE_AM_MINUTES = 9 * 60;
+/**
+ * `sortOrder` = minuto del día en que empieza el servicio. Con una cita a las
+ * 09:00 sin coordenadas la ruta sale a las 08:40 y llega a las 08:55.
+ */
+const FIRST_ARRIVAL_MINUTES = 8 * 60 + 55;
 
 type Place = { address: string; point: GeoPoint };
 
@@ -236,9 +239,10 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
         technicianName: TECH_A.name,
         order: 1,
         scheduledTime: "09:00",
-        // Llega 5 min antes de la hora citada y espera para empezar a las 09:00.
+        // Sale 20 min antes de la hora citada y empieza el servicio al llegar:
+        // los servicios son por día, no se espera a las 09:00.
         estimatedArrivalTime: "08:55",
-        serviceStartTime: "09:00",
+        serviceStartTime: "08:55",
         estimatedDriveMinutesFromPrevious: DEFAULT_DRIVE_MINUTES,
         estimatedServiceMinutes: DEFAULT_SERVICE_MINUTES,
         distanceMilesFromPrevious: null,
@@ -260,7 +264,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
       totalRouteMinutes: 2 * DEFAULT_DRIVE_MINUTES + DEFAULT_SERVICE_MINUTES,
       returnDistanceMiles: null,
       returnDriveSource: "ESTIMATED",
-      estimatedReturnTime: "10:15",
+      estimatedReturnTime: "10:10",
       // Un aviso: la única parada no tiene coordenadas.
       conflicts: 1,
     });
@@ -273,7 +277,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
       loadSpread: 0,
     });
     expect(plan.updates).toEqual([
-      { jobId: "j1", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
+      { jobId: "j1", technicianId: TECH_A.id, sortOrder: FIRST_ARRIVAL_MINUTES },
     ]);
     expect(plan.unassigned).toEqual([]);
   });
@@ -310,7 +314,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     expect(stop.delayMinutes).toBe(75);
   });
 
-  it("arranca 20 minutos antes de la primera cita y espera hasta la hora citada", async () => {
+  it("arranca 20 minutos antes de la primera cita y empieza el servicio al llegar", async () => {
     const [plan] = await buildRouteAssistantPlans({
       jobs: [makeJob({ id: "late-morning", scheduledDate: atBusinessTime(10) })],
       technicians: [TECH_A],
@@ -319,7 +323,7 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     const [stop] = routeFor(plan, TECH_A.id).stops;
 
     expect(stop.estimatedArrivalTime).toBe("09:55");
-    expect(stop.serviceStartTime).toBe("10:00");
+    expect(stop.serviceStartTime).toBe("09:55");
     expect(stop.delayMinutes).toBeNull();
   });
 
@@ -334,8 +338,8 @@ describe("buildRouteAssistantPlans: una parada sin coordenadas", () => {
     const route = routeFor(plan, TECH_A.id);
 
     expect(route.stops[0].scheduledTime).toBe("23:30");
-    expect(route.stops[0].serviceStartTime).toBe("23:30");
-    expect(route.estimatedReturnTime).toBe("00:45");
+    expect(route.stops[0].serviceStartTime).toBe("23:25");
+    expect(route.estimatedReturnTime).toBe("00:40");
     expect(route.overflowsDay).toBe(true);
   });
 
@@ -495,7 +499,7 @@ describe("buildRouteAssistantPlans: asignación de técnicos", () => {
 
     expect(plan.routes.map((route) => route.technicianId)).toEqual([TECH_A.id]);
     expect(plan.updates).toEqual([
-      { jobId: "solo", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
+      { jobId: "solo", technicianId: TECH_A.id, sortOrder: FIRST_ARRIVAL_MINUTES },
     ]);
   });
 
@@ -518,7 +522,7 @@ describe("buildRouteAssistantPlans: asignación de técnicos", () => {
 });
 
 describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
-  it("ordena las paradas por vecino más cercano partiendo del origen", async () => {
+  it("ordena las paradas en el circuito más corto desde el origen, empezando por la más cercana", async () => {
     const jobs = [placeJob("far", FAR), placeJob("mid", MID), placeJob("near", NEAR)];
 
     const [plan] = await buildRouteAssistantPlans({
@@ -532,12 +536,119 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
 
     expect(stopJobIds(route)).toEqual(["near", "mid", "far"]);
     expect(route.stops.map((stop) => stop.order)).toEqual([1, 2, 3]);
-    // sortOrder = minuto del día del inicio de servicio (09:00, 10:07, 11:25).
+    // sortOrder = minuto del día del inicio de servicio, que es la llegada
+    // (08:44, 09:51, 11:09): no se espera a la hora citada.
     expect(plan.updates).toEqual([
-      { jobId: "near", technicianId: TECH_A.id, sortOrder: NINE_AM_MINUTES },
-      { jobId: "mid", technicianId: TECH_A.id, sortOrder: 10 * 60 + 7 },
-      { jobId: "far", technicianId: TECH_A.id, sortOrder: 11 * 60 + 25 },
+      { jobId: "near", technicianId: TECH_A.id, sortOrder: 8 * 60 + 44 },
+      { jobId: "mid", technicianId: TECH_A.id, sortOrder: 9 * 60 + 51 },
+      { jobId: "far", technicianId: TECH_A.id, sortOrder: 11 * 60 + 9 },
     ]);
+  });
+
+  it("minimiza el circuito completo con regreso a la base, no solo el tramo siguiente", async () => {
+    // Desde la base lo más cercano es A, pero volver desde B cuesta 40 min:
+    // base→A→B→base son 50 min de conducción y base→B→A→base, 20.
+    stubTravelTable([
+      [ORIGIN.address, NEAR.address, liveMetric(5, 2)],
+      [ORIGIN.address, MID.address, liveMetric(10, 4)],
+      [NEAR.address, MID.address, liveMetric(5, 2)],
+      [MID.address, NEAR.address, liveMetric(5, 2)],
+      [NEAR.address, ORIGIN.address, liveMetric(5, 2)],
+      [MID.address, ORIGIN.address, liveMetric(40, 4)],
+    ]);
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs: [placeJob("a", NEAR), placeJob("b", MID)],
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(stopJobIds(route)).toEqual(["b", "a"]);
+    expect(route.returnDriveMinutes).toBe(5);
+    expect(route.totalDriveMinutes).toBe(20);
+  });
+
+  it("la hora citada no altera el orden: los servicios son por día", async () => {
+    const jobs = [
+      placeJob("near", NEAR, { scheduledDate: atBusinessTime(14) }),
+      placeJob("mid", MID, { scheduledDate: atBusinessTime(8) }),
+      placeJob("far", FAR, { scheduledDate: atBusinessTime(11) }),
+    ];
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs,
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(stopJobIds(route)).toEqual(["near", "mid", "far"]);
+    // Sale a las 08:00 y no espera a las 14:00 de la primera parada.
+    expect(route.stops[0].serviceStartTime).toBe("08:04");
+    expect(route.totalDriveMinutes).toBe(55);
+  });
+
+  it("deja al final las paradas sin ubicación, en su orden de agenda", async () => {
+    const jobs = [
+      makeJob({ id: "blind-late", scheduledDate: atBusinessTime(10) }),
+      makeJob({ id: "blind-early", scheduledDate: atBusinessTime(8) }),
+      placeJob("mid", MID),
+      placeJob("near", NEAR),
+    ];
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs,
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+
+    expect(stopJobIds(routeFor(plan, TECH_A.id))).toEqual([
+      "near",
+      "mid",
+      "blind-early",
+      "blind-late",
+    ]);
+  });
+
+  it("optimiza también rutas largas visitando cada parada una sola vez", async () => {
+    const LONG_ROUTE_STOPS = 16;
+    const jobs = Array.from({ length: LONG_ROUTE_STOPS }, (_, index) =>
+      makeJob({
+        id: `long-${index}`,
+        address: `Long Route Stop ${index}`,
+        // Se reparten alternando a un lado y otro de la base.
+        coordinates: {
+          lat: ORIGIN.point.lat + (index % 2 === 0 ? 0.01 : -0.01) * (index + 1),
+          lng: ORIGIN.point.lng,
+        },
+      })
+    );
+
+    const [plan] = await buildRouteAssistantPlans({
+      jobs,
+      technicians: [TECH_A],
+      originAddress: ORIGIN.address,
+      originCoordinates: ORIGIN.point,
+      strategies: ["BALANCED"],
+    });
+    const route = routeFor(plan, TECH_A.id);
+
+    expect(new Set(stopJobIds(route)).size).toBe(LONG_ROUTE_STOPS);
+    // Recorrer un lado, volver por la base y recorrer el otro: cada lado se
+    // conduce una vez de ida y una de vuelta. Ir alternando sería mucho más.
+    const northMiles = 0.69 * 15;
+    const southMiles = 0.69 * 16;
+    const totalMiles =
+      route.stops.reduce((sum, stop) => sum + (stop.distanceMilesFromPrevious ?? 0), 0) +
+      (route.returnDistanceMiles ?? 0);
+    expect(totalMiles).toBeLessThan(2 * (northMiles + southMiles) + 1);
   });
 
   it("acumula conducción, distancias, retrasos y regreso a lo largo de la ruta", async () => {
@@ -561,17 +672,17 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
       }))
     ).toEqual([
       { drive: 4, miles: 0.69, arrival: "08:44", delay: null },
-      { drive: 7, miles: 2.76, arrival: "10:07", delay: 67 },
-      { drive: 18, miles: 6.91, arrival: "11:25", delay: 145 },
+      { drive: 7, miles: 2.76, arrival: "09:51", delay: 51 },
+      { drive: 18, miles: 6.91, arrival: "11:09", delay: 129 },
     ]);
     expect(route).toMatchObject({
       returnDriveMinutes: 26,
       returnDistanceMiles: 10.36,
-      estimatedReturnTime: "12:51",
+      estimatedReturnTime: "12:35",
       totalDriveMinutes: 55,
       totalServiceMinutes: 180,
       totalRouteMinutes: 235,
-      // Las tres paradas tienen coordenadas y la ruta acaba a las 12:51.
+      // Las tres paradas tienen coordenadas y la ruta acaba a las 12:35.
       conflicts: 0,
     });
     expect(plan.summary).toMatchObject({ totalStops: 3, conflicts: 0, loadSpread: 0 });
@@ -617,7 +728,7 @@ describe("buildRouteAssistantPlans: orden de paradas y agregados", () => {
     expect(route).toMatchObject({
       returnDriveMinutes: 4,
       returnDistanceMiles: 0.69,
-      estimatedReturnTime: "10:04",
+      estimatedReturnTime: "09:48",
     });
   });
 });
@@ -689,7 +800,7 @@ describe("buildRouteAssistantPlans: integración con métricas de travel", () =>
       returnDistanceMiles: 4.4,
       returnDriveSource: "LIVE_TRAFFIC",
       totalDriveMinutes: 9 + 11,
-      estimatedReturnTime: "10:11",
+      estimatedReturnTime: "10:00",
     });
   });
 

@@ -779,7 +779,8 @@
         "steps": {
           "filters": "Step 1 · Filters",
           "filtersHint": "Choose the scope of the proposal. Plan and technicians are optional: leave them empty to include every one.",
-          "proposal": "Step 2 · Proposal"
+          "proposal": "Step 2 · Proposal",
+          "proposalHint": "Each route leaves the starting point, visits the stops in the order that adds the least driving time and returns to the starting point. The appointment time does not count: service is per day."
         },
         "filters": {
           "allPlans": "All plans",

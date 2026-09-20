@@ -167,6 +167,10 @@ export default function ProposalSection({
         />
       </div>
 
+      <p className="text-sm text-slate-600">
+        {t("admin.routes.assistant.steps.proposalHint")}
+      </p>
+
       {stale ? (
         <p className="app-callout px-4 py-3 text-sm" data-tone="warning" role="status">
           {t("admin.routes.assistant.stale.message")}
